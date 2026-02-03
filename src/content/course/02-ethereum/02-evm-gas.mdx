@@ -11,7 +11,7 @@ EVM (Ethereum Virtual Machine) — виртуальная машина, кото
 
 ## EVM Overview
 
-<Callout type="info">
+<Callout type="note">
 EVM — stack-based виртуальная машина с 256-bit словами. Каждая операция потребляет gas.
 </Callout>
 
@@ -178,7 +178,7 @@ def memory_cost(size_words):
 # 1 MB (32768 words): 2,195,456 gas (~$50-100!)
 ```
 
-<Callout type="info">
+<Callout type="note">
 Копирование больших данных в memory — частая причина out-of-gas. Лимит практически ~30KB для одной транзакции.
 </Callout>
 

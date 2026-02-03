@@ -11,7 +11,7 @@ Smart contract — программа, хранящаяся в блокчейн�
 
 ## Contract Lifecycle
 
-<Callout type="info">
+<Callout type="note">
 Контракт = bytecode + storage + balance. После deployment bytecode immutable (кроме proxy patterns).
 </Callout>
 
@@ -182,7 +182,7 @@ User tx → Proxy → delegatecall(impl) → Logic executes in Proxy context
                                        → Storage modified in Proxy
 ```
 
-<Callout type="info">
+<Callout type="note">
 Proxy contracts позволяют upgrades. Implementation address хранится в storage slot: `keccak256("eip1967.proxy.implementation") - 1`
 </Callout>
 
