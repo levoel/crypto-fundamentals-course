@@ -118,7 +118,7 @@ export function UTXODiagram() {
 export function BlockStructureDiagram() {
   return (
     <DiagramContainer title="Bitcoin Block Structure">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col items-center gap-4">
         {/* Block Header */}
         <Tooltip content={
           <div>
