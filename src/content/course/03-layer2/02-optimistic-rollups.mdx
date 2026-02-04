@@ -9,9 +9,18 @@ import { OptimisticVsZKDiagram } from '../../../components/diagrams/Layer2Diagra
 
 # Optimistic Rollups
 
-Optimistic Rollups — тип L2, который **предполагает** валидность транзакций и позволяет оспорить их через **fraud proofs** в течение challenge period.
+Optimistic Rollups — доминирующий тип L2 сегодня (Arbitrum, Optimism, Base). Название отражает философию: система **оптимистично предполагает**, что все транзакции валидны, и позволяет оспорить их через **fraud proofs** в течение challenge period.
+
+Почему "optimistic" выиграл (пока)? Потому что Optimistic rollups **значительно проще** в разработке. Они почти идентичны EVM — можно деплоить существующие контракты без изменений. ZK rollups требуют сложной криптографии и специальных компиляторов.
+
+Для data engineer Optimistic rollups интересны тем, что:
+- Транзакции имеют **два состояния finality**: sequencer confirmation (секунды) и L1 finality (7 дней)
+- L1 содержит **calldata с транзакциями** — можно индексировать L2 из L1 данных
+- Challenge period создаёт unique data patterns (dispute games, fraud proofs)
 
 ## Архитектура
+
+Optimistic rollup состоит из нескольких компонентов: sequencer (принимает и упорядочивает транзакции), execution engine (выполняет транзакции), L1 contracts (хранят state roots и данные), и verifiers (следят за честностью sequencer).
 
 <Callout type="note">
 "Optimistic" = оптимистично предполагаем, что всё честно. Если нет — доказываем fraud и откатываем.
@@ -49,6 +58,8 @@ Optimistic Rollups — тип L2, который **предполагает** в
 ## Ключевые компоненты
 
 ### 1. Sequencer
+
+Sequencer — сердце Optimistic rollup. Это централизованный сервер (да, централизованный!), который управляет потоком транзакций. Почему централизация допустима? Потому что sequencer **не может украсть средства** — fraud proofs защищают от этого. Sequencer может только цензурировать или задерживать транзакции.
 
 Sequencer — оператор, который:
 
@@ -93,6 +104,10 @@ contract RollupOutbox {
 
 ### 3. Fraud Proofs
 
+Fraud proofs — механизм, который делает Optimistic rollups trustless. Идея: если sequencer опубликовал неверный state root, **любой** может доказать это on-chain и откатить fraud. Sequencer теряет bond (застейканные средства), challenger получает награду.
+
+Ключевой insight: нам не нужно проверять **каждую** транзакцию on-chain. Достаточно проверить **только спорные** — а их будет 0, если sequencer честен. Это и есть "optimistic" часть.
+
 Если sequencer опубликовал неверный state root:
 
 ```
@@ -109,6 +124,8 @@ contract RollupOutbox {
 ```
 
 ### Interactive Bisection
+
+Как доказать fraud эффективно? Нельзя просто выполнить весь batch on-chain — это дорого. Вместо этого используется "bisection protocol" — бинарный поиск спорной инструкции.
 
 ```
 Disputed execution: instructions 0-1000
@@ -127,6 +144,8 @@ Complexity: O(log n) rounds instead of O(n) execution
 ```
 
 ## Arbitrum vs Optimism
+
+Два главных Optimistic rollup — Arbitrum и Optimism — используют разные подходы к fraud proofs и архитектуре. Оба EVM-compatible, но отличаются в деталях, которые важны для понимания их данных.
 
 | Aspect | Arbitrum One | OP Mainnet |
 |--------|--------------|------------|
@@ -193,7 +212,10 @@ Complexity: O(log n) rounds instead of O(n) execution
 
 ## Data Availability
 
-Транзакции должны быть доступны для верификации:
+Критически важная часть rollups — **data availability**. Транзакции должны быть доступны для верификации. Без доступа к данным невозможно:
+- Доказать fraud (нет данных → нет proof)
+- Восстановить state (если sequencer упадёт)
+- Выйти с L2 через escape hatch
 
 ### Pre-EIP-4844 (Calldata)
 
@@ -219,6 +241,8 @@ Cost reduction: 10-100x cheaper than calldata
 ```
 
 ## Withdrawal Flow
+
+Withdrawal (вывод средств с L2 на L1) — самое болезненное место Optimistic rollups. Из-за challenge period нужно ждать 7 дней. Почему так долго? Чтобы дать время verifiers обнаружить и доказать fraud, если он есть.
 
 ```
 1. User initiates withdrawal on L2

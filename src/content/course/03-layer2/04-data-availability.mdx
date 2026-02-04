@@ -7,9 +7,18 @@ timeToComplete: 20
 
 # Data Availability
 
-Data Availability (DA) — критическая проблема для rollups: данные транзакций должны быть доступны для верификации. Без DA нельзя доказать fraud или восстановить state.
+Data Availability (DA) — одна из самых тонких и важных проблем в design rollups. Вопрос простой: **где хранить данные транзакций?** Ответ определяет security model, стоимость, и trade-offs всей системы.
 
-## Проблема
+Почему DA — не просто "хранение данных"? Потому что rollups используют L1 только для **settlement** (финализации), а execution происходит off-chain. Если данные транзакций недоступны, **никто не может верифицировать** правильность execution. Это делает DA критическим bottleneck.
+
+Для data engineer DA важна потому что:
+- L1 calldata / blobs содержат **raw L2 transaction data** — можно индексировать L2 из L1
+- Blob market создаёт **отдельную fee dynamic** от execution
+- Alt-DA solutions (Celestia, EigenDA) имеют **свои data models и APIs**
+
+## Проблема Data Availability
+
+DA problem — это **вопрос доверия**. Rollup sequencer публикует state root на L1, но как узнать, что этот root корректен? Нужно иметь доступ к **исходным данным транзакций**, чтобы самостоятельно вычислить state.
 
 <Callout type="warning">
 Если sequencer скрывает данные транзакций, пользователи не могут:
@@ -19,6 +28,8 @@ Data Availability (DA) — критическая проблема для rollup
 </Callout>
 
 ### Data Withholding Attack
+
+Это классическая атака на rollups: sequencer публикует state root, но **не публикует данные**. State root выглядит валидным, но никто не может его верифицировать.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -42,7 +53,11 @@ Data Availability (DA) — критическая проблема для rollup
 
 ## Ethereum DA (Pre-EIP-4844)
 
+До марта 2024 года единственный способ publish data на Ethereum — **calldata**. Это данные, которые прикрепляются к транзакции и хранятся **вечно** в блокчейне.
+
 ### Calldata
+
+Calldata — простой, но дорогой способ DA. Данные хранятся в каждой ноде вечно, что создаёт state bloat.
 
 ```
 Transaction calldata → Ethereum block → All nodes store it
@@ -73,11 +88,17 @@ Typical Arbitrum batch:
 
 ## EIP-4844: Proto-Danksharding
 
+EIP-4844 (активирован в марте 2024) — **revolutionary change** для rollup economics. Это "proto-danksharding" — первый шаг к full danksharding.
+
+Ключевая идея: rollups не нужно **вечное** хранение. Достаточно хранить данные ~18 дней — этого достаточно для fraud proofs и state reconstruction. После этого данные можно удалить (pruning). Это позволяет **отделить DA от execution** и создать дешёвое временное хранилище.
+
 <Callout type="note">
 EIP-4844 (March 2024): Новый тип транзакций с "blobs" — дешёвое временное хранилище специально для rollups.
 </Callout>
 
 ### Blobs
+
+Blob (Binary Large OBject) — новый тип данных в Ethereum, специально для rollups.
 
 ```
 Blob = 128 KB of data
@@ -122,6 +143,8 @@ Reduction: 10-100x cheaper!
 
 ## Full Danksharding (Future)
 
+EIP-4844 — это **proto**-danksharding. Full danksharding увеличит DA capacity в **10-100x** через Data Availability Sampling (DAS).
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Full Danksharding                         │
@@ -144,7 +167,9 @@ Reduction: 10-100x cheaper!
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Data Availability Sampling
+### Data Availability Sampling (DAS)
+
+DAS — гениальная идея: вместо того чтобы каждая нода скачивала **все** данные, ноды скачивают **случайные samples**. Если данные полностью доступны, samples будут доступны. Если данные частично скрыты, с высокой вероятностью это обнаружится.
 
 ```
 Blob: [chunk1][chunk2][chunk3]...[chunk_n]
@@ -161,7 +186,11 @@ Erasure coding: Can reconstruct full blob from 50% of chunks
 
 ## Alternative DA Layers
 
+Ethereum blobs — не единственный вариант для DA. Существуют специализированные DA layers, которые предлагают **дешевле DA** ценой **слабее security guarantees**. Это trade-off: security vs cost.
+
 ### Celestia
+
+Celestia — первый "modular blockchain", специализирующийся только на DA. Никакого execution, никаких smart contracts — только хранение и sampling данных. Это позволяет максимизировать DA throughput.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -186,6 +215,8 @@ Erasure coding: Can reconstruct full blob from 50% of chunks
 ```
 
 ### EigenDA
+
+EigenDA — DA layer, построенный на EigenLayer restaking. Вместо своих валидаторов использует Ethereum стейкеров, которые "restake" свой ETH для дополнительной yield. Security inherit от Ethereum economic security.
 
 ```
 Uses Ethereum validators via restaking (EigenLayer)

@@ -9,9 +9,23 @@ import { BlockchainTrilemmaDiagram, RollupArchitectureDiagram } from '../../../c
 
 # The Scaling Problem
 
-Ethereum mainnet обрабатывает ~15 TPS (транзакций в секунду). Visa обрабатывает ~65,000 TPS. Как масштабировать блокчейн без потери decentralization и security?
+Масштабирование — одна из главных проблем блокчейн-индустрии. Ethereum mainnet обрабатывает ~15 TPS (транзакций в секунду). Visa обрабатывает ~65,000 TPS. Разница в 4000 раз. Как масштабировать блокчейн без потери decentralization и security?
+
+Эта проблема не техническая в привычном смысле — увеличить throughput легко: просто добавь больше серверов, увеличь размер блока, ускорь консенсус. Но тогда теряется decentralization. Проблема масштабирования — это **проблема trade-offs**. Каждое решение жертвует чем-то важным.
+
+Для data engineer понимание scaling важно потому что:
+- Разные L1 и L2 имеют разную структуру данных и API
+- L2 транзакции проходят сложный lifecycle: sequencer → batch → L1 finality
+- Анализ cross-chain данных требует понимания, где находится "truth"
+- Fee dynamics радикально отличаются между L1 и L2
 
 ## Blockchain Trilemma
+
+Vitalik Buterin сформулировал "трилемму блокчейна" — фундаментальное ограничение, с которым сталкивается каждый блокчейн. Три желаемых свойства:
+
+- **Decentralization** — способность запустить ноду на обычном оборудовании, большое количество валидаторов, устойчивость к цензуре
+- **Security** — стоимость атаки должна быть астрономически высокой, immutability истории
+- **Scalability** — высокий throughput, низкие fees, быстрый finality
 
 <Callout type="note">
 Blockchain Trilemma (Vitalik Buterin): невозможно одновременно максимизировать Decentralization, Security и Scalability. Приходится выбирать 2 из 3.
@@ -19,7 +33,9 @@ Blockchain Trilemma (Vitalik Buterin): невозможно одновремен
 
 <BlockchainTrilemmaDiagram client:load />
 
-### Trade-offs
+Почему нельзя иметь всё сразу? Потому что **каждая нода должна валидировать каждую транзакцию**. Больше транзакций → больше вычислений → нужно мощнее оборудование → меньше людей могут запустить ноду → меньше decentralization.
+
+### Trade-offs на практике
 
 | Blockchain | TPS | Block Time | Node Requirements | Validators |
 |------------|-----|------------|-------------------|------------|
@@ -30,7 +46,11 @@ Blockchain Trilemma (Vitalik Buterin): невозможно одновремен
 
 ## Почему Ethereum медленный?
 
+Ethereum специально спроектирован медленным — это **design choice**, а не баг. Медленность — цена за decentralization. Разберём три основных bottleneck.
+
 ### 1. State Growth
+
+Каждый full node хранит полное состояние сети (World State) и **выполняет каждую транзакцию**. Это fundamental requirement для trustless verification — ты не доверяешь никому, ты сам проверяешь всё.
 
 ```
 Every node must:
@@ -42,6 +62,8 @@ More TPS → More state → Harder to run node → Less decentralization
 ```
 
 ### 2. Block Gas Limit
+
+Block gas limit — это искусственный потолок на количество computation в одном блоке. Зачем он нужен? Чтобы blocks не были слишком большими и propagation по сети был быстрым.
 
 ```
 Block gas limit: ~30M gas
@@ -58,6 +80,8 @@ Real-world mix: ~15-30 TPS
 
 ### 3. Consensus Overhead
 
+Консенсус требует времени. В PoS Ethereum 800,000+ валидаторов должны "договориться" о состоянии сети. Это координационная проблема, которая не решается просто добавлением железа.
+
 ```
 PoS Ethereum:
 - Slot: 12 seconds
@@ -69,7 +93,11 @@ Faster blocks → More orphans → Less security
 
 ## Scaling Approaches
 
+Существует три фундаментально разных подхода к масштабированию: vertical (больше ресурсов), horizontal (разделение работы) и layered (вынос computation off-chain). Каждый имеет свои trade-offs.
+
 ### Vertical Scaling (Layer 1)
+
+Вертикальное масштабирование — "просто сделай ноды мощнее". Это путь, который выбрали Solana, BSC, и другие "high-performance" L1. Работает, но ценой decentralization.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -87,6 +115,8 @@ Faster blocks → More orphans → Less security
 
 ### Horizontal Scaling (Sharding)
 
+Sharding — разделение state на части (shards), каждый shard обрабатывается отдельно. Это как разделить одну большую базу данных на много маленьких. Изначально Ethereum планировал execution sharding, но этот план был отложен в пользу "rollup-centric" roadmap.
+
 ```
 ┌─────────────────────────────────────────────────┐
 │             Sharding (Danksharding)              │
@@ -102,6 +132,8 @@ Faster blocks → More orphans → Less security
 ```
 
 ### Layer 2 Scaling
+
+Layer 2 — это "умный" подход: вместо изменения L1, мы строим **отдельную систему поверх L1**, которая наследует security от L1, но выполняет транзакции off-chain. Это доминирующий подход сегодня.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -124,7 +156,11 @@ Ethereum's roadmap: "Rollup-centric" — L1 optimized for data availability, L2s
 
 ## Layer 2 Categories
 
-### State Channels
+История L2 — это эволюция от простых решений к более универсальным. Каждое поколение решало проблемы предыдущего.
+
+### State Channels (поколение 1)
+
+State channels — самый ранний подход к L2. Идея проста: два участника открывают "канал", обмениваются подписанными сообщениями off-chain, и только финальное состояние записывается on-chain.
 
 ```
 Alice ─────► Channel Contract ◄───── Bob
@@ -142,7 +178,9 @@ Alice ─────► Channel Contract ◄───── Bob
 - **Pros**: Instant finality, minimal fees
 - **Cons**: Requires both parties online, limited use cases
 
-### Plasma
+### Plasma (поколение 2)
+
+Plasma (2017) — попытка создать "дочерние цепи", которые периодически публикуют merkle root состояния на L1. Plasma обещала миллионы TPS, но столкнулась с "data availability problem" — если оператор скрывает данные, пользователи не могут доказать свои права.
 
 ```
 L1 (Ethereum)
@@ -164,12 +202,16 @@ L1 (Ethereum)
 - **Pros**: High throughput
 - **Cons**: Exit games complex, data availability issues
 
-### Rollups (Current Standard)
+### Rollups (поколение 3 — текущий стандарт)
+
+Rollups — это решение Plasma's data availability problem. Ключевое отличие: rollups публикуют **все данные транзакций** на L1, а не только state root. Это делает систему trustless — любой может верифицировать состояние.
 
 <RollupArchitectureDiagram client:load />
 
-- **Optimistic Rollups**: Assume valid, fraud proofs if challenged
-- **ZK Rollups**: Prove validity cryptographically
+Два типа rollups отличаются способом гарантии валидности:
+
+- **Optimistic Rollups**: предполагают, что всё честно. Есть "challenge period" (7 дней), в течение которого любой может доказать fraud. Arbitrum, Optimism, Base.
+- **ZK Rollups**: каждый batch сопровождается криптографическим доказательством валидности. Нет challenge period — finality сразу после proof verification. zkSync, Polygon zkEVM, Scroll.
 
 ## Current L2 Landscape
 
