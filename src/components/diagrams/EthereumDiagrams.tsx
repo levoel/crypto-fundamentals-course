@@ -195,6 +195,8 @@ export function StateTrieDiagram() {
           </div>
         </Tooltip>
 
+        <Arrow direction="down" />
+
         {/* Level 1 - Extensions */}
         <div className="flex gap-24">
           <Tooltip content={
@@ -222,6 +224,11 @@ export function StateTrieDiagram() {
           </Tooltip>
         </div>
 
+        <div className="flex gap-24">
+          <Arrow direction="down" />
+          <Arrow direction="down" />
+        </div>
+
         {/* Level 2 - Branches */}
         <div className="flex gap-8">
           <Tooltip content={
@@ -241,6 +248,13 @@ export function StateTrieDiagram() {
           <Tooltip content={<div><strong>Branch Node</strong></div>}>
             <div className="bg-amber-900/50 rounded px-3 py-1 text-xs cursor-help">[0xac]</div>
           </Tooltip>
+        </div>
+
+        <div className="flex gap-8">
+          <Arrow direction="down" />
+          <Arrow direction="down" />
+          <Arrow direction="down" />
+          <Arrow direction="down" />
         </div>
 
         {/* Level 3 - Leaves (Accounts) */}
