@@ -7,9 +7,19 @@ timeToComplete: 20
 
 # Polkadot & Parachains
 
-Polkadot — heterogeneous multi-chain protocol, где специализированные blockchains (parachains) подключаются к центральной Relay Chain для shared security.
+Polkadot — ещё один ответ на вопрос "как масштабировать blockchains". Если Cosmos говорит "каждый chain независим", Polkadot говорит "давайте shared security, но separate execution".
+
+Gavin Wood (co-founder Ethereum, создал Solidity) основал Polkadot с идеей: blockchain security — самое сложное и дорогое. Почему каждый chain должен bootstrap свой validator set? Лучше иметь **один очень secure chain** (Relay Chain), который обеспечивает security для многих **специализированных chains** (parachains).
+
+Для data engineer Polkadot интересен тем, что:
+- **Substrate** — мощный framework для custom chains с unified data model
+- **Parachains** — separate state, но connected через Relay Chain
+- **XCM messages** — cross-chain data flow для analysis
+- **Slot auctions** — unique economic data (crowdloans, bids)
 
 ## Architecture
+
+Ключевое отличие Polkadot от Cosmos: **shared security**. В Cosmos каждый chain имеет свой validator set. В Polkadot все parachains защищены **одним** validator set Relay Chain. Это упрощает security bootstrapping, но создаёт competition за parachain slots.
 
 <Callout type="note">
 Polkadot's insight: разделить консенсус и execution. Relay Chain обеспечивает security, parachains — execution.
@@ -45,7 +55,11 @@ Polkadot's insight: разделить консенсус и execution. Relay Ch
 
 ## Core Components
 
+Polkadot architecture разделена на два layer: Relay Chain (consensus, security, coordination) и Parachains (execution, state, applications).
+
 ### Relay Chain
+
+Relay Chain — "сердце" Polkadot. Она **не** выполняет smart contracts и **не** обрабатывает user transactions напрямую. Её задача: coordinate parachains, finalize blocks, pass messages. DOT staking происходит здесь.
 
 ```
 Purpose: Shared security, finality, cross-chain messaging
@@ -62,6 +76,8 @@ Does:
 ```
 
 ### Parachains
+
+Parachains — application-specific chains, которые подключаются к Relay Chain. Каждый parachain имеет свою state machine, свой token (опционально), свою logic. Но security inherit от Relay Chain — validators Relay Chain валидируют parachain blocks.
 
 ```
 Parachain = application-specific blockchain
@@ -84,7 +100,11 @@ Examples:
 
 ## Consensus
 
+Polkadot использует **hybrid consensus**: BABE для block production, GRANDPA для finality. Это разделение позволяет оптимизировать каждый компонент отдельно — fast block production + strong finality guarantees.
+
 ### BABE + GRANDPA
+
+BABE (block production) и GRANDPA (finality) работают параллельно. BABE может создавать forks (вероятностный selection), но GRANDPA финализирует целые цепочки blocks сразу. Это даёт быстрые blocks с сильной eventual finality.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -113,6 +133,8 @@ Examples:
 
 ### Nominated Proof of Stake (NPoS)
 
+NPoS — уникальный staking mechanism Polkadot. Вместо delegation (как в Cosmos), используется **nomination**. Nominators выбирают до 16 validators, которым доверяют. Алгоритм Phragmén выбирает optimal set для максимизации decentralization. И nominators, и validators могут быть slashed.
+
 ```
 Nominators → nominate validators they trust
               │
@@ -131,7 +153,11 @@ Rewards: Distributed proportionally
 
 ## Parachain Lifecycle
 
+Parachain slots — scarce resource. Их количество ограничено (~100 max), и они распределяются через **auctions**. Это создаёт unique economic dynamics: проекты конкурируют за slots, используя crowdloans для сбора DOT от community.
+
 ### Slot Auctions
+
+Slot auctions используют "candle auction" mechanism с random end time — это prevents sniping (bidding at last second). Проекты lease slots на 6 недель — 2 года. Cost: миллионы долларов в DOT equivalent.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -170,7 +196,11 @@ Alternative to permanent slot:
 
 ## Cross-Chain Messaging
 
+XCMP (Cross-Chain Message Passing) — native механизм для communication между parachains. В отличие от Cosmos IBC, XCMP **не требует relayers** — Relay Chain сама координирует message passing. Это более централизовано, но проще и быстрее.
+
 ### XCMP (Cross-Chain Message Passing)
+
+XCMP сообщения проходят через Relay Chain. Текущая реализация — HRMP (Horizontal Relay-routed Message Passing) — все messages идут через Relay Chain. Будущий full XCMP позволит direct communication между parachains.
 
 ```
 Parachain A                Relay Chain               Parachain B
@@ -222,6 +252,8 @@ let sibling_parachain = MultiLocation {
 ```
 
 ## Substrate Framework
+
+Substrate — modular framework для building blockchains, созданный Parity (компания Gavin Wood). Это "Cosmos SDK от Polkadot", но с несколькими unique features: runtime compiled to WASM, forkless upgrades (runtime обновляется через governance без hard fork), и rich ecosystem of pre-built pallets.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

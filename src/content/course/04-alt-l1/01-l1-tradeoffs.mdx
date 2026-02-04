@@ -7,15 +7,25 @@ timeToComplete: 15
 
 # L1 Trade-offs
 
-Альтернативные L1 blockchains — это попытки решить trilemma иначе, чем Ethereum. Каждый делает свои architectural trade-offs.
+Почему существует так много блокчейнов? Потому что **нет идеального решения** blockchain trilemma. Каждый L1 — это эксперимент с разными точками в пространстве trade-offs. Ethereum выбрал максимальную decentralization и security, жертвуя throughput. Другие chains делают противоположный выбор.
+
+"Blockchain wars" 2021-2022 годов показали, что рынок готов использовать менее децентрализованные chains ради низких fees и быстрых транзакций. Но также показали, что эти chains имеют свои проблемы: outages, централизация, MEV capture операторами.
+
+Для data engineer понимание Alt-L1s важно потому что:
+- **Разные data models** — Solana account model ≠ Ethereum ≠ Cosmos
+- **Разные API и RPC** — нет универсального стандарта
+- **Разные finality semantics** — когда транзакция "финальна"?
+- **Разные экосистемы** — DeFi protocols специфичны для chain
 
 ## Landscape
+
+Термин "Alt-L1" появился в 2020-2021 годах, когда gas fees на Ethereum стали prohibitive для обычных пользователей. Появилась ниша для "дешёвых" chains. Некоторые (Solana, Avalanche) строили новые протоколы с нуля. Другие (BNB Chain, Polygon) форкнули Ethereum и изменили параметры.
 
 <Callout type="note">
 "Alt-L1" — blockchains, которые конкурируют с Ethereum за smart contract execution. Каждый оптимизирует разные параметры.
 </Callout>
 
-### Market Position
+### Market Position (2024)
 
 | Chain | TPS | Finality | Validators | TVL | Approach |
 |-------|-----|----------|------------|-----|----------|
@@ -28,7 +38,11 @@ timeToComplete: 15
 
 ## Consensus Mechanisms
 
+Консенсус — сердце любого блокчейна. Это механизм, который позволяет тысячам нод договориться о том, какие транзакции валидны и в каком порядке они произошли. Разные консенсус-протоколы делают разные trade-offs между скоростью, decentralization и security guarantees.
+
 ### Proof of Stake Variants
+
+Почти все современные L1 используют PoS, но реализации радикально различаются. Ethereum's Gasper оптимизирован для максимальной decentralization (800K+ валидаторов). Tendermint оптимизирован для instant finality (но ограничен ~180 валидаторами). Solana's PoH+Tower BFT оптимизирован для throughput.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -60,6 +74,8 @@ timeToComplete: 15
 
 ### Finality Trade-offs
 
+Finality — когда транзакция становится irreversible. Это критически важно для data engineering: когда можно считать данные "финальными" и безопасно индексировать? Разные chains имеют **радикально разные** finality models.
+
 ```
 Ethereum:
   ┌─────────┐     ┌─────────┐     ┌─────────┐
@@ -85,6 +101,8 @@ Tendermint:
 ```
 
 ## Execution Models
+
+Как chain выполняет транзакции? Ethereum выполняет последовательно — каждая транзакция "видит" результат предыдущей. Solana позволяет параллельное выполнение — транзакции, которые не конфликтуют, выполняются одновременно. Это fundamental architectural choice, который влияет на throughput и programming model.
 
 ### Sequential vs Parallel
 
@@ -118,7 +136,11 @@ Solana (Parallel):
 
 ## Validator Economics
 
+Hardware requirements напрямую влияют на decentralization. Если для запуска validator нужен datacenter с 256GB RAM и 10Gbps сетью — количество validators будет ограничено крупными операторами. Если достаточно домашнего компьютера — network будет более distributed.
+
 ### Hardware Requirements
+
+Обратите внимание на 60x разницу в стоимости между Ethereum и Solana validators. Это не баг — это design choice.
 
 ```
 Ethereum:

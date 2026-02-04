@@ -7,15 +7,29 @@ timeToComplete: 20
 
 # Solana Architecture
 
-Solana — high-performance blockchain, оптимизированный для throughput. Достигает 3,000+ TPS за счёт novel инноваций и требовательного hardware.
+Solana — радикально другой подход к blockchain design. В то время как Ethereum оптимизирует для decentralization (любой может запустить ноду на домашнем компьютере), Solana оптимизирует для **raw throughput** за счёт требовательного hardware.
+
+Anatoly Yakovenko (основатель) пришёл из Qualcomm и применил телеком-мышление: если hardware становится дешевле по закону Мура, почему бы не использовать его по максимуму? Результат: 3,000+ TPS, 400ms block time, sub-cent fees. Цена: validators требуют datacenter-grade оборудования (~$30K/год).
+
+Для data engineer Solana интересна тем, что:
+- **Account model** отличается от Ethereum — всё является account (programs, data, tokens)
+- **Parallel execution** создаёт другие data patterns — нет total ordering как в Ethereum
+- **High throughput** означает много данных — терабайты в день
+- **RPC инфраструктура** специфична — нужны специализированные providers (Helius, Triton)
 
 ## Core Innovations
+
+Solana не просто "быстрый Ethereum". Это полностью переосмысленный stack с 8 novel innovations, каждая из которых решает конкретный bottleneck.
+
+Главный insight: в традиционных blockchains **время** — bottleneck. Nodes должны договориться не только о том, какие транзакции валидны, но и **когда** они произошли. Proof of History решает это, создавая trustless clock.
 
 <Callout type="note">
 Solana's key insight: время — bottleneck для консенсуса. Proof of History создаёт trustless clock для ordering событий.
 </Callout>
 
 ### 8 Key Innovations
+
+Каждая инновация решает конкретный bottleneck в blockchain throughput. Вместе они создают synergetic effect.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -36,6 +50,10 @@ Solana's key insight: время — bottleneck для консенсуса. Pro
 
 ## Proof of History
 
+Proof of History — самая уникальная инновация Solana. Это **не** consensus mechanism (частое заблуждение). PoH — это **cryptographic clock**, которая доказывает, что определённое количество времени прошло между событиями.
+
+Зачем это нужно? В традиционных blockchains nodes должны обмениваться сообщениями для ordering транзакций. Это занимает время и bandwidth. С PoH ordering уже "встроен" — каждый event имеет timestamp, который **невозможно подделать**.
+
 PoH — это VDF (Verifiable Delay Function), которая создаёт криптографический timestamp:
 
 ```
@@ -51,7 +69,9 @@ Verify: Любой может проверить, пересчитав хеши
         Нельзя создать быстрее, чем последовательно
 ```
 
-### PoH + Consensus
+### PoH + Consensus (Tower BFT)
+
+PoH работает вместе с Tower BFT — оптимизированным BFT консенсусом. Leader производит блоки с PoH timestamps, другие validators vote за эти блоки. Votes имеют "lockout" — чем дольше validator голосовал за определённую fork, тем сложнее ему переключиться. Это создаёт экономические incentives для честного поведения.
 
 ```
 Leader Schedule:
@@ -73,11 +93,17 @@ Tower BFT: Votes have increasing lockout times
 
 ## Account Model
 
+Account model — одно из главных отличий Solana от Ethereum. В Ethereum есть два типа: EOA (пользователи) и Contract (код+данные вместе). В Solana **всё** — это account: код, данные, токены, NFT. Programs (аналог smart contracts) — это accounts с `executable: true`.
+
+Ключевое отличие: в Solana **код и данные разделены**. Program — это stateless код. Данные хранятся в отдельных accounts, которые "owned" программой. Это позволяет parallel execution — разные accounts можно обрабатывать параллельно.
+
 <Callout type="warning">
 Solana accounts ≠ Ethereum accounts. Всё — это account, включая программы и данные.
 </Callout>
 
 ### Account Structure
+
+Каждый account имеет owner (программу, которая может модифицировать данные), lamports (native SOL balance), и data (произвольные байты).
 
 ```rust
 pub struct Account {
@@ -99,6 +125,8 @@ pub struct Account {
 ```
 
 ### Account Ownership
+
+В Solana есть иерархия ownership. System Program владеет "обычными" SOL accounts. Token Program владеет token accounts. Custom programs владеют своими data accounts. Только owner может модифицировать account data.
 
 ```
 ┌───────────────────────────────────────────────────────────┐
@@ -131,6 +159,10 @@ pub struct Account {
 
 ## Sealevel: Parallel Execution
 
+Sealevel — runtime Solana, который позволяет parallel smart contract execution. Ключ: транзакции **заранее объявляют**, какие accounts они будут читать/писать. Runtime строит dependency graph и выполняет независимые транзакции параллельно.
+
+Это радикально отличается от EVM, где каждая транзакция может "случайно" обратиться к любому storage slot. В Solana если ты не объявил account — ты не можешь его использовать. Это ограничение, но оно enables massive parallelism.
+
 ```rust
 // Transaction must declare all accounts it will access
 let tx = Transaction::new_signed_with_payer(
@@ -153,6 +185,8 @@ let instruction = Instruction {
 
 ### Parallel Scheduling
 
+Runtime анализирует declared accounts и строит dependency graph. Транзакции, которые не конфликтуют (не пишут в одни accounts), выполняются параллельно на разных CPU cores.
+
 ```
 Transactions in block:
   Tx1: accounts [A, B] (write A, read B)
@@ -174,6 +208,8 @@ Parallel execution:
 ```
 
 ## Transaction Structure
+
+Solana транзакции отличаются от Ethereum. Вместо call single contract, транзакция может содержать **multiple instructions**, каждая вызывает свою program. Все instructions атомарны — либо все успешны, либо все откатываются.
 
 ```rust
 pub struct Transaction {
@@ -200,6 +236,8 @@ pub struct Message {
 ```
 
 ### Transaction Fees
+
+Fees в Solana состоят из base fee (фиксированный) и priority fee (опциональный, для приоритизации). В отличие от Ethereum, fees очень низкие — обычно менее $0.01. Но priority fees могут взлетать во время congestion (NFT mints, memecoin launches).
 
 ```
 Base fee: 5,000 lamports (0.000005 SOL)
@@ -257,7 +295,11 @@ ORDER BY date DESC;
 
 ## Challenges
 
+Solana's aggressive design имеет trade-offs. Высокий throughput означает complex distributed systems, которые могут ломаться. Centralized validator requirements означают меньше resilience.
+
 ### Outages
+
+Solana испытала множество outages в 2021-2023 годах — сеть полностью останавливалась на часы. Это критика №1 от сообщества. Причины разнообразны: от spam attacks до bugs в consensus code.
 
 ```
 Historical outages (2021-2023):
@@ -272,6 +314,8 @@ Root causes:
 ```
 
 ### State Growth
+
+High throughput = много данных. Solana state растёт быстро, и validators должны держать его в RAM для performance. Это усугубляет hardware requirements и централизацию.
 
 ```
 Current state: ~200GB and growing

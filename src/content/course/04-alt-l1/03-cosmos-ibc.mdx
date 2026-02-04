@@ -7,9 +7,21 @@ timeToComplete: 20
 
 # Cosmos & IBC
 
-Cosmos — экосистема независимых blockchains (app-chains), связанных через IBC (Inter-Blockchain Communication). Философия: "blockchain of blockchains".
+Cosmos представляет **третий путь** в blockchain design. Ethereum: один chain, много apps. Solana: один быстрый chain. Cosmos: **много специализированных chains**, связанных протоколом.
+
+Философия Cosmos: каждое приложение заслуживает своего blockchain с полным **суверенитетом** над правилами, fee structure, governance. dYdX не хочет конкурировать за block space с NFT проектами. Osmosis хочет свою token economics. Celestia хочет оптимизировать только DA.
+
+IBC (Inter-Blockchain Communication) — это "TCP/IP для блокчейнов", протокол, который позволяет этим независимым chains обмениваться токенами и сообщениями trustlessly.
+
+Для data engineer Cosmos интересен тем, что:
+- **Много chains** — нужно индексировать десятки независимых networks
+- **IBC transfers** — cross-chain data flow создаёт complex graph
+- **Каждый chain уникален** — разные APIs, разные modules
+- **Tendermint finality** — instant finality упрощает indexing (нет reorgs)
 
 ## Cosmos vs Monolithic Chains
+
+Сравним два подхода. На Ethereum Uniswap, Aave, и тысячи других protocols живут на одном chain. Они **конкурируют** за block space, **делят** security, и **связаны** общим state. На Cosmos каждый major protocol — **отдельный blockchain** со своими validators, своим token, своей governance.
 
 <Callout type="note">
 Cosmos approach: каждое приложение — отдельный blockchain с суверенитетом над своими правилами. IBC соединяет их.
@@ -43,7 +55,13 @@ Cosmos (App-Chains):
 
 ## Cosmos SDK
 
+Cosmos SDK — framework для building application-specific blockchains. Вместо того чтобы писать smart contracts, ты пишешь **modules** — Rust или Go код, который напрямую интегрируется в blockchain runtime. Это даёт полный контроль над state machine.
+
+Think of it as: Ethereum = runtime platform (EVM) + apps (contracts). Cosmos SDK = framework для создания custom runtimes.
+
 ### Module Architecture
+
+Cosmos SDK app состоит из modules, каждый отвечает за свой domain. Bank module — transfers. Staking — validators. Gov — voting. Ты можешь использовать ready-made modules и добавить custom logic.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -87,7 +105,13 @@ ABCI позволяет писать app logic на любом языке
 
 ## Tendermint Consensus
 
+Tendermint — BFT (Byzantine Fault Tolerant) consensus engine, который используется почти всеми Cosmos chains. Главное свойство: **instant finality**. Когда блок committed — он финален. Нет probabilistic confirmation как в Ethereum, нет reorgs.
+
+Trade-off: Tendermint требует 2/3+ валидаторов online. Если больше 1/3 offline — сеть **останавливается** (но не делает invalid commits). Это "safety over liveness" design.
+
 ### BFT Rounds
+
+Tendermint работает в rounds. Каждый round имеет proposer (выбирается детерминистично). Если proposer не предложил блок вовремя — timeout и новый round с новым proposer.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -132,7 +156,13 @@ Trade-off: requires 2/3+ online validators
 
 ## IBC Protocol
 
+IBC — **trustless** cross-chain communication protocol. Это не bridge с multisig (как большинство Ethereum bridges). IBC использует **light clients** — каждый chain хранит cryptographic proof состояния другого chain. Если counterparty chain лжёт — light client это обнаружит.
+
+IBC — это TCP/IP layer для blockchains. Он не специфичен для tokens — можно передавать любые данные: governance votes, oracle data, arbitrary messages.
+
 ### Core Components
+
+IBC architecture состоит из 4 layers: Light Clients (track consensus state), Connections (authenticated links), Channels (app-level paths), Packets (actual data).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -183,6 +213,8 @@ Chain A                    Relayer                    Chain B
 
 ### Relayers
 
+Relayers — off-chain software, который "носит" пакеты между chains. Важно: relayers не trusted! Они просто передают data и proofs. Если relayer лжёт — light client отклонит невалидный proof. Permissionless: любой может запустить relayer.
+
 ```
 Relayers = off-chain processes that:
 - Monitor IBC events on chains
@@ -210,7 +242,9 @@ Major relayers:
 | Celestia | DA Layer | ~100 | 5+ |
 | Injective | DeFi | ~50 | 20+ |
 
-### Interchain Security
+### Interchain Security (ICS)
+
+Проблема app-chains: каждый chain должен bootstrap свой validator set и security. Для нового проекта это сложно — нужно привлечь капитал и validators. Interchain Security решает это: новые chains могут "арендовать" security у Cosmos Hub. ATOM stakers валидируют multiple chains и получают rewards от всех.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
