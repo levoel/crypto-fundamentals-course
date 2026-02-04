@@ -329,9 +329,23 @@ export function P2PNetworkDiagram() {
 }
 
 export function MerkleTreeDetailedDiagram() {
+  // Arrow component for tree connections
+  const TreeArrow = () => (
+    <svg className="w-4 h-3 text-green-500/50" viewBox="0 0 16 12" fill="none">
+      <path d="M8 0 L8 8 M4 4 L8 8 L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+
+  // Double arrow for branching
+  const BranchArrows = () => (
+    <svg className="w-12 h-4 text-green-500/50" viewBox="0 0 48 16" fill="none">
+      <path d="M24 0 L24 4 M24 4 L12 12 M24 4 L36 12 M8 8 L12 12 L16 8 M32 8 L36 12 L40 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+
   return (
     <DiagramContainer title="Merkle Tree Structure" color="green">
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-1">
         {/* Root */}
         <Tooltip content={
           <div>
@@ -345,6 +359,9 @@ export function MerkleTreeDetailedDiagram() {
             <div className="text-xs text-gray-400 text-center">HABCDEFGH</div>
           </div>
         </Tooltip>
+
+        {/* Arrow: Root -> Level 1 */}
+        <BranchArrows />
 
         {/* Level 1 */}
         <div className="flex gap-16">
@@ -367,6 +384,12 @@ export function MerkleTreeDetailedDiagram() {
           </Tooltip>
         </div>
 
+        {/* Arrow: Level 1 -> Level 2 */}
+        <div className="flex gap-8">
+          <BranchArrows />
+          <BranchArrows />
+        </div>
+
         {/* Level 2 */}
         <div className="flex gap-8">
           <Tooltip content={<div><strong>HAB</strong> = hash(HA + HB)</div>}>
@@ -383,6 +406,13 @@ export function MerkleTreeDetailedDiagram() {
           </Tooltip>
         </div>
 
+        {/* Arrow: Level 2 -> Level 3 */}
+        <div className="flex gap-1">
+          {[0, 1, 2, 3].map((i) => (
+            <BranchArrows key={i} />
+          ))}
+        </div>
+
         {/* Level 3 - Transaction hashes */}
         <div className="flex gap-2">
           {['HA', 'HB', 'HC', 'HD', 'HE', 'HF', 'HG', 'HH'].map((h, i) => (
@@ -392,8 +422,15 @@ export function MerkleTreeDetailedDiagram() {
           ))}
         </div>
 
+        {/* Arrow: Level 3 -> Transactions */}
+        <div className="flex gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <TreeArrow key={i} />
+          ))}
+        </div>
+
         {/* Transactions */}
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2">
           {['TxA', 'TxB', 'TxC', 'TxD', 'TxE', 'TxF', 'TxG', 'TxH'].map((tx) => (
             <Tooltip key={tx} content={
               <div>
