@@ -6,6 +6,8 @@ import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip as Tooltip } from '@primitives/Tooltip';
+import { SequenceDiagram } from '@primitives/SequenceDiagram';
+import type { SequenceActorDef, SequenceMessageDef } from '@primitives/types';
 
 export function RollupArchitectureDiagram() {
   return (
@@ -328,31 +330,92 @@ export function InteractiveBisectionDiagram() {
 }
 
 export function WithdrawalFlowDiagram() {
-  const steps = [
-    { num: 1, label: 'Initiate', desc: 'User initiates withdrawal on L2' },
-    { num: 2, label: 'Include', desc: 'Withdrawal tx included in L2 batch' },
-    { num: 3, label: 'Post', desc: 'Batch posted to L1' },
-    { num: 4, label: 'Challenge', desc: '7 day challenge period starts' },
-    { num: 5, label: 'Wait', desc: 'No valid fraud proof submitted' },
-    { num: 6, label: 'Claim', desc: 'User can claim on L1' },
+  const actors: SequenceActorDef[] = [
+    {
+      id: 'user',
+      label: 'User',
+      variant: 'external',
+      tooltip: 'Пользователь, который хочет вывести средства с L2 на L1.',
+    },
+    {
+      id: 'l2',
+      label: 'L2 Sequencer',
+      variant: 'service',
+      tooltip: 'Обрабатывает транзакции на Layer 2 и формирует батчи для отправки на L1.',
+    },
+    {
+      id: 'l1inbox',
+      label: 'L1 Inbox',
+      variant: 'queue',
+      tooltip: 'Smart contract на Ethereum, принимающий батчи от sequencer.',
+    },
+    {
+      id: 'l1contract',
+      label: 'Rollup Contract',
+      variant: 'database',
+      tooltip: 'Главный контракт rollup на L1. Хранит state roots и обрабатывает withdrawals.',
+    },
+  ];
+
+  const messages: SequenceMessageDef[] = [
+    {
+      id: 'msg1',
+      from: 'user',
+      to: 'l2',
+      label: 'Initiate withdrawal',
+      variant: 'sync',
+      tooltip: 'Пользователь отправляет транзакцию вывода на L2. Средства блокируются.',
+    },
+    {
+      id: 'msg2',
+      from: 'l2',
+      to: 'l1inbox',
+      label: 'Post batch',
+      variant: 'async',
+      tooltip: 'Sequencer включает withdrawal в batch и отправляет на L1.',
+    },
+    {
+      id: 'msg3',
+      from: 'l1inbox',
+      to: 'l1contract',
+      label: 'State root + data',
+      variant: 'sync',
+      tooltip: 'Батч записывается в контракт. Начинается 7-дневный challenge period.',
+    },
+    {
+      id: 'msg4',
+      from: 'l1contract',
+      to: 'l1contract',
+      label: '7 day challenge',
+      variant: 'async',
+      tooltip: 'Период ожидания fraud proofs. Любой может оспорить невалидное состояние.',
+    },
+    {
+      id: 'msg5',
+      from: 'user',
+      to: 'l1contract',
+      label: 'Prove withdrawal',
+      variant: 'sync',
+      tooltip: 'После challenge period пользователь отправляет Merkle proof для withdrawal.',
+    },
+    {
+      id: 'msg6',
+      from: 'l1contract',
+      to: 'user',
+      label: 'ETH',
+      variant: 'return',
+      tooltip: 'Контракт проверяет proof и отправляет ETH на адрес пользователя.',
+    },
   ];
 
   return (
     <DiagramContainer title="Optimistic Rollup Withdrawal Flow" color="rose">
-      <div className="space-y-3">
-        <div className="flex flex-wrap justify-center gap-2">
-          {steps.map((step, i) => (
-            <div key={step.num} className="flex items-center">
-              <Tooltip content={<div><strong>Step {step.num}</strong><p className="mt-1">{step.desc}</p></div>}>
-                <div className={`rounded-lg px-3 py-2 cursor-help text-center min-w-[70px] ${step.num === 4 ? 'bg-rose-500/30 border-rose-500/50' : 'bg-gray-700/50 border-gray-600'} border`}>
-                  <div className="text-xs font-bold text-gray-300">{step.num}</div>
-                  <div className="text-xs mt-1">{step.label}</div>
-                </div>
-              </Tooltip>
-              {i < steps.length - 1 && <Arrow direction="right" className="mx-1" />}
-            </div>
-          ))}
-        </div>
+      <SequenceDiagram
+        actors={actors}
+        messages={messages}
+        messageSpacing={45}
+      />
+      <div className="mt-4 pt-3 border-t border-gray-700">
         <Tooltip content={<div><strong>Alternative: Bridge</strong><p className="mt-1">Liquidity providers дают instant withdrawal, сами ждут 7 дней</p></div>}>
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2 text-center cursor-help">
             <span className="text-green-300 text-sm">Alternative: Use bridge for instant withdrawal</span>
@@ -365,11 +428,46 @@ export function WithdrawalFlowDiagram() {
 
 export function ZkEVMSpectrumDiagram() {
   const types = [
-    { type: 'Type 1', name: 'Ethereum-equivalent', desc: 'Proves actual Ethereum blocks', examples: '(in development)', color: 'blue' },
-    { type: 'Type 2', name: 'EVM-equivalent', desc: '100% Solidity compatible', examples: 'Scroll, Polygon zkEVM', color: 'green' },
-    { type: 'Type 2.5', name: 'EVM except gas', desc: 'Different gas costs for some opcodes', examples: 'Scroll (current)', color: 'teal' },
-    { type: 'Type 3', name: 'Almost EVM', desc: 'Most contracts work, some edge cases differ', examples: '(transitional)', color: 'amber' },
-    { type: 'Type 4', name: 'Language-equivalent', desc: 'Compiles to ZK-friendly VM', examples: 'zkSync Era, StarkNet', color: 'purple' },
+    {
+      type: 'Type 1',
+      name: 'Ethereum-equivalent',
+      desc: 'Proves actual Ethereum blocks',
+      examples: '(in development)',
+      bgClass: 'bg-blue-500/20 border-blue-500/50',
+      textClass: 'text-blue-300',
+    },
+    {
+      type: 'Type 2',
+      name: 'EVM-equivalent',
+      desc: '100% Solidity compatible',
+      examples: 'Scroll, Polygon zkEVM',
+      bgClass: 'bg-green-500/20 border-green-500/50',
+      textClass: 'text-green-300',
+    },
+    {
+      type: 'Type 2.5',
+      name: 'EVM except gas',
+      desc: 'Different gas costs for some opcodes',
+      examples: 'Scroll (current)',
+      bgClass: 'bg-teal-500/20 border-teal-500/50',
+      textClass: 'text-teal-300',
+    },
+    {
+      type: 'Type 3',
+      name: 'Almost EVM',
+      desc: 'Most contracts work, some edge cases differ',
+      examples: '(transitional)',
+      bgClass: 'bg-amber-500/20 border-amber-500/50',
+      textClass: 'text-amber-300',
+    },
+    {
+      type: 'Type 4',
+      name: 'Language-equivalent',
+      desc: 'Compiles to ZK-friendly VM',
+      examples: 'zkSync Era, StarkNet',
+      bgClass: 'bg-purple-500/20 border-purple-500/50',
+      textClass: 'text-purple-300',
+    },
   ];
 
   return (
@@ -377,8 +475,8 @@ export function ZkEVMSpectrumDiagram() {
       <div className="space-y-2">
         {types.map((t) => (
           <Tooltip key={t.type} content={<div><strong>{t.type}: {t.name}</strong><p className="mt-1">{t.desc}</p><p className="mt-1 text-gray-400 text-xs">Examples: {t.examples}</p></div>}>
-            <div className={`bg-${t.color}-500/20 border border-${t.color}-500/50 rounded px-4 py-2 cursor-help flex justify-between items-center`}>
-              <span className={`text-${t.color}-300 font-bold text-sm`}>{t.type}</span>
+            <div className={`${t.bgClass} border rounded px-4 py-2 cursor-help flex justify-between items-center`}>
+              <span className={`${t.textClass} font-bold text-sm`}>{t.type}</span>
               <span className="text-gray-300 text-sm">{t.name}</span>
             </div>
           </Tooltip>
@@ -804,42 +902,104 @@ export function ProofAggregationDiagram() {
 }
 
 export function StateChannelDiagram() {
+  const actors: SequenceActorDef[] = [
+    {
+      id: 'alice',
+      label: 'Alice',
+      variant: 'external',
+      tooltip: 'Участник A канала. Блокирует свои средства в контракте при открытии.',
+    },
+    {
+      id: 'contract',
+      label: 'Channel Contract',
+      variant: 'database',
+      tooltip: 'Smart contract на L1, который хранит заблокированные средства и разрешает споры.',
+    },
+    {
+      id: 'bob',
+      label: 'Bob',
+      variant: 'external',
+      tooltip: 'Участник B канала. Блокирует свои средства в контракте при открытии.',
+    },
+  ];
+
+  const messages: SequenceMessageDef[] = [
+    {
+      id: 'msg1',
+      from: 'alice',
+      to: 'contract',
+      label: 'Deposit 1 ETH',
+      variant: 'sync',
+      tooltip: 'Alice блокирует 1 ETH в контракте канала.',
+    },
+    {
+      id: 'msg2',
+      from: 'bob',
+      to: 'contract',
+      label: 'Deposit 1 ETH',
+      variant: 'sync',
+      tooltip: 'Bob блокирует 1 ETH в контракте канала. Канал открыт!',
+    },
+    {
+      id: 'msg3',
+      from: 'alice',
+      to: 'bob',
+      label: 'Signed state #1',
+      variant: 'async',
+      tooltip: 'Off-chain: Alice отправляет Bob подписанное состояние. Мгновенно и бесплатно!',
+    },
+    {
+      id: 'msg4',
+      from: 'bob',
+      to: 'alice',
+      label: 'Signed state #2',
+      variant: 'async',
+      tooltip: 'Off-chain: Bob отправляет обновленное состояние Alice.',
+    },
+    {
+      id: 'msg5',
+      from: 'alice',
+      to: 'bob',
+      label: 'Signed state #N',
+      variant: 'async',
+      tooltip: 'Множество off-chain транзакций без газа.',
+    },
+    {
+      id: 'msg6',
+      from: 'alice',
+      to: 'contract',
+      label: 'Close (final state)',
+      variant: 'sync',
+      tooltip: 'Любая сторона может закрыть канал, отправив последнее подписанное состояние.',
+    },
+    {
+      id: 'msg7',
+      from: 'contract',
+      to: 'alice',
+      label: '0.5 ETH',
+      variant: 'return',
+      tooltip: 'Контракт распределяет средства согласно финальному состоянию.',
+    },
+    {
+      id: 'msg8',
+      from: 'contract',
+      to: 'bob',
+      label: '1.5 ETH',
+      variant: 'return',
+      tooltip: 'Bob получает 1.5 ETH (1 + 0.5 от Alice).',
+    },
+  ];
+
   return (
     <DiagramContainer title="State Channel Flow" color="blue">
-      <div className="flex flex-col gap-2">
-        <Tooltip content={<div><strong>Open Channel</strong><p className="mt-1">Lock funds in contract on L1</p></div>}>
-          <div className="flex items-center justify-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded p-2 cursor-help">
-            <div className="bg-blue-500/20 rounded px-2 py-1 text-xs">Alice</div>
-            <Arrow direction="right" />
-            <div className="bg-blue-500/30 border border-blue-500/50 rounded px-3 py-1 text-xs">Channel Contract</div>
-            <Arrow direction="left" />
-            <div className="bg-blue-500/20 rounded px-2 py-1 text-xs">Bob</div>
-          </div>
-        </Tooltip>
-
-        <Arrow direction="down" className="self-center" />
-
-        <Tooltip content={<div><strong>Off-chain</strong><p className="mt-1">Exchange signed messages instantly</p></div>}>
-          <div className="bg-green-500/10 border border-green-500/30 rounded p-2 cursor-help text-center">
-            <div className="text-green-300 text-xs font-bold">Off-chain Messages</div>
-            <div className="text-xs text-gray-400">Alice ↔ Bob (instant, free)</div>
-          </div>
-        </Tooltip>
-
-        <Arrow direction="down" className="self-center" />
-
-        <Tooltip content={<div><strong>Close Channel</strong><p className="mt-1">Submit final state to L1</p></div>}>
-          <div className="flex items-center justify-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded p-2 cursor-help">
-            <div className="bg-amber-500/20 rounded px-2 py-1 text-xs">Final State</div>
-            <Arrow direction="right" />
-            <div className="bg-amber-500/30 border border-amber-500/50 rounded px-3 py-1 text-xs">On-chain Settlement</div>
-          </div>
-        </Tooltip>
-
-        <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-          <div className="text-green-400">✅ Instant finality, minimal fees</div>
-          <div className="text-rose-400">❌ Both parties must be online</div>
-        </div>
+      <SequenceDiagram
+        actors={actors}
+        messages={messages}
+        messageSpacing={40}
+      />
+      <div className="grid grid-cols-2 gap-2 text-xs mt-4 pt-3 border-t border-gray-700">
+        <div className="text-green-400">✅ Instant finality, minimal fees</div>
+        <div className="text-rose-400">❌ Both parties must be online</div>
       </div>
     </DiagramContainer>
   );
@@ -985,85 +1145,73 @@ export function EigenDADiagram() {
 }
 
 export function ZKProofFlowDiagram() {
+  const actors: SequenceActorDef[] = [
+    {
+      id: 'prover',
+      label: 'Prover',
+      variant: 'service',
+      tooltip: 'Знает секрет x, хочет доказать f(x) = y не раскрывая x. Вычислительно затратный процесс (GPU кластеры).',
+    },
+    {
+      id: 'verifier',
+      label: 'Verifier',
+      variant: 'database',
+      tooltip: 'Проверяет доказательство не узнавая x. O(1) время верификации, ~500K gas on-chain.',
+    },
+  ];
+
+  const messages: SequenceMessageDef[] = [
+    {
+      id: 'msg1',
+      from: 'prover',
+      to: 'verifier',
+      label: 'Claim: "I know x"',
+      variant: 'sync',
+      tooltip: 'Prover заявляет, что знает x такой что f(x) = y.',
+    },
+    {
+      id: 'msg2',
+      from: 'prover',
+      to: 'prover',
+      label: 'Generate proof',
+      variant: 'async',
+      tooltip: 'Prover генерирует криптографическое доказательство. SNARK: ~200 bytes, STARK: ~50 KB.',
+    },
+    {
+      id: 'msg3',
+      from: 'prover',
+      to: 'verifier',
+      label: 'Proof π',
+      variant: 'sync',
+      tooltip: 'Криптографическое доказательство, которое не раскрывает x но доказывает знание.',
+    },
+    {
+      id: 'msg4',
+      from: 'verifier',
+      to: 'verifier',
+      label: 'Verify(π, y)',
+      variant: 'async',
+      tooltip: 'Verifier проверяет доказательство за O(1) время.',
+    },
+    {
+      id: 'msg5',
+      from: 'verifier',
+      to: 'prover',
+      label: 'true / false',
+      variant: 'return',
+      tooltip: 'Результат верификации. Verifier ничего не узнал о x.',
+    },
+  ];
+
   return (
     <DiagramContainer title="Zero-Knowledge Proof Flow" color="purple">
-      <div className="flex items-start gap-6 justify-center">
-        {/* Prover */}
-        <Tooltip content={
-          <div>
-            <strong className="text-purple-300">Prover</strong>
-            <p className="mt-2">Knows secret x, wants to prove f(x) = y without revealing x</p>
-            <p className="mt-1 text-gray-400 text-xs">Computationally expensive (GPU clusters)</p>
-          </div>
-        }>
-          <div className="bg-purple-500/20 border border-purple-500/50 rounded-lg p-4 cursor-help w-32 text-center">
-            <div className="text-purple-300 font-bold">Prover</div>
-            <div className="text-xs text-gray-400 mt-2">Knows: x</div>
-            <div className="text-xs text-gray-400">f(x) = y</div>
-          </div>
-        </Tooltip>
-
-        {/* Arrows and messages */}
-        <div className="flex flex-col gap-4 pt-4">
-          {/* Claim */}
-          <Tooltip content={<div><strong>Claim</strong><p className="mt-1">Prover claims to know x such that f(x) = y</p></div>}>
-            <div className="flex items-center gap-2 cursor-help">
-              <div className="w-24 border-t-2 border-purple-400"></div>
-              <span className="text-purple-400">→</span>
-              <div className="text-xs text-gray-400 whitespace-nowrap">"I know x: f(x)=y"</div>
-            </div>
-          </Tooltip>
-
-          {/* Proof */}
-          <Tooltip content={
-            <div>
-              <strong className="text-green-300">Proof π</strong>
-              <p className="mt-2">Cryptographic proof that doesn't reveal x but proves knowledge</p>
-              <ul className="mt-1 text-xs space-y-1">
-                <li>• SNARK: ~200 bytes</li>
-                <li>• STARK: ~50 KB</li>
-              </ul>
-            </div>
-          }>
-            <div className="flex items-center gap-2 cursor-help">
-              <div className="w-24 border-t-2 border-green-400"></div>
-              <span className="text-green-400">→</span>
-              <div className="text-xs text-green-300 whitespace-nowrap">Proof π</div>
-            </div>
-          </Tooltip>
-
-          {/* Verification result */}
-          <Tooltip content={<div><strong>Verification</strong><p className="mt-1">Verifier checks proof in O(1) time</p></div>}>
-            <div className="flex items-center gap-2 cursor-help">
-              <div className="w-24 border-t-2 border-dashed border-gray-500"></div>
-              <span className="text-gray-500">←</span>
-              <div className="text-xs text-gray-400 whitespace-nowrap">true / false</div>
-            </div>
-          </Tooltip>
-        </div>
-
-        {/* Verifier */}
-        <Tooltip content={
-          <div>
-            <strong className="text-blue-300">Verifier</strong>
-            <p className="mt-2">Verifies proof without learning x</p>
-            <ul className="mt-1 text-xs space-y-1">
-              <li>• O(1) verification time</li>
-              <li>• ~500K gas on-chain</li>
-              <li>• Zero-knowledge: learns nothing about x</li>
-            </ul>
-          </div>
-        }>
-          <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 cursor-help w-32 text-center">
-            <div className="text-blue-300 font-bold">Verifier</div>
-            <div className="text-xs text-gray-400 mt-2">Verify(π, y)</div>
-            <div className="text-xs text-green-400 mt-1">O(1) time</div>
-          </div>
-        </Tooltip>
-      </div>
-
+      <SequenceDiagram
+        actors={actors}
+        messages={messages}
+        messageSpacing={50}
+      />
       {/* Properties */}
-      <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
+      <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-700 text-xs">
         <Tooltip content={<div><strong>Completeness</strong><p className="mt-1">Honest prover always convinces verifier</p></div>}>
           <div className="bg-gray-700/50 rounded p-2 cursor-help text-center">
             <div className="text-green-300">Completeness</div>
