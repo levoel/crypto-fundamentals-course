@@ -9,138 +9,243 @@ import { UTXODiagram } from '../../../components/diagrams/BitcoinDiagrams';
 
 # UTXO Model
 
-UTXO (Unspent Transaction Output) — фундаментальная модель данных Bitcoin. В отличие от банковских систем, где хранится баланс аккаунта, Bitcoin хранит набор **неизрасходованных выходов транзакций**.
+UTXO (Unspent Transaction Output) — фундаментальная модель данных Bitcoin. Это одно из ключевых архитектурных решений Сатоши Накамото, которое отличает Bitcoin от традиционных банковских систем и даже от многих других блокчейнов. Вместо того чтобы хранить "баланс счёта", Bitcoin хранит набор **неизрасходованных выходов транзакций** — дискретных "монет" разного номинала.
 
-## Концепция
+Почему это важно для data engineer? Понимание UTXO модели критично для:
+- Правильного расчёта балансов и отслеживания движения средств
+- Анализа транзакционных паттернов и кластеризации адресов
+- Понимания fee market и оптимизации транзакций
+- Работы с Bitcoin данными в аналитических системах
+
+## Концепция UTXO
 
 <Callout type="note">
-В Bitcoin нет понятия "баланс аккаунта". Есть только UTXO — монеты, которые можно потратить.
+В Bitcoin нет понятия "баланс аккаунта". Есть только UTXO — монеты, которые можно потратить. Кошелёк суммирует все ваши UTXO и показывает "баланс", но это абстракция интерфейса.
 </Callout>
 
 ### Аналогия с наличными
 
-Представь кошелёк с купюрами:
-- У тебя есть купюры: 100₽, 50₽, 20₽ (это UTXO)
-- Твой "баланс" = 170₽ (сумма всех купюр)
-- Чтобы заплатить 70₽, ты отдаёшь 100₽ и получаешь сдачу 30₽
+Лучшая аналогия для UTXO — это наличные деньги. Представь кошелёк с купюрами:
+
+- У тебя есть купюры: 100₽, 50₽, 20₽ — это три отдельных UTXO
+- Твой "баланс" = 170₽ — это сумма номиналов всех купюр
+- Чтобы заплатить 70₽, ты не можешь "отрезать" часть купюры
+- Ты отдаёшь 100₽ целиком и получаешь сдачу 30₽
+
+Точно так же работает Bitcoin: ты не можешь потратить "часть" UTXO. Каждый UTXO тратится целиком, а разница возвращается как новый UTXO (сдача).
 
 <UTXODiagram client:load />
 
+### Как работает транзакция
+
+Транзакция Bitcoin — это трансформация UTXO: она **уничтожает** существующие UTXO (inputs) и **создаёт** новые (outputs). Сумма inputs должна быть >= суммы outputs, разница — это fee для майнера.
+
+```
+Inputs (уничтожаем):           Outputs (создаём):
+┌──────────────────────┐       ┌──────────────────────┐
+│ UTXO #1: 0.5 BTC     │       │ Получателю: 0.7 BTC  │
+│ (от предыдущей tx)   │──────▶│                      │
+├──────────────────────┤       ├──────────────────────┤
+│ UTXO #2: 0.3 BTC     │       │ Сдача: 0.099 BTC     │
+│ (от другой tx)       │       │ (мне обратно)        │
+└──────────────────────┘       └──────────────────────┘
+
+Sum(inputs) = 0.8 BTC
+Sum(outputs) = 0.799 BTC
+Fee = 0.001 BTC (достаётся майнеру)
+```
+
 ### Структура транзакции
+
+Каждая транзакция содержит inputs (ссылки на UTXO, которые тратим) и outputs (новые UTXO, которые создаём):
 
 ```json
 {
   "txid": "abc123...",
   "inputs": [
     {
-      "prev_txid": "def456...",
-      "prev_output_index": 0,
-      "script_sig": "..."
+      "prev_txid": "def456...",      // ID транзакции, создавшей этот UTXO
+      "prev_output_index": 0,         // Индекс output в той транзакции
+      "script_sig": "..."             // Подпись, доказывающая право тратить
     }
   ],
   "outputs": [
     {
-      "value": 70000000,  // satoshi (0.7 BTC)
+      "value": 70000000,              // satoshi (0.7 BTC)
       "script_pubkey": "OP_DUP OP_HASH160 <recipient_hash> OP_EQUALVERIFY OP_CHECKSIG"
     },
     {
-      "value": 29990000,  // сдача минус fee
+      "value": 29990000,              // сдача минус fee
       "script_pubkey": "OP_DUP OP_HASH160 <my_hash> OP_EQUALVERIFY OP_CHECKSIG"
     }
   ]
 }
 ```
 
+**script_pubkey** — это условие, которое нужно выполнить, чтобы потратить этот output. Стандартный P2PKH (Pay-to-Public-Key-Hash) требует подпись владельца соответствующего private key.
+
 ## UTXO Set
 
-**UTXO Set** — это текущее состояние всех неизрасходованных выходов:
+**UTXO Set** — это глобальное состояние Bitcoin: множество всех неизрасходованных выходов на текущий момент. Каждый full node хранит и обновляет этот set при обработке блоков.
 
-| Метрика | Значение (примерное) |
-|---------|----------------------|
-| Количество UTXO | ~80 млн |
-| Размер UTXO Set | ~5 GB |
-| Средний возраст UTXO | ~2.5 года |
+| Метрика | Значение (2024) | Почему это важно |
+|---------|-----------------|------------------|
+| Количество UTXO | ~150 млн | Каждый UTXO — отдельная запись для проверки |
+| Размер UTXO Set | ~8 GB | Должен помещаться в RAM для быстрой валидации |
+| Средний возраст UTXO | ~4 года | Много "hodl" UTXO, которые не двигаются |
+| Dust UTXO (менее 546 sat) | ~10 млн | "Мусор", который невыгодно тратить |
 
 <Callout type="warning">
-UTXO Set хранится в памяти для быстрой валидации. Это bottleneck для масштабирования.
+UTXO Set хранится в памяти для быстрой валидации транзакций. Его рост — один из bottleneck масштабирования Bitcoin. Чем больше UTXO, тем дороже запускать full node.
 </Callout>
 
-## Преимущества UTXO
+При валидации транзакции нужно проверить: существует ли каждый input в UTXO Set? Это операция O(1) lookup, если set в памяти. Если на диске — валидация замедляется на порядки.
+
+## Преимущества UTXO модели
 
 ### 1. Параллельная валидация
 
-Каждый input независим — транзакции можно валидировать параллельно:
+Главное преимущество UTXO: каждый input независим. Транзакции, которые тратят разные UTXO, можно валидировать параллельно. Это критично для throughput:
 
 ```python
-def validate_transaction(tx):
-    # Каждый input проверяется независимо
-    for input in tx.inputs:
-        if not verify_signature(input):
-            return False
-        if not utxo_exists(input.prev_txid, input.prev_output_index):
-            return False
-    return True
+def validate_block_parallel(block, utxo_set):
+    # Разбиваем транзакции по группам без конфликтов
+    independent_groups = find_independent_tx_groups(block.transactions)
+
+    # Валидируем группы параллельно
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(
+            lambda group: validate_tx_group(group, utxo_set),
+            independent_groups
+        )
+
+    return all(results)
 ```
+
+В account-based модели (Ethereum) транзакции от одного адреса должны выполняться последовательно из-за nonce. В UTXO нет nonce — порядок определяется зависимостями между UTXO.
 
 ### 2. Простое определение double-spend
 
-Если UTXO потрачен — он удаляется из set. Попытка потратить снова = ошибка.
+Double-spend detection тривиален: если UTXO потрачен — он удаляется из set. Попытка потратить тот же UTXO снова мгновенно отклоняется — его просто нет в set.
+
+```python
+def spend_utxo(utxo_set, tx):
+    for input in tx.inputs:
+        utxo_key = (input.prev_txid, input.prev_output_index)
+
+        if utxo_key not in utxo_set:
+            raise DoubleSpendError("UTXO already spent")
+
+        del utxo_set[utxo_key]  # Атомарное удаление
+```
 
 ### 3. Privacy через change addresses
 
-Каждая транзакция создаёт новый UTXO для сдачи на новый адрес.
+Хорошая практика — использовать новый адрес для каждой сдачи. Это затрудняет связывание транзакций:
 
-## Недостатки UTXO
+```
+Транзакция 1: Address_A (0.5 BTC) → Merchant + Address_B (change)
+Транзакция 2: Address_B (0.3 BTC) → Merchant + Address_C (change)
+Транзакция 3: Address_C (0.1 BTC) → Merchant + Address_D (change)
+```
+
+Без дополнительного анализа сложно понять, что все эти транзакции от одного человека. (Хотя chain analysis компании научились это делать через heuristics.)
+
+## Недостатки UTXO модели
 
 ### 1. Сложность для smart contracts
 
-UTXO — stateless. Нельзя хранить состояние контракта между транзакциями.
+UTXO — stateless по своей природе. Каждый output "не знает" о других. Это делает сложными контракты, которым нужно хранить состояние:
 
-### 2. Dust problem
+- Нельзя просто "обновить" переменную в контракте
+- Нужно тратить старый UTXO и создавать новый с обновлённым состоянием
+- Ethereum выбрал account model именно для поддержки stateful smart contracts
 
-Маленькие UTXO (< fee для траты) становятся неликвидными:
+### 2. Dust Problem
+
+**Dust** — это UTXO, стоимость траты которого превышает его ценность. При текущих fee:
 
 ```
-UTXO: 500 satoshi
-Fee для траты: 1000 satoshi
-Результат: UTXO заблокирован навсегда
+Минимальный input size: ~148 bytes
+Fee rate: 20 sat/byte
+Cost to spend: 148 × 20 = 2,960 satoshi
+
+UTXO меньше 3,000 satoshi (~$1.50) = экономически нерационально тратить
 ```
 
-### 3. UTXO consolidation
+Миллионы таких "пылевых" UTXO засоряют UTXO Set навсегда. Bitcoin Core устанавливает dust limit (546 satoshi) — outputs меньше этого размера отклоняются по умолчанию.
 
-Большое количество маленьких UTXO увеличивает размер транзакций (больше inputs = больше fee).
+### 3. UTXO Consolidation
+
+Если у тебя много мелких UTXO, транзакция будет большой (много inputs) и дорогой:
+
+```
+Сценарий: 100 UTXO по 0.001 BTC = 0.1 BTC total
+
+Чтобы потратить все:
+- 100 inputs × 148 bytes = 14,800 bytes
+- Fee при 20 sat/byte = 296,000 satoshi ≈ 0.003 BTC
+- 3% "налог" только за consolidation!
+```
+
+Профессионалы делают consolidation в периоды низких fee (ночь, выходные).
 
 ## Анализ UTXO данных
 
+Для data engineer UTXO Set — источник инсайтов о состоянии сети:
+
 ```sql
--- Распределение UTXO по размеру
+-- Распределение UTXO по размеру (возрастные когорты богатства)
 SELECT
     CASE
         WHEN value < 10000 THEN 'dust (<0.0001 BTC)'
         WHEN value < 1000000 THEN 'small (0.0001-0.01 BTC)'
         WHEN value < 100000000 THEN 'medium (0.01-1 BTC)'
-        ELSE 'large (>1 BTC)'
+        WHEN value < 1000000000 THEN 'large (1-10 BTC)'
+        ELSE 'whale (>10 BTC)'
     END as size_category,
+    COUNT(*) as utxo_count,
+    SUM(value) / 1e8 as total_btc,
+    SUM(value) / 1e8 / (SELECT SUM(value) / 1e8 FROM bitcoin.utxo_set) * 100 as pct_supply
+FROM bitcoin.utxo_set
+GROUP BY size_category
+ORDER BY MIN(value);
+
+-- UTXO age distribution (hodl waves)
+SELECT
+    CASE
+        WHEN age_days < 1 THEN '<1 day'
+        WHEN age_days < 7 THEN '1-7 days'
+        WHEN age_days < 30 THEN '1-4 weeks'
+        WHEN age_days < 90 THEN '1-3 months'
+        WHEN age_days < 365 THEN '3-12 months'
+        WHEN age_days < 730 THEN '1-2 years'
+        ELSE '2+ years'
+    END as age_band,
     COUNT(*) as utxo_count,
     SUM(value) / 1e8 as total_btc
 FROM bitcoin.utxo_set
-GROUP BY size_category;
+GROUP BY age_band;
 ```
 
 ## UTXO vs Account Model
 
 | Аспект | UTXO (Bitcoin) | Account (Ethereum) |
 |--------|----------------|-------------------|
-| State | Набор UTXO | Mapping address → balance |
-| Параллелизм | Высокий | Низкий (nonce) |
-| Privacy | Лучше | Хуже |
-| Smart contracts | Ограничены | Полноценные |
-| Dust | Проблема | Нет |
+| **State representation** | Набор дискретных UTXO | Mapping address → balance |
+| **Параллелизм** | Высокий (независимые UTXO) | Низкий (nonce ordering) |
+| **Privacy** | Лучше (новые адреса) | Хуже (адрес = identity) |
+| **Smart contracts** | Ограничены (stateless) | Полноценные (stateful) |
+| **Dust** | Проблема | Нет (min balance = 0) |
+| **State size** | UTXO Set (~8GB) | World State (~300GB) |
+| **Merkle proof** | Простой (output в tx) | Сложный (state trie) |
 
 ## Резюме
 
-- UTXO = неизрасходованный выход транзакции
-- Баланс = сумма всех UTXO принадлежащих адресу
-- Транзакция тратит inputs и создаёт outputs
-- UTXO Set ~5GB, хранится в RAM для быстрой валидации
-- Модель оптимизирована для параллелизма и privacy, но не для smart contracts
+- **UTXO** = Unspent Transaction Output, "неизрасходованная монета"
+- **Баланс** = сумма всех UTXO, контролируемых твоими ключами
+- **Транзакция** = уничтожение старых UTXO + создание новых
+- **UTXO Set** = глобальное состояние Bitcoin, ~150M записей, ~8GB
+- **Преимущества**: параллелизм, простой double-spend detection, privacy
+- **Недостатки**: сложность smart contracts, dust, consolidation costs
+- **Для анализа**: UTXO age distribution, size distribution, hodl waves

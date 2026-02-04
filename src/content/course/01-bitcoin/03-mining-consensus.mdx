@@ -9,186 +9,290 @@ import { MiningDiagram } from '../../../components/diagrams/BitcoinDiagrams';
 
 # Mining & Proof of Work
 
-Mining — процесс создания новых блоков в Bitcoin. Это не просто "добыча монет", а критически важный механизм **консенсуса** и **безопасности** сети.
+Mining — процесс создания новых блоков в Bitcoin. Это не просто "добыча монет", как часто думают новички, а критически важный механизм **консенсуса** и **безопасности** сети. Майнеры выполняют две ключевые функции: упорядочивают транзакции во времени и делают историю практически неизменяемой.
 
-## Proof of Work
+Чтобы понять, почему Bitcoin работает, нужно понять экономику и теорию игр майнинга. Сатоши Накамото создал систему, где честное поведение выгоднее атаки — и эта система работает уже 15 лет без единого успешного взлома.
+
+## Proof of Work: Превращение энергии в безопасность
 
 <Callout type="note">
-PoW превращает электричество в безопасность сети. Чем больше hashrate, тем дороже атака.
+PoW превращает электричество в безопасность сети. Чем больше hashrate, тем дороже атака. Это не "трата энергии впустую" — это оплата безопасности децентрализованной денежной системы.
 </Callout>
+
+Proof of Work — это механизм, который делает создание блока **дорогим**, а проверку — **дешёвой**. Это асимметрия критична:
+- Создать валидный блок: миллиарды долларов оборудования + электричество
+- Проверить валидность блока: один SHA256 hash, миллисекунды
+
+Эта асимметрия означает, что атакующему нужно потратить огромные ресурсы, а защищающийся может легко проверить, не мошенничает ли кто-то.
 
 <MiningDiagram client:load />
 
 ### Задача майнера
 
-Найти такой `nonce`, чтобы:
+Майнер должен найти такой `nonce` (число), чтобы хеш блока был меньше target:
 
 ```
 SHA256(SHA256(block_header)) < target
 ```
 
-Где `block_header` включает:
+Это похоже на игру в кости: нужно выбросить число меньше, чем заданное. Чем меньше target, тем сложнее. Bitcoin регулирует target так, чтобы в среднем один блок находился каждые 10 минут, независимо от того, сколько майнеров в сети.
+
+### Структура block header
 
 ```python
 block_header = {
-    'version': 0x20000000,
-    'prev_block_hash': '000000000000000000...',
-    'merkle_root': 'abc123...',
-    'timestamp': 1706900000,
-    'bits': 0x17034219,  # compact target
-    'nonce': ???  # перебираем
+    'version': 0x20000000,              # Версия протокола (4 bytes)
+    'prev_block_hash': '00000000...',   # Хеш предыдущего блока (32 bytes)
+    'merkle_root': 'abc123...',         # Корень Merkle tree транзакций (32 bytes)
+    'timestamp': 1706900000,            # Unix timestamp (4 bytes)
+    'bits': 0x17034219,                 # Compact target (4 bytes)
+    'nonce': ???                        # Перебираем (4 bytes)
 }
+# Total: 80 bytes — это всё, что хешируется
 ```
+
+Майнер не может изменить prev_block_hash (он фиксирован). Он может менять:
+- **nonce**: 4 bytes = 2^32 вариантов
+- **timestamp**: допускается погрешность ~2 часа
+- **merkle_root**: через включение/исключение транзакций или coinbase
+
+### Почему SHA256(SHA256())?
+
+Двойной SHA256 — это защита от length extension attacks и дополнительная безопасность. Но главное — это **односторонняя функция**: зная результат хеша, невозможно вычислить входные данные. Единственный способ найти подходящий nonce — перебор (brute force).
 
 ### Пример хеша
 
 ```
 Target:  0x00000000000000000003421900000000000000000000000000000000000000
-Hash 1:  0x8a5f2e... (не подходит, слишком большой)
-Hash 2:  0x0000000000000000000234... (подходит!)
+                         ↑ 18 ведущих нулей в hex
+
+Hash 1:  0x8a5f2e4b...  (не подходит — первый байт не 00)
+Hash 2:  0x00000001...  (не подходит — недостаточно нулей)
+Hash 3:  0x0000000000000000000234...  (подходит!)
 ```
 
-### Вероятность успеха
+### Вероятность и ожидаемое время
 
-При difficulty ~50T:
-- Вероятность найти блок за 1 хеш: ~1/50,000,000,000,000
-- При hashrate 100 TH/s: ~2 блока в год
+При текущей difficulty (~70T):
+
+| Hashrate | Вероятность блока за 10 мин | Ожидаемое время на блок |
+|----------|-----------------------------|-----------------------|
+| 1 TH/s | 0.000001% | ~22 года |
+| 100 TH/s | 0.0001% | ~80 дней |
+| 1 EH/s | 0.2% | ~8 дней |
+| 500 EH/s (вся сеть) | 100% | 10 минут |
+
+Именно поэтому solo mining нерентабелен для большинства — variance слишком высока.
 
 ## Difficulty Adjustment
 
 <Callout type="warning">
-Bitcoin автоматически регулирует сложность каждые 2016 блоков (~2 недели) для поддержания 10-минутного интервала.
+Bitcoin автоматически регулирует сложность каждые 2016 блоков (~2 недели) для поддержания 10-минутного интервала. Это делает Bitcoin устойчивым к изменениям hashrate.
 </Callout>
+
+Difficulty adjustment — одна из самых элегантных частей протокола. Она гарантирует, что:
+- Если майнеры уходят → сложность падает → блоки находятся быстрее
+- Если майнеры приходят → сложность растёт → интервал остаётся ~10 минут
 
 ### Формула
 
 ```python
-new_difficulty = old_difficulty * (2016 * 10 minutes / actual_time)
+# Каждые 2016 блоков (примерно 2 недели)
+expected_time = 2016 * 10 * 60  # секунд (2 недели)
+actual_time = block_2016.timestamp - block_0.timestamp
 
-# Ограничение: изменение не более чем в 4 раза
+new_difficulty = old_difficulty * (expected_time / actual_time)
+
+# Ограничение: изменение не более чем в 4 раза за период
+# Это защита от атак на timestamp manipulation
 new_difficulty = clamp(new_difficulty,
                        old_difficulty / 4,
                        old_difficulty * 4)
 ```
 
-### Исторические данные
+### Исторический рост
 
-| Год | Hashrate | Difficulty |
-|-----|----------|------------|
-| 2010 | 1 MH/s | 1 |
-| 2015 | 400 PH/s | 50B |
-| 2020 | 120 EH/s | 15T |
-| 2024 | 500 EH/s | 70T |
+| Год | Network Hashrate | Difficulty | Block Time |
+|-----|------------------|------------|------------|
+| 2009 | 1 MH/s | 1 | 10 min |
+| 2012 | 25 TH/s | 3M | 10 min |
+| 2016 | 2 EH/s | 250B | 10 min |
+| 2020 | 120 EH/s | 15T | 10 min |
+| 2024 | 600 EH/s | 80T | 10 min |
 
-## Block Reward
+Заметь: block time всегда ~10 минут, несмотря на рост hashrate в 600 миллионов раз!
 
-Награда за блок состоит из:
+## Block Reward и Halving
 
-1. **Block subsidy** — новые монеты (уменьшается в 2 раза каждые 210,000 блоков)
-2. **Transaction fees** — сумма всех fees в блоке
+Награда за блок состоит из двух частей:
+
+1. **Block subsidy** — новые монеты, созданные протоколом
+2. **Transaction fees** — комиссии за все транзакции в блоке
 
 ### Halving Schedule
 
+Block subsidy уменьшается в 2 раза каждые 210,000 блоков (~4 года):
+
 ```
-2009: 50 BTC
-2012: 25 BTC (halving #1)
-2016: 12.5 BTC (halving #2)
-2020: 6.25 BTC (halving #3)
-2024: 3.125 BTC (halving #4)
+2009: 50 BTC    → 10,500,000 BTC за эпоху
+2012: 25 BTC    → 5,250,000 BTC (halving #1)
+2016: 12.5 BTC  → 2,625,000 BTC (halving #2)
+2020: 6.25 BTC  → 1,312,500 BTC (halving #3)
+2024: 3.125 BTC → 656,250 BTC (halving #4)
 ...
-2140: 0 BTC (последний satoshi)
+2140: 0 BTC     (последний satoshi)
 ```
 
+**Общий supply: 21,000,000 BTC** — это сумма геометрической прогрессии 210000 × (50 + 25 + 12.5 + ...) = 21M
+
 <Callout type="note">
-После 2140 года майнеры будут получать только transaction fees. Это создаёт long-term fee market.
+После 2140 года майнеры будут получать только transaction fees. Это создаёт long-term fee market, где безопасность сети оплачивается пользователями напрямую.
 </Callout>
+
+### Экономика перехода на fees
+
+Сейчас (2024): ~97% reward — это subsidy, ~3% — fees
+К 2040: соотношение сдвинется к ~50/50
+После 2140: 100% fees
+
+Вопрос "хватит ли fees для безопасности?" — открытая исследовательская тема. Пока что fees растут вместе с adoption.
 
 ## Mining Economics
 
-### Себестоимость
+Майнинг — это бизнес с тонкими маржами. Профитабельность зависит от:
+
+### Входные параметры
 
 ```python
-cost_per_block = (electricity_kwh * price_per_kwh +
-                  hardware_depreciation +
-                  cooling +
-                  rent)
+# Основные затраты
+electricity_cost = hashrate * efficiency * electricity_price * time
+hardware_cost = equipment_price / expected_lifetime
+operational_cost = cooling + rent + maintenance + staff
 
-# Пример (2024):
-# 1 блок ≈ 100-200 MWh при текущем hashrate
-# При $0.05/kWh = $5,000-10,000 на электричество
+# Доход
+expected_blocks = (my_hashrate / network_hashrate) * blocks_per_period
+revenue = expected_blocks * (block_subsidy + avg_fees) * btc_price
+
+# Profit
+profit = revenue - electricity_cost - hardware_cost - operational_cost
 ```
 
-### Breakeven Analysis
+### Breakeven Analysis (2024)
 
-| Метрика | Значение |
-|---------|----------|
-| Block reward | 3.125 BTC |
-| BTC price | $40,000 |
-| Revenue per block | $125,000 |
-| Network hashrate | 500 EH/s |
-| Blocks per day | 144 |
+| Параметр | Значение | Комментарий |
+|----------|----------|-------------|
+| Block reward | 3.125 BTC | После halving 2024 |
+| BTC price | $60,000 | Волатильно! |
+| Revenue per block | $187,500 | |
+| Network hashrate | 600 EH/s | |
+| Blocks per day | 144 | |
+| Daily network revenue | $27M | |
+| Best efficiency | 20 J/TH | ASIC S21 |
+| Electricity breakeven | ~$0.07/kWh | При текущей difficulty |
+
+Майнеры с дешёвым электричеством (менее $0.05/kWh) остаются прибыльными даже в bear market. Это создаёт "natural selection" — выживают самые эффективные.
 
 ## Mining Pools
 
-Solo mining непрактичен — variance слишком высока. Mining pools позволяют:
+Solo mining непрактичен из-за variance. Даже с 1 EH/s ($100M+ оборудования) блок находится раз в 8 дней — слишком непредсказуемо для бизнеса.
 
-1. Объединить hashrate
-2. Получать стабильный доход (пропорционально вкладу)
-3. Платить pool fee (1-3%)
+**Mining pools** решают эту проблему: участники объединяют hashrate и делят награду пропорционально вкладу.
 
-### Распределение Pool Rewards
+### Модели распределения rewards
+
+| Модель | Описание | Risk |
+|--------|----------|------|
+| **PPS** (Pay Per Share) | Мгновенная оплата за каждый share | Pool несёт риск |
+| **FPPS** (Full PPS) | PPS + пропорциональная часть fees | Pool несёт риск |
+| **PPLNS** | Pay Per Last N Shares | Miner несёт variance |
+
+### Пример расчёта
 
 ```
-Pool hashrate: 50 EH/s (10% сети)
-Твой hashrate: 500 TH/s (1% пула)
+Pool: Foundry USA (30% сети = 180 EH/s)
+Твой hashrate: 1 PH/s (0.00055% пула)
 
 Ожидаемый доход:
-= 144 блоков/день * 10% * 1% * 3.125 BTC
-= 0.45 BTC/день (без учёта fee и variance)
+= 144 блоков/день × 30% × 0.00055% × 3.125 BTC
+= 0.00075 BTC/день
+= ~$45/день при $60k BTC
+
+Минус pool fee (2%): ~$44/день
 ```
 
-## Безопасность
+### Централизация пулов — риск?
 
-### 51% Attack
+Top-4 пула контролируют ~70% hashrate. Это звучит страшно, но:
+- Пулы не владеют оборудованием — майнеры могут уйти
+- Пулы не могут украсть средства (нет private keys)
+- Пулы подчиняются правилам протокола
 
-Атакующий с >50% hashrate может:
-- Делать double-spend
-- Цензурировать транзакции
-- НЕ может: красть чужие монеты, создавать монеты из воздуха
+Если пул ведёт себя плохо (цензурирует транзакции), майнеры переключатся на другой за часы.
+
+## Безопасность и 51% Attack
+
+### Что может атакующий с 51%
+
+С большинством hashrate можно:
+- **Double-spend**: потратить монеты, откатить транзакцию, потратить снова
+- **Цензура**: не включать определённые транзакции в блоки
+- **Selfish mining**: утаивать найденные блоки для преимущества
+
+### Что НЕЛЬЗЯ даже с 51%
+
+- Украсть чужие монеты (нужен private key)
+- Создать монеты из воздуха (нарушит правила протокола, ноды отклонят)
+- Изменить старые транзакции (экспоненциально сложнее с глубиной)
 
 ### Стоимость атаки
 
 ```
-Hourly cost = network_hashrate * efficiency * electricity_price
-            ≈ 500 EH/s * 30 J/TH * $0.05/kWh
-            ≈ $750,000/час
+Hardware approach:
+- Нужно: 300+ EH/s (>50% сети)
+- Стоимость ASIC: ~$30 за TH/s
+- Total: $9+ billion в оборудование
 
-1-hour 51% attack ≈ $750,000 + hardware rental
+Rental approach (crypto51.app):
+- Hourly cost ≈ $1M+
+- 1-hour attack: double-spend требует ~6 confirmations
+- Economic limit: атака выгодна только если double-spend > cost
 ```
 
 <Callout type="warning">
-Реорганизация на 6 блоков требует ~1 часа атаки. Поэтому exchanges ждут 6 confirmations.
+Exchanges ждут 6 confirmations (~1 час) для крупных депозитов. Это делает double-spend экономически невыгодным — стоимость атаки превышает потенциальную прибыль.
 </Callout>
 
 ## Данные для анализа
 
+Mining metrics — ключевые индикаторы здоровья сети:
+
 ```sql
--- Анализ mining metrics
+-- Mining profitability indicator
 SELECT
     DATE(block_timestamp) as date,
     COUNT(*) as blocks,
     AVG(difficulty) as avg_difficulty,
-    SUM(block_reward) / 1e8 as total_reward_btc,
-    SUM(total_fees) / 1e8 as total_fees_btc
+    SUM(block_reward + total_fees) / 1e8 as total_miner_revenue_btc,
+    SUM(total_fees) / 1e8 / SUM(block_reward + total_fees) * 100 as fee_percentage
 FROM bitcoin.blocks
 WHERE block_timestamp > '2024-01-01'
-GROUP BY DATE(block_timestamp);
+GROUP BY DATE(block_timestamp)
+ORDER BY date DESC;
+
+-- Hashrate estimation (from difficulty)
+SELECT
+    DATE(block_timestamp) as date,
+    AVG(difficulty) * 2^32 / 600 / 1e18 as estimated_hashrate_eh
+FROM bitcoin.blocks
+GROUP BY DATE(block_timestamp)
+ORDER BY date DESC;
 ```
 
 ## Резюме
 
-- PoW = SHA256(SHA256(header)) < target
-- Difficulty adjusts каждые 2016 блоков для 10-минутного интервала
-- Block reward = subsidy + fees; halving каждые 210,000 блоков
-- Mining pools снижают variance
-- 51% атака стоит ~$750,000/час, но не позволяет красть монеты
+- **PoW** = SHA256(SHA256(header)) < target — дорого создать, легко проверить
+- **Difficulty** регулируется каждые 2016 блоков для 10-минутного интервала
+- **Block reward** = subsidy (halving каждые 4 года) + fees
+- **Mining pools** снижают variance, но не централизуют контроль
+- **51% атака** стоит миллиарды и не позволяет красть монеты
+- **Безопасность** оплачивается электричеством — ~$30M/день (2024)
