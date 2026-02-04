@@ -5,6 +5,8 @@ difficulty: "intermediate"
 timeToComplete: 25
 ---
 
+import { EVMExecutionDiagram, GasModelDiagram } from '../../../components/diagrams/EthereumDiagrams';
+
 # EVM & Gas
 
 EVM (Ethereum Virtual Machine) — виртуальная машина, которая выполняет smart contracts. Понимание EVM критично для оптимизации запросов и понимания gas costs.
@@ -14,6 +16,8 @@ EVM (Ethereum Virtual Machine) — виртуальная машина, кото
 <Callout type="note">
 EVM — stack-based виртуальная машина с 256-bit словами. Каждая операция потребляет gas.
 </Callout>
+
+<EVMExecutionDiagram client:load />
 
 ### Характеристики
 
@@ -112,6 +116,8 @@ CREATE2       (32000 gas)     # Deploy with salt
 ```
 
 ## Gas Model
+
+<GasModelDiagram client:load />
 
 ### Base Formula
 

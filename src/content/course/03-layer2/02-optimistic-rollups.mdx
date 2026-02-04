@@ -5,6 +5,8 @@ difficulty: "intermediate"
 timeToComplete: 20
 ---
 
+import { OptimisticVsZKDiagram } from '../../../components/diagrams/Layer2Diagrams';
+
 # Optimistic Rollups
 
 Optimistic Rollups — тип L2, который **предполагает** валидность транзакций и позволяет оспорить их через **fraud proofs** в течение challenge period.
@@ -272,6 +274,10 @@ WHERE chain IN ('arbitrum', 'optimism')
 GROUP BY date, chain
 ORDER BY date DESC;
 ```
+
+## Optimistic vs ZK Rollups
+
+<OptimisticVsZKDiagram client:load />
 
 ## Резюме
 

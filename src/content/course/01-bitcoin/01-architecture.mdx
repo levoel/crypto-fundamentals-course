@@ -5,6 +5,8 @@ difficulty: "intermediate"
 timeToComplete: 15
 ---
 
+import { BlockStructureDiagram } from '../../../components/diagrams/BitcoinDiagrams';
+
 # Архитектура Bitcoin
 
 Bitcoin — первая decentralized cryptocurrency, запущенная в 2009 году. Для data engineer важно понимать не столько криптографию, сколько **архитектурные решения**, которые легли в основу всех последующих блокчейнов.
@@ -46,6 +48,8 @@ Bitcoin использует gossip protocol для распространени
 | Timestamp | 4 bytes | Unix timestamp |
 | Difficulty Target | 4 bytes | Текущая сложность |
 | Nonce | 4 bytes | Для Proof of Work |
+
+<BlockStructureDiagram client:load />
 
 ### 3. Consensus Mechanism
 

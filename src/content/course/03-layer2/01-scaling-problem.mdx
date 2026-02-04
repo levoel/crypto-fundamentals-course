@@ -5,6 +5,8 @@ difficulty: "intermediate"
 timeToComplete: 15
 ---
 
+import { BlockchainTrilemmaDiagram, RollupArchitectureDiagram } from '../../../components/diagrams/Layer2Diagrams';
+
 # The Scaling Problem
 
 Ethereum mainnet обрабатывает ~15 TPS (транзакций в секунду). Visa обрабатывает ~65,000 TPS. Как масштабировать блокчейн без потери decentralization и security?
@@ -15,24 +17,7 @@ Ethereum mainnet обрабатывает ~15 TPS (транзакций в се�
 Blockchain Trilemma (Vitalik Buterin): невозможно одновременно максимизировать Decentralization, Security и Scalability. Приходится выбирать 2 из 3.
 </Callout>
 
-```
-                    Decentralization
-                          ▲
-                         /|\
-                        / | \
-                       /  |  \
-                      /   |   \
-                     /    |    \
-                    /     |     \
-                   /      |      \
-                  /       |       \
-                 /________|________\
-           Security ←───────────→ Scalability
-
-Bitcoin, Ethereum L1: Decentralization + Security
-Solana, BSC:          Security + Scalability
-Traditional DB:       Scalability + Decentralization (centralized)
-```
+<BlockchainTrilemmaDiagram client:load />
 
 ### Trade-offs
 
@@ -181,23 +166,7 @@ L1 (Ethereum)
 
 ### Rollups (Current Standard)
 
-```
-L1 (Ethereum)
-    │
-    └──► Rollup Contract
-              │
-              ▼
-        Sequencer
-              │
-         ┌────┴────┐
-         │         │
-    Execute txs   Batch txs
-         │         │
-         └────┬────┘
-              │
-              ▼
-    Post batch + proof/data to L1
-```
+<RollupArchitectureDiagram client:load />
 
 - **Optimistic Rollups**: Assume valid, fraud proofs if challenged
 - **ZK Rollups**: Prove validity cryptographically
