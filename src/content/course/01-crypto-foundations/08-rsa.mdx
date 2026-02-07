@@ -1,0 +1,381 @@
+---
+title: "RSA — асимметричное шифрование"
+description: "Математика и реализация RSA — первого практического асимметричного алгоритма"
+order: 8
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["RSA", "Asymmetric Cryptography", "Public Key Cryptography"]
+---
+
+import { RSAKeyGenDiagram, RSAEncryptDiagram, RSASignatureDiagram } from '../../../components/diagrams/module1';
+
+# RSA — асимметричное шифрование
+
+## Революция асимметричной криптографии
+
+До 1976 года вся криптография была **симметричной**: обе стороны должны были иметь общий секретный ключ. Diffie и Hellman предложили концепцию **публичного ключа**, а Rivest, Shamir и Adleman создали первую практическую реализацию — **RSA**.
+
+## Математическая основа
+
+RSA основан на сложности **факторизации** больших чисел:
+- Легко: умножить два простых числа p × q = n
+- Сложно: имея n, найти p и q
+
+<RSAKeyGenDiagram client:load />
+
+### Необходимая теория
+
+**Функция Эйлера φ(n)** — количество чисел от 1 до n, взаимно простых с n.
+
+Для произведения двух простых: φ(p × q) = (p - 1)(q - 1)
+
+**Теорема Эйлера**: a^φ(n) ≡ 1 (mod n) для gcd(a, n) = 1
+
+```python
+def euler_phi(p: int, q: int) -> int:
+    """Функция Эйлера для n = p * q"""
+    return (p - 1) * (q - 1)
+
+def is_coprime(a: int, b: int) -> bool:
+    """Проверить взаимную простоту"""
+    from math import gcd
+    return gcd(a, b) == 1
+
+# Пример
+p, q = 61, 53
+n = p * q  # 3233
+phi = euler_phi(p, q)  # 3120
+print(f"n = {n}, φ(n) = {phi}")
+```
+
+## Генерация ключей RSA
+
+```python
+from math import gcd
+import random
+
+def generate_prime(bits: int) -> int:
+    """Генерация простого числа (упрощенно)"""
+    from Crypto.Util.number import getPrime
+    return getPrime(bits)
+
+def mod_inverse(a: int, m: int) -> int:
+    """Модульный обратный элемент через расширенный алгоритм Евклида"""
+    def extended_gcd(a, b):
+        if a == 0:
+            return b, 0, 1
+        gcd_val, x1, y1 = extended_gcd(b % a, a)
+        x = y1 - (b // a) * x1
+        y = x1
+        return gcd_val, x, y
+
+    _, x, _ = extended_gcd(a % m, m)
+    return (x % m + m) % m
+
+def generate_rsa_keys(bits: int = 1024):
+    """
+    Генерация RSA ключей:
+    1. Выбрать два больших простых p и q
+    2. Вычислить n = p × q
+    3. Вычислить φ(n) = (p-1)(q-1)
+    4. Выбрать e взаимно простое с φ(n), обычно e = 65537
+    5. Вычислить d = e^(-1) mod φ(n)
+    """
+    # Шаг 1: Генерация простых
+    p = generate_prime(bits // 2)
+    q = generate_prime(bits // 2)
+
+    # Шаг 2: Вычисление n
+    n = p * q
+
+    # Шаг 3: Вычисление φ(n)
+    phi_n = (p - 1) * (q - 1)
+
+    # Шаг 4: Выбор e
+    e = 65537  # Стандартное значение (2^16 + 1)
+    assert gcd(e, phi_n) == 1, "e must be coprime with φ(n)"
+
+    # Шаг 5: Вычисление d
+    d = mod_inverse(e, phi_n)
+
+    # Публичный ключ: (n, e)
+    # Приватный ключ: (n, d)
+    return {
+        "public": {"n": n, "e": e},
+        "private": {"n": n, "d": d},
+        "_p": p,  # Секретно!
+        "_q": q   # Секретно!
+    }
+
+# Генерация
+keys = generate_rsa_keys(1024)
+print(f"Public exponent (e): {keys['public']['e']}")
+print(f"Modulus (n) bits: {keys['public']['n'].bit_length()}")
+```
+
+## Шифрование и расшифрование
+
+<RSAEncryptDiagram client:load />
+
+```python
+def rsa_encrypt(message: int, public_key: dict) -> int:
+    """
+    Шифрование: c = m^e mod n
+    """
+    n = public_key["n"]
+    e = public_key["e"]
+
+    if message >= n:
+        raise ValueError("Message must be smaller than n")
+
+    return pow(message, e, n)
+
+def rsa_decrypt(ciphertext: int, private_key: dict) -> int:
+    """
+    Расшифрование: m = c^d mod n
+    """
+    n = private_key["n"]
+    d = private_key["d"]
+    return pow(ciphertext, d, n)
+
+# Пример
+keys = generate_rsa_keys(512)  # Маленький ключ для демонстрации
+
+message = 42
+print(f"Original message: {message}")
+
+ciphertext = rsa_encrypt(message, keys["public"])
+print(f"Encrypted: {ciphertext}")
+
+decrypted = rsa_decrypt(ciphertext, keys["private"])
+print(f"Decrypted: {decrypted}")
+print(f"Success: {message == decrypted}")
+```
+
+### Шифрование текста
+
+```python
+def text_to_int(text: str) -> int:
+    """Преобразование текста в число"""
+    return int.from_bytes(text.encode('utf-8'), 'big')
+
+def int_to_text(number: int) -> str:
+    """Преобразование числа обратно в текст"""
+    length = (number.bit_length() + 7) // 8
+    return number.to_bytes(length, 'big').decode('utf-8')
+
+# Шифрование текстового сообщения
+message = "Hello RSA!"
+message_int = text_to_int(message)
+
+keys = generate_rsa_keys(1024)
+ciphertext = rsa_encrypt(message_int, keys["public"])
+decrypted_int = rsa_decrypt(ciphertext, keys["private"])
+decrypted_text = int_to_text(decrypted_int)
+
+print(f"Original: {message}")
+print(f"Decrypted: {decrypted_text}")
+```
+
+## Цифровая подпись RSA
+
+<RSASignatureDiagram client:load />
+
+Подпись — это шифрование **хеша** сообщения приватным ключом.
+
+```python
+import hashlib
+
+def rsa_sign(message: bytes, private_key: dict) -> int:
+    """
+    Подпись:
+    1. Вычислить хеш сообщения
+    2. Зашифровать хеш приватным ключом
+    """
+    # Хеш сообщения
+    hash_value = hashlib.sha256(message).digest()
+    hash_int = int.from_bytes(hash_value, 'big')
+
+    # "Шифрование" приватным ключом = подпись
+    n = private_key["n"]
+    d = private_key["d"]
+    signature = pow(hash_int, d, n)
+
+    return signature
+
+def rsa_verify(message: bytes, signature: int, public_key: dict) -> bool:
+    """
+    Проверка подписи:
+    1. "Расшифровать" подпись публичным ключом
+    2. Сравнить с хешем сообщения
+    """
+    # Вычислить хеш сообщения
+    hash_value = hashlib.sha256(message).digest()
+    expected_hash = int.from_bytes(hash_value, 'big')
+
+    # "Расшифровать" подпись публичным ключом
+    n = public_key["n"]
+    e = public_key["e"]
+    decrypted_hash = pow(signature, e, n)
+
+    return decrypted_hash == expected_hash
+
+# Использование
+keys = generate_rsa_keys(2048)
+message = b"I agree to transfer 100 BTC to Alice"
+
+# Подписываем
+signature = rsa_sign(message, keys["private"])
+print(f"Signature: {hex(signature)[:64]}...")
+
+# Верифицируем
+is_valid = rsa_verify(message, signature, keys["public"])
+print(f"Valid signature: {is_valid}")
+
+# Попытка подделки
+fake_message = b"I agree to transfer 100000 BTC to Eve"
+is_valid_fake = rsa_verify(fake_message, signature, keys["public"])
+print(f"Fake message valid: {is_valid_fake}")  # False
+```
+
+## PKCS#1 Padding
+
+В реальности RSA используется с **паддингом** для безопасности.
+
+```python
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
+
+# Генерация ключей (библиотечная)
+key = RSA.generate(2048)
+
+# OAEP padding для шифрования
+cipher = PKCS1_OAEP.new(key.publickey())
+message = b"Hello with proper padding!"
+ciphertext = cipher.encrypt(message)
+
+# Расшифрование
+decipher = PKCS1_OAEP.new(key)
+plaintext = decipher.decrypt(ciphertext)
+print(f"Decrypted: {plaintext}")
+
+# PKCS#1 v1.5 для подписи
+h = SHA256.new(b"Message to sign")
+signature = pkcs1_15.new(key).sign(h)
+
+# Проверка
+try:
+    h = SHA256.new(b"Message to sign")
+    pkcs1_15.new(key.publickey()).verify(h, signature)
+    print("Signature is valid")
+except (ValueError, TypeError):
+    print("Signature is invalid")
+```
+
+## Почему RSA не используется в блокчейне?
+
+| Характеристика | RSA-2048 | ECDSA secp256k1 |
+|----------------|----------|-----------------|
+| Размер публичного ключа | 256 байт | 33 байта |
+| Размер подписи | 256 байт | 64-72 байта |
+| Скорость подписи | ~2000/сек | ~10000/сек |
+| Скорость верификации | ~50000/сек | ~5000/сек |
+
+RSA слишком **большой** и **медленный** для блокчейна.
+
+## Атаки на RSA
+
+### 1. Малый публичный экспонент
+
+```python
+# Если e = 3 и m^3 < n, шифротекст можно расшифровать корнем!
+# Решение: использовать e = 65537 и правильный паддинг
+```
+
+### 2. Общий модуль
+
+```python
+# Если два пользователя используют одинаковый n, но разные e
+# Можно вычислить приватные ключи!
+# Решение: каждый генерирует свой n
+```
+
+### 3. Факторизация
+
+```python
+# Текущий рекорд: RSA-250 (829 бит) факторизован в 2020
+# Рекомендуемый минимум: 2048 бит, лучше 4096
+```
+
+## Полная реализация
+
+```python
+class RSA:
+    """Полная реализация RSA"""
+
+    def __init__(self, bits: int = 2048):
+        from Crypto.Util.number import getPrime
+        from math import gcd
+
+        p = getPrime(bits // 2)
+        q = getPrime(bits // 2)
+
+        self.n = p * q
+        self.phi = (p - 1) * (q - 1)
+        self.e = 65537
+
+        # Вычисление d
+        self.d = pow(self.e, -1, self.phi)
+
+    def encrypt(self, message: bytes) -> int:
+        m = int.from_bytes(message, 'big')
+        if m >= self.n:
+            raise ValueError("Message too long")
+        return pow(m, self.e, self.n)
+
+    def decrypt(self, ciphertext: int) -> bytes:
+        m = pow(ciphertext, self.d, self.n)
+        return m.to_bytes((m.bit_length() + 7) // 8, 'big')
+
+    def sign(self, message: bytes) -> int:
+        h = int.from_bytes(hashlib.sha256(message).digest(), 'big')
+        return pow(h, self.d, self.n)
+
+    def verify(self, message: bytes, signature: int) -> bool:
+        h = int.from_bytes(hashlib.sha256(message).digest(), 'big')
+        return pow(signature, self.e, self.n) == h
+
+    @property
+    def public_key(self) -> tuple:
+        return (self.n, self.e)
+
+    @property
+    def private_key(self) -> tuple:
+        return (self.n, self.d)
+
+# Тестирование
+rsa = RSA(1024)
+msg = b"Test RSA implementation"
+
+cipher = rsa.encrypt(msg)
+plain = rsa.decrypt(cipher)
+print(f"Encryption works: {msg == plain}")
+
+sig = rsa.sign(msg)
+valid = rsa.verify(msg, sig)
+print(f"Signature works: {valid}")
+```
+
+## Ключевые выводы
+
+1. **RSA** основан на сложности факторизации n = p × q
+2. **Публичный ключ** (n, e) — для шифрования и проверки подписей
+3. **Приватный ключ** (n, d) — для расшифрования и создания подписей
+4. **e = 65537** — стандартный публичный экспонент
+5. **RSA не используется в блокчейне** — слишком большие ключи и подписи
+
+## Что дальше?
+
+В следующем уроке мы изучим **эллиптические кривые** — математику, которая делает криптографию блокчейна возможной.

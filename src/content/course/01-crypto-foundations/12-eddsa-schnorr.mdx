@@ -1,0 +1,379 @@
+---
+title: "EdDSA и Schnorr подписи"
+description: "Современные алгоритмы цифровых подписей"
+order: 12
+difficulty: "advanced"
+estimatedTime: 30
+topics: ["EdDSA", "Schnorr", "BIP-340", "Taproot", "Solana"]
+---
+
+import { EdDSADiagram, SchnorrDiagram, SignatureAggregationDiagram } from '../../../components/diagrams/module1';
+
+# EdDSA и Schnorr подписи
+
+## Проблемы ECDSA
+
+1. **Случайность k** — требует качественного генератора случайных чисел
+2. **Malleability** — одно сообщение может иметь несколько валидных подписей
+3. **Нет агрегации** — n подписей занимают n × 64 байта
+4. **Сложная верификация** — требует вычисление обратного элемента
+
+**EdDSA** и **Schnorr** решают эти проблемы.
+
+## EdDSA (Edwards-curve Digital Signature Algorithm)
+
+EdDSA — детерминированный алгоритм подписи на кривых Эдвардса.
+
+<EdDSADiagram client:load />
+
+### Алгоритм Ed25519
+
+```python
+import hashlib
+from nacl.signing import SigningKey, VerifyKey
+
+class Ed25519:
+    """Параметры Ed25519"""
+    p = 2**255 - 19  # Поле
+    L = 2**252 + 27742317777372353535851937790883648493  # Порядок
+
+    # Базовая точка (сжатый формат)
+    B_compressed = bytes.fromhex(
+        "5866666666666666666666666666666666666666666666666666666666666666"
+    )
+
+def ed25519_sign(message: bytes, secret_key: bytes) -> bytes:
+    """
+    EdDSA подпись:
+    1. h = SHA512(secret_key)
+    2. a = h[0:32] (скаляр, приватный ключ)
+    3. prefix = h[32:64]
+    4. A = a × B (публичный ключ)
+    5. r = SHA512(prefix || message) mod L
+    6. R = r × B
+    7. k = SHA512(R || A || message) mod L
+    8. S = (r + k × a) mod L
+    9. Подпись = R || S (64 байта)
+    """
+    sk = SigningKey(secret_key)
+    signed = sk.sign(message)
+    return signed.signature
+
+def ed25519_verify(message: bytes, signature: bytes, public_key: bytes) -> bool:
+    """
+    EdDSA верификация:
+    1. Декодировать R и S из подписи
+    2. Декодировать A из публичного ключа
+    3. k = SHA512(R || A || message) mod L
+    4. Проверить: S × B = R + k × A
+    """
+    vk = VerifyKey(public_key)
+    try:
+        vk.verify(message, signature)
+        return True
+    except:
+        return False
+
+# Пример использования
+from nacl.signing import SigningKey
+
+# Генерация ключей
+sk = SigningKey.generate()
+vk = sk.verify_key
+
+message = b"Hello, Ed25519!"
+
+# Подпись (детерминированная!)
+sig1 = sk.sign(message).signature
+sig2 = sk.sign(message).signature
+print(f"Sig1 == Sig2: {sig1 == sig2}")  # True! Детерминированность!
+
+# Верификация
+print(f"Valid: {ed25519_verify(message, sig1, bytes(vk))}")
+```
+
+### Преимущества Ed25519
+
+| Свойство | ECDSA | Ed25519 |
+|----------|-------|---------|
+| Детерминированность | Нет | **Да** |
+| Скорость подписи | ~8000/с | **~20000/с** |
+| Скорость верификации | ~3000/с | **~7000/с** |
+| Размер подписи | 64-72 байт | **64 байта** |
+| Malleability | Да | **Нет** |
+
+## Schnorr подписи
+
+**Schnorr** — элегантный алгоритм с математически доказуемой безопасностью.
+
+<SchnorrDiagram client:load />
+
+### Алгоритм Schnorr
+
+```python
+import hashlib
+import secrets
+
+class SchnorrSecp256k1:
+    """Schnorr на secp256k1 (BIP-340)"""
+
+    # Параметры secp256k1
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+    Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+
+    @classmethod
+    def sign(cls, message: bytes, private_key: int) -> bytes:
+        """
+        BIP-340 Schnorr подпись:
+        1. d' = d если has_even_y(P), иначе n - d
+        2. t = tagged_hash("BIP0340/aux", rand)
+        3. k' = tagged_hash("BIP0340/nonce", t || P || m) mod n
+        4. k = k' если has_even_y(R), иначе n - k'
+        5. R = k × G
+        6. e = tagged_hash("BIP0340/challenge", R || P || m) mod n
+        7. sig = R_x || ((k + e × d') mod n)
+        """
+        # Публичный ключ
+        P = cls._multiply(private_key, (cls.Gx, cls.Gy))
+        Px = P[0]
+
+        # Нормализация приватного ключа (even y)
+        if P[1] % 2 != 0:
+            private_key = cls.n - private_key
+
+        # Детерминированный nonce (упрощенно)
+        aux = secrets.token_bytes(32)
+        t = cls._tagged_hash("BIP0340/aux", aux)
+        nonce_data = t + Px.to_bytes(32, 'big') + message
+        k = int.from_bytes(cls._tagged_hash("BIP0340/nonce", nonce_data), 'big') % cls.n
+
+        if k == 0:
+            raise ValueError("Invalid nonce")
+
+        # R = k × G
+        R = cls._multiply(k, (cls.Gx, cls.Gy))
+
+        # Нормализация k
+        if R[1] % 2 != 0:
+            k = cls.n - k
+
+        # Challenge
+        challenge_data = R[0].to_bytes(32, 'big') + Px.to_bytes(32, 'big') + message
+        e = int.from_bytes(cls._tagged_hash("BIP0340/challenge", challenge_data), 'big') % cls.n
+
+        # Подпись
+        s = (k + e * private_key) % cls.n
+
+        return R[0].to_bytes(32, 'big') + s.to_bytes(32, 'big')
+
+    @classmethod
+    def verify(cls, message: bytes, signature: bytes, public_key: bytes) -> bool:
+        """
+        BIP-340 Schnorr верификация:
+        1. Декодировать R_x и s из подписи
+        2. Декодировать P из публичного ключа
+        3. e = tagged_hash("BIP0340/challenge", R_x || P || m) mod n
+        4. R = s × G - e × P
+        5. Проверить: R_x == R.x и has_even_y(R)
+        """
+        if len(signature) != 64:
+            return False
+
+        Rx = int.from_bytes(signature[:32], 'big')
+        s = int.from_bytes(signature[32:], 'big')
+        Px = int.from_bytes(public_key, 'big')
+
+        if Rx >= cls.p or s >= cls.n or Px >= cls.p:
+            return False
+
+        # Восстановить P из x-only pubkey
+        Py_squared = (pow(Px, 3, cls.p) + 7) % cls.p
+        Py = pow(Py_squared, (cls.p + 1) // 4, cls.p)
+        if Py % 2 != 0:
+            Py = cls.p - Py
+        P = (Px, Py)
+
+        # Challenge
+        challenge_data = signature[:32] + public_key + message
+        e = int.from_bytes(cls._tagged_hash("BIP0340/challenge", challenge_data), 'big') % cls.n
+
+        # R = s × G - e × P
+        sG = cls._multiply(s, (cls.Gx, cls.Gy))
+        eP = cls._multiply(e, P)
+        neg_eP = (eP[0], cls.p - eP[1])
+        R = cls._add(sG, neg_eP)
+
+        if R is None:
+            return False
+
+        return R[0] == Rx and R[1] % 2 == 0
+
+    @classmethod
+    def _tagged_hash(cls, tag: str, data: bytes) -> bytes:
+        """BIP-340 tagged hash"""
+        tag_hash = hashlib.sha256(tag.encode()).digest()
+        return hashlib.sha256(tag_hash + tag_hash + data).digest()
+
+    @classmethod
+    def _multiply(cls, k, P):
+        """Скалярное умножение"""
+        result = None
+        addend = P
+        while k:
+            if k & 1:
+                result = cls._add(result, addend)
+            addend = cls._add(addend, addend)
+            k >>= 1
+        return result
+
+    @classmethod
+    def _add(cls, P, Q):
+        """Сложение точек"""
+        if P is None:
+            return Q
+        if Q is None:
+            return P
+        if P[0] == Q[0] and P[1] == (-Q[1] % cls.p):
+            return None
+        if P == Q:
+            m = (3 * P[0] * P[0] * pow(2 * P[1], -1, cls.p)) % cls.p
+        else:
+            m = ((Q[1] - P[1]) * pow(Q[0] - P[0], -1, cls.p)) % cls.p
+        x3 = (m * m - P[0] - Q[0]) % cls.p
+        y3 = (m * (P[0] - x3) - P[1]) % cls.p
+        return (x3, y3)
+```
+
+## Агрегация подписей
+
+<SignatureAggregationDiagram client:load />
+
+Schnorr позволяет **агрегировать** несколько подписей в одну!
+
+### MuSig2 (Multisignature)
+
+```python
+def musig2_aggregate_pubkeys(pubkeys: list) -> bytes:
+    """
+    Агрегация публичных ключей (упрощенно):
+    P_agg = Σ (a_i × P_i)
+    где a_i = H(L || P_i), L = H(P_1 || P_2 || ... || P_n)
+    """
+    # Сортируем и хешируем
+    sorted_pks = sorted(pubkeys)
+    L = hashlib.sha256(b''.join(sorted_pks)).digest()
+
+    # Вычисляем коэффициенты и агрегируем
+    # (реальная реализация сложнее)
+    pass
+
+# Преимущества агрегации:
+# - n-of-n мультиподпись выглядит как обычная подпись
+# - Размер не зависит от количества подписантов
+# - Улучшенная приватность
+```
+
+## Bitcoin Taproot (BIP-340/341/342)
+
+**Taproot** использует Schnorr для новых возможностей:
+
+```python
+# Taproot адрес включает:
+# - Внутренний публичный ключ P
+# - Merkle root скриптов (опционально)
+
+def taproot_tweak(internal_key: bytes, script_tree: bytes = b'') -> bytes:
+    """
+    Создание tweaked публичного ключа:
+    Q = P + t × G
+    где t = tagged_hash("TapTweak", P || h)
+    h = merkle_root скриптов (если есть)
+    """
+    if script_tree:
+        tweak_data = internal_key + script_tree
+    else:
+        tweak_data = internal_key
+
+    t = SchnorrSecp256k1._tagged_hash("TapTweak", tweak_data)
+    # Q = P + t × G
+    # Реализация опущена для краткости
+    pass
+
+# Taproot позволяет:
+# 1. Key-path spending: обычная подпись tweaked ключом
+# 2. Script-path spending: раскрыть скрипт и выполнить его
+```
+
+## Сравнение алгоритмов
+
+| Свойство | ECDSA | EdDSA | Schnorr |
+|----------|-------|-------|---------|
+| Кривая | secp256k1 | Ed25519 | secp256k1 |
+| Детерминированность | Нет* | Да | Да |
+| Линейность | Нет | Нет | **Да** |
+| Агрегация | Нет | Нет | **Да** |
+| Batch верификация | Частично | **Да** | **Да** |
+| Bitcoin | Да | Нет | **Да (Taproot)** |
+| Ethereum | Да | Нет | Нет |
+| Solana | Нет | **Да** | Нет |
+
+*RFC 6979 делает ECDSA детерминированным
+
+## Использование в разных блокчейнах
+
+### Solana (Ed25519)
+
+```python
+from solders.keypair import Keypair
+from solders.signature import Signature
+
+# Создание keypair
+kp = Keypair()
+print(f"Public key: {kp.pubkey()}")
+
+# Подпись
+message = b"Solana transaction data"
+signature = kp.sign_message(message)
+print(f"Signature: {signature}")
+
+# Верификация
+is_valid = signature.verify(kp.pubkey(), message)
+print(f"Valid: {is_valid}")
+```
+
+### Bitcoin Taproot (Schnorr)
+
+```python
+# Используя bitcoinlib или bip-schnorr
+from bip_schnorr import schnorr_sign, schnorr_verify
+
+private_key = secrets.randbelow(SchnorrSecp256k1.n - 1) + 1
+public_key = SchnorrSecp256k1._multiply(private_key, (SchnorrSecp256k1.Gx, SchnorrSecp256k1.Gy))
+
+# X-only публичный ключ (32 байта)
+pubkey_xonly = public_key[0].to_bytes(32, 'big')
+
+message = hashlib.sha256(b"Taproot transaction").digest()
+
+# Подпись
+sig = SchnorrSecp256k1.sign(message, private_key)
+print(f"Schnorr signature: {sig.hex()}")
+
+# Верификация
+valid = SchnorrSecp256k1.verify(message, sig, pubkey_xonly)
+print(f"Valid: {valid}")
+```
+
+## Ключевые выводы
+
+1. **EdDSA** — детерминированный, быстрый, используется в Solana
+2. **Schnorr** — линейный, позволяет агрегацию, используется в Bitcoin Taproot
+3. **Детерминированность** устраняет риск повторного k
+4. **Агрегация** уменьшает размер транзакций и улучшает приватность
+5. **Выбор алгоритма** зависит от блокчейн-платформы
+
+## Что дальше?
+
+В следующем уроке мы изучим **деревья Меркла** — структуру данных, позволяющую эффективно доказывать включение элемента в множество.

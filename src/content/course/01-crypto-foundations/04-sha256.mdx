@@ -1,0 +1,368 @@
+---
+title: "SHA-256 изнутри"
+description: "Пошаговый разбор алгоритма SHA-256 с реализацией на Python"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["SHA-256", "Hash Functions", "Cryptographic Algorithms"]
+---
+
+import { SHA256PipelineDiagram, SHA256RoundDiagram, SHA256CompressionDiagram } from '../../../components/diagrams/module1';
+
+# SHA-256 изнутри
+
+## Обзор алгоритма
+
+**SHA-256** (Secure Hash Algorithm 256-bit) — криптографическая хеш-функция, разработанная NSA в 2001 году. Это основа безопасности Bitcoin.
+
+<SHA256PipelineDiagram client:load />
+
+Алгоритм состоит из 4 этапов:
+1. **Padding** — дополнение сообщения
+2. **Parsing** — разбиение на 512-битные блоки
+3. **Initialization** — начальные значения
+4. **Compression** — 64 раунда преобразований
+
+## Константы
+
+SHA-256 использует 64 константы K и 8 начальных значений H.
+
+```python
+# 64 константы K — первые 32 бита дробных частей кубических корней первых 64 простых чисел
+K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+    0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+    0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+]
+
+# 8 начальных значений H — первые 32 бита дробных частей квадратных корней первых 8 простых чисел
+H_INIT = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+]
+```
+
+## Этап 1: Padding (Дополнение)
+
+Сообщение дополняется до длины, кратной 512 битам.
+
+```python
+def pad_message(message: bytes) -> bytes:
+    """
+    Дополнение сообщения по стандарту SHA-256:
+    1. Добавить бит '1'
+    2. Добавить нули до (длина mod 512) = 448
+    3. Добавить 64-битную длину исходного сообщения
+    """
+    msg_len = len(message)
+    msg_bits = msg_len * 8
+
+    # Добавляем байт 0x80 (бит '1' + 7 нулей)
+    message += b'\x80'
+
+    # Добавляем нули пока (длина mod 64) != 56
+    # (56 байт = 448 бит, оставляем 8 байт = 64 бита для длины)
+    while (len(message) % 64) != 56:
+        message += b'\x00'
+
+    # Добавляем длину исходного сообщения как 64-битное big-endian число
+    message += msg_bits.to_bytes(8, 'big')
+
+    return message
+
+# Пример
+msg = b"abc"
+padded = pad_message(msg)
+print(f"Исходная длина: {len(msg)} байт")
+print(f"После padding: {len(padded)} байт = {len(padded)*8} бит")
+print(f"Padded (hex): {padded.hex()}")
+```
+
+## Этап 2: Parsing (Разбиение на блоки)
+
+Дополненное сообщение разбивается на 512-битные (64-байтные) блоки.
+
+```python
+def parse_blocks(padded_message: bytes) -> list:
+    """Разбить сообщение на 512-битные блоки"""
+    blocks = []
+    for i in range(0, len(padded_message), 64):
+        blocks.append(padded_message[i:i+64])
+    return blocks
+```
+
+## Этап 3: Message Schedule (Расширение сообщения)
+
+Каждый 512-битный блок расширяется в 64 слова по 32 бита.
+
+```python
+def rotr(x: int, n: int) -> int:
+    """Циклический сдвиг вправо на n бит (32-битное слово)"""
+    return ((x >> n) | (x << (32 - n))) & 0xFFFFFFFF
+
+def sigma0(x: int) -> int:
+    """σ₀(x) = ROTR²(x) ⊕ ROTR¹³(x) ⊕ SHR³(x)"""
+    return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3)
+
+def sigma1(x: int) -> int:
+    """σ₁(x) = ROTR¹⁷(x) ⊕ ROTR¹⁹(x) ⊕ SHR¹⁰(x)"""
+    return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10)
+
+def create_message_schedule(block: bytes) -> list:
+    """
+    Создать 64 слова W из 16 входных слов:
+    - W[0..15] = 16 слов из блока
+    - W[16..63] = σ₁(W[t-2]) + W[t-7] + σ₀(W[t-15]) + W[t-16]
+    """
+    W = []
+
+    # Первые 16 слов — напрямую из блока
+    for i in range(16):
+        W.append(int.from_bytes(block[i*4:(i+1)*4], 'big'))
+
+    # Остальные 48 слов — по формуле
+    for t in range(16, 64):
+        w = (sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16]) & 0xFFFFFFFF
+        W.append(w)
+
+    return W
+```
+
+## Этап 4: Compression Function
+
+Основа SHA-256 — функция сжатия, выполняющая 64 раунда.
+
+<SHA256RoundDiagram client:load />
+
+```python
+def Sigma0(x: int) -> int:
+    """Σ₀(x) = ROTR²(x) ⊕ ROTR¹³(x) ⊕ ROTR²²(x)"""
+    return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22)
+
+def Sigma1(x: int) -> int:
+    """Σ₁(x) = ROTR⁶(x) ⊕ ROTR¹¹(x) ⊕ ROTR²⁵(x)"""
+    return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25)
+
+def Ch(x: int, y: int, z: int) -> int:
+    """Choice: Ch(x,y,z) = (x ∧ y) ⊕ (¬x ∧ z)"""
+    return (x & y) ^ ((~x) & z)
+
+def Maj(x: int, y: int, z: int) -> int:
+    """Majority: Maj(x,y,z) = (x ∧ y) ⊕ (x ∧ z) ⊕ (y ∧ z)"""
+    return (x & y) ^ (x & z) ^ (y & z)
+
+def compress(H: list, W: list) -> list:
+    """
+    64 раунда сжатия
+    """
+    # Инициализация рабочих переменных
+    a, b, c, d, e, f, g, h = H
+
+    for t in range(64):
+        # Вычисления раунда
+        T1 = (h + Sigma1(e) + Ch(e, f, g) + K[t] + W[t]) & 0xFFFFFFFF
+        T2 = (Sigma0(a) + Maj(a, b, c)) & 0xFFFFFFFF
+
+        # Обновление переменных
+        h = g
+        g = f
+        f = e
+        e = (d + T1) & 0xFFFFFFFF
+        d = c
+        c = b
+        b = a
+        a = (T1 + T2) & 0xFFFFFFFF
+
+    # Добавляем к исходным значениям
+    return [
+        (H[0] + a) & 0xFFFFFFFF,
+        (H[1] + b) & 0xFFFFFFFF,
+        (H[2] + c) & 0xFFFFFFFF,
+        (H[3] + d) & 0xFFFFFFFF,
+        (H[4] + e) & 0xFFFFFFFF,
+        (H[5] + f) & 0xFFFFFFFF,
+        (H[6] + g) & 0xFFFFFFFF,
+        (H[7] + h) & 0xFFFFFFFF,
+    ]
+```
+
+<SHA256CompressionDiagram client:load />
+
+## Полная реализация SHA-256
+
+```python
+class SHA256:
+    """Полная реализация SHA-256 с нуля"""
+
+    K = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+        0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+        0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+        0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+        0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+        0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]
+
+    H_INIT = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    ]
+
+    @staticmethod
+    def rotr(x, n):
+        return ((x >> n) | (x << (32 - n))) & 0xFFFFFFFF
+
+    @staticmethod
+    def sigma0(x):
+        return SHA256.rotr(x, 7) ^ SHA256.rotr(x, 18) ^ (x >> 3)
+
+    @staticmethod
+    def sigma1(x):
+        return SHA256.rotr(x, 17) ^ SHA256.rotr(x, 19) ^ (x >> 10)
+
+    @staticmethod
+    def Sigma0(x):
+        return SHA256.rotr(x, 2) ^ SHA256.rotr(x, 13) ^ SHA256.rotr(x, 22)
+
+    @staticmethod
+    def Sigma1(x):
+        return SHA256.rotr(x, 6) ^ SHA256.rotr(x, 11) ^ SHA256.rotr(x, 25)
+
+    @staticmethod
+    def Ch(x, y, z):
+        return (x & y) ^ ((~x) & z)
+
+    @staticmethod
+    def Maj(x, y, z):
+        return (x & y) ^ (x & z) ^ (y & z)
+
+    @classmethod
+    def hash(cls, message: bytes) -> str:
+        """Вычислить SHA-256 хеш"""
+        # 1. Padding
+        msg = cls._pad(message)
+
+        # 2. Initialize hash values
+        H = cls.H_INIT.copy()
+
+        # 3. Process each 512-bit block
+        for i in range(0, len(msg), 64):
+            block = msg[i:i+64]
+            W = cls._schedule(block)
+            H = cls._compress(H, W)
+
+        # 4. Produce final hash
+        return ''.join(f'{h:08x}' for h in H)
+
+    @classmethod
+    def _pad(cls, message: bytes) -> bytes:
+        msg_len = len(message) * 8
+        message += b'\x80'
+        while (len(message) % 64) != 56:
+            message += b'\x00'
+        message += msg_len.to_bytes(8, 'big')
+        return message
+
+    @classmethod
+    def _schedule(cls, block: bytes) -> list:
+        W = [int.from_bytes(block[i*4:(i+1)*4], 'big') for i in range(16)]
+        for t in range(16, 64):
+            W.append((cls.sigma1(W[t-2]) + W[t-7] +
+                     cls.sigma0(W[t-15]) + W[t-16]) & 0xFFFFFFFF)
+        return W
+
+    @classmethod
+    def _compress(cls, H: list, W: list) -> list:
+        a, b, c, d, e, f, g, h = H
+
+        for t in range(64):
+            T1 = (h + cls.Sigma1(e) + cls.Ch(e, f, g) +
+                  cls.K[t] + W[t]) & 0xFFFFFFFF
+            T2 = (cls.Sigma0(a) + cls.Maj(a, b, c)) & 0xFFFFFFFF
+            h, g, f, e = g, f, e, (d + T1) & 0xFFFFFFFF
+            d, c, b, a = c, b, a, (T1 + T2) & 0xFFFFFFFF
+
+        return [(H[i] + x) & 0xFFFFFFFF
+                for i, x in enumerate([a, b, c, d, e, f, g, h])]
+
+# Тестирование
+import hashlib
+
+test_cases = [
+    b"",
+    b"abc",
+    b"hello world",
+    b"The quick brown fox jumps over the lazy dog"
+]
+
+print("Сравнение нашей реализации с hashlib:\n")
+for msg in test_cases:
+    our_hash = SHA256.hash(msg)
+    lib_hash = hashlib.sha256(msg).hexdigest()
+    match = "✓" if our_hash == lib_hash else "✗"
+    print(f"Message: {msg}")
+    print(f"Our:     {our_hash}")
+    print(f"Lib:     {lib_hash}")
+    print(f"Match:   {match}\n")
+```
+
+## Двойное хеширование в Bitcoin
+
+Bitcoin использует **SHA-256d** — двойной SHA-256:
+
+```python
+def sha256d(data: bytes) -> bytes:
+    """Double SHA-256, как в Bitcoin"""
+    import hashlib
+    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+
+# Block hash в Bitcoin
+block_header = bytes.fromhex(
+    "01000000"  # Version
+    "0000000000000000000000000000000000000000000000000000000000000000"  # Prev block
+    "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a"  # Merkle root
+    "29ab5f49"  # Timestamp
+    "ffff001d"  # Bits (difficulty)
+    "1dac2b7c"  # Nonce
+)
+
+# Хеш блока (little-endian!)
+block_hash = sha256d(block_header)[::-1].hex()
+print(f"Block hash: {block_hash}")
+# 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+```
+
+## Ключевые выводы
+
+1. **SHA-256** состоит из padding → parsing → 64 раундов сжатия
+2. **Константы K и H** — из квадратных и кубических корней простых чисел
+3. **Функции σ, Σ, Ch, Maj** создают нелинейность и диффузию
+4. **Каждый раунд** использует модулярную арифметику и битовые операции
+5. **Bitcoin использует SHA-256d** (двойной хеш) для дополнительной безопасности
+
+## Что дальше?
+
+В следующем уроке мы изучим **Keccak (SHA-3)** — совершенно другой подход к хешированию, используемый в Ethereum.

@@ -1,0 +1,365 @@
+---
+title: "Эллиптические кривые"
+description: "Математика эллиптических кривых — основа криптографии блокчейна"
+order: 9
+difficulty: "advanced"
+estimatedTime: 40
+topics: ["Elliptic Curves", "ECC", "Point Addition", "Scalar Multiplication"]
+---
+
+import { EllipticCurveDiagram, PointAdditionDiagram, ScalarMultiplicationDiagram } from '../../../components/diagrams/module1';
+
+# Эллиптические кривые
+
+## Почему эллиптические кривые?
+
+Эллиптические кривые (ECC) дают ту же безопасность, что RSA, но с **гораздо меньшими** ключами:
+
+| Уровень безопасности | RSA | ECC |
+|---------------------|-----|-----|
+| 80 бит | 1024 бит | 160 бит |
+| 112 бит | 2048 бит | 224 бит |
+| 128 бит | 3072 бит | **256 бит** |
+| 256 бит | 15360 бит | 512 бит |
+
+> **Bitcoin и Ethereum** используют 256-битную кривую secp256k1, обеспечивая 128-битную безопасность.
+
+## Уравнение эллиптической кривой
+
+Эллиптическая кривая — это множество точек (x, y), удовлетворяющих уравнению:
+
+```
+y² = x³ + ax + b
+```
+
+где дискриминант 4a³ + 27b² ≠ 0 (чтобы кривая была гладкой).
+
+<EllipticCurveDiagram client:load />
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_elliptic_curve(a, b, title=""):
+    """Визуализация эллиптической кривой над ℝ"""
+    x = np.linspace(-5, 5, 1000)
+    y_squared = x**3 + a*x + b
+
+    # y существует только где y² >= 0
+    mask = y_squared >= 0
+    x_valid = x[mask]
+    y_positive = np.sqrt(y_squared[mask])
+    y_negative = -y_positive
+
+    plt.figure(figsize=(10, 8))
+    plt.plot(x_valid, y_positive, 'b-', label=f'y² = x³ + {a}x + {b}')
+    plt.plot(x_valid, y_negative, 'b-')
+    plt.axhline(y=0, color='k', linestyle='-', linewidth=0.5)
+    plt.axvline(x=0, color='k', linestyle='-', linewidth=0.5)
+    plt.grid(True, alpha=0.3)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title(title or f'Elliptic Curve: y² = x³ + {a}x + {b}')
+    plt.legend()
+    plt.axis('equal')
+    plt.xlim(-5, 5)
+    plt.ylim(-5, 5)
+    plt.show()
+
+# Примеры кривых
+# secp256k1: y² = x³ + 7 (a=0, b=7)
+# Curve25519: y² = x³ + 486662x² + x (Montgomery form)
+```
+
+## Точка на бесконечности
+
+Эллиптическая кривая включает специальную **точку на бесконечности** O (identity element), которая играет роль нуля в групповой операции.
+
+```python
+class Point:
+    """Точка на эллиптической кривой"""
+
+    def __init__(self, x, y, curve=None):
+        self.x = x
+        self.y = y
+        self.curve = curve
+
+    @staticmethod
+    def infinity():
+        """Точка на бесконечности (identity)"""
+        return Point(None, None)
+
+    def is_infinity(self):
+        return self.x is None and self.y is None
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __repr__(self):
+        if self.is_infinity():
+            return "Point(∞)"
+        return f"Point({self.x}, {self.y})"
+```
+
+## Сложение точек
+
+**Групповая операция** на эллиптической кривой — это сложение точек.
+
+<PointAdditionDiagram client:load />
+
+### Правила сложения
+
+1. **P + O = P** (O — identity)
+2. **P + (-P) = O** (обратная точка: если P = (x, y), то -P = (x, -y))
+3. **P + Q** (P ≠ Q): провести прямую через P и Q, найти третью точку пересечения R, отразить по оси x
+
+```python
+class EllipticCurve:
+    """Эллиптическая кривая над конечным полем"""
+
+    def __init__(self, a: int, b: int, p: int):
+        """
+        Кривая: y² = x³ + ax + b (mod p)
+        """
+        self.a = a
+        self.b = b
+        self.p = p
+
+        # Проверка гладкости
+        discriminant = (4 * a**3 + 27 * b**2) % p
+        assert discriminant != 0, "Singular curve"
+
+    def is_on_curve(self, point: Point) -> bool:
+        """Проверить, лежит ли точка на кривой"""
+        if point.is_infinity():
+            return True
+
+        x, y = point.x, point.y
+        left = (y * y) % self.p
+        right = (x**3 + self.a * x + self.b) % self.p
+        return left == right
+
+    def add(self, P: Point, Q: Point) -> Point:
+        """Сложение точек на кривой"""
+        # P + O = P
+        if P.is_infinity():
+            return Q
+        if Q.is_infinity():
+            return P
+
+        # P + (-P) = O
+        if P.x == Q.x and P.y == (-Q.y % self.p):
+            return Point.infinity()
+
+        # Вычисление наклона
+        if P == Q:
+            # Удвоение точки: λ = (3x² + a) / (2y)
+            num = (3 * P.x**2 + self.a) % self.p
+            den = (2 * P.y) % self.p
+        else:
+            # Сложение разных точек: λ = (y2 - y1) / (x2 - x1)
+            num = (Q.y - P.y) % self.p
+            den = (Q.x - P.x) % self.p
+
+        # Модулярное деление = умножение на обратный
+        lam = (num * pow(den, -1, self.p)) % self.p
+
+        # Вычисление новой точки
+        x3 = (lam**2 - P.x - Q.x) % self.p
+        y3 = (lam * (P.x - x3) - P.y) % self.p
+
+        return Point(x3, y3, self)
+
+    def negate(self, P: Point) -> Point:
+        """Обратная точка: -P = (x, -y)"""
+        if P.is_infinity():
+            return P
+        return Point(P.x, (-P.y) % self.p, self)
+```
+
+## Скалярное умножение
+
+**Скалярное умножение** k × P — это сложение точки P с самой собой k раз.
+
+<ScalarMultiplicationDiagram client:load />
+
+```python
+def scalar_multiply(self, k: int, P: Point) -> Point:
+    """
+    Скалярное умножение: k × P
+    Использует алгоритм "double-and-add"
+    """
+    if k == 0 or P.is_infinity():
+        return Point.infinity()
+
+    if k < 0:
+        k = -k
+        P = self.negate(P)
+
+    result = Point.infinity()
+    addend = P
+
+    while k:
+        if k & 1:
+            result = self.add(result, addend)
+        addend = self.add(addend, addend)  # Удвоение
+        k >>= 1
+
+    return result
+
+# Добавляем метод к классу
+EllipticCurve.multiply = scalar_multiply
+```
+
+## Пример: маленькая кривая
+
+```python
+# Кривая над маленьким полем для демонстрации
+# y² = x³ + x + 1 (mod 23)
+curve = EllipticCurve(a=1, b=1, p=23)
+
+# Найдем все точки на кривой
+points = [Point.infinity()]
+for x in range(23):
+    y_squared = (x**3 + curve.a * x + curve.b) % 23
+    for y in range(23):
+        if (y * y) % 23 == y_squared:
+            points.append(Point(x, y, curve))
+
+print(f"Количество точек: {len(points)}")
+print("Первые 10 точек:")
+for p in points[:10]:
+    print(f"  {p}")
+
+# Проверим сложение
+G = Point(0, 1, curve)  # Генератор
+print(f"\nG = {G}")
+print(f"2G = {curve.add(G, G)}")
+print(f"3G = {curve.add(curve.add(G, G), G)}")
+```
+
+## Дискретный логарифм на эллиптических кривых (ECDLP)
+
+Зная точки G и P = k × G, найти k — **вычислительно сложная задача**.
+
+```python
+# Легко: вычислить P = k × G
+private_key = 12345  # k
+G = Point(0, 1, curve)
+public_key = curve.multiply(private_key, G)
+print(f"Private key: {private_key}")
+print(f"Public key: {public_key}")
+
+# Сложно: имея G и public_key, найти private_key
+# Единственный известный способ — перебор!
+```
+
+**Безопасность ECC** основана на сложности ECDLP.
+
+## secp256k1 — кривая Bitcoin
+
+```python
+# Параметры secp256k1
+p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+a = 0
+b = 7
+n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+
+# Кривая: y² = x³ + 7 (mod p)
+secp256k1 = EllipticCurve(a=0, b=7, p=p)
+G = Point(Gx, Gy, secp256k1)
+
+print(f"secp256k1 parameters:")
+print(f"p = {hex(p)}")
+print(f"G = ({hex(Gx)}, {hex(Gy)})")
+print(f"Order n = {hex(n)}")
+print(f"G on curve: {secp256k1.is_on_curve(G)}")
+```
+
+## Генерация ключей
+
+```python
+import secrets
+
+def generate_keypair(curve, G, n):
+    """
+    Генерация пары ключей:
+    - Приватный ключ: случайное число k ∈ [1, n-1]
+    - Публичный ключ: P = k × G
+    """
+    private_key = secrets.randbelow(n - 1) + 1
+    public_key = curve.multiply(private_key, G)
+    return private_key, public_key
+
+# Для Bitcoin/Ethereum
+private_key, public_key = generate_keypair(secp256k1, G, n)
+print(f"Private key: {hex(private_key)}")
+print(f"Public key: ({hex(public_key.x)}, {hex(public_key.y)})")
+```
+
+## Сжатый формат публичного ключа
+
+Вместо хранения (x, y) можно хранить только x и знак y.
+
+```python
+def compress_point(point: Point) -> bytes:
+    """Сжать точку до 33 байт"""
+    if point.is_infinity():
+        return b'\x00' * 33
+
+    prefix = b'\x02' if point.y % 2 == 0 else b'\x03'
+    return prefix + point.x.to_bytes(32, 'big')
+
+def decompress_point(compressed: bytes, curve) -> Point:
+    """Восстановить точку из сжатого формата"""
+    if compressed == b'\x00' * 33:
+        return Point.infinity()
+
+    prefix = compressed[0]
+    x = int.from_bytes(compressed[1:], 'big')
+
+    # y² = x³ + ax + b
+    y_squared = (x**3 + curve.a * x + curve.b) % curve.p
+    y = pow(y_squared, (curve.p + 1) // 4, curve.p)  # Для p ≡ 3 (mod 4)
+
+    # Выбираем правильный знак y
+    if (prefix == 0x02 and y % 2 != 0) or (prefix == 0x03 and y % 2 == 0):
+        y = curve.p - y
+
+    return Point(x, y, curve)
+
+# Пример
+compressed = compress_point(public_key)
+print(f"Compressed: {compressed.hex()}")  # 33 байта вместо 64+1
+```
+
+## Реализация с использованием библиотеки
+
+```python
+from ecdsa import SECP256k1, SigningKey, VerifyingKey
+
+# Генерация ключей
+sk = SigningKey.generate(curve=SECP256k1)
+vk = sk.verifying_key
+
+print(f"Private key: {sk.to_string().hex()}")
+print(f"Public key: {vk.to_string().hex()}")
+
+# Получение точки
+point = vk.pubkey.point
+print(f"Point: ({hex(point.x())}, {hex(point.y())})")
+```
+
+## Ключевые выводы
+
+1. **Эллиптическая кривая**: y² = x³ + ax + b над конечным полем
+2. **Групповая операция** — сложение точек с геометрическим смыслом
+3. **Скалярное умножение** k × G — основа криптографии
+4. **ECDLP** — сложность нахождения k по P = k × G
+5. **secp256k1** — кривая Bitcoin/Ethereum с параметрами a=0, b=7
+
+## Что дальше?
+
+В следующем уроке мы подробно изучим **secp256k1 и Ed25519** — конкретные кривые, используемые в блокчейне.

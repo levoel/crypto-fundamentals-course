@@ -1,0 +1,402 @@
+---
+title: "secp256k1 и Ed25519"
+description: "Конкретные эллиптические кривые для блокчейна"
+order: 10
+difficulty: "advanced"
+estimatedTime: 30
+topics: ["secp256k1", "Ed25519", "Curve25519", "Bitcoin", "Ethereum", "Solana"]
+---
+
+import { Secp256k1Diagram, Ed25519Diagram, CurveComparisonDiagram } from '../../../components/diagrams/module1';
+
+# secp256k1 и Ed25519
+
+## Две главные кривые блокчейна
+
+| Параметр | secp256k1 | Ed25519 |
+|----------|-----------|---------|
+| Использование | Bitcoin, Ethereum | Solana, Cardano, TON |
+| Форма | Weierstrass | Twisted Edwards |
+| Уравнение | y² = x³ + 7 | -x² + y² = 1 - (121665/121666)x²y² |
+| Поле | p = 2²⁵⁶ - 2³² - 977 | p = 2²⁵⁵ - 19 |
+| Порядок группы | ~2²⁵⁶ | ~2²⁵² |
+
+<CurveComparisonDiagram client:load />
+
+## secp256k1: Кривая Bitcoin
+
+### Почему Сатоши выбрал secp256k1?
+
+1. **Нестандартные параметры** — меньше подозрений в бэкдорах
+2. **Простая структура** (a = 0) — эффективные вычисления
+3. **Endomorphism** — ускорение верификации подписей
+
+<Secp256k1Diagram client:load />
+
+```python
+# Полные параметры secp256k1
+class Secp256k1:
+    # Поле
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+
+    # Параметры кривой y² = x³ + ax + b
+    a = 0
+    b = 7
+
+    # Генератор
+    Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+    Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+
+    # Порядок группы
+    n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+    # Кофактор
+    h = 1
+
+# Проверка: p = 2^256 - 2^32 - 977
+assert Secp256k1.p == 2**256 - 2**32 - 977
+print(f"p is prime: {pow(2, Secp256k1.p - 1, Secp256k1.p) == 1}")  # Fermat test
+```
+
+### Реализация secp256k1
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+import secrets
+
+@dataclass
+class Point:
+    x: Optional[int]
+    y: Optional[int]
+
+    @property
+    def is_infinity(self) -> bool:
+        return self.x is None
+
+    @classmethod
+    def infinity(cls):
+        return cls(None, None)
+
+class Secp256k1Curve:
+    p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    a = 0
+    b = 7
+    n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    G = Point(
+        0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+        0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+    )
+
+    @classmethod
+    def is_on_curve(cls, P: Point) -> bool:
+        if P.is_infinity:
+            return True
+        left = pow(P.y, 2, cls.p)
+        right = (pow(P.x, 3, cls.p) + cls.b) % cls.p
+        return left == right
+
+    @classmethod
+    def add(cls, P: Point, Q: Point) -> Point:
+        if P.is_infinity:
+            return Q
+        if Q.is_infinity:
+            return P
+        if P.x == Q.x and P.y == (-Q.y % cls.p):
+            return Point.infinity()
+
+        if P.x == Q.x and P.y == Q.y:
+            # Doubling
+            m = (3 * P.x * P.x * pow(2 * P.y, -1, cls.p)) % cls.p
+        else:
+            # Addition
+            m = ((Q.y - P.y) * pow(Q.x - P.x, -1, cls.p)) % cls.p
+
+        x3 = (m * m - P.x - Q.x) % cls.p
+        y3 = (m * (P.x - x3) - P.y) % cls.p
+        return Point(x3, y3)
+
+    @classmethod
+    def multiply(cls, k: int, P: Point) -> Point:
+        """Double-and-add алгоритм"""
+        result = Point.infinity()
+        addend = P
+
+        while k:
+            if k & 1:
+                result = cls.add(result, addend)
+            addend = cls.add(addend, addend)
+            k >>= 1
+
+        return result
+
+    @classmethod
+    def generate_keypair(cls):
+        """Генерация пары ключей"""
+        private_key = secrets.randbelow(cls.n - 1) + 1
+        public_key = cls.multiply(private_key, cls.G)
+        return private_key, public_key
+
+# Тест
+priv, pub = Secp256k1Curve.generate_keypair()
+print(f"Private: {hex(priv)}")
+print(f"Public:  ({hex(pub.x)}, ...)")
+print(f"On curve: {Secp256k1Curve.is_on_curve(pub)}")
+```
+
+### Адреса Bitcoin и Ethereum
+
+```python
+import hashlib
+from Crypto.Hash import keccak
+
+def btc_address_from_pubkey(pub: Point) -> str:
+    """Создать Bitcoin адрес из публичного ключа"""
+    # Сжатый публичный ключ
+    prefix = b'\x02' if pub.y % 2 == 0 else b'\x03'
+    compressed = prefix + pub.x.to_bytes(32, 'big')
+
+    # SHA256 + RIPEMD160
+    sha = hashlib.sha256(compressed).digest()
+    ripemd = hashlib.new('ripemd160', sha).digest()
+
+    # Добавляем версию (0x00 для mainnet)
+    versioned = b'\x00' + ripemd
+
+    # Checksum
+    checksum = hashlib.sha256(hashlib.sha256(versioned).digest()).digest()[:4]
+
+    # Base58Check encode
+    return base58_encode(versioned + checksum)
+
+def eth_address_from_pubkey(pub: Point) -> str:
+    """Создать Ethereum адрес из публичного ключа"""
+    # Несжатый публичный ключ (без префикса 04)
+    pubkey_bytes = pub.x.to_bytes(32, 'big') + pub.y.to_bytes(32, 'big')
+
+    # Keccak256
+    k = keccak.new(digest_bits=256)
+    k.update(pubkey_bytes)
+
+    # Последние 20 байт
+    return '0x' + k.hexdigest()[-40:]
+
+def base58_encode(data: bytes) -> str:
+    """Base58 encoding (Bitcoin style)"""
+    ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    n = int.from_bytes(data, 'big')
+    result = ''
+    while n > 0:
+        n, r = divmod(n, 58)
+        result = ALPHABET[r] + result
+    # Preserve leading zeros
+    for byte in data:
+        if byte == 0:
+            result = '1' + result
+        else:
+            break
+    return result
+
+# Пример
+priv, pub = Secp256k1Curve.generate_keypair()
+btc_addr = btc_address_from_pubkey(pub)
+eth_addr = eth_address_from_pubkey(pub)
+print(f"Bitcoin address: {btc_addr}")
+print(f"Ethereum address: {eth_addr}")
+```
+
+## Ed25519: Кривая Solana
+
+### Преимущества Ed25519
+
+1. **Быстрее** — оптимизирована для скорости
+2. **Детерминированные подписи** — один вход → одна подпись
+3. **Встроенная защита** от side-channel атак
+4. **Простота реализации** — меньше потенциальных ошибок
+
+<Ed25519Diagram client:load />
+
+### Параметры Ed25519
+
+```python
+class Ed25519:
+    # Поле: p = 2^255 - 19
+    p = 2**255 - 19
+
+    # Twisted Edwards curve: -x² + y² = 1 + d·x²·y²
+    d = -121665 * pow(121666, -1, p) % p
+
+    # Базовая точка
+    By = 4 * pow(5, -1, p) % p  # y = 4/5
+    Bx = recover_x(By)  # Вычисляется из y
+
+    # Порядок группы
+    L = 2**252 + 27742317777372353535851937790883648493
+
+    # Кофактор
+    h = 8
+
+# Проверка
+assert Ed25519.p == 2**255 - 19
+```
+
+### Сложение точек на Twisted Edwards
+
+```python
+def ed25519_add(P, Q, p, d):
+    """
+    Сложение точек на Twisted Edwards curve:
+    x3 = (x1·y2 + y1·x2) / (1 + d·x1·x2·y1·y2)
+    y3 = (y1·y2 + x1·x2) / (1 - d·x1·x2·y1·y2)
+    """
+    x1, y1 = P
+    x2, y2 = Q
+
+    x1y2 = (x1 * y2) % p
+    y1x2 = (y1 * x2) % p
+    y1y2 = (y1 * y2) % p
+    x1x2 = (x1 * x2) % p
+
+    denom = (d * x1 * x2 * y1 * y2) % p
+
+    x3 = ((x1y2 + y1x2) * pow(1 + denom, -1, p)) % p
+    y3 = ((y1y2 + x1x2) * pow(1 - denom, -1, p)) % p
+
+    return (x3, y3)
+```
+
+### Использование ed25519 через библиотеку
+
+```python
+from nacl.signing import SigningKey, VerifyKey
+from nacl.encoding import HexEncoder
+
+# Генерация ключей
+sk = SigningKey.generate()
+vk = sk.verify_key
+
+print(f"Private key: {sk.encode(HexEncoder).decode()}")
+print(f"Public key:  {vk.encode(HexEncoder).decode()}")
+
+# Подпись
+message = b"Hello, Ed25519!"
+signed = sk.sign(message)
+signature = signed.signature
+
+print(f"Signature: {signature.hex()}")
+
+# Верификация
+try:
+    vk.verify(signed)
+    print("Signature valid!")
+except:
+    print("Signature invalid!")
+```
+
+## Сравнение производительности
+
+```python
+import time
+from ecdsa import SECP256k1, SigningKey as ECDSAKey
+from nacl.signing import SigningKey as Ed25519Key
+
+def benchmark(name, iterations, func):
+    start = time.time()
+    for _ in range(iterations):
+        func()
+    elapsed = time.time() - start
+    print(f"{name}: {iterations/elapsed:.0f} ops/sec")
+
+# Генерация ключей
+benchmark("ECDSA keygen", 100, lambda: ECDSAKey.generate(curve=SECP256k1))
+benchmark("Ed25519 keygen", 100, lambda: Ed25519Key.generate())
+
+# Подпись
+ecdsa_sk = ECDSAKey.generate(curve=SECP256k1)
+ed25519_sk = Ed25519Key.generate()
+msg = b"Test message"
+
+benchmark("ECDSA sign", 100, lambda: ecdsa_sk.sign(msg))
+benchmark("Ed25519 sign", 100, lambda: ed25519_sk.sign(msg))
+
+# Верификация
+ecdsa_sig = ecdsa_sk.sign(msg)
+ecdsa_vk = ecdsa_sk.verifying_key
+ed25519_sig = ed25519_sk.sign(msg)
+ed25519_vk = ed25519_sk.verify_key
+
+benchmark("ECDSA verify", 100, lambda: ecdsa_vk.verify(ecdsa_sig, msg))
+benchmark("Ed25519 verify", 100, lambda: ed25519_vk.verify(ed25519_sig))
+```
+
+## Использование в блокчейнах
+
+### Bitcoin (secp256k1)
+
+```python
+# Формат приватного ключа WIF (Wallet Import Format)
+def private_key_to_wif(private_key: int, compressed: bool = True) -> str:
+    """Конвертировать приватный ключ в WIF формат"""
+    # Version byte (0x80 для mainnet)
+    version = b'\x80'
+
+    # Приватный ключ
+    key_bytes = private_key.to_bytes(32, 'big')
+
+    # Compression flag
+    if compressed:
+        key_bytes += b'\x01'
+
+    # Добавляем версию
+    data = version + key_bytes
+
+    # Checksum
+    checksum = hashlib.sha256(hashlib.sha256(data).digest()).digest()[:4]
+
+    return base58_encode(data + checksum)
+
+# Пример
+priv, _ = Secp256k1Curve.generate_keypair()
+wif = private_key_to_wif(priv)
+print(f"WIF: {wif}")
+```
+
+### Solana (Ed25519)
+
+```python
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+
+# Генерация keypair
+keypair = Keypair()
+print(f"Public key: {keypair.pubkey()}")
+print(f"Secret key: {keypair.secret().hex()}")
+
+# Из seed
+seed = bytes([1] * 32)  # Детерминированный seed
+keypair_from_seed = Keypair.from_seed(seed)
+print(f"Deterministic pubkey: {keypair_from_seed.pubkey()}")
+```
+
+## Когда какую кривую использовать?
+
+| Сценарий | Рекомендация |
+|----------|--------------|
+| Bitcoin совместимость | secp256k1 |
+| Ethereum совместимость | secp256k1 |
+| Максимальная скорость | Ed25519 |
+| Solana экосистема | Ed25519 |
+| Детерминированные подписи | Ed25519 |
+| Schnorr подписи | secp256k1 (Taproot) или Ed25519 |
+
+## Ключевые выводы
+
+1. **secp256k1** — стандарт Bitcoin/Ethereum, Weierstrass форма
+2. **Ed25519** — современная кривая, быстрее и безопаснее
+3. **Адреса** — хеши от публичных ключей (разные алгоритмы)
+4. **Выбор кривой** зависит от экосистемы и требований
+5. **Ed25519** рекомендуется для новых проектов
+
+## Что дальше?
+
+В следующем уроке мы изучим **ECDSA** — алгоритм цифровой подписи, используемый в Bitcoin и Ethereum.
