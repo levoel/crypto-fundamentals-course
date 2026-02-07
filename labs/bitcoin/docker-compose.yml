@@ -1,0 +1,32 @@
+# Bitcoin Regtest Lab - Local Bitcoin Node
+# Usage: docker compose up
+# Init: docker exec bitcoin-regtest bash /scripts/init-regtest.sh
+
+services:
+  bitcoin:
+    image: bitcoin/bitcoin:${BITCOIN_CORE_VERSION}
+    container_name: bitcoin-regtest
+    command:
+      - "bitcoind"
+      - "-regtest"
+      - "-rpcuser=${BITCOIN_RPC_USER}"
+      - "-rpcpassword=${BITCOIN_RPC_PASSWORD}"
+      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcbind=0.0.0.0"
+      - "-txindex=1"
+      - "-printtoconsole"
+      - "-fallbackfee=0.0001"
+    ports:
+      - "${BITCOIN_RPC_PORT:-18443}:18443"
+    volumes:
+      - bitcoin-data:/home/bitcoin/.bitcoin
+      - ./scripts:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bitcoin-cli -regtest -rpcuser=$${BITCOIN_RPC_USER} -rpcpassword=$${BITCOIN_RPC_PASSWORD} getblockchaininfo || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  bitcoin-data:
