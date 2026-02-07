@@ -1,0 +1,23 @@
+# Solana Test Validator Lab
+# Provides local Solana cluster for program development and testing
+
+services:
+  solana:
+    image: ghcr.io/beeman/solana-test-validator:${SOLANA_VALIDATOR_TAG:-latest}
+    container_name: solana-validator
+    # Required for io_uring syscalls used by Agave v2.0+.
+    # Docker's default seccomp profile blocks io_uring_setup,
+    # causing validator crash on startup.
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "${SOLANA_RPC_PORT:-8899}:8899"
+      - "${SOLANA_WS_PORT:-8900}:8900"
+    healthcheck:
+      test: ["CMD-SHELL", "solana cluster-version -u http://localhost:8899 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    volumes:
+      - ./scripts:/scripts:ro
