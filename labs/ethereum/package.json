@@ -1,0 +1,20 @@
+{
+  "name": "crypto-course-ethereum-lab",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Ethereum development lab for Crypto Fundamentals course",
+  "private": true,
+  "engines": {
+    "node": ">=22.10.0"
+  },
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "node": "npx hardhat node"
+  },
+  "devDependencies": {
+    "hardhat": "^3.1.7",
+    "ethers": "^6.16.0",
+    "viem": "^2.45.1"
+  }
+}

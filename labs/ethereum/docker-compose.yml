@@ -1,0 +1,17 @@
+# Ethereum Development Lab - Anvil (Foundry)
+# Provides local EVM node for smart contract development
+# Anvil includes 10 pre-funded accounts with 10000 ETH each
+
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION:-latest}
+    container_name: ethereum-anvil
+    entrypoint: ["anvil", "--host", "0.0.0.0"]
+    ports:
+      - "${ANVIL_PORT:-8545}:8545"
+    healthcheck:
+      test: ["CMD-SHELL", "cast chain-id --rpc-url http://localhost:8545 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
