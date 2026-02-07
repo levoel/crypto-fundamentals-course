@@ -1,0 +1,6 @@
+# Crypto Fundamentals Lab - Python Dependencies
+# Verified: 2026-02-08
+pycryptodome==3.23.0
+ecdsa==0.19.1
+python-bitcoinlib==0.12.2
+cryptography==46.0.4

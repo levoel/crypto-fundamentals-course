@@ -1,0 +1,24 @@
+# Crypto Fundamentals Lab - Jupyter Environment
+# Usage: docker compose up
+# Access: http://localhost:8888
+
+services:
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JUPYTER_TAG: ${JUPYTER_TAG:-2025-12-31}
+    container_name: crypto-lab
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/api || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
