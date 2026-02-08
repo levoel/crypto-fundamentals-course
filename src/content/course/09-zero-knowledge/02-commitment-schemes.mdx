@@ -1,0 +1,220 @@
+---
+title: "Commitment Schemes"
+description: "Hash-based и Pedersen commitments, binding и hiding, гомоморфное свойство -- строительные блоки ZK"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Commitment Scheme", "Pedersen Commitment", "Hash Commitment", "Binding", "Hiding", "Homomorphic"]
+prerequisites: []
+---
+
+import { CommitmentLifecycleDiagram, HashVsPedersenDiagram, HomomorphicCommitmentDiagram } from '../../../components/diagrams/module9/CommitmentSchemeDiagrams';
+
+# Commitment Schemes
+
+## Зачем это блокчейн-разработчику?
+
+В ZK-01 мы узнали, что zero-knowledge доказательства позволяют доказать знание секрета без его раскрытия. Но как именно Prover "фиксирует" свой выбор до того, как Verifier бросит вызов? Как гарантировать, что Prover не подменит ответ задним числом?
+
+Ответ -- **commitment schemes**. Это криптографический аналог **запечатанного конверта**: вы кладете сообщение в конверт, запечатываете его, и отдаете. Позже вы можете раскрыть содержимое, и получатель убедится, что оно не изменилось.
+
+Commitment schemes -- фундаментальный строительный блок для:
+- **ZK-доказательств** (фиксация промежуточных значений)
+- **Приватных транзакций** (Confidential Transactions в Monero)
+- **Голосований** (commit-reveal voting)
+- **Аукционов** (sealed-bid auctions)
+- **Протоколов честного подбрасывания монетки**
+
+**Связь с Phase 2:** Pedersen commitment использует эллиптические кривые (CRYPTO-09/10) и скалярное умножение точек. Hash-based commitment использует SHA-256 (CRYPTO-03/04).
+
+## Lifecycle Commitment Scheme
+
+Каждый commitment scheme проходит два этапа: **commit** (запечатать) и **reveal** (раскрыть).
+
+<CommitmentLifecycleDiagram client:load />
+
+### Два ключевых свойства
+
+Любой commitment scheme должен обеспечивать два свойства:
+
+**1. Binding (привязка):** После commit Алиса **НЕ МОЖЕТ** изменить значение. Она привязана к тому, что запечатала. Попытка открыть commitment с другим значением провалится.
+
+**2. Hiding (сокрытие):** До reveal Боб **НЕ МОЖЕТ** определить запечатанное значение. Commitment не раскрывает информацию о содержимом.
+
+> **Важно:** В реальных протоколах binding и hiding могут быть computational (основаны на вычислительной сложности) или information-theoretic (безусловные). Невозможно иметь ОБА свойства information-theoretic одновременно.
+
+## Hash-based Commitment
+
+Простейший commitment scheme: **C = H(m || r)**, где m -- сообщение, r -- случайный blinding factor, H -- криптографическая хеш-функция (SHA-256).
+
+### Алгоритм
+
+```
+COMMIT(m):
+    r = random(32 bytes)     # Случайный blinding factor
+    C = SHA-256(m || r)      # Commitment
+    return (C, r)            # C -- публикуется, r -- секрет
+
+VERIFY(C, m, r):
+    return C == SHA-256(m || r)  # Проверяем opening
+```
+
+### Свойства
+
+| Свойство | Тип | Объяснение |
+|----------|-----|------------|
+| **Binding** | Computational | Нарушение = коллизия SHA-256 (невозможно) |
+| **Hiding** | Perfect | Случайный r делает C равномерно распределённым |
+
+**Binding:** Чтобы подменить m на m', нужно найти r' такой что H(m' || r') == H(m || r). Это коллизия хеш-функции -- для SHA-256 требуется ~2^128 операций.
+
+**Hiding:** Даже если пространство сообщений маленькое ({ДА, НЕТ}), случайный 256-битный r делает commitment неотличимым от случайного числа.
+
+> **Без blinding factor** hiding нарушено! Если C = H("ДА"), Боб просто вычислит H("ДА") и H("НЕТ") и сравнит.
+
+## Pedersen Commitment
+
+Pedersen commitment использует **эллиптические кривые** вместо хеш-функций:
+
+**C = m*G + r*H**
+
+где:
+- G -- стандартный генератор кривой (Phase 2, CRYPTO-09)
+- H -- второй генератор (дискретный логарифм H по базе G неизвестен)
+- m -- значение (секрет)
+- r -- blinding factor (случайный)
+
+### Получение второго генератора H
+
+Критически важно: никто не должен знать дискретный логарифм H по базе G (т.е. число h такое что H = h*G). Иначе binding нарушено.
+
+**"Nothing-up-my-sleeve" подход:**
+```
+H_seed = SHA-256("Pedersen_generator_H")
+H_scalar = int(H_seed) mod order
+H = H_scalar * G
+```
+
+Поскольку H_scalar получен из хеша фиксированной строки, найти h такой что H = h*G потребовало бы решить задачу дискретного логарифма.
+
+### Свойства Pedersen
+
+| Свойство | Тип | Объяснение |
+|----------|-----|------------|
+| **Binding** | Computational | Нарушение = решить задачу дискретного логарифма |
+| **Hiding** | Perfect (information-theoretic) | При случайном r, C равномерно по кривой |
+
+**Binding:** Чтобы открыть C с другим значением m', нужно найти r' такой что m*G + r*H = m'*G + r'*H. Это даёт (m - m')*G = (r' - r)*H, что раскрывает дискретный логарифм H.
+
+**Hiding:** Для любого C и любого m, существует ровно одно r такое что C = m*G + r*H. Поэтому C не несёт информации о m (information-theoretic hiding).
+
+## Сравнение Hash vs Pedersen
+
+<HashVsPedersenDiagram client:load />
+
+## Гомоморфное свойство Pedersen
+
+Ключевое преимущество Pedersen commitment -- **аддитивная гомоморфность**:
+
+**C(a, r1) + C(b, r2) = C(a+b, r1+r2)**
+
+Доказательство:
+```
+C(a, r1) + C(b, r2) = (a*G + r1*H) + (b*G + r2*H)
+                     = (a+b)*G + (r1+r2)*H
+                     = C(a+b, r1+r2)
+```
+
+Это означает: можно **складывать зашифрованные значения** без расшифровки!
+
+<HomomorphicCommitmentDiagram client:load />
+
+### Практическое применение: Confidential Transactions
+
+В Monero и некоторых Bitcoin-проектах (сайдчейн Liquid) используются **Confidential Transactions** на основе Pedersen commitments:
+
+1. Каждая сумма транзакции заменяется на Pedersen commitment: C = amount*G + r*H
+2. Верификатор проверяет: **сумма входов == сумма выходов** через сложение commitments
+3. Суммы остаются **скрытыми**, но баланс **верифицируем**
+
+```
+C(input1) + C(input2) == C(output1) + C(output2) + C(fee)
+```
+
+Гомоморфность позволяет проверить баланс **без раскрытия сумм**.
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (конверт)
+
+Commitment scheme -- **запечатанный конверт**:
+- **Commit:** Вы пишете число на бумаге, кладёте в конверт, запечатываете, отдаёте.
+- **Binding:** Вы не можете поменять число после запечатывания.
+- **Hiding:** Получатель не может прочитать число через конверт.
+- **Reveal:** Вы открываете конверт. Получатель видит число и убеждается.
+- **Гомоморфность Pedersen:** Два запечатанных конверта можно "сложить" и получить конверт с суммой, не вскрывая ни один из них!
+
+### Уровень 2: Алгоритмический (код)
+
+```python
+# Hash-based commitment
+def commit(m, r):
+    return SHA256(m || r)
+
+def verify(C, m, r):
+    return C == SHA256(m || r)
+
+# Pedersen commitment (эллиптические кривые)
+def pedersen_commit(m, r):
+    return m*G + r*H  # Точка на кривой
+
+def pedersen_verify(C, m, r):
+    return C == m*G + r*H
+
+# Гомоморфность
+C1 = pedersen_commit(a, r1)
+C2 = pedersen_commit(b, r2)
+assert C1 + C2 == pedersen_commit(a + b, r1 + r2)  # Работает!
+```
+
+### Уровень 3: Математический (формальный)
+
+**Определение:** Commitment scheme -- тройка алгоритмов (Setup, Commit, Verify):
+
+- **Setup(1^lambda) -> params:** Генерация параметров (G, H для Pedersen)
+- **Commit(params, m; r) -> C:** Детерминистичный алгоритм, выход -- commitment
+- **Verify(params, C, m, r) -> {0, 1}:** Проверка opening
+
+**Computational Binding:**
+Для всех PPT adversary A:
+Pr[Commit(m, r) = Commit(m', r') и m != m'] < negl(lambda)
+
+**Perfect Hiding:**
+Для всех m, m' и для всех C:
+Pr[Commit(m, r) = C] = Pr[Commit(m', r') = C]
+
+(распределение C **одинаково** для всех m -- information-theoretic стойкость)
+
+## Лабораторная работа
+
+Полный Python notebook с реализацией обоих commitment schemes доступен в лабораторной среде:
+
+**Notebook 13: Commitment Schemes (13-commitment-schemes.ipynb)**
+- Реализация hash_commit и hash_verify с SHA-256
+- Демонстрация binding и hiding
+- Pedersen commitment на secp256k1
+- Гомоморфное свойство с проверкой
+- Приватное голосование на Pedersen commitments
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Commitment scheme** | Запечатать значение, раскрыть позже | Фундамент ZK-протоколов |
+| **Binding** | Нельзя подменить значение | Честность Prover |
+| **Hiding** | Нельзя узнать значение | Приватность данных |
+| **Hash-based: C=H(m\|\|r)** | Простой, быстрый, негомоморфный | Voting, timestamping |
+| **Pedersen: C=mG+rH** | Гомоморфный, на эллиптических кривых | ZK proofs, Confidential TX |
+| **Гомоморфность** | C(a)+C(b)=C(a+b) | Вычисления на зашифрованных данных |
+
+**Что дальше:** В ZK-03 мы изучим **Sigma протоколы** и **Schnorr identification** -- первый практический ZK-протокол. Мы увидим, как commitment schemes используются в Move 1 (Prover commit), и как **Fiat-Shamir transform** превращает интерактивный протокол в Schnorr подпись.

@@ -1,0 +1,249 @@
+---
+title: "Interactive Proofs и Fiat-Shamir"
+description: "Sigma протоколы, Schnorr identification, soundness через повторение, и Fiat-Shamir transform"
+order: 3
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Sigma Protocol", "Schnorr Protocol", "Fiat-Shamir Transform", "Interactive Proof", "Non-Interactive Proof"]
+prerequisites: []
+---
+
+import { SigmaProtocolDiagram, SchnorrProtocolDiagram, FiatShamirDiagram } from '../../../components/diagrams/module9/InteractiveProofDiagrams';
+
+# Interactive Proofs и Fiat-Shamir
+
+## Зачем это блокчейн-разработчику?
+
+В ZK-01 мы узнали ЧТО такое zero-knowledge доказательства. В ZK-02 -- КАК фиксировать значения через commitment schemes. Теперь пора увидеть **реальный ZK-протокол** в действии.
+
+Sigma протоколы -- класс ZK-доказательств с тремя шагами: commit, challenge, response. Schnorr identification protocol -- самый известный представитель. А Fiat-Shamir transform -- метод, превращающий интерактивный протокол в **неинтерактивное доказательство**, которое можно записать в блокчейн.
+
+**Ключевой инсайт:** Schnorr подпись, которую мы изучали в Phase 2 (CRYPTO-12), -- это буквально Schnorr identification protocol + Fiat-Shamir transform. Сегодня мы увидим, откуда она берётся.
+
+**Связь с Phase 2:**
+- CRYPTO-09/10: Эллиптические кривые -- основа для скалярного умножения в протоколе
+- CRYPTO-12: Schnorr подпись = Fiat-Shamir(Schnorr identification)
+- ZK-02: Commitment (Move 1) использует те же принципы, что Pedersen commitment
+
+## Sigma протоколы: три шага
+
+**Sigma протокол** (обозначение от формы буквы Sigma, напоминающей три стрелки) -- класс ZK-протоколов с тремя ходами:
+
+1. **Commitment (Move 1, Prover -> Verifier):** Prover отправляет случайное значение R
+2. **Challenge (Move 2, Verifier -> Prover):** Verifier отправляет случайный challenge c
+3. **Response (Move 3, Prover -> Verifier):** Prover вычисляет и отправляет ответ s
+
+Verifier проверяет соотношение между R, c, s и публичным утверждением.
+
+<SigmaProtocolDiagram client:load />
+
+### Почему именно три шага?
+
+- **1 шаг (только response):** Prover может подготовить ответ заранее -- нет soundness.
+- **2 шага (commitment + response):** Нет случайного challenge -- Prover может подготовить ложный ответ.
+- **3 шага (commit + challenge + response):** Случайный challenge гарантирует, что Prover не может угадать заранее. Commitment фиксирует выбор Prover ДО challenge.
+
+> **Аналогия:** Экзамен. Студент (Prover) "коммитит" свои знания. Преподаватель (Verifier) задаёт случайный вопрос (challenge). Студент отвечает (response). Если студент знает предмет -- ответит на любой вопрос. Если нет -- провалится.
+
+## Schnorr Identification Protocol
+
+Самый чистый пример Sigma протокола. Prover доказывает знание секретного ключа x, соответствующего открытому ключу P = xG.
+
+### Setup
+
+- **Общее знание:** Эллиптическая кривая (secp256k1), генератор G, порядок n
+- **Prover знает:** Секретный ключ x
+- **Публично:** Открытый ключ P = xG
+
+### Протокол
+
+| Шаг | Действие | Формула |
+|-----|----------|---------|
+| 1. Commit | Prover выбирает k случайно, вычисляет R | R = kG |
+| 2. Challenge | Verifier выбирает c случайно | c из [1, n-1] |
+| 3. Response | Prover вычисляет s | s = k + c*x (mod n) |
+| 4. Verify | Verifier проверяет | s*G == R + c*P? |
+
+### Почему верификация работает?
+
+```
+s*G = (k + c*x)*G          // Подставляем s = k + cx
+    = k*G + c*x*G          // Дистрибутивность
+    = R + c*P               // R = kG, P = xG
+```
+
+Если Prover знает x, равенство **всегда** выполняется (completeness).
+
+### Анализ свойств
+
+**Completeness:** При честном исполнении s*G = R + c*P всегда (алгебраическое тождество).
+
+**Soundness:** Если Prover не знает x:
+- Чтобы ответить правильно, нужно знать k и x (для вычисления s = k + cx)
+- Угадать s с вероятностью 1/n ~ 1/2^256 (пренебрежимо мало)
+- При маленьком challenge space (|c| = 2): вероятность 1/2 за раунд, 1/2^N за N раундов
+
+**Zero-Knowledge:** Можно построить Simulator:
+1. Выбрать s и c случайно
+2. Вычислить R = s*G - c*P
+3. Транскрипт (R, c, s) неотличим от реального
+
+<SchnorrProtocolDiagram client:load />
+
+### Демонстрация с числами
+
+Интерактивная диаграмма выше позволяет:
+- Задать секретный ключ x
+- Запускать раунды протокола и видеть все промежуточные вычисления
+- Переключиться в режим "Cheater" и убедиться, что без знания x верификация провалится
+
+**Попробуйте:** Запустите 5-10 раундов в режиме "Honest" (все pass), затем переключитесь в "Cheater" (большинство fail).
+
+## Soundness через повторение
+
+В пещере Али-Бабы мы видели: один раунд -- 50% шанс обмана, 20 раундов -- 0.0001%. Тот же принцип работает для Schnorr:
+
+| Challenge space | 1 раунд | 10 раундов | 20 раундов |
+|----------------|---------|------------|------------|
+| |c| = 2 | 50% | 0.098% | 0.000095% |
+| |c| = 2^128 | 2^-128 | 2^-1280 | 2^-2560 |
+| |c| = 2^256 (secp256k1) | 2^-256 | 2^-2560 | 2^-5120 |
+
+При challenge space = 2^256 (как в secp256k1) **одного раунда достаточно** -- вероятность обмана 2^-256 ~ 0.
+
+> **Практический вывод:** На реальных кривых (secp256k1) Schnorr protocol с одним раундом уже имеет negligible soundness error. Повторение нужно только при маленьком challenge space.
+
+## Fiat-Shamir Transform
+
+**Проблема:** Интерактивные протоколы требуют живого Verifier. В блокчейне нет "живого" Verifier -- доказательство должно быть **неинтерактивным**: Prover генерирует его один раз, любая нода проверяет позже.
+
+**Решение (Amos Fiat, Adi Shamir, 1986):** Заменить случайный challenge от Verifier на **хеш** от публичных данных:
+
+**c = H(statement || R)** вместо **c = random from Verifier**
+
+<FiatShamirDiagram client:load />
+
+### Почему это безопасно?
+
+Хеш-функция H (SHA-256) моделируется как **Random Oracle** -- функция, выход которой неотличим от случайного. Prover не может предсказать c до вычисления R, потому что:
+1. Prover выбирает k, вычисляет R = kG
+2. c = H(statement || R) -- определяется после фиксации R
+3. Изменение R изменит c непредсказуемо
+
+Фактически, хеш "имитирует" честного Verifier, который выбирает случайный challenge.
+
+### Schnorr + Fiat-Shamir = Schnorr Подпись
+
+Когда `statement = message` (сообщение для подписи):
+
+| Элемент | Schnorr Identification | Schnorr Signature |
+|---------|----------------------|-------------------|
+| statement | "I know x for P=xG" | message M |
+| R | k*G (commitment) | k*G (nonce point) |
+| c | random from Verifier | H(M \|\| R) |
+| s | k + c*x | k + c*x |
+| Proof/Sig | (R, c, s) | (R, s) -- c вычисляется из M и R |
+
+**Schnorr подпись (Phase 2, CRYPTO-12) = Fiat-Shamir, применённый к Schnorr identification.**
+
+Это не совпадение -- это точное математическое тождество:
+- **Подписание** = Prover выполняет Fiat-Shamir prove с message как statement
+- **Верификация** = Verifier восстанавливает c = H(message || R) и проверяет s*G == R + c*P
+- Подпись (R, s) -- это **неинтерактивное ZK-доказательство знания секретного ключа x**
+
+> **Каждый раз, когда вы подписываете Bitcoin/Ethereum транзакцию, вы генерируете неинтерактивное zero-knowledge доказательство знания приватного ключа.**
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (экзамен по телефону)
+
+Sigma протокол -- как устный экзамен:
+- **Commitment:** Студент "показывает" что готов (общие утверждения)
+- **Challenge:** Преподаватель задаёт **случайный** вопрос
+- **Response:** Студент отвечает
+
+Fiat-Shamir -- как **письменный** экзамен:
+- Студент сам "генерирует" вопросы из хеша своих ответов
+- Не может подготовить ответы заранее (вопросы зависят от ответов)
+- Преподаватель проверяет позже, не присутствуя на экзамене
+
+### Уровень 2: Алгоритмический (код)
+
+```python
+# Interactive Schnorr
+def schnorr_prove_interactive(G, P, x, order):
+    k = random(1, order)
+    R = k * G                      # Move 1: commitment
+    c = verifier.random()           # Move 2: challenge
+    s = (k + c * x) % order        # Move 3: response
+    return R, c, s
+
+# Non-interactive (Fiat-Shamir)
+def schnorr_prove_noninteractive(G, P, x, order, message):
+    k = random(1, order)
+    R = k * G
+    c = int(SHA256(message || R)) % order  # Hash replaces verifier
+    s = (k + c * x) % order
+    return R, s  # c is derivable from message and R
+
+# This IS Schnorr signature!
+def schnorr_sign(message, x):
+    return schnorr_prove_noninteractive(G, P, x, order, message)
+```
+
+### Уровень 3: Математический (формальный)
+
+**Определение (Sigma Protocol):**
+
+Тройка (Commit, Challenge, Response) для отношения R = {(x, w) : f(x, w) = 1}:
+
+1. P(w) -> a (commitment, random)
+2. V -> c (challenge, uniform in {0,1}^t)
+3. P(w, a, c) -> z (response)
+
+Свойства:
+- **t-Special Soundness:** Из 2 принимающих транскриптов (a, c1, z1), (a, c2, z2) с c1 != c2 можно **извлечь** witness w.
+- **Special HVZK:** Simulator S(x, c) для данного c выдаёт (a, c, z) неотличимый от реального.
+
+**Fiat-Shamir Heuristic:**
+Для Sigma protocol (P, V) для R, определим NIFS (Non-Interactive FS):
+- Prove(x, w): a <- P.Commit(w); c <- H(x || a); z <- P.Respond(w, a, c); output pi = (a, z)
+- Verify(x, pi): parse (a, z) = pi; c <- H(x || a); check V.Accept(x, a, c, z)
+
+**Безопасность:** В Random Oracle Model, Fiat-Shamir transform сохраняет soundness Sigma protocol.
+
+## Лабораторная работа
+
+Полная реализация Schnorr protocol и Fiat-Shamir transform на Python доступна в лабораторной среде:
+
+**Notebook 14: Interactive Proofs (14-interactive-proofs.ipynb)**
+- Schnorr identification protocol на secp256k1
+- Честный Prover vs Cheater (статистика за 100 раундов)
+- Вероятность обмана при разном challenge space
+- Fiat-Shamir transform: из интерактивного в неинтерактивный
+- Демонстрация: Fiat-Shamir(Schnorr) = Schnorr подпись
+
+## От Sigma протоколов к SNARKs
+
+Sigma протоколы доказывают **конкретные** утверждения: "знаю x для P = xG". А SNARKs и STARKs доказывают **произвольные** вычисления: "выполнил программу правильно".
+
+Путь от Sigma к SNARKs:
+1. **Sigma протокол:** Доказательство знания одного секрета (этот урок)
+2. **Обобщённые протоколы:** Доказательство знания нескольких секретов (OR-proof, AND-proof)
+3. **Arithmetization:** Преобразование произвольных вычислений в полиномиальные уравнения
+4. **Polynomial IOP:** Интерактивный протокол для проверки полиномов
+5. **SNARK/STARK:** Fiat-Shamir + Polynomial commitment = неинтерактивное доказательство
+
+В следующих уроках (ZK-04, ZK-05) мы пройдём этот путь до конца.
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Sigma протокол** | 3-move ZK: commit, challenge, response | Базовый шаблон ZK-доказательств |
+| **Schnorr identification** | Доказательство знания секретного ключа | Самый чистый пример Sigma протокола |
+| **Soundness через повторение** | N раундов -> 1/2^N вероятность обмана | Экспоненциальная безопасность |
+| **Fiat-Shamir transform** | c = H(statement \|\| R) вместо random c | Интерактивный -> неинтерактивный |
+| **Schnorr подпись** | Fiat-Shamir(Schnorr) = signature | ZK-доказательство знания ключа |
+
+**Что дальше:** В ZK-04 мы перейдём от доказательства знания секрета к доказательству **произвольных вычислений** -- arithmetization, R1CS, и концепция zkSNARK.
