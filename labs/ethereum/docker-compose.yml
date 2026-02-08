@@ -15,3 +15,25 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+
+  # Mainnet fork for DeFi testing (LAB-05)
+  anvil-fork:
+    image: ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION:-latest}
+    container_name: ethereum-anvil-fork
+    entrypoint:
+      - "anvil"
+      - "--host"
+      - "0.0.0.0"
+      - "--fork-url"
+      - "${MAINNET_RPC_URL}"
+      - "--fork-block-number"
+      - "${FORK_BLOCK_NUMBER:-21400000}"
+    ports:
+      - "${FORK_PORT:-8546}:8545"
+    profiles: ["fork"]
+    healthcheck:
+      test: ["CMD-SHELL", "cast chain-id --rpc-url http://localhost:8545 || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s

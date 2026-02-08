@@ -2,7 +2,7 @@
 // Requires Node.js >= 22.10.0
 // Docs: https://hardhat.org/docs
 
-import { defineConfig } from "hardhat/config";
+import { defineConfig, configVariable } from "hardhat/config";
 import HardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 
 export default defineConfig({
@@ -13,6 +13,15 @@ export default defineConfig({
     anvil: {
       type: "http",
       url: "http://localhost:8545",
+    },
+    // Mainnet fork for DeFi testing (LAB-05)
+    mainnetFork: {
+      type: "edr-simulated",
+      chainType: "l1",
+      forking: {
+        url: configVariable("MAINNET_RPC_URL"),
+        blockNumber: 21400000,
+      },
     },
   },
 });
