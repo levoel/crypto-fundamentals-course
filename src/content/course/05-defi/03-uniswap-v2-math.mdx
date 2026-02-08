@@ -1,0 +1,209 @@
+---
+title: "Математика Uniswap V2"
+description: "Целочисленная формула свопа, LP токены, архитектура контрактов V2 и SimpleDEX для практики"
+order: 3
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["Uniswap V2", "Swap Math", "LP Tokens", "Constant Product", "SimpleDEX"]
+prerequisites: ["02-amm-concept"]
+---
+
+import { V2SwapMathDiagram, LPTokenMintingDiagram, V2vsV3EfficiencyDiagram } from '../../../components/diagrams/module5/UniswapV2MathDiagrams';
+
+# Математика Uniswap V2
+
+## Зачем это блокчейну?
+
+В предыдущем уроке мы изучили формулу xy=k теоретически. Теперь разберем, как **Uniswap V2** реализует эту формулу в Solidity -- **целочисленная арифметика**, комиссии через множитель 997/1000, и LP токены как доля пула.
+
+Uniswap V2 -- самый развернутый и изученный AMM в истории DeFi. Его контракты аудированы, форкнуты сотни раз (SushiSwap, PancakeSwap), и остаются эталоном для понимания AMM. Разбирая V2, вы получаете фундамент для понимания V3, V4 и всех производных протоколов.
+
+## Целочисленная формула V2
+
+### Почему нет float?
+
+Solidity не поддерживает числа с плавающей точкой. Все вычисления -- `uint256`. Uniswap V2 решает проблему комиссии 0.3% элегантно:
+
+```
+// Вместо: amountOut = reserveOut * amountIn * 0.997 / (reserveIn + amountIn * 0.997)
+// V2 использует:
+amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997)
+```
+
+Умножение на 997 и 1000 -- это целочисленный эквивалент `(1 - 0.003)`. Никаких дробей, никаких погрешностей.
+
+### Пошаговый расчет
+
+<V2SwapMathDiagram client:load />
+
+### Формула в деталях
+
+Полная формула Uniswap V2 для свопа:
+
+$$
+amountOut = \frac{reserveOut \cdot amountIn \cdot 997}{reserveIn \cdot 1000 + amountIn \cdot 997}
+$$
+
+**Почему 997/1000?**
+
+- Комиссия = 0.3% = 3/1000
+- `(1 - 3/1000) = 997/1000`
+- Целочисленное умножение: `amountIn * 997` вместо `amountIn * 0.997`
+- Компенсация в знаменателе: `reserveIn * 1000` балансирует масштаб
+
+## Архитектура контрактов V2
+
+Uniswap V2 состоит из трех уровней контрактов:
+
+### Factory
+
+**UniswapV2Factory** -- реестр всех пулов:
+
+- `createPair(tokenA, tokenB)` -- создает новый пул через `create2`
+- `getPair(tokenA, tokenB)` -- возвращает адрес пула
+- Один пул на каждую уникальную пару токенов
+- Контролирует fee-to (протокольная комиссия, изначально отключена)
+
+### Pair (Pool)
+
+**UniswapV2Pair** -- ядро протокола:
+
+- Хранит резервы двух токенов
+- Выполняет свопы (`swap()`)
+- Минтит и сжигает LP токены (`mint()`, `burn()`)
+- Сам является ERC-20 токеном (LP token)
+- Реализует TWAP oracle (кумулятивные цены)
+
+### Router
+
+**UniswapV2Router02** -- пользовательский интерфейс:
+
+- `swapExactTokensForTokens()` -- своп с точным входом
+- `swapTokensForExactTokens()` -- своп с точным выходом
+- `addLiquidity()` -- добавление ликвидности
+- `removeLiquidity()` -- удаление ликвидности
+- Маршрутизация multi-hop свопов (ETH -> USDC -> DAI)
+- Wrapping ETH в WETH
+
+> **Пользователь всегда взаимодействует с Router.** Router вызывает Pair. Factory нужен только для создания пулов.
+
+## LP токены: расчет долей
+
+<LPTokenMintingDiagram client:load />
+
+### Первый провайдер
+
+При первом депозите LP получает токены по формуле **геометрического среднего**:
+
+$$
+liquidity = \sqrt{amountA \cdot amountB} - MINIMUM\_LIQUIDITY
+$$
+
+Где `MINIMUM_LIQUIDITY = 1000` навсегда блокируется на `address(0)`.
+
+**Зачем MINIMUM_LIQUIDITY?** Без него первый LP мог бы:
+1. Создать пул с 1 wei TokenA + 1 wei TokenB
+2. Получить 1 LP токен
+3. Отправить большую сумму токенов напрямую в контракт пула
+4. Каждый LP токен теперь стоит огромную сумму
+5. Последующие LP получат 0 токенов из-за округления
+
+Блокировка 1000 LP-токенов предотвращает эту атаку.
+
+### Последующие провайдеры
+
+$$
+liquidity = \min\left(\frac{amountA \cdot totalSupply}{reserveA}, \frac{amountB \cdot totalSupply}{reserveB}\right)
+$$
+
+**Минимум из двух** защищает существующих LP: если провайдер вносит несбалансированную сумму, он получает меньше LP-токенов. Избыток остается в пуле -- это "подарок" существующим LP.
+
+### Вывод ликвидности
+
+LP сжигает токены и получает пропорциональную долю обоих активов:
+
+```
+amountA = liquidityBurned * reserveA / totalSupply
+amountB = liquidityBurned * reserveB / totalSupply
+```
+
+## SimpleDEX: учебный контракт
+
+Для практики мы создали **SimpleDEX** (`contracts/defi/SimpleDEX.sol`) -- минимальный constant-product AMM, реализующий все описанные концепции.
+
+### Ключевые функции
+
+**addLiquidity:**
+
+```solidity
+// Первый провайдер: геометрическое среднее
+liquidityMinted = sqrt(amountA * amountB) - MINIMUM_LIQUIDITY;
+
+// Последующие: минимум из соотношений
+uint256 liquidityA = (amountA * totalLiquidity) / reserveA;
+uint256 liquidityB = (amountB * totalLiquidity) / reserveB;
+liquidityMinted = min(liquidityA, liquidityB);
+```
+
+**swap (Uniswap V2 integer math):**
+
+```solidity
+uint256 amountInWithFee = amountIn * (FEE_DENOMINATOR - FEE_NUMERATOR); // * 997
+uint256 numerator = reserveOut * amountInWithFee;
+uint256 denominator = (reserveIn * FEE_DENOMINATOR) + amountInWithFee;
+amountOut = numerator / denominator;
+```
+
+**SafeERC20:** SimpleDEX использует OpenZeppelin `SafeERC20` для безопасных переводов токенов. Некоторые токены (например, USDT) не возвращают `bool` при `transfer()` -- `SafeERC20` обрабатывает это корректно.
+
+> **ВАЖНО:** SimpleDEX -- учебный контракт. Он НЕ содержит защиту от reentrancy, flash loan атак, MEV. Не используйте в production.
+
+## Эффективность капитала
+
+<V2vsV3EfficiencyDiagram client:load />
+
+### Проблема V2
+
+V2 распределяет ликвидность по **всему** ценовому диапазону от 0 до бесконечности. Для пары ETH/USDC:
+
+- Реальные цены ETH двигаются в диапазоне ~$500-$5000
+- Ликвидность в диапазоне $0-$500 и $5000+ **никогда не используется**
+- Более 99% капитала LP работает вхолостую
+
+### Решение: V3
+
+Uniswap V3 (следующий урок) позволяет LP **выбирать** конкретный ценовой диапазон. Это увеличивает эффективность капитала до 4000x. Та же сумма капитала обеспечивает в разы большую глубину ликвидности в нужном диапазоне.
+
+## Практика: Fork тесты
+
+### Forge (Foundry)
+
+Запустите fork-тест против реального Uniswap V2 на mainnet:
+
+```bash
+# Требуется MAINNET_RPC_URL (Alchemy/Infura)
+forge test --match-path test/defi/UniswapV2Fork.t.sol --profile fork -vv
+```
+
+Тест `test_swapETHForDAI`:
+1. Получает ожидаемый output через `getAmountsOut`
+2. Выполняет `swapExactETHForTokens` с 1% slippage
+3. Проверяет баланс DAI у трейдера
+
+Тест `test_priceImpact`:
+1. Сравнивает цену за ETH при 0.01 ETH vs 100 ETH
+2. Подтверждает, что большая сделка получает худшую цену
+
+### Hardhat (viem)
+
+```bash
+npx hardhat test test/defi/UniswapV2Fork.test.ts --network mainnetFork
+```
+
+Аналогичные тесты с использованием `hre.viem.getPublicClient()` и `hre.viem.getWalletClients()`.
+
+> **Результат:** Вы своими руками вызовете настоящий Uniswap V2 Router на форке Ethereum mainnet и увидите, как формула 997/1000 работает на реальных резервах.
+
+## Что дальше
+
+В следующем уроке (**DEFI-04**) разберем **Uniswap V3: Concentrated Liquidity** -- тики, ценовые диапазоны, NFT-позиции, и как V3 решает проблему неэффективного капитала V2. Также заглянем в **Uniswap V4** (singleton, hooks, flash accounting).
