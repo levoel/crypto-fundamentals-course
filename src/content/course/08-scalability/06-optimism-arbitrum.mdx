@@ -1,0 +1,414 @@
+---
+title: "Optimism и Arbitrum"
+description: "OP Stack (Superchain), Arbitrum Nitro (Stylus), развертывание контрактов на L2, и практическое сравнение"
+order: 6
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["Optimism", "Arbitrum", "OP Stack", "Nitro", "Stylus", "Superchain", "L2 Deployment"]
+prerequisites: ["05-optimistic-rollups"]
+---
+
+import { OPStackDiagram, NitroDiagram, OPvsARBDiagram } from '../../../components/diagrams/module8/OptimismArbitrumDiagrams';
+
+# Optimism и Arbitrum
+
+## Зачем это блокчейн-разработчику?
+
+Два доминирующих optimistic rollup: **Optimism** (~$2.5B TVL) и **Arbitrum** (~$8B TVL). Оба используют Ethereum для безопасности, оба EVM-совместимы, оба Stage 1 с активными fraud proofs. Но архитектура и стратегия **РАЗНЫЕ**. И оба утверждают, что будущее -- за ними.
+
+**Optimism** делает ставку на **модульность и экосистему**: OP Stack как фреймворк, Superchain как сеть взаимосвязанных L2, Base (Coinbase) как flagship chain.
+
+**Arbitrum** делает ставку на **производительность и универсальность**: Nitro для EVM-оптимизации, Stylus для контрактов на Rust/C/C++, Orbit для кастомных L2/L3.
+
+Для вас как разработчика ключевой инсайт: **развертывание контрактов на L2 идентично L1**. Тот же Solidity, тот же Hardhat/Foundry, другой RPC URL.
+
+## Optimism: OP Stack
+
+### Модульная архитектура
+
+OP Stack -- модульный фреймворк для построения optimistic rollups. Каждый слой может быть заменен или модифицирован:
+
+<OPStackDiagram client:load />
+
+### Bedrock Upgrade (2023)
+
+Bedrock -- фундаментальный ребилд Optimism:
+
+**До Bedrock:**
+- Монолитная архитектура
+- Кастомный EVM (не совместим 1:1 с geth)
+- Высокие комиссии
+
+**После Bedrock:**
+- Модульная архитектура (OP Stack)
+- OP-Geth: модифицированный go-ethereum (EVM-equivalent)
+- Минимальные отличия от L1 (те же opcodes, тот же behavior)
+- Поддержка EIP-4844 blobs
+
+### Cannon FPVM (2024)
+
+**Cannon** -- Fault Proof Virtual Machine для permissionless fraud proofs:
+
+```
+До Cannon:  Fraud proofs отключены. "Optimistic" без verification.
+            Security Council может откатить state (centralized fallback).
+
+После Cannon: Permissionless fraud proofs (Stage 1).
+              Любой может подать fraud proof.
+              Security Council -- fallback для edge cases.
+```
+
+Cannon исполняет EVM opcodes на L1. Single-round: challenger воспроизводит спорную транзакцию, L1 контракт верифицирует результат.
+
+### Superchain Vision
+
+**Superchain** -- сеть OP Stack chains с общей безопасностью и интероперабельностью:
+
+```
+                    Ethereum L1
+                    (shared security + DA)
+                        |
+    ┌───────────────────┼───────────────────┐
+    |                   |                   |
+ Optimism            Base (Coinbase)      Zora
+ OP Mainnet          ~$12B TVL            NFT-focused
+ ~$2.5B TVL                               |
+                                          Mode
+                                          DeFi-focused
+```
+
+**ERC-7802** -- стандарт для seamless token bridging между OP Stack chains. Вместо отдельных bridges для каждой пары -- единый стандарт для всех Superchain chains.
+
+### Ключевые факты Optimism
+
+| Параметр | Значение |
+|----------|----------|
+| Architecture | OP Stack (модульный) |
+| EVM | OP-Geth (EVM-equivalent) |
+| Fraud Proofs | Cannon FPVM (single-round, permissionless) |
+| Stage | Stage 1 (с 2024) |
+| Key Upgrade | Bedrock (2023) + Cannon (2024) |
+| Ecosystem | Superchain (Base, Zora, Mode) |
+| Token | OP (governance + gas fee sharing) |
+
+## Arbitrum: Nitro
+
+### Архитектура Nitro
+
+Nitro -- переработанная архитектура Arbitrum (upgrade 2022). Ключевое отличие: **WASM-based fraud proofs** и **multi-round bisection protocol**.
+
+<NitroDiagram client:load />
+
+### Geth Core + ArbOS
+
+Arbitrum использует двухслойную execution модель:
+
+**Geth Core:**
+- Стандартный go-ethereum для EVM execution
+- Те же opcodes, тот же behavior что на L1
+- Максимальная совместимость с существующими контрактами
+
+**ArbOS:**
+- Кастомный L2 layer поверх Geth
+- Управляет L2-специфичной логикой:
+  - Cross-chain messaging (L1 <-> L2)
+  - Gas metering (L2 gas + L1 data cost)
+  - Precompiles (ArbSys at 0x64 для L2 block number)
+
+### State Transition Function (STF)
+
+STF -- детерминистическая функция: одинаковый input всегда дает одинаковый output.
+
+```
+STF(prev_state, batch_transactions) -> new_state
+
+Свойства:
+- Deterministic: любой может воспроизвести результат
+- Compiled to WASM: для fraud proof verification
+- Verifiable: one-step verification на L1 в bisection protocol
+```
+
+STF компилируется в WASM. При dispute -- WASM-код исполняется on-chain для верификации одной инструкции.
+
+### Stylus: WASM VM для Rust/C/C++
+
+**Stylus** -- революционная возможность Arbitrum: WASM Virtual Machine рядом с EVM.
+
+```
+Arbitrum One Network
+├── EVM (Solidity, Vyper)
+│   └── Standard contract execution
+│
+└── WASM VM (Stylus)
+    ├── Rust contracts
+    ├── C contracts
+    └── C++ contracts
+
+Оба VM работают на одной сети!
+Stylus контракты вызывают Solidity контракты и наоборот.
+```
+
+**Зачем Stylus?**
+
+| Аспект | EVM (Solidity) | Stylus (Rust) |
+|--------|---------------|---------------|
+| Execution cost | Стандарт | 10-100x дешевле |
+| Лучше для | DeFi, tokens, governance | Crypto, math, ML, parsing |
+| Ecosystem | Огромный (10+ лет) | Растущий |
+| Safety | Solidity (known footguns) | Rust (memory safe) |
+| Interop | Native | Calls EVM contracts |
+
+**Пример use case:** Cryptographic operations (signature verification, hash computation) на Stylus в 10-100x дешевле, чем на EVM. Compute-heavy tasks (complex math, data parsing) выигрывают больше всего.
+
+### AnyTrust и Orbit
+
+**AnyTrust mode:**
+- Off-chain Data Availability через Data Availability Committee (DAC)
+- Дешевле (не платить за blob/calldata на L1)
+- Слабее безопасность (доверие к DAC вместо Ethereum DA)
+- Используется для: gaming, social, high-throughput приложений
+
+**Orbit framework:**
+- Кастомные L2/L3 chains на технологии Arbitrum
+- Выбор: Rollup mode (полная Ethereum DA) или AnyTrust mode (DAC)
+- Nova (gaming chain) -- пример AnyTrust Orbit chain
+
+### Ключевые факты Arbitrum
+
+| Параметр | Значение |
+|----------|----------|
+| Architecture | Nitro (Geth + ArbOS) |
+| EVM | Geth Core (EVM-equivalent) + Stylus WASM |
+| Fraud Proofs | Multi-round interactive bisection |
+| Stage | Stage 1 |
+| Key Upgrade | Nitro (2022) + Stylus (2024) |
+| Ecosystem | Orbit (L2/L3 chains) + AnyTrust |
+| Token | ARB (governance) |
+
+## Сравнение: Optimism vs Arbitrum
+
+Наведите на ячейки для подробностей. Зеленый -- преимущество:
+
+<OPvsARBDiagram client:load />
+
+### Что выбрать?
+
+**Для стандартной Solidity разработки:** оба подходят одинаково. Разницы в DX (developer experience) почти нет. Выбор зависит от экосистемы (где ваши пользователи) и конкретных features.
+
+**Для compute-heavy приложений:** Arbitrum + Stylus. Rust контракты с 10-100x экономией.
+
+**Для экосистемного проекта:** OP Stack + Superchain. Interoperability между Base, Optimism, Zora.
+
+## ПРАКТИКА: Развертывание на L2
+
+### Ключевой инсайт
+
+> **Развертывание на Optimism или Arbitrum ИДЕНТИЧНО L1.** Те же Solidity контракты. Тот же Hardhat/Foundry tooling. Другой RPC URL. Вот и все.
+
+### Demo: Counter.sol на Optimism fork
+
+Используем существующий Counter.sol из Phase 4:
+
+```solidity
+// contracts/Counter.sol (уже существует)
+contract Counter {
+    uint256 public count;
+    event CountChanged(uint256 newCount);
+    error CounterUnderflow();
+
+    function increment() external {
+        count += 1;
+        emit CountChanged(count);
+    }
+    // ...
+}
+```
+
+### Шаг 1: Fork Optimism локально
+
+```bash
+# Тот же Anvil, другой RPC URL -- это ВСЕ отличие от L1
+anvil --fork-url https://mainnet.optimism.io --fork-block-number 130000000
+```
+
+Anvil форкает state Optimism на указанном блоке. Вы получаете полную копию L2 state локально.
+
+### Шаг 2: Deploy контракт
+
+```bash
+# ИДЕНТИЧНО L1 workflow!
+forge create --rpc-url http://localhost:8545 \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+  contracts/Counter.sol:Counter
+```
+
+### Шаг 3: Interact
+
+```bash
+# Вызов view функции (бесплатно)
+cast call <ADDRESS> "count()" --rpc-url http://localhost:8545
+
+# Отправка транзакции
+cast send <ADDRESS> "increment()" \
+  --rpc-url http://localhost:8545 \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+# Проверка результата
+cast call <ADDRESS> "count()" --rpc-url http://localhost:8545
+# -> 0x0000000000000000000000000000000000000000000000000000000000000001
+```
+
+> **Заметили разницу с L1?** Её нет. Тот же forge create, тот же cast call, тот же Solidity. Единственное отличие -- `--fork-url`.
+
+### Anvil: ограничения L2 fork
+
+Anvil **НЕ** эмулирует L2-специфичные precompiles:
+
+```
+Arbitrum:  ArbSys (0x64) -- L2 block number, L1 base fee
+           ArbRetryableTx (0x6E) -- L1-to-L2 retryable tickets
+
+Optimism:  L1Block (0x4200000000000000000000000000000000000015) -- L1 attributes
+           CrossDomainMessenger -- L1<->L2 messaging
+```
+
+**Для стандартного Solidity development** (Counter, ERC20, DeFi protocols) -- Anvil fork работает идеально.
+
+**Для L2-специфичных features** (ArbSys, L1Block precompile, native bridges) -- используйте public testnets:
+- Optimism Sepolia: `https://sepolia.optimism.io`
+- Arbitrum Sepolia: `https://sepolia-rollup.arbitrum.io/rpc`
+
+## Что отличается на L2
+
+Для 95% Solidity разработки -- **ничего**. Но есть нюансы:
+
+### 1. Gas Costs
+
+```
+L1 Ethereum:  Simple transfer = ~$0.50-5.00
+L2 Optimism:  Simple transfer = ~$0.01-0.05
+L2 Arbitrum:  Simple transfer = ~$0.01-0.05
+
+Экономия: 10-100x (зависит от blob congestion)
+```
+
+L2 gas = **L2 execution cost** + **L1 data posting cost** (амортизированный).
+
+### 2. Finality
+
+```
+L1:  ~12 minutes (finalized epoch)
+L2:  Soft = seconds (sequencer confirmation)
+     Hard = 7 days (challenge period)
+```
+
+### 3. L1 Communication
+
+```
+L1 -> L2 (deposit):     минуты
+L2 -> L1 (withdrawal):  7 дней (challenge period)
+L2 <-> L2:              через L1 или bridge protocol
+```
+
+### 4. Precompiles
+
+L2 chains добавляют собственные precompiles для L2-специфичной логики:
+
+```solidity
+// Arbitrum: получить L1 block number
+interface ArbSys {
+    function arbBlockNumber() external view returns (uint256);
+}
+ArbSys(address(0x64)).arbBlockNumber();
+
+// Optimism: получить L1 base fee
+interface L1Block {
+    function basefee() external view returns (uint256);
+}
+```
+
+**Для стандартных контрактов** (ERC20, Governor, AMM) -- эти precompiles не нужны. Ваш код работает одинаково на L1 и L2.
+
+## Алгоритмический уровень: OP Stack layered execution
+
+```python
+# OP Stack: 4-layer execution model
+
+class OPStack:
+    """Simplified OP Stack execution flow"""
+
+    # Execution layer (OP-Geth)
+    def process_batch(self, prev_state, transactions):
+        """Execute transactions, produce new state root"""
+        state = prev_state
+        for tx in transactions:
+            state = self.evm.execute(state, tx)
+        return state.root()
+
+    # Data Availability layer (Ethereum L1)
+    def post_batch(self, batch_data, state_root):
+        """Post batch data and state root to L1"""
+        self.l1.submit_blob(batch_data)    # EIP-4844 blob
+        self.l1.submit_root(state_root)    # State commitment
+
+    # Settlement layer (L1 verification)
+    def verify_or_challenge(self, batch_id):
+        """After 7 days: finalize. Before: can challenge."""
+        batch = self.l1.get_batch(batch_id)
+        if block.timestamp > batch.timestamp + 7 * 86400:
+            self.finalize(batch_id)
+        # else: anyone can submit fraud proof via Cannon FPVM
+
+    # Consensus layer (Sequencer)
+    def sequence(self, incoming_txs):
+        """Order transactions (currently centralized)"""
+        batch = self.order_by_timestamp(incoming_txs)
+        state_root = self.process_batch(self.current_state, batch)
+        self.post_batch(compress(batch), state_root)
+        return state_root
+```
+
+## Математический уровень: bisection game
+
+Для execution trace из N шагов, bisection protocol разрешает спор за O(log2 N) раундов:
+
+```
+N = количество инструкций в execution trace
+R = количество раундов bisection
+
+R = ceil(log2(N))
+
+Примеры:
+  N = 10^6 (1M instructions):   R = 20 rounds
+  N = 10^8 (100M instructions): R = 27 rounds
+  N = 10^9 (1B instructions):   R = 30 rounds
+
+Gas cost comparison:
+  Single-round:  O(N) gas  -- re-execute all N instructions on L1
+  Multi-round:   O(R) gas  -- R rounds * constant gas per round
+                            + O(1) gas for final 1-instruction verification
+
+  For N = 10^8:
+    Single-round:  ~10^8 gas units (impractical for large traces)
+    Multi-round:   ~27 * C + K ≈ 27 * 50,000 + 200,000 ≈ 1,550,000 gas
+                   (~100x cheaper than re-executing 10^8 instructions)
+```
+
+Bisection эффективнее для больших execution traces. Single-round проще для небольших транзакций.
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **OP Stack** | Модульный rollup framework (4 layers) | Swappable layers, Superchain ecosystem |
+| **Bedrock** | Модульная перестройка (2023) | OP-Geth, EVM-equivalent |
+| **Cannon FPVM** | Permissionless fraud proofs | Stage 1 classification (2024) |
+| **Superchain** | Сеть OP Stack chains | Base, Zora, Mode + ERC-7802 interop |
+| **Nitro** | Geth + ArbOS execution | Standard EVM + L2 logic layer |
+| **Stylus** | WASM VM alongside EVM | Rust/C/C++ контракты, 10-100x дешевле |
+| **Orbit** | Кастомные L2/L3 chains | AnyTrust mode для gaming |
+| **L2 Deploy** | Идентично L1 | Тот же Solidity, Foundry, другой RPC URL |
+| **Anvil fork** | anvil --fork-url <L2_RPC> | Локальная копия L2 для тестирования |
+| **Precompiles** | L2-специфичные (ArbSys, L1Block) | Не эмулируются в Anvil |
+
+**Что дальше:** В SCALE-07 мы перейдем к **ZK Rollups** -- альтернативному подходу, где вместо fraud proofs используются **validity proofs** (криптографические доказательства корректности). Быстрее финальность (часы вместо дней), но сложнее математика. zkSync Era и StarkNet -- две ведущие реализации.

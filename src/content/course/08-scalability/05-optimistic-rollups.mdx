@@ -1,0 +1,324 @@
+---
+title: "Optimistic Rollups"
+description: "Оптимистичные rollups: batch submission, fraud proofs, 7-дневный challenge period, L1-L2 коммуникация"
+order: 5
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["Optimistic Rollups", "Fraud Proofs", "Sequencer", "Challenge Period", "L1-L2 Bridge"]
+prerequisites: ["04-plasma"]
+---
+
+import { RollupArchitectureDiagram, FraudProofComparisonDiagram, L1L2MessageDiagram } from '../../../components/diagrams/module8/OptimisticRollupDiagrams';
+
+# Optimistic Rollups
+
+## Зачем это блокчейн-разработчику?
+
+Plasma провалилась из-за data availability. Rollups исправили это одним гениальным решением: публиковать **ВСЕ** данные транзакций на L1. Теперь если sequencer исчезнет, любой может восстановить состояние из данных на Ethereum.
+
+Optimistic Rollups добавили к этому элегантную идею: **считать все транзакции валидными, пока кто-то не докажет обратное**. Это и есть "оптимизм" -- в 99.99% случаев транзакции валидны. Fraud proofs обрабатывают 0.01%.
+
+Результат:
+- **2,000-4,000 TPS** (vs ~15-30 TPS на L1)
+- **10-100x дешевле** по gas fees (особенно после EIP-4844)
+- **Полная EVM совместимость** -- тот же Solidity, те же инструменты
+- **Безопасность Ethereum** -- данные на L1, fraud proofs обеспечивают корректность
+
+Два доминирующих optimistic rollup -- **Optimism** и **Arbitrum** -- обрабатывают миллионы транзакций ежедневно. В этом уроке мы разберем архитектуру, fraud proofs и L1-L2 коммуникацию.
+
+## Ключевая идея "оптимизма"
+
+### Принцип: assume valid unless proven otherwise
+
+В традиционном блокчейне каждый узел верифицирует каждую транзакцию. Это безопасно, но медленно (N узлов * N транзакций = O(N^2) работы).
+
+Optimistic rollup переворачивает модель:
+
+1. **Sequencer** исполняет транзакции off-chain и публикует результат
+2. **Все считают результат корректным** (optimistic assumption)
+3. **Если кто-то обнаружит ошибку** -- подает fraud proof
+4. **Fraud proof доказывает** неверность state transition на L1
+
+Почему это работает? Потому что:
+- **Данные на L1:** любой может загрузить batch data и проверить
+- **Экономические стимулы:** sequencer ставит bond; если fraud доказан -- теряет bond
+- **Один честный верификатор** достаточен для безопасности всей системы
+
+> **Аналогия:** налоговая декларация. Вы подаете декларацию (state root), и она принимается (optimistic). Но налоговая может проверить (audit = fraud proof). Если нашли ошибку -- штраф (slashing). Достаточно ОДНОГО проверяющего.
+
+## Архитектура Optimistic Rollup
+
+Пройдите все 6 шагов -- от отправки транзакции до финальности:
+
+<RollupArchitectureDiagram client:load />
+
+### Два типа подтверждения
+
+| Тип | Время | Гарантия | Когда используется |
+|-----|-------|----------|---------------------|
+| **Soft finality** | ~2 секунды | Sequencer подтвердил, но может быть revert | Ежедневные транзакции, DeFi |
+| **Hard finality** | ~7 дней | L1 верификация, криптоэкономическая безопасность | Крупные withdrawals, cross-chain |
+
+Большинство пользователей работают в режиме soft finality. 7-дневный период актуален только для withdrawals на L1.
+
+### On-chain компоненты
+
+Optimistic rollup имеет три контракта на L1:
+
+```
+Rollup Contract        -- принимает batch data и state roots от sequencer
+Verifier Contract      -- обрабатывает fraud proofs, слэшит нечестных sequencers
+Bridge Contract        -- управляет депозитами (L1->L2) и выводами (L2->L1)
+```
+
+## Batch Submission
+
+### Как sequencer формирует batch
+
+```
+1. Sequencer собирает 100-1000 транзакций
+2. Исполняет их локально, вычисляет новый state root
+3. Сжимает данные (Brotli/Zstd compression)
+4. Публикует на L1:
+   - batch_data: все транзакции (сжатые)
+   - new_state_root: корень Merkle tree нового состояния
+   - previous_state_root: для проверки последовательности
+```
+
+### Calldata vs Blobs (EIP-4844)
+
+| Метод | Стоимость | Хранение | Когда |
+|-------|-----------|----------|-------|
+| **Calldata** | ~16 gas/byte | Навсегда на L1 | До марта 2024 |
+| **Blobs** (EIP-4844) | ~1 gas/byte | ~18 дней на L1 | После марта 2024 |
+
+EIP-4844 снизил стоимость data posting в **10-100 раз**. Pectra (2025) удвоил blob throughput до 6 blobs/block.
+
+## Fraud Proofs: два подхода
+
+Fraud proof -- механизм, позволяющий доказать что sequencer опубликовал неверный state root. Существуют два принципиально разных подхода:
+
+<FraudProofComparisonDiagram client:load />
+
+### Single-Round: Optimism (Cannon FPVM)
+
+```
+Challenger: "State root после batch #5000 неверный!"
+              |
+              v
+L1 Contract: запускает Cannon FPVM
+              |
+              v
+Cannon FPVM: повторно исполняет спорную транзакцию
+              |
+              v
+Результат:   expected_root != published_root?
+              -> ДА: sequencer слэшится, state откатывается
+              -> НЕТ: challenger теряет свой bond
+```
+
+**Cannon** (Fault Proof Virtual Machine) -- VM, исполняющая EVM opcodes на L1. Permissionless с 2024 года (Stage 1).
+
+### Multi-Round Interactive: Arbitrum (Bisection)
+
+```
+Challenger: "State root после batch #5000 неверный!"
+              |
+Round 1:    Execution trace: [0 ............ N] инструкций
+            Делим пополам: ошибка в [0..N/2] или [N/2..N]?
+              |
+Round 2:    Ошибка в [0..N/2]. Делим снова: [0..N/4] или [N/4..N/2]?
+              |
+...           ~log2(N) раундов
+              |
+Final:      Ошибка в инструкции #42,567,891
+            L1 верифицирует ОДНУ инструкцию
+              |
+Результат:  instruction_result != expected?
+            -> ДА: sequencer слэшится
+            -> НЕТ: challenger теряет bond
+```
+
+Для N = 10^8 инструкций: log2(10^8) = ~27 раундов. Каждый round -- одна транзакция на L1.
+
+### Модель безопасности
+
+Оба подхода безопасны при **одном критическом предположении:**
+
+> Существует хотя бы ОДИН честный верификатор, который может и хочет подать fraud proof.
+
+Это называется **1-of-N honest assumption**. С N независимыми верификаторами вероятность, что все коррумпированы = p^N (где p -- вероятность коррупции одного). Для p=0.1, N=10: вероятность отказа = 10^-10.
+
+## 7-дневный Challenge Period
+
+### Почему именно 7 дней?
+
+7-дневный challenge period -- не произвольное число. Это инженерный компромисс:
+
+**Достаточно длинный для:**
+- Загрузки batch data с L1 (может занять часы для больших batches)
+- Повторного исполнения всех транзакций
+- Подготовки и отправки fraud proof
+- Учета сетевых задержек и цензуры
+
+**Достаточно короткий для:**
+- Практичного использования (не 30 дней)
+- Приемлемого UX для withdrawals
+
+### Почему это НЕ баг
+
+> **7-дневный withdrawal delay -- это security feature, не баг.** Без challenge period sequencer мог бы публиковать поддельные state roots и мгновенно красть все средства. 7 дней дают сообществу время обнаружить и оспорить мошенничество.
+
+## L1 <-> L2 коммуникация
+
+Пройдите 6 шагов -- 3 для депозита, 3 для вывода:
+
+<L1L2MessageDiagram client:load />
+
+### Асимметрия: минуты vs дни
+
+| Направление | Время | Почему |
+|-------------|-------|--------|
+| **Deposit** (L1 -> L2) | 1-5 минут | L1 confirmation + L2 processing |
+| **Withdrawal** (L2 -> L1) | 7 дней | Challenge period для fraud proofs |
+
+### Fast Withdrawals через Liquidity Providers
+
+Не хотите ждать 7 дней? Liquidity providers решают эту проблему:
+
+```
+Стандартный withdrawal:
+  User (L2) -> [7 days] -> User (L1)
+
+Fast withdrawal (через LP):
+  User (L2) -> LP берет на себя 7-дневный risk -> User получает на L1 сразу
+  LP получает: withdrawal amount - fee (обычно 0.1-0.5%)
+```
+
+Протоколы для fast withdrawals:
+- **Across** -- intent-based bridge, самый быстрый
+- **Hop** -- hToken liquidity network
+- **Stargate** -- unified liquidity pools
+
+## Спектр финальности
+
+```
+Sequencer confirmation (seconds)
+        |
+        | Soft finality -- sequencer подтвердил, но может быть revert
+        |
+Batch posted to L1 (minutes-hours)
+        |
+        | Stronger -- данные на L1, но state root ещё не финализирован
+        |
+Challenge period expires (7 days)
+        |
+        | Hard finality -- криптоэкономически безопасно
+        |
+L1 state updated, withdrawals enabled
+```
+
+## Алгоритмический уровень: fraud proof protocol
+
+```python
+# Optimistic Rollup -- simplified fraud proof protocol
+
+class RollupContract:
+    def __init__(self):
+        self.batches = {}           # batch_id -> (data_hash, state_root, timestamp)
+        self.challenge_window = 7 * 24 * 3600  # 7 days in seconds
+
+    def submit_batch(self, batch_data, new_state_root):
+        """Sequencer posts batch to L1"""
+        batch_id = len(self.batches)
+        self.batches[batch_id] = {
+            'data_hash': hash(batch_data),
+            'state_root': new_state_root,
+            'timestamp': block.timestamp,
+            'finalized': False
+        }
+        # Store full data in calldata/blob for DA
+        emit BatchSubmitted(batch_id, new_state_root)
+
+    def challenge_state(self, batch_id, fraud_proof):
+        """Challenger disputes a batch"""
+        batch = self.batches[batch_id]
+        assert block.timestamp < batch['timestamp'] + self.challenge_window
+        assert not batch['finalized']
+
+        # Re-execute batch and verify state root is incorrect
+        expected_root = reexecute(batch_data_from_l1)
+        assert expected_root != batch['state_root']  # FRAUD DETECTED
+
+        slash(sequencer)                    # Sequencer loses bond
+        revert_to(previous_valid_state)     # State rolled back
+        reward(challenger)                  # Challenger receives reward
+
+    def finalize_batch(self, batch_id):
+        """Finalize after challenge window"""
+        batch = self.batches[batch_id]
+        assert block.timestamp >= batch['timestamp'] + self.challenge_window
+        batch['finalized'] = True
+        # Withdrawals for this batch can now be processed
+```
+
+## Математический уровень: модель безопасности
+
+### Вероятностная модель
+
+Rollup безопасен если Pr[хотя бы 1 честный верификатор] высока:
+
+```
+N = количество независимых верификаторов
+p = Pr[один верификатор коррумпирован]
+
+Pr[все коррумпированы] = p^N
+Pr[хотя бы 1 честный]  = 1 - p^N
+
+Примеры:
+  p = 0.1, N = 5:   Pr[failure] = 10^-5   (99.999% безопасность)
+  p = 0.1, N = 10:  Pr[failure] = 10^-10  (99.99999999%)
+  p = 0.5, N = 20:  Pr[failure] = 10^-6   (даже при 50% коррупции!)
+```
+
+### Экономическая безопасность
+
+Sequencer ставит bond B. Fraud detection вероятность d:
+
+```
+Expected profit from fraud    = V * (1 - d)     (V = value stolen)
+Expected loss from fraud      = B * d            (B = bond)
+
+Условие честного поведения:
+  V * (1 - d) < B * d
+  V / B < d / (1 - d)
+
+При d = 0.99 (99% detection rate):
+  V / B < 99
+  Для bond B = $1M: невыгодно красть < $99M
+```
+
+### Сравнение с ZK Rollups
+
+| Параметр | Optimistic | ZK |
+|----------|------------|-----|
+| Security assumption | 1-of-N honest (probabilistic) | Cryptographic soundness (mathematical) |
+| Finality | 7 days (challenge period) | Hours (proof generation) |
+| Cost to operate | Дешевле (нет proof generation) | Дороже (prover infrastructure) |
+| Cost per TX | Выше (больше data) | Ниже (лучше compression) |
+| EVM compatibility | Near-perfect (EVM equivalent) | Varies (Type 1-4 zkEVM) |
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Optimistic assumption** | Считаем валидным, пока не доказано обратное | Эффективность: 99.99% TX валидны |
+| **Sequencer** | Централизованный оператор, batch submission | Soft finality за секунды |
+| **Batch submission** | Данные всех TX на L1 (calldata/blobs) | Data availability решена |
+| **Fraud proofs** | Single-round (Cannon) vs multi-round (bisection) | 1-of-N honest assumption |
+| **7-day challenge period** | Время для обнаружения и оспаривания fraud | Security feature, не баг |
+| **L1-L2 messages** | Deposit: минуты. Withdrawal: 7 дней | Асимметрия из-за fraud proofs |
+| **Liquidity providers** | Fast withdrawals за комиссию | Across, Hop, Stargate |
+| **EIP-4844 blobs** | 10-100x снижение data posting cost | Ключевое улучшение для L2 |
+
+**Что дальше:** В SCALE-06 мы детально изучим два доминирующих optimistic rollup -- **Optimism** (OP Stack, Superchain) и **Arbitrum** (Nitro, Stylus). И убедимся, что развертывание контрактов на L2 **идентично L1** -- тот же Solidity, тот же Foundry, другой RPC URL.
