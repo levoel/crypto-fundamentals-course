@@ -1,0 +1,315 @@
+---
+title: "Основы Solidity"
+description: "Типы данных, storage layout, модификаторы и структура смарт-контрактов на Solidity 0.8"
+order: 6
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Solidity", "Storage layout", "Типы данных", "Events", "Custom errors", "unchecked"]
+prerequisites: ["04-evm-stack-memory-storage", "05-gas-execution"]
+---
+
+import { ContractStorageLayoutDiagram, SolidityTypesDiagram } from '../../../components/diagrams/module3/SolidityBasicsDiagrams';
+
+# Основы Solidity
+
+## Зачем это нужно
+
+Solidity -- основной язык смарт-контрактов Ethereum. Каждый DeFi-протокол, каждый ERC-20 токен, каждый NFT-контракт написан на Solidity. В предыдущих уроках мы изучили, КАК EVM исполняет байткод. Теперь мы поднимемся на уровень выше -- к языку, который компилируется в этот байткод.
+
+> Когда вы пишете `uint256 private _value;` в Solidity, компилятор назначает этой переменной **слот 0** в storage. Когда вы вызываете `_value = 42`, генерируется `SSTORE` с ключом 0 и значением 42. Понимание этой связи -- ключ к написанию эффективных контрактов.
+
+```solidity
+// Вот весь контракт -- 10 строк, но за ними стоит EVM, storage, events, ABI
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+contract SimpleStorage {
+    uint256 private _value;          // slot 0 -- 32 байта в storage
+    event ValueChanged(uint256 newValue);
+
+    function store(uint256 newValue) external {
+        _value = newValue;           // SSTORE(0, newValue) -- 22100 gas (cold)
+        emit ValueChanged(newValue); // LOG1 -- событие для off-chain индексации
+    }
+
+    function retrieve() external view returns (uint256) {
+        return _value;               // SLOAD(0) -- 2100 gas (cold)
+    }
+}
+```
+
+## Интуитивное объяснение: контракт как сейф с ячейками
+
+Представьте банковский сейф с пронумерованными ячейками. Каждая ячейка -- это **storage slot** (32 байта). Когда вы объявляете переменную в контракте, компилятор назначает ей номер ячейки:
+
+- Первая переменная -> ячейка 0
+- Вторая переменная -> ячейка 1
+- И так далее
+
+Если переменная маленькая (например, `bool` -- 1 байт), несколько переменных могут **упаковаться** в одну ячейку. Это экономит gas, потому что один `SSTORE` обходится в 22,100 gas (cold) -- вы хотите минимизировать количество записей.
+
+<ContractStorageLayoutDiagram client:load />
+
+Попробуйте:
+- Переключитесь на режим "С упаковкой" -- обратите внимание, как `bool + uint8 + uint16 + address` помещаются в один слот
+- Наведите курсор на переменную, чтобы увидеть её offset и размер
+- Сравните: без упаковки 3 слота = 3 SSTORE, с упаковкой -- меньше
+
+## Алгоритмический уровень: типы и storage
+
+### Типы данных Solidity
+
+Solidity -- статически типизированный язык. Каждая переменная имеет фиксированный тип, который определяет её размер в storage:
+
+```solidity
+// Value-типы (хранятся непосредственно в слоте)
+bool    isActive;    // 1 байт
+uint8   decimals;    // 1 байт (0..255)
+uint16  rate;        // 2 байта (0..65535)
+uint32  timestamp;   // 4 байта (0..4.29*10^9)
+uint128 balance;     // 16 байт
+uint256 totalSupply; // 32 байта -- занимает весь слот
+int256  delta;       // 32 байта (со знаком)
+address owner;       // 20 байт (Ethereum-адрес)
+bytes32 hash;        // 32 байта (фиксированный массив)
+
+// Reference-типы (слот хранит указатель, данные -- по keccak256)
+string  name;                      // динамическая строка
+bytes   data;                      // динамический массив байт
+mapping(address => uint256) balances; // хеш-таблица
+uint256[] values;                  // динамический массив
+```
+
+<SolidityTypesDiagram client:load />
+
+### Storage Layout: как переменные попадают в слоты
+
+```solidity
+contract StorageExample {
+    // Slot 0: owner (20 байт) -- 12 байт потрачены впустую
+    address public owner;
+
+    // Slot 1: totalSupply (32 байта) -- заполняет весь слот
+    uint256 public totalSupply;
+
+    // Slot 2: _balances -- слот хранит "пустоту",
+    // реальные данные по keccak256(address . 2)
+    mapping(address => uint256) private _balances;
+}
+```
+
+**Правило упаковки:** переменные размером < 32 байт упаковываются в один слот, если помещаются. Порядок объявления критичен:
+
+```solidity
+// Хорошо: 1 + 1 + 20 = 22 байта -> 1 слот
+contract Packed {
+    bool   isActive;  // offset 0, 1 байт
+    uint8  decimals;  // offset 1, 1 байт
+    address admin;    // offset 2, 20 байт
+    uint256 balance;  // slot 1 (новый слот -- не помещается)
+}
+
+// Плохо: bool (slot 0), uint256 (slot 1), uint8 (slot 2) = 3 слота
+contract Wasteful {
+    bool    isActive;  // slot 0 -- 31 байт пустует
+    uint256 balance;   // slot 1 -- не помещается рядом с bool
+    uint8   decimals;  // slot 2 -- ещё 31 байт пустует
+}
+```
+
+### Mapping: вычисление слота
+
+Для `mapping(address => uint256)` в слоте N:
+
+```
+slot_of_value = keccak256(abi.encode(key, N))
+```
+
+```solidity
+// _balances объявлен третьим -> slot 2
+// Баланс адреса 0xAbCd...1234 лежит по адресу:
+// keccak256(abi.encode(0xAbCd...1234, 2))
+```
+
+### Динамические массивы
+
+Для `uint256[] values` в слоте N:
+- `values.length` хранится в слоте N
+- `values[0]` хранится по адресу `keccak256(N)`
+- `values[i]` хранится по адресу `keccak256(N) + i`
+
+## Структура контракта Solidity
+
+```solidity
+// SPDX-License-Identifier: MIT      // 1. Лицензия (обязательна)
+pragma solidity ^0.8.28;              // 2. Версия компилятора
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";  // 3. Импорты
+
+/// @title SimpleStorage              // 4. NatSpec документация
+/// @notice Минимальный контракт для хранения значения
+contract SimpleStorage {
+    // 5. State variables
+    uint256 private _value;
+
+    // 6. Events
+    event ValueChanged(uint256 newValue);
+
+    // 7. Custom errors (вместо require strings -- экономит gas)
+    error ValueTooLarge(uint256 value, uint256 max);
+
+    // 8. Modifiers
+    modifier onlyPositive(uint256 val) {
+        if (val == 0) revert ValueTooLarge(val, type(uint256).max);
+        _;
+    }
+
+    // 9. Constructor
+    constructor(uint256 initialValue) {
+        _value = initialValue;
+    }
+
+    // 10. External/public functions
+    function store(uint256 newValue) external {
+        _value = newValue;
+        emit ValueChanged(newValue);
+    }
+
+    function retrieve() external view returns (uint256) {
+        return _value;
+    }
+}
+```
+
+## Solidity 0.8.x: встроенная безопасность
+
+### Built-in overflow checks
+
+До Solidity 0.8 переполнение было тихим. Теперь арифметика проверяется автоматически:
+
+```solidity
+contract OverflowDemo {
+    function willRevert() external pure returns (uint8) {
+        uint8 x = 255;
+        return x + 1;  // REVERT! Panic(0x11) -- overflow
+    }
+
+    function intentionalOverflow() external pure returns (uint8) {
+        uint8 x = 255;
+        unchecked {
+            return x + 1;  // 0 -- намеренное переполнение
+        }
+    }
+}
+```
+
+### Custom errors vs require strings
+
+```solidity
+// Старый стиль (дорогой -- строка хранится в байткоде)
+require(balance >= amount, "Insufficient balance");
+
+// Новый стиль (дешевый -- только 4 байта selector)
+error InsufficientBalance(uint256 available, uint256 required);
+
+if (balance < amount) {
+    revert InsufficientBalance(balance, amount);
+}
+```
+
+**Экономия gas:** custom error ~50-80 gas дешевле, чем require со строкой. При тысячах вызовов это существенно.
+
+### Visibility и модификаторы функций
+
+```solidity
+// Visibility
+function a() external { }  // Только извне (не из контракта)
+function b() public { }    // Извне и изнутри
+function c() internal { }  // Только из контракта и наследников
+function d() private { }   // Только из этого контракта
+
+// State mutability
+function e() view { }      // Только чтение storage (SLOAD)
+function f() pure { }      // Без доступа к storage
+function g() payable { }   // Принимает ETH (msg.value)
+```
+
+## Математический уровень: ABI Encoding
+
+Когда вы вызываете `store(42)`, клиент формирует **calldata**:
+
+```
+calldata = function_selector + abi.encode(args)
+         = keccak256("store(uint256)")[:4] + abi.encode(42)
+         = 0x6057361d + 0x000000000000000000000000000000000000000000000000000000000000002a
+```
+
+`function_selector` -- первые 4 байта хеша Keccak-256 сигнатуры функции. Это связывает урок CRYPTO-05 (Keccak) с вызовами смарт-контрактов.
+
+ABI encoding:
+- `uint256`: 32 байта, big-endian, дополненные нулями слева
+- `address`: 32 байта (12 нулевых + 20 байт адреса)
+- `bool`: 32 байта (0x00...00 или 0x00...01)
+- `string`: offset + length + padded data
+
+## Компиляция и байткод
+
+```bash
+# Hardhat
+npx hardhat compile
+# Результат: artifacts/contracts/SimpleStorage.sol/SimpleStorage.json
+
+# Foundry
+forge build
+# Результат: artifacts-forge/SimpleStorage.sol/SimpleStorage.json
+```
+
+Артефакт содержит:
+- **ABI** -- описание интерфейса (функции, события, ошибки)
+- **Bytecode** -- код деплоя (creation code)
+- **Deployed Bytecode** -- код контракта на блокчейне (runtime code)
+
+```json
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "store",
+      "inputs": [{"name": "newValue", "type": "uint256"}],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    }
+  ],
+  "bytecode": "0x6080604052...",
+  "deployedBytecode": "0x6080604052..."
+}
+```
+
+## Практика
+
+Скомпилируйте и протестируйте контракты SimpleStorage и Counter:
+
+```bash
+# В директории labs/ethereum/
+docker compose up -d       # Запустить Anvil
+npm install                # Установить зависимости
+
+# Hardhat
+npx hardhat compile        # Компиляция
+npx hardhat test           # Запуск тестов (node:test + viem)
+
+# Foundry (на хосте или через Docker)
+forge build                # Компиляция
+forge test                 # Запуск тестов (Solidity)
+forge test -vvv            # С подробным выводом
+```
+
+Посмотрите storage layout контракта:
+
+```bash
+forge inspect SimpleStorage storage-layout
+```
+
+## Что дальше
+
+В следующем уроке мы перейдём к **паттернам разработки** -- CEI (Checks-Effects-Interactions) для защиты от reentrancy, наследованию контрактов и полноценному тестированию с Foundry и Hardhat.

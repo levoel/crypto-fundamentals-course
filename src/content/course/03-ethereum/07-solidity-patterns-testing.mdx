@@ -1,0 +1,366 @@
+---
+title: "Паттерны Solidity и тестирование"
+description: "CEI-паттерн, наследование контрактов, двойное тестирование Foundry + Hardhat"
+order: 7
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["CEI", "Reentrancy", "Наследование", "Foundry", "Hardhat", "forge-std", "viem", "Тестирование"]
+prerequisites: ["06-solidity-basics"]
+---
+
+import { CEIPatternDiagram, TestWorkflowDiagram } from '../../../components/diagrams/module3/SolidityPatternsDiagrams';
+
+# Паттерны Solidity и тестирование
+
+## Зачем это нужно
+
+Написать работающий контракт -- это половина дела. Контракт на блокчейне **необратим**: после деплоя нельзя исправить баг. Reentrancy-атака на The DAO в 2016 году привела к потере 3.6 млн ETH (~60 млн $ на тот момент). Причина -- нарушение простого паттерна: внешний вызов был выполнен **до** обновления состояния.
+
+> В этом уроке вы освоите CEI-паттерн (защита от reentrancy), научитесь писать тесты на двух индустриальных фреймворках -- Foundry и Hardhat, и увидите, как `vm.prank`, `vm.expectRevert` и `vm.expectEmit` делают тестирование контрактов точным и воспроизводимым.
+
+## Интуитивное объяснение: банкомат и очередь
+
+Представьте банкомат. Вы хотите снять деньги:
+
+1. **Проверка**: Банкомат проверяет ваш PIN и баланс
+2. **Обновление**: Банкомат списывает сумму со счёта
+3. **Выдача**: Банкомат выдаёт наличные
+
+Если бы банкомат сначала выдавал наличные, а потом списывал -- можно было бы отправить помощника ко второму банкомату и снять деньги дважды, пока первый ещё не обновил баланс. Это и есть **reentrancy** в мире смарт-контрактов.
+
+CEI-паттерн -- это "сначала спиши, потом выдай":
+
+<CEIPatternDiagram client:load />
+
+Пройдите все три шага:
+1. **Checks** -- проверяем `require(balance >= amount)`
+2. **Effects** -- обновляем `balances[msg.sender] -= amount`
+3. **Interactions** -- только теперь вызываем `msg.sender.call{value: amount}("")`
+
+Нажмите "Показать уязвимый вариант" на каждом шаге, чтобы увидеть, как выглядит код без CEI.
+
+## Алгоритмический уровень: паттерны и контракты
+
+### CEI: Checks-Effects-Interactions
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+contract Vault {
+    mapping(address => uint256) public balances;
+
+    error InsufficientBalance(uint256 available, uint256 required);
+    error TransferFailed();
+
+    event Withdrawal(address indexed to, uint256 amount);
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw(uint256 amount) external {
+        // 1. CHECKS
+        uint256 bal = balances[msg.sender];
+        if (bal < amount) {
+            revert InsufficientBalance(bal, amount);
+        }
+
+        // 2. EFFECTS (ДО внешнего вызова!)
+        balances[msg.sender] = bal - amount;
+
+        // 3. INTERACTIONS
+        (bool success, ) = msg.sender.call{value: amount}("");
+        if (!success) revert TransferFailed();
+
+        emit Withdrawal(msg.sender, amount);
+    }
+}
+```
+
+**Почему порядок критичен:** если `msg.sender` -- контракт с `receive()` функцией, он может повторно вызвать `withdraw()` внутри `call`. Но баланс уже обновлён в шаге 2, поэтому повторный `withdraw` не пройдёт проверку в шаге 1.
+
+### Наследование и интерфейсы
+
+```solidity
+// Интерфейс -- контракт без реализации
+interface ICounter {
+    function count() external view returns (uint256);
+    function increment() external;
+}
+
+// Базовый контракт
+contract Ownable {
+    address public owner;
+    error NotOwner();
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+}
+
+// Наследование: OwnableCounter IS Ownable AND implements ICounter
+contract OwnableCounter is Ownable, ICounter {
+    uint256 public override count;
+
+    function increment() external override onlyOwner {
+        count += 1;
+    }
+}
+```
+
+**Множественное наследование** в Solidity следует C3-линеаризации. Порядок перечисления базовых контрактов важен:
+
+```solidity
+// Порядок: "от самого базового к самому производному"
+contract Token is ERC20, ERC20Permit, Ownable {
+    // ...
+}
+```
+
+### Receive и Fallback
+
+```solidity
+contract Treasury {
+    event Received(address sender, uint256 amount);
+
+    // Вызывается при получении ETH без calldata
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+
+    // Вызывается если ни одна функция не совпала с selector
+    fallback() external payable {
+        // обычно revert или логирование
+    }
+}
+```
+
+## Тестирование: Foundry и Hardhat
+
+В нашем проекте каждый контракт тестируется дважды -- Foundry (Solidity) и Hardhat (TypeScript/viem). Это не дублирование: каждый инструмент имеет свои сильные стороны.
+
+<TestWorkflowDiagram client:load />
+
+### Foundry: тесты на Solidity
+
+Foundry предоставляет **cheatcodes** через объект `vm`:
+
+```solidity
+// test/Counter.t.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "forge-std/Test.sol";
+import "../contracts/Counter.sol";
+
+contract CounterTest is Test {
+    Counter public counter;
+
+    function setUp() public {
+        counter = new Counter();
+    }
+
+    // Обычный тест
+    function test_Increment() public {
+        counter.increment();
+        assertEq(counter.count(), 1);
+    }
+
+    // vm.expectRevert -- проверяем, что следующий вызов откатится
+    function test_DecrementRevertsOnUnderflow() public {
+        vm.expectRevert(Counter.CounterUnderflow.selector);
+        counter.decrement();
+    }
+
+    // vm.prank -- следующий вызов будет от имени alice
+    function test_AnyoneCanIncrement() public {
+        address alice = makeAddr("alice");
+        vm.prank(alice);
+        counter.increment();
+        assertEq(counter.count(), 1);
+    }
+
+    // vm.expectEmit -- проверяем событие
+    function test_IncrementEmitsEvent() public {
+        vm.expectEmit(true, true, true, true);
+        emit Counter.CountChanged(1);
+        counter.increment();
+    }
+
+    // Fuzz testing -- Foundry генерирует случайные входные данные
+    function testFuzz_IncrementMultiple(uint8 times) public {
+        for (uint8 i = 0; i < times; i++) {
+            counter.increment();
+        }
+        assertEq(counter.count(), uint256(times));
+    }
+}
+```
+
+**Ключевые cheatcodes:**
+
+| Cheatcode | Назначение |
+|-----------|-----------|
+| `vm.prank(addr)` | Следующий вызов от имени `addr` |
+| `vm.startPrank(addr)` | Все последующие вызовы от `addr` (до `stopPrank`) |
+| `vm.expectRevert(selector)` | Следующий вызов должен откатиться с данной ошибкой |
+| `vm.expectEmit(t1,t2,t3,data)` | Следующий emit должен совпасть |
+| `vm.deal(addr, amount)` | Установить баланс ETH для адреса |
+| `vm.warp(timestamp)` | Переместить время блокчейна |
+| `vm.roll(blockNumber)` | Переместить номер блока |
+| `makeAddr(name)` | Создать адрес из строки (детерминированно) |
+
+### Hardhat 3: тесты на TypeScript с viem
+
+```typescript
+// test/Counter.test.ts
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import hre from "hardhat";
+
+describe("Counter", () => {
+  async function deployCounter() {
+    return hre.viem.deployContract("Counter");
+  }
+
+  it("should increment", async () => {
+    const counter = await deployCounter();
+    await counter.write.increment();
+    const count = await counter.read.count();
+    assert.equal(count, 1n);
+  });
+
+  it("should revert on underflow", async () => {
+    const counter = await deployCounter();
+    await assert.rejects(
+      async () => { await counter.write.decrement(); },
+      (err: unknown) => {
+        assert.ok(err instanceof Error);
+        return true;
+      }
+    );
+  });
+
+  it("should emit CountChanged event", async () => {
+    const counter = await deployCounter();
+    const publicClient = await hre.viem.getPublicClient();
+    const hash = await counter.write.increment();
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    assert.ok(receipt.logs.length > 0, "Expected CountChanged event");
+  });
+});
+```
+
+**Паттерн Hardhat 3 + viem:**
+- `hre.viem.deployContract("Name")` -- деплой
+- `contract.write.functionName([args])` -- отправка транзакции
+- `contract.read.functionName()` -- чтение (call)
+- `hre.viem.getPublicClient()` -- публичный клиент для receipt/logs
+
+### Запуск тестов
+
+```bash
+# Foundry
+forge test                    # Все тесты
+forge test --match-test test_Increment  # Конкретный тест
+forge test -vvv               # Подробный вывод (стек, логи)
+forge test --gas-report       # Отчёт по gas
+
+# Hardhat
+npx hardhat test              # Все тесты
+npx hardhat test test/Counter.test.ts  # Конкретный файл
+```
+
+## Математический уровень: selector и dispatch
+
+EVM выполняет **function dispatch** через первые 4 байта calldata:
+
+```
+selector = keccak256("increment()")[:4]
+         = keccak256("increment()") & 0xFFFFFFFF
+         = 0xd09de08a
+```
+
+Контракт в байткоде содержит цепочку проверок:
+
+```
+CALLDATALOAD 0    // загрузить первые 32 байта calldata
+PUSH4 0xd09de08a  // selector increment()
+EQ                // совпадает?
+PUSH2 <jump_dest> // адрес кода increment
+JUMPI             // если да -- перейти
+```
+
+Для контракта Counter:
+- `increment()` -> `0xd09de08a`
+- `decrement()` -> `0x2baeceb7`
+- `reset()`     -> `0xd826f88f`
+- `count()`     -> `0x06661abd`
+
+При вызове `counter.increment()`, viem формирует транзакцию с `data: "0xd09de08a"`, EVM находит selector в dispatch-таблице и выполняет соответствующий код.
+
+## Gas-оптимизация: практические советы
+
+```solidity
+// 1. Custom errors вместо require strings
+error BadInput();
+if (x == 0) revert BadInput();  // ~24 gas дешевле
+
+// 2. unchecked для безопасных операций
+unchecked {
+    // Если вы ГАРАНТИРУЕТЕ отсутствие переполнения
+    i++;  // экономит ~60 gas (нет overflow check)
+}
+
+// 3. Упаковка storage переменных
+// bool + uint8 + address = 1 слот вместо 3
+
+// 4. Использование calldata вместо memory
+function process(uint256[] calldata data) external {
+    // calldata дешевле memory для read-only параметров
+}
+
+// 5. Events для данных, которые не нужны on-chain
+// Хранение в storage стоит 22100 gas, событие -- ~375 gas
+emit DataStored(data);  // в 50+ раз дешевле, чем SSTORE
+```
+
+## Практика
+
+Запустите тесты для обоих контрактов:
+
+```bash
+# Foundry (Solidity тесты)
+forge test -vvv
+
+# Результат:
+# [PASS] test_Increment() (gas: 28xxx)
+# [PASS] test_DecrementRevertsOnUnderflow() (gas: 10xxx)
+# [PASS] test_IncrementEmitsEvent() (gas: 31xxx)
+
+# Hardhat (TypeScript/viem тесты)
+npx hardhat test
+
+# Результат:
+# Counter
+#   should increment (xxxms)
+#   should revert on underflow (xxxms)
+#   should emit CountChanged event (xxxms)
+```
+
+Изучите gas-отчёт:
+
+```bash
+forge test --gas-report
+# Показывает min/avg/max gas для каждой функции
+```
+
+## Что дальше
+
+Теперь, когда вы умеете писать и тестировать контракты, мы перейдём к **стандартам токенов** -- ERC-20, ERC-721, ERC-1155. Вы увидите, как OpenZeppelin реализует эти стандарты и напишете свой токен на основе проверенной аудитом библиотеки.
