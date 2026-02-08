@@ -1,0 +1,235 @@
+---
+title: "Merkle Proofs и их применение"
+description: "Доказательства включения в O(log n) — SPV кошельки, airdrop-ы, лёгкие клиенты"
+order: 14
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Merkle Proof", "SPV", "Inclusion Proof", "Верификация", "Лёгкие клиенты"]
+prerequisites: ["13-merkle-trees"]
+---
+
+import { MerkleProofAnimation, MerkleProofVerificationDiagram, MerkleProofEfficiencyDiagram } from '../../../components/diagrams/module1/MerkleProofDiagrams';
+
+# Merkle Proofs и их применение
+
+## Зачем это нужно в блокчейне
+
+SPV кошельки Bitcoin проверяют транзакции **без скачивания всего блокчейна** (~500 ГБ). Как? С помощью **Merkle Proof** -- цепочки из ~11 хешей, доказывающей, что транзакция включена в блок.
+
+Без Merkle Proof для проверки одной транзакции пришлось бы скачать весь блок (~1.5 МБ). С Merkle Proof достаточно 352 байт. Это разница между мобильным кошельком и полной нодой.
+
+## Интуитивное объяснение
+
+Представьте, что у вас есть **книга с 1000 страниц** и вам нужно доказать, что конкретная страница принадлежит этой книге, не показывая все остальные.
+
+Merkle Proof -- это "путь" от конкретного листа к корню дерева, содержащий **только соседние хеши** (siblings) на каждом уровне. Верификатору достаточно:
+1. Знать хеш проверяемого листа
+2. Получить список соседних хешей (proof)
+3. Последовательно хешировать вверх
+4. Сравнить результат с известным корнем
+
+## Что такое Merkle Proof
+
+Нажимайте "Далее" чтобы увидеть, какие хеши собираются в proof:
+
+<MerkleProofAnimation client:load />
+
+### Состав proof
+
+Merkle Proof для листа с индексом `i` -- это список пар `(хеш, направление)`:
+- **Хеш** -- значение соседнего узла на данном уровне
+- **Направление** -- "left" или "right" (с какой стороны конкатенировать)
+
+Для дерева с 8 листьями proof содержит **3 элемента** (log2(8) = 3).
+
+## Верификация proof
+
+<MerkleProofVerificationDiagram client:load />
+
+### Алгоритм верификации
+
+```
+1. current = хеш проверяемого листа
+2. Для каждого элемента (sibling, direction) в proof:
+   a. Если direction == "right": current = H(current || sibling)
+   b. Если direction == "left":  current = H(sibling || current)
+3. Сравниваем current с известным Merkle Root
+4. Если совпадают -- лист действительно в дереве
+```
+
+## Эффективность: O(log n) vs O(n)
+
+<MerkleProofEfficiencyDiagram client:load />
+
+Ключевое наблюдение: на каждом уровне дерева нам нужен только **один** соседний хеш. Уровней всего `log2(n)`, поэтому размер proof логарифмически растет с количеством данных.
+
+## Алгоритмический уровень
+
+### Генерация proof на Python
+
+Вспомните структуру дерева из предыдущего урока. Для генерации proof проходим от листа к корню, на каждом уровне сохраняя соседний хеш:
+
+```python
+import hashlib
+
+def sha256(data: bytes) -> bytes:
+    return hashlib.sha256(data).digest()
+
+def get_merkle_proof(tree: list[list[bytes]], leaf_index: int) -> list[tuple[bytes, str]]:
+    """Генерирует Merkle proof для листа с заданным индексом.
+
+    Args:
+        tree: Список уровней дерева (от листьев к корню).
+        leaf_index: Индекс листа (0-based).
+
+    Returns:
+        Список пар (sibling_hash, direction).
+        direction = 'right' если sibling справа, 'left' если слева.
+    """
+    proof = []
+    idx = leaf_index
+
+    for level in tree[:-1]:  # Все уровни кроме корня
+        if idx % 2 == 0:
+            sibling_idx = idx + 1
+            direction = 'right'
+        else:
+            sibling_idx = idx - 1
+            direction = 'left'
+
+        if sibling_idx < len(level):
+            proof.append((level[sibling_idx], direction))
+
+        idx //= 2  # Переходим к родителю
+
+    return proof
+```
+
+### Верификация proof на Python
+
+```python
+def verify_merkle_proof(
+    leaf_hash: bytes,
+    proof: list[tuple[bytes, str]],
+    root: bytes
+) -> bool:
+    """Проверяет Merkle proof.
+
+    Args:
+        leaf_hash: Хеш проверяемого листа.
+        proof: Список (sibling_hash, direction) пар.
+        root: Известный Merkle Root.
+
+    Returns:
+        True если proof валиден.
+    """
+    current = leaf_hash
+
+    for sibling, direction in proof:
+        if direction == 'right':
+            current = sha256(current + sibling)
+        else:
+            current = sha256(sibling + current)
+
+    return current == root
+
+# Пример использования:
+# proof = get_merkle_proof(tree, 2)  # Proof для 3-й транзакции
+# valid = verify_merkle_proof(tree[0][2], proof, tree[-1][0])
+# print(f"Proof валиден: {valid}")  # True
+```
+
+### Полный пример
+
+```python
+# Строим дерево
+txs = [b"tx1", b"tx2", b"tx3", b"tx4", b"tx5", b"tx6", b"tx7", b"tx8"]
+leaves = [sha256(tx) for tx in txs]
+tree = build_merkle_tree(leaves)
+root = tree[-1][0]
+
+# Генерируем proof для tx3 (индекс 2)
+proof = get_merkle_proof(tree, 2)
+print(f"Proof содержит {len(proof)} элементов (log2(8) = 3)")
+
+# Верифицируем
+valid = verify_merkle_proof(leaves[2], proof, root)
+print(f"Proof валиден: {valid}")  # True
+
+# Попытка с неверным листом
+fake_leaf = sha256(b"fake_tx")
+valid_fake = verify_merkle_proof(fake_leaf, proof, root)
+print(f"Фейковый proof: {valid_fake}")  # False
+```
+
+## Применения в блокчейне
+
+### Bitcoin SPV (BIP 37, BIP 157/158)
+
+**Simplified Payment Verification** -- режим работы легкого клиента:
+1. Скачивает только заголовки блоков (80 байт x ~850,000 блоков = ~68 МБ)
+2. Для проверки транзакции запрашивает Merkle Proof у полной ноды
+3. Верифицирует proof против Merkle Root из заголовка блока
+
+BIP 157/158 (Compact Block Filters) -- улучшенная версия, более приватная чем BIP 37.
+
+### Ethereum State Proofs
+
+Ethereum использует **Merkle Patricia Trie** для хранения:
+- **Состояния аккаунтов** (балансы, нонсы)
+- **Хранилища контрактов** (storage slots)
+- **Транзакций** и **receipts**
+
+Любой может доказать баланс аккаунта, предоставив proof от листа (аккаунт) к State Root в заголовке блока.
+
+### Airdrop через Merkle Proof
+
+Популярный паттерн в DeFi для газо-эффективных airdrop-ов:
+
+```solidity
+// Контракт хранит только Merkle Root
+bytes32 public merkleRoot;
+
+function claim(uint256 amount, bytes32[] calldata proof) external {
+    bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
+    require(verify(leaf, proof, merkleRoot), "Invalid proof");
+    // Выплата токенов
+}
+```
+
+Вместо хранения 10,000 адресов в контракте (дорого!), хранится один `bytes32` -- Merkle Root. Каждый пользователь предоставляет proof на ~11 хешей при claim.
+
+### Optimistic Rollups
+
+Optimistic Rollups (Arbitrum, Optimism) коммитят **State Root** на L1 -- это Merkle Root всего состояния L2. В случае спора предоставляются Merkle Proofs для оспариваемых данных.
+
+## Математический уровень
+
+### Информационно-теоретическая оптимальность
+
+Merkle Proof -- это **информационно-теоретически оптимальное** доказательство принадлежности для бинарного дерева.
+
+Для дерева с `n` листьями, чтобы однозначно идентифицировать путь от листа к корню, нужно `log2(n)` бит для указания направления и `log2(n)` хешей для верификации. Невозможно доказать принадлежность менее чем за `O(log n)` хешей без дополнительных предположений.
+
+### Вероятность коллизии
+
+Безопасность Merkle Proof основана на стойкости к коллизиям хеш-функции. Для SHA-256: вероятность подделки proof = вероятность нахождения коллизии = `2^(-128)` (атака дней рождения).
+
+## Практика
+
+Закрепите знания в Jupyter notebook: **09-merkle-trees.ipynb** (Часть 2: Merkle Proofs)
+
+В нем вы:
+- Реализуете `get_merkle_proof` и `verify_merkle_proof`
+- Проверите proof для дерева с 1000 элементами
+- Симулируете airdrop-лист: Merkle Root + проверка адреса
+- Сравните время полной проверки vs Merkle Proof
+
+## Итоги
+
+- Merkle Proof -- путь от листа к корню с соседними хешами на каждом уровне
+- Размер proof = `ceil(log2(n))` хешей -- логарифмическая эффективность
+- Bitcoin SPV: проверка транзакции за 11 хешей вместо скачивания всего блока
+- Ethereum: доказательство баланса через State Root
+- Airdrop паттерн: один `bytes32` в контракте вместо тысяч адресов
+- Merkle Proof информационно-теоретически оптимален для бинарных деревьев
