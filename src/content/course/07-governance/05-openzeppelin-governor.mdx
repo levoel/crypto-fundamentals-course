@@ -1,0 +1,422 @@
+---
+title: "OpenZeppelin Governor"
+description: "Полная реализация DAO: GovernanceToken + MyGovernor + Treasury + GovernorLifecycle тест"
+order: 5
+difficulty: "advanced"
+estimatedTime: 40
+topics: ["OpenZeppelin Governor", "Foundry", "Testing", "Governance Lifecycle"]
+prerequisites: ["04-timelock-execution"]
+---
+
+import { GovernorArchitectureDiagram } from '../../../components/diagrams/module7/OZGovernorDiagrams';
+
+# OpenZeppelin Governor
+
+## Зачем это блокчейн-разработчику?
+
+Мы изучили все компоненты: токены с голосованием (ERC20Votes), механизмы голосования (state machine, quorum), timelock (задержки, роли). Теперь собираем всё вместе. В этом уроке -- **полный код трех контрактов** (GovernanceToken, MyGovernor, Treasury), последовательность развертывания, и **Foundry тест полного цикла** governance: propose -> vote -> queue -> execute.
+
+## Модульная архитектура
+
+<GovernorArchitectureDiagram client:load />
+
+OpenZeppelin Governor v5 -- модульная система:
+
+| Extension | Назначение |
+|-----------|-----------|
+| **GovernorCountingSimple** | Подсчет голосов: For / Against / Abstain |
+| **GovernorVotes** | Voting power из IVotes token (ERC20Votes) |
+| **GovernorVotesQuorumFraction** | Quorum как % от totalSupply (4%) |
+| **GovernorTimelockControl** | Исполнение через TimelockController |
+
+Почему модульность? Разные проекты нуждаются в разных стратегиях:
+- **Counting**: Simple vs Fractional
+- **Quorum**: Fixed vs Percentage
+- **Execution**: Direct vs Timelock
+
+### Доступные extensions (для справки):
+
+| Extension | Описание |
+|-----------|---------|
+| GovernorSettings | Configurable votingDelay, votingPeriod, proposalThreshold |
+| GovernorPreventLateQuorum | Продлевает голосование если quorum достигнут в последний момент |
+| GovernorStorage | Хранение proposal data on-chain |
+| GovernorProposalGuardian | Guardian может отменить вредоносные proposals |
+| GovernorSuperQuorum | Повышенный quorum для критических действий |
+| GovernorNoncesKeyed | Nonce per proposal для ERC-4337 compatibility |
+
+Мы используем 4 наиболее распространенных. Остальные -- для специализированных случаев.
+
+## GovernanceToken.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+
+contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes {
+    constructor()
+        ERC20("Governance Token", "GOV")
+        ERC20Permit("Governance Token")
+    {
+        _mint(msg.sender, 1_000_000 * 1e18);
+    }
+
+    function _update(address from, address to, uint256 value)
+        internal override(ERC20, ERC20Votes)
+    {
+        super._update(from, to, value); // C3: ERC20Votes._update -> ERC20._update
+    }
+
+    function nonces(address owner)
+        public view override(ERC20Permit, Nonces) returns (uint256)
+    {
+        return super.nonces(owner);
+    }
+
+    function clock() public view override returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    function CLOCK_MODE() public pure override returns (string memory) {
+        return "mode=timestamp";
+    }
+}
+```
+
+**4 override:**
+- `_update()` -- chains ERC20 + ERC20Votes (checkpoint при каждом transfer если delegation активна)
+- `nonces()` -- resolves ERC20Permit vs Nonces conflict
+- `clock()` -- timestamp mode (block.timestamp, не block.number)
+- `CLOCK_MODE()` -- декларация для Governor: delays в секундах
+
+## MyGovernor.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {Governor} from "@openzeppelin/contracts/governance/Governor.sol";
+import {GovernorCountingSimple} from
+    "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import {GovernorVotes} from
+    "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import {GovernorVotesQuorumFraction} from
+    "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import {GovernorTimelockControl} from
+    "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
+import {TimelockController} from
+    "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
+
+contract MyGovernor is
+    Governor,
+    GovernorCountingSimple,
+    GovernorVotes,
+    GovernorVotesQuorumFraction,
+    GovernorTimelockControl
+{
+    constructor(IVotes _token, TimelockController _timelock)
+        Governor("MyGovernor")
+        GovernorVotes(_token)
+        GovernorVotesQuorumFraction(4) // 4% quorum
+        GovernorTimelockControl(_timelock)
+    {}
+
+    function votingDelay() public pure override returns (uint256) {
+        return 1 days; // Timestamp mode: seconds
+    }
+
+    function votingPeriod() public pure override returns (uint256) {
+        return 1 weeks;
+    }
+
+    function proposalThreshold() public pure override returns (uint256) {
+        return 0; // Anyone with votes can propose
+    }
+
+    // --- 6 required overrides for multiple inheritance ---
+
+    function state(uint256 proposalId)
+        public view override(Governor, GovernorTimelockControl)
+        returns (ProposalState)
+    {
+        return super.state(proposalId);
+    }
+
+    function proposalNeedsQueuing(uint256 proposalId)
+        public view override(Governor, GovernorTimelockControl)
+        returns (bool)
+    {
+        return super.proposalNeedsQueuing(proposalId);
+    }
+
+    function _queueOperations(uint256 proposalId, address[] memory targets,
+        uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
+        internal override(Governor, GovernorTimelockControl) returns (uint48)
+    {
+        return super._queueOperations(
+            proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _executeOperations(uint256 proposalId, address[] memory targets,
+        uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
+        internal override(Governor, GovernorTimelockControl)
+    {
+        super._executeOperations(
+            proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _cancel(address[] memory targets, uint256[] memory values,
+        bytes[] memory calldatas, bytes32 descriptionHash)
+        internal override(Governor, GovernorTimelockControl) returns (uint256)
+    {
+        return super._cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    function _executor()
+        internal view override(Governor, GovernorTimelockControl)
+        returns (address)
+    {
+        return super._executor();
+    }
+}
+```
+
+**6 override** -- Solidity требует явного разрешения конфликтов при множественном наследовании (C3 linearization):
+- `state()` -- Governor vs GovernorTimelockControl (timelock adds Queued state)
+- `proposalNeedsQueuing()` -- true when timelock is used
+- `_queueOperations()` -- calls timelock.schedule()
+- `_executeOperations()` -- calls timelock.execute()
+- `_cancel()` -- cancels both in Governor and timelock
+- `_executor()` -- returns timelock address (not Governor)
+
+## Treasury.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Treasury is Ownable {
+    event Released(address indexed to, uint256 amount);
+
+    constructor() Ownable(msg.sender) {}
+
+    function release(address payable to, uint256 amount) external onlyOwner {
+        require(address(this).balance >= amount, "Insufficient balance");
+        to.transfer(amount);
+        emit Released(to, amount);
+    }
+
+    receive() external payable {}
+}
+```
+
+Простой контракт: `onlyOwner` = timelock. Только governance-approved proposals могут вызвать `release()`.
+
+## Deployment Sequence
+
+Порядок развертывания критичен:
+
+```solidity
+// 1. Deploy token (1M tokens to deployer)
+token = new GovernanceToken();
+
+// 2. Deploy timelock (no proposers yet; anyone can execute)
+timelock = new TimelockController(1 days, [], [address(0)], deployer);
+
+// 3. Deploy governor with token and timelock
+governor = new MyGovernor(token, timelock);
+
+// 4. Grant PROPOSER_ROLE to governor
+timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+
+// 5. CRITICAL: Renounce admin role
+timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
+// 6. Deploy treasury, transfer ownership to timelock
+treasury = new Treasury();
+treasury.transferOwnership(address(timelock));
+
+// 7. Fund timelock with ETH
+vm.deal(address(timelock), 10 ether);
+
+// 8. Distribute tokens and delegate
+token.transfer(voter1, 400_000 * 1e18);
+token.transfer(voter2, 100_000 * 1e18);
+
+// CRITICAL: All voters must delegate!
+token.delegate(voter1); // self-delegation for each voter
+```
+
+## GovernorLifecycle.t.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "forge-std/Test.sol";
+import {GovernanceToken} from "../../contracts/governance/GovernanceToken.sol";
+import {MyGovernor} from "../../contracts/governance/MyGovernor.sol";
+import {Treasury} from "../../contracts/governance/Treasury.sol";
+import {TimelockController} from
+    "@openzeppelin/contracts/governance/TimelockController.sol";
+import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
+
+contract GovernorLifecycleTest is Test {
+    GovernanceToken token;
+    TimelockController timelock;
+    MyGovernor governor;
+    Treasury treasury;
+
+    address deployer = makeAddr("deployer");
+    address voter1 = makeAddr("voter1");
+    address voter2 = makeAddr("voter2");
+    address recipient = makeAddr("recipient");
+
+    uint256 constant TIMELOCK_DELAY = 1 days;
+
+    function setUp() public {
+        vm.startPrank(deployer);
+
+        token = new GovernanceToken();
+
+        address[] memory proposers = new address[](0);
+        address[] memory executors = new address[](1);
+        executors[0] = address(0);
+        timelock = new TimelockController(
+            TIMELOCK_DELAY, proposers, executors, deployer);
+
+        governor = new MyGovernor(token, timelock);
+
+        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+        timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+
+        treasury = new Treasury();
+        treasury.transferOwnership(address(timelock));
+        vm.deal(address(timelock), 10 ether);
+
+        token.transfer(voter1, 400_000 * 1e18);
+        token.transfer(voter2, 100_000 * 1e18);
+        vm.stopPrank();
+
+        // CRITICAL: Delegate to activate voting power
+        vm.prank(voter1);
+        token.delegate(voter1);
+        vm.prank(voter2);
+        token.delegate(voter2);
+        vm.prank(deployer);
+        token.delegate(deployer);
+    }
+
+    function test_fullGovernanceLifecycle() public {
+        // === PROPOSE ===
+        bytes memory transferCall = abi.encodeWithSignature(
+            "release(address,uint256)", recipient, 1 ether);
+        address[] memory targets = new address[](1);
+        targets[0] = address(treasury);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = transferCall;
+
+        vm.prank(deployer);
+        uint256 proposalId = governor.propose(
+            targets, values, calldatas, "Send 1 ETH to recipient");
+        assertEq(uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Pending));
+
+        // === VOTING DELAY (1 day) ===
+        vm.warp(block.timestamp + governor.votingDelay() + 1);
+        assertEq(uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Active));
+
+        // === VOTE ===
+        vm.prank(voter1);
+        governor.castVote(proposalId, 1); // For
+        vm.prank(voter2);
+        governor.castVote(proposalId, 0); // Against
+
+        // === VOTING PERIOD (1 week) ===
+        vm.warp(block.timestamp + governor.votingPeriod() + 1);
+        assertEq(uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Succeeded));
+
+        // === QUEUE ===
+        bytes32 descriptionHash = keccak256(bytes("Send 1 ETH to recipient"));
+        governor.queue(targets, values, calldatas, descriptionHash);
+        assertEq(uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Queued));
+
+        // === TIMELOCK DELAY (1 day) ===
+        vm.warp(block.timestamp + TIMELOCK_DELAY + 1);
+
+        // === EXECUTE ===
+        governor.execute(targets, values, calldatas, descriptionHash);
+        assertEq(uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Executed));
+        assertEq(recipient.balance, 1 ether);
+    }
+
+    function test_delegationRequired() public {
+        address newVoter = makeAddr("newVoter");
+        vm.prank(deployer);
+        token.transfer(newVoter, 200_000 * 1e18);
+
+        // Before delegation: tokens but no voting power
+        assertEq(token.balanceOf(newVoter), 200_000 * 1e18);
+        assertEq(token.getVotes(newVoter), 0); // Zero!
+
+        // After delegation: voting power activated
+        vm.prank(newVoter);
+        token.delegate(newVoter);
+        assertEq(token.getVotes(newVoter), 200_000 * 1e18);
+    }
+}
+```
+
+## Лабораторная работа
+
+Запуск теста:
+
+```bash
+cd labs/ethereum && forge test --match-path test/governance/GovernorLifecycle.t.sol -vvvv
+```
+
+Флаг `-vvvv` показывает полные call traces, включая:
+- Governor state transitions (Pending -> Active -> Succeeded -> Queued -> Executed)
+- TimelockController schedule/execute operations
+- Treasury.release() вызов и transfer ETH
+- Все vm.warp timestamp advances
+
+### Что проверяет тест:
+
+1. **test_fullGovernanceLifecycle**: полный цикл propose -> vote -> queue -> execute
+   - voter1 голосует For (400K), voter2 -- Against (100K)
+   - Quorum met (400K > 40K required)
+   - For > Against, proposal Succeeded
+   - Queue + timelock delay + execute = recipient получает 1 ETH
+
+2. **test_delegationRequired**: демонстрация delegation requirement
+   - newVoter получает 200K токенов
+   - getVotes(newVoter) = 0 (без delegation!)
+   - После delegate(self): getVotes = 200K
+
+## Module 7: Итоговая таблица
+
+| Урок | Ключевая концепция | Практический навык |
+|------|-------------------|-------------------|
+| GOV-01: Концепции DAO | DAO = code is the organization | Различать on-chain vs off-chain governance |
+| GOV-02: Governance Tokens | ERC20Votes: delegation required | Активировать voting power через delegate() |
+| GOV-03: Механизмы голосования | Proposal state machine + governance attacks | Анализировать quorum и защиту от flash loan governance |
+| GOV-04: Timelock и исполнение | TimelockController: security buffer | Настраивать роли (proposer, executor, admin renounce) |
+| GOV-05: OpenZeppelin Governor | Modular Governor v5 composition | Развернуть и протестировать полный DAO lifecycle |
+
+## Что дальше
+
+В следующих уроках -- **Scalability**. Ethereum обрабатывает ~15-30 TPS. Как масштабировать до миллионов пользователей? State channels, Plasma, Optimistic Rollups, ZK Rollups -- эволюция решений Layer 2.

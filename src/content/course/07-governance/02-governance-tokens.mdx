@@ -1,0 +1,229 @@
+---
+title: "Governance Tokens"
+description: "ERC20Votes, делегирование, checkpoints: как токены становятся голосами"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["ERC20Votes", "Delegation", "Checkpoints", "ERC20Permit", "IERC6372"]
+prerequisites: ["01-dao-concepts"]
+---
+
+import { DelegationFlowDiagram, VotingPowerDiagram } from '../../../components/diagrams/module7/GovernanceTokenDiagrams';
+
+# Governance Tokens
+
+## Зачем это блокчейн-разработчику?
+
+У вас 1 миллион governance токенов. Сколько у вас голосов? **Ноль**. Пока вы не вызовете `delegate()`. Это самая частая ошибка новичков в governance -- и мы объясним, почему так сделано.
+
+ERC20Votes -- расширение стандартного ERC20, которое добавляет **checkpoints** (историческое отслеживание балансов), **delegation** (делегирование голосов), и **voting power queries**. Без понимания этого расширения невозможно работать с governance.
+
+## ERC20 + ERC20Votes
+
+ERC20Votes -- extension к стандартному ERC20. Добавляет:
+
+| Функция | Назначение |
+|---------|-----------|
+| `delegate(address)` | Активирует voting power (самоделегирование или представительское) |
+| `getVotes(address)` | Текущая voting power адреса |
+| `getPastVotes(address, timepoint)` | Voting power на определенный момент в прошлом |
+| `delegates(address)` | Кому делегированы голоса |
+| `delegateBySig(...)` | Gasless delegation через подпись (EIP-712) |
+
+Import paths (OpenZeppelin v5):
+```solidity
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+```
+
+## CRITICAL: Delegation Requirement
+
+<VotingPowerDiagram client:load />
+
+Voting power -- **НЕ автоматическая**. `balanceOf(user)` может быть 1M, а `getVotes(user)` будет **0**.
+
+Почему так сделано? **Gas optimization**. Отслеживание checkpoints при каждом transfer стоит gas. Без delegation обычные ERC20 transfers не создают checkpoints -- дешевле для пользователей, которые не участвуют в governance.
+
+### Два паттерна делегирования:
+
+```solidity
+// Self-delegation: активирует собственную voting power
+token.delegate(address(this));
+// или из вызова пользователя:
+token.delegate(msg.sender);
+
+// Representative delegation: делегирует голоса представителю
+token.delegate(representative);
+```
+
+### Gasless delegation (delegateBySig):
+```solidity
+// Пользователь подписывает EIP-712 сообщение off-chain
+// Кто угодно может отправить транзакцию с подписью
+token.delegateBySig(delegatee, nonce, expiry, v, r, s);
+```
+
+## Делегирование: пошаговый flow
+
+<DelegationFlowDiagram client:load />
+
+Ключевые моменты:
+1. **mint()** создает токены, но **НЕ** voting power
+2. **delegate(self)** активирует voting power и создает checkpoint
+3. **transfer()** перемещает токены, но получатель должен делегировать отдельно
+4. **delegate(representative)** перенаправляет voting power другому адресу
+5. **Proposal snapshot** фиксирует voting power на момент создания proposal
+
+## Checkpoints
+
+Checkpoints -- система исторического отслеживания балансов. При каждом изменении delegation создается запись: `{timestamp, votes}`.
+
+```solidity
+// Governor запрашивает voting power на момент создания proposal
+uint256 votes = token.getPastVotes(voter, proposalSnapshot);
+```
+
+**Зачем это нужно?** Предотвращение flash loan governance атак. Если атакующий занимает токены ПОСЛЕ создания proposal, его voting power на момент snapshot = 0.
+
+## Clock Modes (IERC6372)
+
+OpenZeppelin v5 поддерживает два режима:
+
+| Режим | clock() | votingDelay | votingPeriod |
+|-------|---------|-------------|-------------|
+| **Timestamp** | `block.timestamp` | `1 days` | `1 weeks` |
+| Block number | `block.number` | `7200` (~1 day) | `50400` (~1 week) |
+
+Мы используем **timestamp mode** -- более интуитивный для разработчиков:
+
+```solidity
+// В GovernanceToken.sol:
+function clock() public view override returns (uint48) {
+    return uint48(block.timestamp);
+}
+
+function CLOCK_MODE() public pure override returns (string memory) {
+    return "mode=timestamp";
+}
+```
+
+Governor автоматически определяет clock mode токена и использует соответствующие единицы.
+
+## ERC20Permit
+
+ERC20Permit (EIP-2612) -- gasless approvals через подписи. Включен в GovernanceToken для удобства:
+
+```solidity
+// Вместо двух транзакций (approve + transferFrom):
+// 1. Пользователь подписывает permit off-chain
+// 2. Контракт вызывает permit() + transferFrom() в одной tx
+token.permit(owner, spender, value, deadline, v, r, s);
+```
+
+Не специфичен для governance, но bundled в OZ v5 pattern вместе с ERC20Votes.
+
+## GovernanceToken.sol: полный код
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+
+contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes {
+    constructor()
+        ERC20("Governance Token", "GOV")
+        ERC20Permit("Governance Token")
+    {
+        _mint(msg.sender, 1_000_000 * 1e18);
+    }
+
+    // _update: chains ERC20 base + ERC20Votes checkpoint
+    function _update(address from, address to, uint256 value)
+        internal override(ERC20, ERC20Votes)
+    {
+        super._update(from, to, value);
+    }
+
+    // nonces: resolves ERC20Permit + Nonces conflict
+    function nonces(address owner)
+        public view override(ERC20Permit, Nonces)
+        returns (uint256)
+    {
+        return super.nonces(owner);
+    }
+
+    // Timestamp-based clock
+    function clock() public view override returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    function CLOCK_MODE() public pure override returns (string memory) {
+        return "mode=timestamp";
+    }
+}
+```
+
+**Ключевые override:**
+- `_update()` -- chains ERC20 base `_update` и ERC20Votes checkpoint update через C3 linearization
+- `nonces()` -- разрешает конфликт между ERC20Permit и Nonces (оба наследуют Nonces)
+- `clock()` / `CLOCK_MODE()` -- устанавливает timestamp mode для governance
+
+## Алгоритмический уровень
+
+Checkpoint data structure:
+
+```
+// Внутренняя структура ERC20Votes:
+mapping(address => Checkpoint[]) private _checkpoints;
+
+struct Checkpoint {
+    uint48 _key;     // timestamp
+    uint208 _value;  // voting power
+}
+
+// getPastVotes использует binary search:
+function getPastVotes(address account, uint256 timepoint):
+    checkpoints = _checkpoints[account]
+    // Binary search: найти последний checkpoint с timestamp <= timepoint
+    return upperLookupRecent(checkpoints, timepoint)
+```
+
+Binary search по массиву checkpoints -- O(log n) lookup для исторической voting power.
+
+## Математический уровень
+
+Voting power как функция:
+
+$$V(a, t) = \sum_{b \in D^{-1}(a, t)} \text{balance}(b, t)$$
+
+где $D^{-1}(a, t)$ -- множество адресов, делегировавших голоса адресу $a$ на момент $t$.
+
+**Свойство сохранения:**
+
+$$\sum_{a \in A} V(a, t) = \text{totalSupply}(t)$$
+
+Сумма всех voting power равна totalSupply -- голоса не создаются и не уничтожаются, только перераспределяются через delegation.
+
+**Delegation как направленный граф:**
+
+Пусть $D: A \to A$ -- функция делегирования, где $D(b) = a$ означает "b делегировал a". Тогда voting power:
+
+$$V(a, t) = \sum_{\{b : D(b) = a\}} \text{balance}(b, t)$$
+
+Самоделегирование: $D(a) = a$.
+
+## Итоги
+
+**Что мы узнали:**
+1. **ERC20Votes** -- расширение ERC20 для governance: checkpoints + delegation + voting power
+2. **Delegation required** -- `balanceOf() > 0` НЕ означает наличие voting power
+3. **Checkpoints** -- историческое отслеживание, binary search для `getPastVotes()`
+4. **Timestamp clock** -- `clock()` override для человекочитаемых delays (`1 days`, `1 weeks`)
+5. **GovernanceToken.sol** -- полный контракт с 4 override: `_update`, `nonces`, `clock`, `CLOCK_MODE`
+
+**Что дальше:** В GOV-03 -- механизмы голосования, state machine предложений, и самое важное -- **governance attacks**. Как в 2022 году один человек за одну транзакцию украл $182M через flash loan governance.

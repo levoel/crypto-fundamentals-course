@@ -1,0 +1,203 @@
+---
+title: "Механизмы голосования"
+description: "On-chain voting, quorum, proposal state machine, governance атаки и защита"
+order: 3
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["Voting", "Quorum", "Proposal States", "Governance Attacks", "Beanstalk", "Snapshot"]
+prerequisites: ["02-governance-tokens"]
+---
+
+import { ProposalStateMachineDiagram, GovernanceAttacksDiagram } from '../../../components/diagrams/module7/VotingMechanismDiagrams';
+
+# Механизмы голосования
+
+## Зачем это блокчейн-разработчику?
+
+Beanstalk, апрель 2022. Один человек взял flash loan на **$1 миллиард**, получил **80% голосов**, немедленно одобрил предложение, которое перевело **$182 миллиона** на его кошелек. Всё за **одну транзакцию**. Как это было возможно? И как OpenZeppelin Governor защищает от этого?
+
+В этом уроке мы разберем механизмы голосования, state machine предложений, и governance attacks -- вектора атак, специфичные для DAO governance.
+
+## Типы голосования
+
+### GovernorCountingSimple
+
+Стандартный подсчет голосов в OpenZeppelin Governor:
+
+| Значение | Тип | Описание |
+|:--------:|-----|---------|
+| **0** | Against | Против предложения |
+| **1** | For | За предложение |
+| **2** | Abstain | Воздержался (считается для quorum, но не для For/Against) |
+
+```solidity
+// В GovernorCountingSimple:
+enum VoteType { Against, For, Abstain }
+
+// Голосование:
+governor.castVote(proposalId, 1); // For
+governor.castVote(proposalId, 0); // Against
+governor.castVote(proposalId, 2); // Abstain
+```
+
+### GovernorCountingFractional (для справки)
+
+Альтернативный модуль: позволяет разделить голоса между For/Against/Abstain. Полезно для voting aggregators (например, Tally). В нашем курсе используем GovernorCountingSimple.
+
+## Quorum
+
+**Quorum** -- минимальное количество голосов, необходимое для валидности голосования.
+
+`GovernorVotesQuorumFraction` задает quorum как процент от totalSupply:
+
+```solidity
+// В конструкторе MyGovernor:
+GovernorVotesQuorumFraction(4) // 4% quorum
+
+// При totalSupply = 1,000,000 GOV:
+// quorum = 4% * 1,000,000 = 40,000 GOV
+// Для прохождения proposal нужно >= 40K голосов (For + Abstain)
+```
+
+**Без quorum**: proposal может пройти, если 1 человек проголосует For. Quorum защищает от манипуляций с низкой явкой.
+
+> **Abstain считается для quorum**: Голос Abstain не влияет на For vs Against, но считается для достижения quorum. Это позволяет участникам "присутствовать" на голосовании, не выражая позиции.
+
+## Proposal State Machine
+
+<ProposalStateMachineDiagram client:load />
+
+### 7 состояний предложения:
+
+| Состояние | Описание | Переход |
+|-----------|---------|---------|
+| **Pending** | Создано, ожидает votingDelay | -> Active (после votingDelay) |
+| **Active** | Голосование открыто | -> Succeeded или Defeated |
+| **Succeeded** | Quorum met AND For > Against | -> Queued |
+| **Defeated** | Quorum not met OR Against >= For | Финальное |
+| **Queued** | В очереди TimelockController | -> Executed или Expired |
+| **Executed** | Исполнено on-chain | Финальное |
+| **Canceled** | Отменено (из любого незавершенного) | Финальное |
+| **Expired** | Не исполнено в grace period | Финальное |
+
+### Условия перехода:
+
+- **Pending -> Active**: прошло `votingDelay` секунд (1 day)
+- **Active -> Succeeded**: `forVotes > againstVotes` AND `forVotes + abstainVotes >= quorum`
+- **Active -> Defeated**: `againstVotes >= forVotes` OR quorum not met
+- **Succeeded -> Queued**: `queue()` вызван, proposal передан в TimelockController
+- **Queued -> Executed**: прошел `timelockDelay`, `execute()` вызван
+- **Queued -> Expired**: прошел grace period без `execute()`
+- **Any -> Canceled**: proposer или guardian вызвал cancel
+
+## Off-chain Voting: Snapshot
+
+**Snapshot** -- протокол для gasless голосования:
+
+1. Пользователь подписывает EIP-712 typed data (off-chain)
+2. Подпись публикуется на IPFS
+3. Voting power рассчитывается по on-chain snapshot (block number / timestamp)
+4. Результат -- advisory (не binding on-chain)
+
+**Преимущества**: нулевой gas cost, высокое участие.
+**Недостатки**: не binding -- кто-то должен исполнить результат вручную (обычно multisig).
+
+## Governance атаки
+
+<GovernanceAttacksDiagram client:load />
+
+### 1. Flash Loan Governance (Beanstalk, $182M, 2022)
+
+Самая дерзкая governance атака в истории:
+
+```
+1. Flash loan: заём ~$1B через Aave
+2. Swap в Beanstalk governance tokens
+3. Получение 80% voting power
+4. Немедленное одобрение BIP-18 (вредоносное предложение)
+5. Proposal перевел $182M на адрес атакующего
+6. Возврат flash loan
+7. Чистая прибыль: ~$80M (после погашения займа)
+```
+
+**Почему сработало?** Beanstalk использовал **текущий баланс** для определения voting power, а не checkpoints. Flash loan дал мгновенное voting power.
+
+**Защита OpenZeppelin Governor:**
+- ERC20Votes создает **checkpoints при delegation**, не при transfer
+- Governor использует `getPastVotes(voter, proposalSnapshot)` -- voting power на момент **создания** proposal
+- Flash loan токены, купленные ПОСЛЕ создания proposal, дают 0 голосов
+
+### 2. Vote Buying
+
+Покупка токенов перед ключевым голосованием:
+
+**Защита:**
+- **Timelock delays** дают сообществу время заметить необычное накопление
+- **Proposal threshold** требует минимум токенов для создания предложения
+- Прозрачность блокчейна: все покупки видны on-chain
+
+### 3. Voter Apathy
+
+Низкая явка = контроль меньшинством. Типичный participation rate: 4-8%.
+
+**Защита:**
+- **Quorum requirements**: минимум 4% от total supply должны проголосовать
+- **Delegation**: неактивные участники делегируют активным представителям
+- Incentives: некоторые DAO вознаграждают участие в голосовании
+
+## Алгоритмический уровень
+
+Алгоритм голосования в Governor:
+
+```
+function castVote(proposalId, support):
+    // 1. Check: proposal must be Active
+    require(state(proposalId) == Active)
+
+    // 2. Get voting power at PROPOSAL CREATION time (anti-flash-loan)
+    weight = token.getPastVotes(msg.sender, proposalSnapshot(proposalId))
+    require(weight > 0, "No voting power at snapshot")
+
+    // 3. Check: voter hasn't voted yet
+    require(!hasVoted(proposalId, msg.sender))
+
+    // 4. Count vote
+    if support == For:
+        forVotes[proposalId] += weight
+    elif support == Against:
+        againstVotes[proposalId] += weight
+    elif support == Abstain:
+        abstainVotes[proposalId] += weight
+
+    // 5. Mark as voted
+    hasVoted[proposalId][msg.sender] = true
+```
+
+**Ключевой момент**: `proposalSnapshot(proposalId)` -- timestamp создания proposal. Voting power определяется на этот момент, не на момент голосования.
+
+## Математический уровень
+
+**Quorum condition:**
+
+$$\text{forVotes} + \text{abstainVotes} \geq \text{quorum}(\text{proposalSnapshot})$$
+
+**Success condition:**
+
+$$\text{forVotes} > \text{againstVotes}$$
+
+Оба условия должны выполняться для перехода в состояние Succeeded:
+
+$$\text{Succeeded} \iff (\text{forVotes} + \text{abstainVotes} \geq Q) \land (\text{forVotes} > \text{againstVotes})$$
+
+где $Q = \text{quorumNumerator} \times \text{totalSupply}(\text{snapshot}) / \text{quorumDenominator}$.
+
+## Итоги
+
+**Что мы узнали:**
+1. **GovernorCountingSimple** -- три типа голосов: For (1), Against (0), Abstain (2)
+2. **Quorum** -- минимальный процент голосов для валидности (4% от totalSupply)
+3. **Proposal state machine** -- 7 состояний от Pending до Executed/Defeated
+4. **Flash loan governance** -- Beanstalk $182M, защита: ERC20Votes checkpoints
+5. **Vote buying + Voter apathy** -- защита: timelock delays, quorum requirements, delegation
+
+**Что дальше:** В GOV-04 -- TimelockController: роли, задержки, и почему timelock -- критический компонент безопасности governance.

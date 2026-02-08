@@ -1,0 +1,150 @@
+---
+title: "Концепции DAO"
+description: "Децентрализованные автономные организации: от The DAO (2016) до современных Governor-based систем"
+order: 1
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["DAO", "Governance", "Decentralization", "The DAO", "On-chain Governance"]
+prerequisites: []
+---
+
+import { DAOArchitectureDiagram, DAOCategoriesDiagram } from '../../../components/diagrams/module7/DAOConceptDiagrams';
+
+# Концепции DAO
+
+## Зачем это блокчейн-разработчику?
+
+В Module 6 мы научились находить и эксплуатировать уязвимости смарт-контрактов. Но **кто решает**, какие обновления применять к протоколу? Кто голосует за изменение параметров DeFi? Кто определяет, куда направить средства казны?
+
+Ответ -- **DAO: Decentralized Autonomous Organization**. Децентрализованная автономная организация, где решения принимаются не советом директоров, а **голосованием владельцев токенов через смарт-контракты**.
+
+В этом модуле мы построим полноценную систему governance с нуля: от governance токена (ERC20Votes) до Governor контракта с timelock и Foundry тестом полного цикла propose-vote-queue-execute.
+
+## Что такое DAO
+
+**DAO** -- это организация, управляемая смарт-контрактами и голосованием token holders. Нет CEO, нет совета директоров. Правила -- это код. Решения -- это предложения (proposals), за которые голосуют владельцы governance токенов.
+
+Ключевые характеристики:
+- **Decentralized**: нет единого центра принятия решений
+- **Autonomous**: исполнение решений автоматическое (смарт-контракт)
+- **Organization**: координация людей для достижения общей цели
+
+## Архитектура DAO
+
+<DAOArchitectureDiagram client:load />
+
+Поток принятия решений в DAO:
+
+1. **Token Holders** -- владельцы governance токенов, имеющие право голоса
+2. **Proposal** -- описание действия (например, "перевести 100 ETH разработчику")
+3. **Voting** -- голосование For/Against/Abstain в течение определенного периода
+4. **Timelock** -- задержка перед исполнением (буфер безопасности для сообщества)
+5. **Execution** -- автоматическое исполнение on-chain действия
+
+## Историческая справка: The DAO (2016)
+
+**The DAO** -- первая крупная DAO в истории Ethereum:
+
+- **$150M собрано** через crowdsale (крупнейший краудфандинг на тот момент)
+- **$60M украдено** через reentrancy уязвимость (вспомните SEC-02!)
+- **Хардфорк Ethereum** -- сообщество разделилось: ETH (откатили транзакцию) vs ETC (код -- закон)
+
+> **Урок The DAO:** Governance code IS the protocol. Если governance контракт имеет уязвимость -- последствия катастрофические. Именно поэтому OpenZeppelin создал аудированную библиотеку Governor.
+
+Reentrancy атака The DAO -- это та же уязвимость, которую мы эксплуатировали в VulnerableVault.sol (SEC-02). Interaction BEFORE Effect: внешний вызов до обновления баланса.
+
+## Современные DAO
+
+| DAO | Treasury | Token | Что управляют |
+|-----|:--------:|-------|---------------|
+| **Uniswap** | $6B+ | UNI | Параметры протокола, fee tiers, grants |
+| **Aave** | $2B+ | AAVE | Listing новых активов, risk parameters |
+| **Compound** | $1B+ | COMP | Рынки, interest rate models |
+| **MakerDAO/Sky** | $8B+ | MKR/SKY | Stability fee, collateral types, DAI peg |
+
+Все эти DAO используют вариации OpenZeppelin Governor или Compound Governor Bravo.
+
+## Категории DAO
+
+<DAOCategoriesDiagram client:load />
+
+### Protocol DAOs
+Управляют DeFi-протоколами. Uniswap, Aave, Compound -- Treasury в миллиарды долларов. Голосование определяет параметры, обновления, распределение средств.
+
+### Investment DAOs
+Коллективные инвестиции. MetaCartel Ventures, The LAO -- pooled capital, совместные решения об инвестициях в Web3 проекты.
+
+### Social DAOs
+Сообщества и культура. Friends with Benefits -- токен как членский билет. Bankless -- медиа и образование.
+
+### Service DAOs
+Кооперативы фрилансеров. RaidGuild -- Web3-разработка. DAOhaus -- инструменты для создания DAO.
+
+## On-chain vs Off-chain Governance
+
+| Характеристика | On-chain (Governor) | Off-chain (Snapshot) | Hybrid |
+|---------------|:-------------------:|:-------------------:|:------:|
+| Где голосование | Ethereum mainnet | Подписи (EIP-712) | Snapshot + multisig |
+| Gas cost | Высокий (tx per vote) | Бесплатно (signatures) | Низкий |
+| Binding? | Автоматическое исполнение | Advisory only | Manual execution |
+| Участие | Ниже (gas barrier) | Выше (gasless) | Среднее |
+| Безопасность | Cryptographic guarantees | Trust the executor | Trust the multisig |
+
+**On-chain** (Governor контракты): голоса -- транзакции, исполнение автоматическое. Binding votes.
+
+**Off-chain** (Snapshot): голоса -- подписи EIP-712, gas не нужен. Но кто-то должен исполнить результат вручную (обычно multisig).
+
+**Hybrid**: Snapshot для голосования, multisig для исполнения. Наиболее популярный подход среди средних DAO.
+
+## Алгоритмический уровень
+
+Алгоритм принятия решений в DAO:
+
+```
+function governance_decision(proposal):
+    // 1. Propose
+    proposalId = governor.propose(targets, values, calldatas, description)
+
+    // 2. Wait votingDelay
+    wait(votingDelay)
+
+    // 3. Vote
+    for voter in token_holders:
+        governor.castVote(proposalId, For | Against | Abstain)
+
+    // 4. Check result
+    if quorum_met AND for_votes > against_votes:
+        state = Succeeded
+        // 5. Queue in timelock
+        governor.queue(proposalId)
+        wait(timelockDelay)
+        // 6. Execute
+        governor.execute(proposalId)  // automatic on-chain action
+    else:
+        state = Defeated
+```
+
+## Математический уровень
+
+Governance как теория игр:
+
+**Voting power distribution**: Гини-коэффициент владения токенами. Если Gini близок к 1 -- власть сконцентрирована у немногих (плутократия). Если близок к 0 -- равное распределение (демократия).
+
+$$G = \frac{\sum_{i=1}^{n} \sum_{j=1}^{n} |x_i - x_j|}{2n \sum_{i=1}^{n} x_i}$$
+
+где $x_i$ -- количество токенов у $i$-го участника.
+
+**Nash equilibrium**: Рациональные voter-ы делегируют голоса информированным представителям (delegation). Равновесие Нэша: никто не может улучшить свой результат в одностороннем порядке.
+
+**Arrow's impossibility theorem**: Не существует идеальной системы голосования, удовлетворяющей всем желаемым свойствам одновременно (transitivity, independence of irrelevant alternatives, non-dictatorship). Любая governance система -- компромисс.
+
+## Итоги
+
+**Что мы узнали:**
+1. **DAO** -- организация, управляемая смарт-контрактами и голосованием token holders
+2. **The DAO (2016)** -- первая крупная DAO, хак через reentrancy, хардфорк ETH/ETC
+3. **Современные DAO** -- Uniswap, Aave, Compound управляют миллиардами через governance
+4. **Категории** -- Protocol, Investment, Social, Service DAOs
+5. **On-chain vs Off-chain** -- Governor (binding) vs Snapshot (gasless)
+
+**Что дальше:** В GOV-02 мы разберем, как токены становятся голосами. Спойлер: `balanceOf(user) = 1M` НЕ означает, что у пользователя есть voting power. Нужен ещё один шаг -- **delegation**.

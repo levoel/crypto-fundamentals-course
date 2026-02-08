@@ -1,0 +1,212 @@
+---
+title: "Timelock и исполнение"
+description: "TimelockController: роли, задержки, и безопасное исполнение governance решений"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Timelock", "TimelockController", "Roles", "Execution", "Security"]
+prerequisites: ["03-voting-mechanisms"]
+---
+
+import { TimelockFlowDiagram } from '../../../components/diagrams/module7/TimelockExecutionDiagrams';
+
+# Timelock и исполнение
+
+## Зачем это блокчейн-разработчику?
+
+Предложение прошло голосование. Но что если это вредоносное предложение, которое никто не заметил? **Timelock** -- это буфер безопасности: после одобрения есть задержка (обычно 1-2 дня) перед исполнением. За это время любой может увидеть, что произойдет, и принять меры -- вывести средства, оспорить, предупредить community.
+
+Все крупные DeFi-протоколы используют timelocks. Compound, Aave, Uniswap -- без timelock governance был бы слишком рискованным.
+
+## Зачем timelock
+
+| Без Timelock | С Timelock |
+|:------------:|:----------:|
+| Proposal прошел -> мгновенное исполнение | Proposal прошел -> задержка -> исполнение |
+| Сообщество не успевает среагировать | Время на проверку и exit opportunity |
+| Вредоносный proposal исполняется сразу | Прозрачность: все видят pending action |
+| Нет "пожарного выхода" | Пользователи могут вывести средства |
+
+> **Exit opportunity** -- ключевая концепция: если пользователь не согласен с одобренным предложением, у него есть время вывести средства из протокола до исполнения.
+
+## TimelockController: архитектура
+
+OpenZeppelin `TimelockController` -- контракт с тремя ролями:
+
+```solidity
+import {TimelockController} from
+    "@openzeppelin/contracts/governance/TimelockController.sol";
+```
+
+### Три роли:
+
+| Роль | Кто | Назначение |
+|------|-----|-----------|
+| **PROPOSER_ROLE** | Governor контракт | Кто может ставить операции в очередь |
+| **EXECUTOR_ROLE** | `address(0)` = anyone | Кто может исполнять (обычно anyone) |
+| **DEFAULT_ADMIN_ROLE** | Deployer (MUST renounce!) | Управление ролями |
+
+### Критическая настройка:
+
+```solidity
+// При создании timelock:
+address[] memory proposers = new address[](0); // Пока пусто
+address[] memory executors = new address[](1);
+executors[0] = address(0); // Anyone can execute
+
+TimelockController timelock = new TimelockController(
+    1 days,     // minDelay
+    proposers,  // proposer role holders
+    executors,  // executor role holders
+    deployer    // initial admin (TEMPORARY)
+);
+
+// Grant PROPOSER_ROLE to Governor:
+timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+
+// CRITICAL: Renounce admin role!
+timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+```
+
+**Если deployer сохраняет admin** -- он может обойти governance полностью: добавить себя как proposer, убрать Governor, исполнить любое действие. Admin renounce -- обязательный шаг безопасности.
+
+## Полный flow: от предложения до исполнения
+
+<TimelockFlowDiagram client:load />
+
+### Timeline:
+
+```
+Day 0:  PROPOSE      -- создание предложения
+Day 1:  VOTING OPENS -- начало голосования (после votingDelay = 1 day)
+Day 8:  VOTING ENDS  -- окончание голосования (votingPeriod = 1 week)
+Day 8:  QUEUE        -- постановка в очередь timelock
+Day 9:  EXECUTE      -- исполнение (после timelockDelay = 1 day)
+
+Итого: ~9 дней от создания до исполнения
+```
+
+### Кто что делает:
+
+| Шаг | Вызывающий | Контракт | Действие |
+|-----|-----------|----------|----------|
+| Propose | Deployer (или anyone с tokens) | Governor | `propose(targets, values, calldatas, description)` |
+| Vote | Token holders | Governor | `castVote(proposalId, support)` |
+| Queue | Anyone | Governor -> Timelock | `queue(...)` -> `timelock.schedule(...)` |
+| Execute | Anyone | Governor -> Timelock -> Target | `execute(...)` -> `timelock.execute(...)` -> `treasury.release(...)` |
+
+## Batch Operations
+
+Одно предложение может содержать **несколько действий**:
+
+```solidity
+// Proposal: 3 действия в одной транзакции
+address[] memory targets = new address[](3);
+uint256[] memory values = new uint256[](3);
+bytes[] memory calldatas = new bytes[](3);
+
+// Action 1: Transfer ETH from treasury
+targets[0] = address(treasury);
+calldatas[0] = abi.encodeWithSignature("release(address,uint256)", dev, 5 ether);
+
+// Action 2: Update protocol parameter
+targets[1] = address(protocol);
+calldatas[1] = abi.encodeWithSignature("setFee(uint256)", 300); // 3%
+
+// Action 3: Grant new role
+targets[2] = address(timelock);
+calldatas[2] = abi.encodeWithSignature("grantRole(bytes32,address)", ROLE, newMember);
+```
+
+Все три действия исполняются атомарно: либо все, либо ничего.
+
+## Integration с Governor
+
+`GovernorTimelockControl` -- extension, который связывает Governor с TimelockController:
+
+```
+Governor.queue()     -> TimelockController.schedule()
+Governor.execute()   -> TimelockController.execute()
+Governor._executor() -> returns address(timelock) // not address(governor)
+```
+
+**Важно**: `_executor()` возвращает адрес timelock, не Governor. Это значит, что **timelock является фактическим владельцем** всех контролируемых контрактов (Treasury, Protocol, etc.).
+
+## Безопасность timelock
+
+### Admin Renounce -- критический шаг
+
+```solidity
+// WRONG: deployer keeps admin
+// deployer может в любой момент:
+//   timelock.grantRole(PROPOSER_ROLE, deployer) -- обойти Governor
+//   timelock.revokeRole(PROPOSER_ROLE, governor) -- отключить governance
+
+// CORRECT: deployer renounces admin
+timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
+// Теперь только governance может управлять timelock
+```
+
+### Checklist безопасности timelock:
+
+- [ ] PROPOSER_ROLE = только Governor
+- [ ] EXECUTOR_ROLE = address(0) (anyone) или доверенный набор
+- [ ] DEFAULT_ADMIN_ROLE = renounced
+- [ ] minDelay >= 1 day (достаточно для реакции community)
+- [ ] Treasury ownership = address(timelock)
+
+## Алгоритмический уровень
+
+Timelock state machine:
+
+```
+function schedule(target, value, data, predecessor, salt, delay):
+    // Generate unique operation ID
+    id = keccak256(abi.encode(target, value, data, predecessor, salt))
+
+    // Ensure operation doesn't exist yet
+    require(!isOperation(id))
+
+    // Ensure delay meets minimum
+    require(delay >= minDelay)
+
+    // Schedule: set execution timestamp
+    timestamps[id] = block.timestamp + delay
+
+function execute(target, value, data, predecessor, salt):
+    id = keccak256(...)
+
+    // Check: operation is ready (past delay)
+    require(isOperationReady(id))
+    require(block.timestamp >= timestamps[id])
+
+    // Execute the call
+    (bool success,) = target.call{value: value}(data)
+    require(success)
+
+    // Mark as done
+    timestamps[id] = _DONE_TIMESTAMP  // 1
+```
+
+## Математический уровень
+
+Timelock как safety interval:
+
+Для операции $O$, одобренной в момент $t_{\text{approve}}$:
+
+$$\text{execution allowed} \iff t \in [t_{\text{approve}} + \delta, \, t_{\text{approve}} + \delta + \gamma]$$
+
+где $\delta$ -- timelock delay, $\gamma$ -- grace period.
+
+**Security assumption**: Если атака обнаружена в pending операции, сообщество может среагировать в течение $\delta$ единиц времени. Достаточно $\delta \geq T_{\text{reaction}}$, где $T_{\text{reaction}}$ -- типичное время реакции community (12-48 часов для активных DAO).
+
+## Итоги
+
+**Что мы узнали:**
+1. **Timelock** -- буфер безопасности между одобрением и исполнением (exit opportunity)
+2. **TimelockController** -- три роли: PROPOSER (Governor), EXECUTOR (anyone), ADMIN (renounce!)
+3. **Admin renounce** -- критический шаг; без него deployer может обойти governance
+4. **Batch operations** -- одно предложение может содержать множество действий (атомарно)
+5. **Timeline** -- propose (Day 0) -> vote (Days 1-8) -> queue -> execute (Day 9)
+
+**Что дальше:** В GOV-05 мы собираем всё вместе: полный код GovernanceToken + MyGovernor + Treasury + GovernorLifecycle.t.sol тест в Foundry. И запускаем полный цикл governance!
