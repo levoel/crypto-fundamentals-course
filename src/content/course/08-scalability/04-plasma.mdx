@@ -1,0 +1,334 @@
+---
+title: "Plasma"
+description: "Фреймворк Plasma (2017): child chains, Merkle roots, и фундаментальная проблема mass exit"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Plasma", "Child Chains", "Mass Exit", "Data Availability", "Polygon"]
+prerequisites: ["03-state-channels"]
+---
+
+import { PlasmaArchitectureDiagram, MassExitDiagram } from '../../../components/diagrams/module8/PlasmaDiagrams';
+
+# Plasma
+
+## Зачем это блокчейн-разработчику?
+
+2017 год. Виталик Бутерин и Джозеф Пун (автор Lightning Network) публикуют **Plasma whitepaper**. Идея гениальна: child chains, которые обрабатывают транзакции и периодически публикуют Merkle root на Ethereum. Масштабирование в тысячи раз!
+
+Но через 2 года стало ясно: Plasma имеет **фундаментальный недостаток**. Этот недостаток -- data availability problem -- настолько важен, что его понимание объясняет, **ПОЧЕМУ rollups существуют** и почему они победили.
+
+## Историческая эволюция
+
+```
+State Channels (2015)    ->    Plasma (2017)    ->    Rollups (2019+)
+  ↓                              ↓                      ↓
+  Фиксированные участники        Mass exit problem       Решение: data on-chain
+  Нет global state               Data withholding        Full EVM support
+```
+
+Каждая технология -- ответ на ограничения предыдущей. Plasma решила проблему фиксированных участников (state channels), но создала новую проблему (mass exit). Rollups решили mass exit, опубликовав ВСЕ данные на L1.
+
+## Архитектура Plasma
+
+<PlasmaArchitectureDiagram client:load />
+
+### Три слоя
+
+**1. L1 (Ethereum) -- Root Chain:**
+- Plasma contract хранит депозиты пользователей
+- Принимает Merkle roots от operator
+- Обрабатывает exit запросы с challenge period
+
+**2. Operator:**
+- Собирает транзакции пользователей
+- Выполняет транзакции на child chain
+- Вычисляет Merkle tree текущего состояния
+- Периодически публикует Merkle root на L1
+
+**3. Child Chain:**
+- Отдельный блокчейн для пользовательских транзакций
+- Быстрые блоки (секунды вместо минут)
+- State хранится как Merkle tree
+
+### Как это работает
+
+```
+1. DEPOSIT: Alice отправляет 10 ETH в Plasma contract на L1
+   -> Alice получает 10 ETH на child chain
+
+2. TRANSACT: Alice отправляет Bob 3 ETH на child chain
+   -> Operator включает TX в блок child chain
+   -> Operator вычисляет новый Merkle root
+
+3. COMMIT: Operator публикует Merkle root на L1
+   -> L1 знает "snapshot" состояния child chain
+   -> Но L1 НЕ знает деталей (только root hash)
+
+4. EXIT: Bob хочет вывести 3 ETH на L1
+   -> Bob предоставляет Merkle proof: "Мой баланс = 3 ETH в блоке #N"
+   -> Challenge period: кто-то может оспорить exit
+   -> После timeout: Bob получает 3 ETH на L1
+```
+
+## Entry/Exit Mechanism
+
+### Deposit (вход)
+
+Депозит -- простая ончейн-транзакция:
+
+```
+PlasmaContract.deposit{value: 10 ETH}()
+// Alice получает 10 ETH на child chain
+// Запись в следующий committed Merkle root
+```
+
+### Exit (выход)
+
+Exit требует **Merkle proof** -- доказательство включения баланса в committed state:
+
+```
+PlasmaContract.startExit(
+  block_number,      // блок на child chain
+  tx_data,           // транзакция с балансом
+  merkle_proof       // путь в Merkle tree до root
+)
+// Challenge period начинается
+// Если никто не оспорит -- средства выводятся
+```
+
+### Challenge (оспаривание)
+
+Если Alice пытается exit со старым состоянием:
+
+```
+PlasmaContract.challengeExit(
+  exit_id,           // exit запрос Alice
+  newer_tx,          // более новая транзакция
+  newer_proof,       // Merkle proof для более нового блока
+  newer_block_num    // номер блока > exit block
+)
+// Exit Alice отменяется
+// Alice потеряла exit bond
+```
+
+## Matic/Polygon: главная Plasma реализация
+
+**Matic Network** (2019) -- самая успешная Plasma-based сеть:
+- Запущена как Plasma implementation для Ethereum
+- Ребрендинг в **Polygon** (2021)
+- К 2022 стало ясно, что Plasma архитектура ограничена
+- Polygon постепенно перешел от Plasma к **zkEVM** (ZK rollup)
+
+> **Polygon сегодня:** Polygon PoS -- это скорее sidechain (собственные валидаторы), а не чистая Plasma. Polygon zkEVM -- это ZK rollup (данные на L1). Эволюция Polygon отражает эволюцию всей индустрии: от Plasma к rollups.
+
+## Mass Exit Problem
+
+Это **фундаментальная проблема**, которая "убила" Plasma. Пройдите все 5 шагов:
+
+<MassExitDiagram client:load />
+
+### Разбор проблемы
+
+**Шаг 1: Всё работает.**
+Operator честно обрабатывает транзакции, публикует Merkle roots. Пользователи доверяют operator'у предоставить данные для exit.
+
+**Шаг 2: Operator перестает делиться данными.**
+Operator публикует Merkle roots на L1 (это обязательно), но **перестает делиться данными транзакций** с пользователями. Root -- это хэш. Без исходных данных пользователи не могут создать Merkle proof для своего баланса.
+
+**Шаг 3: Паника. Все хотят выйти.**
+Пользователи понимают, что без данных они не могут доказать свои балансы. Единственный выход -- exit с **последним известным валидным состоянием**. Все 1000 пользователей одновременно отправляют exit-транзакции на L1.
+
+**Шаг 4: Ethereum перегружен.**
+Тысячи exit-транзакций наводняют L1. Gas взлетает. Некоторые пользователи не могут позволить себе exit. Сеть перегружена.
+
+**Шаг 5: Урок.**
+Data availability problem -- не баг реализации. Это **архитектурный недостаток** Plasma. Operator публикует только O(log N) данных (Merkle root), но восстановление требует O(N) данных.
+
+## Data Availability Problem
+
+### Почему это фундаментально?
+
+| Аспект | Plasma | Rollup |
+|--------|--------|--------|
+| Что публикуется на L1 | Только Merkle root (32 bytes) | ВСЕ данные транзакций (KB-MB) |
+| Может ли L1 восстановить state? | НЕТ | ДА |
+| Если operator исчезнет | Mass exit, потенциальная потеря | Любой восстановит state из L1 |
+| Data availability | Зависит от operator | Гарантирована L1 |
+
+**Ключевой инсайт:** Merkle root **доказывает** что состояние существует, но **не раскрывает** его содержимое. Это как знать, что сейф заперт, но не знать комбинацию.
+
+### Почему operator может скрыть данные?
+
+Operator -- единственный, кто видит все транзакции child chain. Operator вычисляет Merkle tree и публикует root на L1. Но исходные данные (листья дерева) -- у operator'а. Если operator решит их не раскрывать, ни один пользователь не сможет создать Merkle proof.
+
+## Другие ограничения Plasma
+
+### 1. Нет General Smart Contract поддержки
+
+Plasma поддерживает только простые операции:
+- Переводы ETH/токенов
+- Простые обмены
+
+**Невозможно на Plasma:**
+- Uniswap (AMM с глобальным пулом ликвидности)
+- Aave (lending с shared state)
+- Compound governance
+
+Причина: exit game (Merkle proof + challenge) работает для простых состояний (кому принадлежат какие токены), но становится экспоненциально сложным для произвольных smart contract states.
+
+### 2. Длинные exit периоды
+
+Exit из Plasma -- до 7-14 дней (challenge period). За это время средства заблокированы.
+
+### 3. Operator централизация
+
+Operator -- единая точка отказа:
+- Operator может цензурировать транзакции
+- Operator может скрыть данные (data withholding)
+- Доверие к operator'у -- необходимое условие
+
+## Почему Rollups победили
+
+**Rollups = Plasma + data on-chain.** Это "простое" (концептуально) изменение решило mass exit problem:
+
+| Проблема Plasma | Решение в Rollups |
+|-----------------|-------------------|
+| Data withholding | Все данные на L1 (calldata/blobs) |
+| Mass exit | Не нужен: state восстановим из L1 данных |
+| Нет general SC | Полная EVM совместимость |
+| Operator trust | Sequencer can't steal (data public) |
+
+### Как rollups решают data availability?
+
+```
+// Plasma: O(log N) data on L1
+plasma_contract.commitRoot(merkle_root)  // 32 bytes
+
+// Rollup: O(N) data on L1
+rollup_contract.submitBatch(
+  all_transactions,    // полные данные всех TX
+  new_state_root,      // результирующий state
+  proof                // fraud proof или validity proof
+)
+```
+
+Если rollup sequencer исчезнет:
+1. Все данные транзакций уже на L1
+2. Любой может восстановить полный state
+3. Любой может запустить новый sequencer
+4. Пользователи НЕ теряют средства
+
+## Историческая роль Plasma
+
+Несмотря на неудачу как решения масштабирования, Plasma была **необходимым шагом**:
+
+1. **Доказала:** off-chain execution + on-chain verification работает
+2. **Продемонстрировала:** Merkle-based state commitment -- эффективный паттерн
+3. **Выявила:** data availability -- КЛЮЧЕВАЯ проблема для off-chain scaling
+4. **Вдохновила:** rollups использовали уроки Plasma, добавив data on-chain
+
+> **Без Plasma не было бы rollups.** Plasma показала, что "публикуй commitment, скрывай данные" -- провальная стратегия. Rollups сделали противоположный выбор: "публикуй ВСЕ данные, оптимизируй стоимость хранения" (calldata -> blobs).
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (аналогия)
+
+**Plasma** -- как **филиал банка без бухгалтерии:**
+- Филиал принимает вклады и проводит операции
+- Каждый день отправляет в головной офис **только итоговый хэш** (Merkle root)
+- Если филиал закроется -- головной офис знает только итоговую цифру, но **не знает, кому сколько должен**
+- Все вкладчики бегут в головной офис одновременно (mass exit)
+- Головной офис перегружен
+
+**Rollup** -- как **филиал с полной отчетностью:**
+- Каждый день отправляет **полный журнал всех операций** в головной офис
+- Если филиал закроется -- головной офис восстановит все балансы из журнала
+- Никакой паники, никакого mass exit
+
+### Уровень 2: Алгоритмический (exit game)
+
+```
+# Plasma Exit Game Protocol
+
+function startExit(merkle_proof, tx, block_num):
+  # Verify inclusion in committed Merkle root
+  require(verify_merkle_proof(
+    committed_roots[block_num],  # root on L1
+    tx,                          # transaction data
+    merkle_proof                 # path in tree
+  ))
+  pending_exits.push({
+    user: msg.sender,
+    amount: tx.amount,
+    block_num: block_num,
+    deadline: now + CHALLENGE_PERIOD
+  })
+
+function challengeExit(exit_id, newer_tx, newer_proof):
+  exit = pending_exits[exit_id]
+  # Challenger proves a newer state exists
+  require(newer_tx.block_num > exit.block_num)
+  require(verify_merkle_proof(
+    committed_roots[newer_tx.block_num],
+    newer_tx,
+    newer_proof
+  ))
+  # Exit canceled -- user tried to exit with old state
+  cancel_exit(exit_id)
+
+function finalizeExit(exit_id):
+  exit = pending_exits[exit_id]
+  require(now > exit.deadline)  # challenge period passed
+  transfer(exit.user, exit.amount)
+```
+
+### Уровень 3: Математический (data availability)
+
+Data availability как информационно-теоретическая проблема:
+
+```
+System: N users, total state S
+
+Plasma:
+  Published to L1: O(log N) data  (Merkle root = 32 bytes)
+  Required for reconstruction: O(N) data  (all transactions)
+  Information gap: O(N) - O(log N) ≈ O(N)
+
+  If operator withholds O(N) data:
+    Users must fallback to L1
+    Cost of mass exit: O(N) on-chain transactions
+    L1 congestion: proportional to N
+
+Rollup:
+  Published to L1: O(N) data  (all transactions)
+  Required for reconstruction: O(N) data  (already on L1)
+  Information gap: 0
+
+  If sequencer disappears:
+    All data already on L1
+    Anyone can reconstruct state: O(N) reads from L1
+    No mass exit needed: cost = 0
+
+Key insight:
+  Plasma saves O(N) on publication cost
+  But pays O(N) in worst-case exit cost
+  Rollup pays O(N) upfront (with blobs: very cheap)
+  But never pays exit cost
+```
+
+Rollups выбирают **предсказуемую стоимость** (data publication) вместо **катастрофического риска** (mass exit).
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Plasma architecture** | Child chain + Merkle roots на L1 | Off-chain execution + on-chain commitment |
+| **Entry/Exit mechanism** | Deposit -> transact -> exit with Merkle proof | Challenge period для безопасности |
+| **Mass exit problem** | Operator скрывает данные -> все бегут на L1 | Фундаментальный архитектурный недостаток |
+| **Data availability problem** | Merkle root != данные | Корень проблемы mass exit |
+| **Polygon evolution** | Plasma -> sidechain -> zkEVM | Отражает эволюцию индустрии |
+| **Rollups = Plasma + data** | Все данные на L1 | Решение mass exit problem |
+| **Историческая роль** | Необходимый шаг: доказала DA problem | Без Plasma не было бы rollups |
+
+**Что дальше:** В SCALE-05 мы изучим Optimistic Rollups -- технологию, которая решила проблемы Plasma. Optimism и Arbitrum обрабатывают тысячи TPS, поддерживают полную EVM совместимость и наследуют безопасность Ethereum. Как? Данные на L1 + fraud proofs.

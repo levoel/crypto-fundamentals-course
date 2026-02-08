@@ -1,0 +1,217 @@
+---
+title: "Концепции Layer 2"
+description: "Классификация L2: state channels, Plasma, rollups, validiums, sidechains. Data availability и наследование безопасности."
+order: 2
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Layer 2", "Data Availability", "Rollups", "Sidechains", "EIP-4844", "TVL"]
+prerequisites: ["01-scalability-problem"]
+---
+
+import { L2ClassificationDiagram, DASpectrumDiagram, L2TVLDiagram } from '../../../components/diagrams/module8/Layer2ConceptDiagrams';
+
+# Концепции Layer 2
+
+## Зачем это блокчейн-разработчику?
+
+Ethereum не может обработать весь мировой трафик на L1. Решение: **Layer 2** -- протоколы, которые выполняют транзакции ВНЕ Ethereum, но наследуют его безопасность. Ключевой вопрос: как доказать L1, что L2 транзакции валидны?
+
+Понимание классификации L2 критично для разработчика: выбор между Optimism, Arbitrum, zkSync, Polygon PoS -- это не просто "где дешевле deployment", а фундаментально разные модели безопасности и компромиссы.
+
+## L1 vs L2: определение
+
+### Что такое Layer 2?
+
+**Layer 2 (L2)** -- протокол, который:
+1. Выполняет транзакции **вне** L1 (off-chain execution)
+2. **Публикует данные** на L1 (data availability)
+3. **Наследует безопасность** L1 (security inheritance)
+4. Позволяет пользователям **всегда выйти на L1** с активами (exit guarantee)
+
+**Ключевое отличие от сайдчейнов:** если L2 shut down (sequencer выключился, operator исчез), пользователи **ВСЕГДА** могут вывести свои средства на L1. Для сайдчейнов это не гарантировано -- у них собственные валидаторы и собственная безопасность.
+
+### Зачем L2?
+
+| Без L2 (только L1) | С L2 |
+|---------------------|------|
+| ~27 TPS | ~2,000-10,000+ TPS per L2 |
+| $5-100 за swap | $0.01-0.10 за swap |
+| 12 секунд на блок | < 1 секунды (soft finality) |
+| Все данные навсегда на L1 | Execution на L2, settlement на L1 |
+
+## Классификация решений масштабирования
+
+<L2ClassificationDiagram client:load />
+
+### Обзор категорий
+
+**State Channels** (2015+):
+- Двусторонние каналы для off-chain транзакций
+- Пример: Raiden, Connext, Lightning Network (Bitcoin)
+- Ограничение: только два участника, нужно быть онлайн
+
+**Plasma** (2017):
+- Child chains с Merkle root commitments на L1
+- Пример: Polygon (исторически), OMG Network
+- Ограничение: mass exit problem, нет general smart contracts
+
+**Rollups** (2019+):
+- Выполнение на L2, ВСЕ данные на L1
+- **Optimistic:** Optimism, Arbitrum, Base (fraud proofs, 7-day finality)
+- **ZK:** zkSync Era, StarkNet, Polygon zkEVM, Scroll (validity proofs, быстрая finality)
+
+**Validiums:**
+- Validity proofs, но данные OFF-CHAIN (DAC)
+- Пример: Arbitrum Orbit (AnyTrust mode)
+- Компромисс: дешевле, но trust assumption на DAC
+
+**Sidechains (НЕ L2):**
+- Собственные валидаторы, собственная безопасность
+- Пример: Polygon PoS
+- **ВАЖНО:** Polygon PoS -- это сайдчейн, НЕ L2 rollup
+
+## Data Availability -- ключевой различитель
+
+Data availability (DA) -- ЭТО то, что отличает rollup от сайдчейна. Где хранятся данные транзакций?
+
+<DASpectrumDiagram client:load />
+
+### Сравнительная таблица
+
+| Тип | Data Availability | Security Model | Пример |
+|-----|-------------------|----------------|--------|
+| **Rollup (Optimistic)** | On Ethereum (calldata/blobs) | Наследует Ethereum | Optimism, Arbitrum One, Base |
+| **Rollup (ZK)** | On Ethereum (calldata/blobs) | Наследует Ethereum | zkSync Era, Scroll, Polygon zkEVM |
+| **Validium** | Off-chain (DAC) | DAC trust assumption | Arbitrum Orbit (AnyTrust) |
+| **Sidechain** | Own chain | Own validators | Polygon PoS |
+
+> **Критическое различие:** Если Optimism shut down, вы можете восстановить все данные из Ethereum L1 и вывести средства. Если Polygon PoS shut down, ваши средства зависят от его собственных валидаторов.
+
+### EIP-4844 и blobs
+
+До EIP-4844 (март 2024) rollups публиковали данные как **calldata** -- дорого, но надежно. EIP-4844 ввел **blob transactions**:
+
+| Параметр | Calldata | Blobs (EIP-4844) |
+|----------|----------|------------------|
+| Стоимость | ~16 gas/byte | ~1 gas/byte (в 10-100x дешевле) |
+| Хранение | Навсегда | ~18 дней (~4096 epochs) |
+| Размер | Ограничен block gas limit | 128 KB per blob, 3-6 per block |
+| Доступность | Всегда | 18 дней (достаточно для challenge period) |
+
+**Pectra upgrade (май 2025):** удвоил target с 3 до 6 blobs per block, ещё снизив комиссии L2.
+
+### Почему 18 дней достаточно?
+
+Challenge period для optimistic rollups = 7 дней. 18 дней хранения blobs означает, что все dispute данные доступны с запасом. После 18 дней данные pruned -- но к этому моменту state уже финализирован.
+
+## L2 ландшафт (2025)
+
+<L2TVLDiagram client:load />
+
+### Текущая экосистема
+
+- **Base** (~47% TVL) -- L2 от Coinbase, построен на OP Stack. Стал крупнейшим L2 в 2024 году.
+- **Arbitrum One** (~31% TVL) -- первый major optimistic rollup. Nitro upgrade (2022), Stylus (WASM).
+- **Optimism** (~10% TVL) -- OP Stack framework. Superchain vision (interoperability между OP Stack chains).
+- **zkSync Era** (~3% TVL) -- ZK rollup от Matter Labs. Type 4 zkEVM, native account abstraction.
+- **StarkNet** (~2% TVL) -- ZK rollup от StarkWare. Cairo language, STARK proofs.
+
+> **Trend:** Optimistic rollups доминируют по TVL (>90%), но ZK rollups растут. Долгосрочно ZK rollups считаются "правильным" решением -- cryptographic guarantees вместо economic guarantees.
+
+## Security Inheritance Model
+
+### Что значит "наследовать безопасность L1"?
+
+Для rollup с данными на L1:
+
+1. **Data availability:** Все данные транзакций L2 записаны на Ethereum. Если L2 operator исчезнет, любой может восстановить state.
+2. **State verification:** L1 может проверить правильность state transitions (через fraud proofs или validity proofs).
+3. **Exit guarantee:** Пользователь ВСЕГДА может вывести средства на L1, даже если L2 operator враждебный.
+
+**Формально:** если Ethereum безопасен (honest majority validators), то L2 rollup безопасен, потому что:
+- L2 данные на L1 (не могут быть изменены)
+- L2 state можно верифицировать на L1 (fraud/validity proof)
+- L2 exit выполняется на L1 (не зависит от L2 operator)
+
+### Для сайдчейна:
+
+- Данные на **собственной** цепочке
+- Безопасность зависит от **собственных** валидаторов
+- Если 2/3+ валидаторов сайдчейна скомпрометированы -- средства потеряны
+- Ethereum **не может помочь** -- это отдельная цепочка
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (аналогия)
+
+**Rollup** -- как филиал банка:
+- Филиал обрабатывает транзакции (execution)
+- Каждый вечер отправляет **полный отчет** в головной офис (data on L1)
+- Если филиал закроется -- все данные есть в головном офисе
+- Клиенты всегда могут обратиться в головной офис напрямую (exit to L1)
+
+**Sidechain** -- как отдельный банк:
+- Свои сотрудники (validators), свои серверы (consensus)
+- Есть "мост" для перевода денег между банками (bridge)
+- Если банк обанкротится -- головной офис **не несет ответственности**
+
+### Уровень 2: Алгоритмический (протокол)
+
+```
+// L2 Simplified Protocol
+
+// === Off-chain (L2 Sequencer) ===
+batch = []
+for each tx in incoming_transactions:
+  new_state = execute(current_state, tx)
+  batch.append(tx)
+
+// === On-chain (L1 Contract) ===
+function submitBatch(batch_data, new_state_root, proof):
+  // Verify batch data is available (calldata/blob)
+  require(batch_data.length > 0)
+
+  // Verify state transition
+  if rollup_type == OPTIMISTIC:
+    // Accept optimistically, start challenge period
+    pending_roots[block.number] = new_state_root
+    challenge_deadline = block.timestamp + 7 days
+  elif rollup_type == ZK:
+    // Verify validity proof immediately
+    require(verify_proof(old_state_root, new_state_root, batch_data, proof))
+    finalized_root = new_state_root
+```
+
+### Уровень 3: Математический (формальный)
+
+Security reduction: безопасность L2 сводится к безопасности L1.
+
+```
+Pr[L2 compromised] <= Pr[L1 compromised] + Pr[L2 bug]
+
+Для rollup:
+  Pr[L1 compromised] ≈ Pr[>1/3 Ethereum validators malicious]  (очень мало)
+  Pr[L2 bug] = probability of smart contract vulnerability (зависит от аудита)
+
+Для sidechain:
+  Pr[sidechain compromised] = Pr[>2/3 sidechain validators malicious]
+  (отдельная, часто меньшая, набор валидаторов)
+```
+
+Rollup: `Security(L2) <=_p Security(L1)` (polynomial reduction)
+
+Sidechain: `Security(sidechain) = Security(own_validators)` (независимая)
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **L2 definition** | Off-chain execution + L1 data + security inheritance | Отличие от сайдчейнов |
+| **Data availability** | Где хранятся данные транзакций | Ключевой различитель rollup vs sidechain |
+| **Rollups** | Data on L1, inherit L1 security | Основное решение масштабирования |
+| **Validiums** | Validity proofs + off-chain DA | Дешевле, но trust assumption на DAC |
+| **Sidechains** | Own validators, NOT L2 | Polygon PoS = sidechain, не rollup |
+| **EIP-4844** | Blob transactions для L2 данных | 10-100x снижение комиссий |
+| **L2 TVL (2025)** | Base ~47%, Arbitrum ~31%, Optimism ~10% | Optimistic rollups доминируют |
+
+**Что дальше:** В SCALE-03 мы изучим state channels -- первую попытку масштабировать Ethereum. Вы уже видели payment channels в Bitcoin (Lightning Network). State channels -- обобщение этой идеи.

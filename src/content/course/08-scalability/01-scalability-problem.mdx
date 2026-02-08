@@ -1,0 +1,192 @@
+---
+title: "Проблема масштабируемости"
+description: "Трилемма блокчейна, текущие ограничения Ethereum, и rollup-centric roadmap"
+order: 1
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Scalability", "Blockchain Trilemma", "TPS", "EIP-4844", "Rollup-centric Roadmap"]
+prerequisites: []
+---
+
+import { BlockchainTrilemmaDiagram, TPSComparisonDiagram, ScalingTimelineDiagram } from '../../../components/diagrams/module8/ScalabilityProblemDiagrams';
+
+# Проблема масштабируемости
+
+## Зачем это блокчейн-разработчику?
+
+Мы построили систему governance на Ethereum. Голосование, timelock, исполнение -- все работает. Но Ethereum обрабатывает ~15-30 транзакций в секунду. Visa -- 65,000. Что случится, когда миллионы пользователей захотят голосовать, торговать, и взаимодействовать со смарт-контрактами одновременно?
+
+В 2017 году одна игра -- CryptoKitties -- парализовала всю сеть Ethereum. В DeFi Summer 2020 комиссия за простой swap на Uniswap достигала $100+. Масштабируемость -- это не абстрактная проблема. Это барьер между "блокчейн работает для энтузиастов" и "блокчейн работает для миллиардов пользователей".
+
+## Трилемма блокчейна
+
+### Три свойства
+
+Каждый блокчейн стремится к трем свойствам:
+
+1. **Scalability** (масштабируемость) -- высокая пропускная способность (transactions per second, TPS)
+2. **Security** (безопасность) -- устойчивость к атакам, цензуре и манипуляциям
+3. **Decentralization** (децентрализация) -- большое количество независимых узлов, низкий порог входа для валидаторов
+
+**Трилемма:** блокчейн может оптимизировать максимум 2 из 3 свойств одновременно. Попытка улучшить одно приводит к ухудшению другого.
+
+<BlockchainTrilemmaDiagram client:load />
+
+### Примеры трилеммы
+
+| Проект | Scalability | Security | Decentralization | Компромисс |
+|--------|:-:|:-:|:-:|------------|
+| **Ethereum L1** | Низкая (~27 TPS) | Высокая | Высокая (~800k validators) | Жертвует scalability ради security + decentralization |
+| **Solana** | Высокая (~4,000 TPS) | Высокая | Умеренная (~2,000 validators) | Высокие требования к hardware снижают decentralization |
+| **BSC** | Высокая (~300 TPS) | Умеренная | Низкая (21 validator) | 21 валидатор = centralization, но быстро |
+| **Rollups** | Высокая (~2,000-10,000 TPS) | Высокая (через L1) | Умеренная | Inherit security от L1, execution на L2 |
+
+## Текущие ограничения Ethereum
+
+### Почему 15-30 TPS?
+
+Ethereum L1 имеет жесткие ограничения:
+
+| Параметр | Значение | Ограничение |
+|----------|---------|-------------|
+| Gas limit per block | ~30M gas | Вычислительная мощность сети |
+| Block time | ~12 секунд | Proof-of-Stake consensus |
+| Простой перевод ETH | ~21,000 gas | ~1,400 переводов в блоке |
+| Swap на Uniswap | ~150,000-300,000 gas | ~100-200 swap'ов в блоке |
+
+Для простых переводов: ~1,400 TX / 12 секунд = ~117 TPS. Но реальные транзакции (DeFi, NFT, governance) стоят гораздо больше gas, снижая эффективный TPS до ~15-30.
+
+### Исторические инциденты
+
+- **CryptoKitties (2017):** Одна игра с коллекционными котиками парализовала Ethereum. Время подтверждения выросло с минут до часов.
+- **DeFi Summer (2020):** Комиссии за swap достигали $100+. Мелкие пользователи были вытеснены из экосистемы.
+- **NFT мания (2021):** Bored Ape Yacht Club mint -- gas wars, средняя комиссия $500+.
+
+> **Масштабируемость -- это не только скорость.** Высокие комиссии = экономическая цензура. Если swap стоит $100, DeFi доступен только "китам" с крупными суммами.
+
+## Сравнение пропускной способности
+
+<TPSComparisonDiagram client:load />
+
+### Почему не увеличить размер блока?
+
+Казалось бы, решение простое: увеличить gas limit или уменьшить block time. Но:
+
+- **Больше блоки** = больше данных для обработки = **дороже оборудование** для валидаторов
+- **Дороже оборудование** = **меньше валидаторов** = **централизация**
+- **Централизация** = один оператор может цензурировать транзакции
+
+**Bitcoin Block Size War (2017):** Биткойн-сообщество раскололось из-за предложения увеличить блок. Одна сторона хотела 8 MB блоки (Bitcoin Cash), другая -- сохранить 1 MB + SegWit + Lightning Network. Результат: хардфорк и два блокчейна. Увеличение блока -- не бесплатное решение.
+
+## Ethereum Scaling Roadmap
+
+<ScalingTimelineDiagram client:load />
+
+### Rollup-centric roadmap (2020)
+
+В октябре 2020 Виталик Бутерин объявил **rollup-centric roadmap** -- стратегический разворот в развитии Ethereum:
+
+- **Ethereum L1** становится **settlement layer** (уровень расчетов) и **data availability layer** (уровень доступности данных)
+- **Execution** (исполнение транзакций) переносится на **Layer 2 rollups**
+- L1 оптимизируется не для TPS, а для **security** и **data availability**
+
+Это означает: Ethereum НЕ стремится стать "быстрым" блокчейном. Вместо этого он стремится быть **самым безопасным базовым слоем**, на котором работают быстрые L2.
+
+## EIP-4844 (Proto-Danksharding)
+
+### Март 2024: Blob transactions
+
+Самое важное обновление для L2 масштабирования. EIP-4844 ввел новый тип данных -- **blobs** (binary large objects):
+
+| Параметр | Значение |
+|----------|---------|
+| Размер одного blob | 128 KB |
+| Target blobs per block | 3 (Dencun) -> 6 (Pectra) |
+| Время хранения | ~18 дней (~4096 epochs) |
+| Стоимость vs calldata | 10-100x дешевле |
+
+**Зачем 18 дней?** Challenge period для optimistic rollups составляет 7 дней. 18 дней -- достаточный запас для dispute resolution.
+
+### Pectra Upgrade (май 2025)
+
+Удвоение blob throughput: с 3 до 6 blobs per block (target). Это означает ~768 KB данных per block для L2. Ещё одно значительное снижение комиссий для rollups.
+
+### Будущее: Full Danksharding
+
+Цель: 64+ blobs per block. Ethereum станет мощным data availability layer для сотен rollups одновременно.
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (аналогия)
+
+Представьте Ethereum L1 как **главное шоссе через город**:
+
+- **4 полосы** (ограниченная пропускная способность)
+- В час пик -- **пробки** (высокие комиссии)
+- Решение: **построить метро** (L2), которое перевозит пассажиров быстрее и дешевле
+- Шоссе остается для **грузовых перевозок** (settlement, data availability)
+- Метро использует инфраструктуру города (inherit security), но имеет свои рельсы (execution)
+
+### Уровень 2: Алгоритмический (расчёт)
+
+Пропускная способность Ethereum L1:
+
+```
+block_size ≈ 80 KB (average transaction data per block)
+block_time = 12 seconds
+
+data_rate = 80,000 bytes / 12 sec ≈ 6,667 bytes/sec
+
+simple_tx_size ≈ 250 bytes (RLP encoded)
+TPS = 6,667 / 250 ≈ 27 TPS
+
+complex_tx_size ≈ 500-2000 bytes (DeFi interaction)
+TPS_defi = 6,667 / 1000 ≈ 7 TPS
+```
+
+С EIP-4844 blobs:
+
+```
+blob_data = 6 blobs * 128 KB = 768 KB per block
+blob_rate = 768,000 / 12 ≈ 64,000 bytes/sec
+
+# L2 может сжимать TX до ~10-20 bytes
+l2_tps = 64,000 / 15 ≈ 4,267 TPS (per L2)
+```
+
+### Уровень 3: Математический (формальный)
+
+Масштабируемость как задача оптимизации:
+
+```
+Maximize:  T (throughput, TPS)
+Subject to:
+  L < L_max          (latency: block propagation time)
+  H < H_max          (hardware: node requirements)
+  S > S_min          (security: attack cost threshold)
+  D > D_min          (decentralization: minimum node count)
+
+Constraints:
+  T ∝ block_size / block_time
+  L ∝ block_size (larger blocks propagate slower)
+  H ∝ block_size / block_time (faster processing needs better hardware)
+  S ∝ D (more nodes = harder to attack)
+  D ∝ 1/H (higher hardware requirements = fewer nodes)
+
+Trilemma:
+  T ↑ => block_size ↑ => H ↑ => D ↓ => S ↓
+```
+
+В permissionless системах увеличение T при сохранении S и D провably hard. Rollups обходят это ограничение, вынося execution на L2 при сохранении data availability и settlement на L1.
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Blockchain trilemma** | Scalability vs Security vs Decentralization | Нельзя оптимизировать все 3 одновременно |
+| **Ethereum L1 limits** | ~15-30 TPS, gas costs as bottleneck | Недостаточно для массового adoption |
+| **Rollup-centric roadmap** | L1 = settlement + DA, L2 = execution | Стратегический разворот (2020) |
+| **EIP-4844 (blobs)** | Дешевые данные для L2 | 10-100x снижение комиссий L2 |
+| **Pectra upgrade** | 6 blobs per block | Удвоение blob throughput (2025) |
+
+**Что дальше:** В SCALE-02 мы классифицируем все типы Layer 2 решений: state channels, Plasma, rollups (optimistic и ZK), validiums и sidechains. Ключевой вопрос: что отличает настоящий L2 от сайдчейна?

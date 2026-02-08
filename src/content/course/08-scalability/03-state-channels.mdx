@@ -1,0 +1,266 @@
+---
+title: "State Channels"
+description: "Каналы состояния: от payment channels до общего off-chain исполнения. Связь с Lightning Network."
+order: 3
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["State Channels", "Payment Channels", "Off-chain", "Lightning Network", "Dispute Resolution"]
+prerequisites: ["02-layer2-concepts"]
+---
+
+import { ChannelLifecycleDiagram, PaymentChannelDiagram } from '../../../components/diagrams/module8/StateChannelDiagrams';
+
+# State Channels
+
+## Зачем это блокчейн-разработчику?
+
+Мы уже видели payment channels в Bitcoin -- Lightning Network (BTC-09/10). State channels -- это обобщение этой идеи: вместо только платежей, можно перемещать **ЛЮБОЕ** состояние смарт-контракта off-chain. Мгновенно. Бесплатно. Приватно.
+
+State channels -- первая попытка масштабировать Ethereum (2015-2017). Понимание их ограничений объясняет, ПОЧЕМУ появились Plasma и rollups.
+
+## Payment Channels: основа
+
+### Идея
+
+Payment channel -- двусторонний "счёт" между двумя участниками:
+
+1. Alice и Bob открывают канал: депозит средств в multisig-контракт (**on-chain**)
+2. Alice и Bob обмениваются подписанными обновлениями баланса (**off-chain**)
+3. Alice или Bob закрывают канал: публикуют финальный баланс (**on-chain**)
+
+**Результат:** неограниченное число транзакций между Alice и Bob, но только **2 транзакции** на блокчейне (открытие + закрытие).
+
+### Связь с Lightning Network
+
+Вы уже изучили это в BTC-09 (Lightning Network):
+- Funding TX (2-of-2 мультисиг)
+- Commitment TX (подписанные обновления)
+- Cooperative / Force close
+
+**State channels = Lightning Network, обобщённый для Ethereum.** Вместо только BTC-балансов можно хранить произвольное состояние смарт-контракта: шахматную партию, токенные балансы, результат голосования.
+
+## State Channels: обобщение
+
+### От платежей к произвольному состоянию
+
+| Payment Channel | State Channel |
+|----------------|---------------|
+| Состояние = балансы (Alice: X, Bob: Y) | Состояние = произвольные данные |
+| Только перевод средств | Любая логика смарт-контракта |
+| Lightning Network (Bitcoin) | Connext, Raiden (Ethereum) |
+
+**Примеры использования state channels:**
+- **Шахматная партия:** состояние = позиция на доске. Каждый ход -- подписанное обновление. Финальный результат -- на блокчейне.
+- **Token swaps:** состояние = балансы нескольких токенов. Обмены off-chain.
+- **Микроплатежи:** потоковые платежи за контент, API-вызовы.
+
+## Жизненный цикл State Channel
+
+Пройдите все этапы жизни state channel -- от открытия до закрытия и dispute:
+
+<ChannelLifecycleDiagram client:load />
+
+### Разбор ключевых этапов
+
+**1. OPEN (On-chain TX #1)**
+
+Alice и Bob разворачивают multisig-контракт на Ethereum. Каждый вносит средства (deposit). Эти средства заблокированы до закрытия канала.
+
+```
+multisig_contract.deploy({
+  participants: [alice, bob],
+  deposits: { alice: 5 ETH, bob: 5 ETH },
+  challenge_period: 1 day
+})
+```
+
+**2. TRANSACT OFF-CHAIN (мгновенно, бесплатно)**
+
+Каждое обновление -- подписанное сообщение с новым состоянием и nonce (порядковый номер):
+
+```
+state_update = {
+  alice_balance: 4 ETH,
+  bob_balance: 6 ETH,
+  nonce: 1,
+  signatures: [alice_sig, bob_sig]
+}
+```
+
+**Свойства off-chain транзакций:**
+- Мгновенные (нет ожидания блока)
+- Бесплатные (нет gas)
+- Приватные (только Alice и Bob видят)
+
+**3. CLOSE (On-chain TX #2)**
+
+Два варианта:
+- **Cooperative close:** обе стороны подписывают финальное состояние, контракт выдает средства
+- **Dispute close:** одна сторона публикует состояние, начинается challenge period
+
+## Payment Channel: интерактивный баланс
+
+<PaymentChannelDiagram client:load />
+
+## Dispute Resolution: защита от мошенничества
+
+### Как работает challenge period?
+
+1. Alice публикует состояние с nonce=1 (Alice=4, Bob=6)
+2. Bob видит это и знает, что есть более новое состояние с nonce=2 (Alice=6, Bob=4)
+3. Bob публикует состояние с nonce=2 в течение challenge period
+4. Контракт принимает состояние с **наибольшим nonce** (самое новое)
+5. Alice пыталась обмануть -- её старое состояние отклонено
+
+### Стимулы
+
+- **Попытка мошенничества:** если вы публикуете старое состояние, контрагент публикует новое. Вы теряете (в некоторых реализациях -- теряете весь депозит).
+- **Liveness requirement:** вы ДОЛЖНЫ следить за блокчейном во время challenge period. Если вы offline и не оспорите -- старое состояние будет принято.
+
+> **Это та же проблема, что и в Lightning Network (BTC-09):** Bitcoin решает её через watchtowers -- сервисы, которые мониторят канал за вас.
+
+## Ограничения State Channels
+
+Эти ограничения объясняют, почему state channels **не стали** основным решением масштабирования:
+
+### 1. Фиксированные участники
+
+Канал работает только между теми, кто его открыл. Чтобы заплатить новому участнику, нужно:
+- Открыть новый канал (on-chain TX + deposit), или
+- Маршрутизировать через сеть каналов (сложно, проблемы ликвидности)
+
+**Uniswap, Aave, governance** -- невозможны в state channel. Они требуют **глобального shared state**, доступного всем.
+
+### 2. Liveness Requirement
+
+Участники ДОЛЖНЫ быть онлайн (или иметь watchtower):
+- Если Alice offline во время dispute -- Bob может опубликовать старое состояние
+- Challenge period = окно уязвимости для offline-участников
+
+### 3. Liquidity Lock
+
+Средства заблокированы в канале на всё время его существования. Если Alice заблокировала 5 ETH в канале с Bob, эти 5 ETH недоступны для DeFi, staking или других каналов.
+
+### 4. Нет General Smart Contracts
+
+State channels подходят для двусторонних взаимодействий. Но DeFi протоколы требуют:
+- Global state (все видят один пул ликвидности)
+- Composability (Aave + Uniswap в одной транзакции)
+- Permissionless access (любой может участвовать)
+
+State channels не поддерживают ни одно из этих свойств.
+
+### 5. Griefing Attacks
+
+Злоумышленник может намеренно открывать и закрывать каналы, заставляя контрагента платить gas за on-chain транзакции.
+
+## Реализации
+
+| Проект | Блокчейн | Статус (2025) |
+|--------|----------|---------------|
+| **Lightning Network** | Bitcoin | Production (~5,000 BTC capacity) |
+| **Raiden Network** | Ethereum | Активен, но малый adoption |
+| **Connext** | Ethereum | Перешел на cross-chain liquidity |
+| **Perun** | Ethereum | Research/academic |
+
+### Channel Networks (маршрутизация)
+
+Не обязательно иметь прямой канал с каждым получателем. Маршрутизация через промежуточные каналы:
+
+```
+Alice --channel--> Carol --channel--> Dave --channel--> Bob
+```
+
+Alice платит Bob через Carol и Dave. Каждый промежуточный узел берет комиссию. Это работает для платежей (Lightning Network), но масштабируемость ограничена ликвидностью промежуточных каналов.
+
+## Почему State Channels не решили масштабирование
+
+| Проблема | State Channels | Rollups (решение) |
+|----------|---------------|-------------------|
+| Участники | Фиксированные (2 стороны) | Любой (permissionless) |
+| State model | Двусторонний | Глобальный (shared state) |
+| Smart contracts | Ограниченные | Полная EVM совместимость |
+| Composability | Нет | Да (DeFi Lego) |
+| Liveness | Требуется | Не требуется (данные на L1) |
+
+**Вывод:** State channels подходят для специфических двусторонних взаимодействий (платежи, игры). Но DeFi, governance, NFT -- требуют глобального shared state. Это привело к Plasma (2017) как следующей попытке масштабирования.
+
+## Три уровня понимания
+
+### Уровень 1: Интуитивный (аналогия)
+
+State channel -- как **вкладка в баре:**
+- Открываете вкладку (deposit, on-chain)
+- Заказываете напитки всю ночь (off-chain, мгновенно)
+- В конце ночи оплачиваете итог (close, on-chain)
+- Бармен не звонит в банк после каждого напитка
+
+**Ограничение:** вкладка работает только в одном баре (fixed participants). Для другого бара -- нужна другая вкладка.
+
+### Уровень 2: Алгоритмический (протокол)
+
+```
+# State Channel Protocol
+
+function open(alice, bob, deposit_a, deposit_b):
+  contract = deploy_multisig(alice, bob)
+  contract.deposit(alice, deposit_a)
+  contract.deposit(bob, deposit_b)
+  return channel_id
+
+function update(channel, new_state, nonce):
+  # Off-chain: both parties sign
+  require(verify_signature(new_state, nonce, alice_sig))
+  require(verify_signature(new_state, nonce, bob_sig))
+  latest_state = (new_state, nonce)  # stored locally
+
+function close_cooperative(channel, final_state):
+  # Both sign final state
+  contract.settle(final_state, alice_sig, bob_sig)
+  # Funds released immediately
+
+function close_dispute(channel, submitted_state, nonce):
+  contract.initiate_close(submitted_state, nonce)
+  # Challenge period starts
+  # Counterparty can submit newer state (higher nonce)
+  # After timeout: contract settles with highest-nonce state
+```
+
+### Уровень 3: Математический (формальный)
+
+State channel как **подписанный конечный автомат:**
+
+```
+State machine:
+  S_i = (state_data, nonce_i, sig_A, sig_B)
+
+Valid transition:
+  S_i -> S_{i+1} where:
+    nonce_{i+1} > nonce_i
+    verify(sig_A, S_{i+1}) == true
+    verify(sig_B, S_{i+1}) == true
+
+On-chain settlement:
+  contract accepts S_j with:
+    j = max(nonce) among all submitted states
+    where both signatures are valid
+
+Security property:
+  If both parties are honest, only 2 on-chain TX (open + close)
+  If one party cheats (submits old state):
+    counterparty submits S_j with j > cheating_nonce
+    cost(cheat) > cost(honest_close)
+```
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **Payment channels** | Off-chain balance updates | Lightning Network (BTC), мгновенные платежи |
+| **State channels** | Обобщение: произвольное состояние off-chain | Любая логика, не только платежи |
+| **Lifecycle** | Open -> transact off-chain -> close | Только 2 on-chain TX |
+| **Dispute resolution** | Challenge period + nonce ordering | Защита от мошенничества |
+| **Limitations** | Fixed participants, liveness, no global state | Почему channels не масштабируют DeFi |
+| **Историческая роль** | Первая попытка масштабирования (2015+) | Привели к Plasma -> rollups |
+
+**Что дальше:** В SCALE-04 мы изучим Plasma -- следующую попытку масштабирования (2017). Plasma решила проблему фиксированных участников через child chains, но столкнулась с ещё более фундаментальной проблемой: mass exit.
