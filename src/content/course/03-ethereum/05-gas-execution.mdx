@@ -57,7 +57,7 @@ import { EIP1559Diagram, GasCostTableDiagram } from '../../../components/diagram
 
 - **Target** = 15M gas (50% от максимума 30M gas)
 - Блок заполнен >50% → baseFee растет (до +12.5% за блок)
-- Блок заполнен <50% → baseFee падает (до -12.5% за блок)
+- Блок заполнен &lt;50% → baseFee падает (до -12.5% за блок)
 - Блок заполнен ровно 50% → baseFee не меняется
 
 Формула:
@@ -345,7 +345,7 @@ for (uint256 i = 0; i < length; ) {
 
 - Газ -- единица вычислительной работы, решает halting problem и защищает от DoS
 - EIP-1559: baseFee (сжигается, автоподстройка) + priorityFee (валидатору)
-- baseFee растет при загрузке >50%, падает при <50%. Макс. изменение: 12.5% за блок
+- baseFee растет при загрузке >50%, падает при &lt;50%. Макс. изменение: 12.5% за блок
 - effectiveGasPrice = min(maxFee, baseFee + priorityFee)
 - Cold/warm access (EIP-2929): первый доступ к слоту/адресу дороже
 - SSTORE cold (0->non-0) = 22100 gas -- самая дорогая базовая операция

@@ -631,7 +631,7 @@ export function SHA256CompressionOverview() {
         <div style={{ ...glassStyle, padding: 16, width: '100%', maxWidth: 500 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <FlowNode variant="secondary" size="sm">
-              Расписание сообщений: 16 слов -> 64 слова (W)
+              Расписание сообщений: 16 слов → 64 слова (W)
             </FlowNode>
 
             <Arrow direction="down" />
