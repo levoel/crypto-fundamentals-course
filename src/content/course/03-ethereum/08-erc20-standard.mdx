@@ -1,0 +1,230 @@
+---
+title: "Стандарт ERC-20"
+description: "Fungible токены: интерфейс, approve/transferFrom, ERC-2612 permit и реализация с OpenZeppelin"
+order: 8
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["ERC-20", "Token", "Approve", "TransferFrom", "Permit", "OpenZeppelin"]
+prerequisites: ["07-solidity-patterns-testing"]
+---
+
+import { ERC20TransferDiagram, ApproveTransferFromDiagram, TokenSupplyDiagram } from '../../../components/diagrams/module3/ERC20Diagrams';
+
+# Стандарт ERC-20
+
+## Зачем это блокчейну?
+
+Более 500 000 токенов на Ethereum следуют одному стандарту -- ERC-20. Это 6 функций и 2 события, которые определяют, как токены создаются, передаются и тратятся. Понимание ERC-20 -- основа для DeFi, governance и tokenomics.
+
+Каждый раз, когда вы торгуете на Uniswap, голосуете в DAO или получаете вознаграждение в DeFi-протоколе -- вы взаимодействуете с ERC-20 токенами. Стандарт настолько фундаментален, что без него не работал бы ни один DeFi-протокол.
+
+## Интуитивное объяснение
+
+Представьте, что ERC-20 токен -- это банковский счет с публичным API:
+
+- **totalSupply** -- сколько всего денег "напечатано"
+- **balanceOf** -- сколько денег у конкретного человека
+- **transfer** -- прямой перевод от вас другому
+- **approve + transferFrom** -- доверенность: вы разрешаете кому-то тратить ваши деньги
+
+Разница с обычным банком: здесь нет администратора, который может заморозить ваш счет. Правила заданы кодом и одинаковы для всех.
+
+## Интерфейс ERC-20
+
+Полный интерфейс ERC-20 (EIP-20) состоит из 6 функций и 2 событий:
+
+```solidity
+// IERC20 -- полный интерфейс стандарта
+interface IERC20 {
+    // Чтение
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    // Запись
+    function transfer(address to, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+
+    // События
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+```
+
+Каждый ERC-20 токен реализует этот интерфейс. Это означает, что кошельки, DEX и DeFi-протоколы могут работать с ЛЮБЫМ ERC-20 токеном одинаковым образом.
+
+## Прямой перевод (transfer)
+
+Простейшая операция -- `transfer(to, amount)`. Вызывающий (`msg.sender`) отправляет свои токены:
+
+```solidity
+// Alice вызывает:
+token.transfer(bob, 100);
+// balances[Alice] -= 100
+// balances[Bob] += 100
+// emit Transfer(Alice, Bob, 100)
+```
+
+<ERC20TransferDiagram client:load />
+
+Обратите внимание: `transfer()` всегда перемещает токены **от msg.sender**. Контракт не может вызвать `transfer()` от имени другого пользователя.
+
+## Approve и TransferFrom
+
+Это **ключевой паттерн** ERC-20, который часто путает новичков. Зачем нужен двухшаговый процесс?
+
+**Проблема:** DEX-контракт хочет обменять токены Alice на другой токен. Но DEX НЕ МОЖЕТ вызвать `transfer()` от имени Alice -- `msg.sender` будет адресом DEX, а не Alice.
+
+**Решение:** Двухшаговый паттерн approve + transferFrom.
+
+```solidity
+// Шаг 1: Alice дает разрешение DEX
+token.approve(DEX_ADDRESS, 100);
+// allowance[Alice][DEX] = 100
+
+// Шаг 2: DEX переводит токены Alice
+// (вызывается из кода DEX-контракта)
+token.transferFrom(Alice, Bob, 50);
+// allowance[Alice][DEX] -= 50
+// balances[Alice] -= 50
+// balances[Bob] += 50
+```
+
+<ApproveTransferFromDiagram client:load />
+
+### Гонка allowance (Allowance Race Condition)
+
+Опасность: если Alice сначала одобрила 100, а затем решила изменить на 50, вредоносный spender может успеть потратить 100 ПЕРЕД тем, как новый approve на 50 будет обработан. Итого: 150 вместо 50.
+
+**Защита:** Сначала установить allowance в 0, затем в новое значение. Или использовать `increaseAllowance()` / `decreaseAllowance()` из OpenZeppelin.
+
+## Эмиссия и сжигание
+
+<TokenSupplyDiagram client:load />
+
+Функции `_mint()` и `_burn()` -- внутренние (internal). Они не являются частью стандарта ERC-20, но реализованы в OpenZeppelin:
+
+```solidity
+// Внутренние функции OpenZeppelin ERC20
+function _mint(address to, uint256 amount) internal {
+    totalSupply += amount;
+    balances[to] += amount;
+    emit Transfer(address(0), to, amount); // from = 0x0 означает mint
+}
+
+function _burn(address from, uint256 amount) internal {
+    balances[from] -= amount;
+    totalSupply -= amount;
+    emit Transfer(from, address(0), amount); // to = 0x0 означает burn
+}
+```
+
+## ERC-2612 Permit
+
+Современная альтернатива двухшаговому approve -- `permit()` из ERC-2612:
+
+1. Alice **подписывает** off-chain сообщение (EIP-712 typed structured data)
+2. Кто угодно отправляет эту подпись в `permit()` функцию контракта
+3. Контракт устанавливает allowance без отдельной транзакции от Alice
+
+```solidity
+// ERC-2612: одна транзакция вместо двух
+function permit(
+    address owner,
+    address spender,
+    uint256 value,
+    uint256 deadline,
+    uint8 v, bytes32 r, bytes32 s  // подпись EIP-712
+) external;
+```
+
+Преимущества:
+- **Экономия газа:** Нет отдельной approve-транзакции
+- **UX:** Пользователь подписывает сообщение в кошельке (бесплатно), DEX отправляет транзакцию
+- **Наш CourseToken** уже включает `ERC20Permit` через OpenZeppelin
+
+## Реализация с OpenZeppelin
+
+Вот наш `CourseToken.sol` -- полная реализация ERC-20 с permit:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
+contract CourseToken is ERC20, ERC20Permit {
+    constructor(uint256 initialSupply)
+        ERC20("CourseToken", "CRST")
+        ERC20Permit("CourseToken")
+    {
+        _mint(msg.sender, initialSupply);
+    }
+}
+```
+
+**Не пишите ERC-20 вручную!** OpenZeppelin обрабатывает edge cases: reentrancy, overflow protection (встроено в Solidity 0.8+), корректные события, проверки нулевого адреса. Цепочка наследования: `CourseToken` -> `ERC20` -> `IERC20`.
+
+## Алгоритмический уровень
+
+Внутренняя структура ERC-20 -- два mapping:
+
+```solidity
+// Основное хранилище ERC-20
+mapping(address => uint256) private _balances;
+mapping(address => mapping(address => uint256)) private _allowances;
+uint256 private _totalSupply;
+```
+
+Каждая операция -- это модификация этих mapping:
+
+| Функция | _balances | _allowances | _totalSupply |
+|---------|-----------|-------------|--------------|
+| transfer | sender -=, to += | не меняется | не меняется |
+| approve | не меняется | owner->spender = amount | не меняется |
+| transferFrom | from -=, to += | from->spender -= | не меняется |
+| _mint | to += | не меняется | += |
+| _burn | from -= | не меняется | -= |
+
+## Математический уровень
+
+Storage slots для mapping вычисляются через `keccak256`:
+
+```
+// balanceOf(address) -- slot для конкретного адреса
+slot = keccak256(abi.encode(address, 0))  // 0 = slot номер mapping
+
+// allowance(owner, spender) -- вложенный mapping
+slot = keccak256(abi.encode(spender, keccak256(abi.encode(owner, 1))))
+```
+
+Это объясняет, почему `SLOAD`/`SSTORE` для mapping стоит минимум 2100/22100 gas -- каждое обращение требует хэширование для вычисления slot.
+
+## Практика
+
+Закрепите знания в Ethereum-лабе:
+
+```bash
+# Компиляция
+npx hardhat compile
+
+# Тесты Foundry (approve/transferFrom, revert при exceeds balance)
+forge test --match-contract CourseToken -vvv
+
+# Тесты Hardhat (viem)
+npx hardhat test test/CourseToken.test.ts
+
+# Деплой на Anvil (standalone ethers.js скрипт)
+npx tsx scripts/deploy-token.ts
+
+# Взаимодействие через cast
+cast call <ADDRESS> "name()(string)" --rpc-url http://localhost:8545
+cast call <ADDRESS> "totalSupply()(uint256)" --rpc-url http://localhost:8545
+cast call <ADDRESS> "balanceOf(address)(uint256)" <YOUR_ADDR> --rpc-url http://localhost:8545
+```
+
+## Что дальше?
+
+В следующем уроке мы перейдем от взаимозаменяемых (fungible) токенов к **уникальным** -- ERC-721 (NFT) и ERC-1155 (multi-token). Вы увидите, как изменяется модель владения, когда каждый токен неповторим.

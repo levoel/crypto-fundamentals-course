@@ -1,0 +1,268 @@
+---
+title: "ERC-721 и ERC-1155"
+description: "Non-fungible токены, уникальные NFT, multi-token стандарт и когда что использовать"
+order: 9
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["ERC-721", "ERC-1155", "NFT", "Multi-Token", "Metadata"]
+prerequisites: ["08-erc20-standard"]
+---
+
+import { ERC721OwnershipDiagram, ERCComparisonDiagram } from '../../../components/diagrams/module3/ERC721ERC1155Diagrams';
+
+# ERC-721 и ERC-1155
+
+## Зачем это блокчейну?
+
+Каждая CryptoPunk, каждый Bored Ape, каждый ENS домен -- это ERC-721 токен. Но что, если вам нужны И уникальные предметы, И валюта в одном контракте? ERC-1155 решает эту задачу. Разберем оба стандарта.
+
+## Интуитивное объяснение
+
+Если ERC-20 -- это банкноты (каждая 100-рублевая купюра одинакова), то:
+
+- **ERC-721** -- это произведения искусства. Каждая картина уникальна, имеет своего владельца и свою историю. Вы не можете "отправить половину Моны Лизы".
+- **ERC-1155** -- это коллекционный магазин: у вас могут быть 100 одинаковых бронзовых монет (fungible) и 1 уникальный золотой значок (non-fungible) в одном контракте.
+
+## Интерфейс ERC-721
+
+Полный интерфейс ERC-721 (EIP-721):
+
+```solidity
+interface IERC721 {
+    // Чтение
+    function balanceOf(address owner) external view returns (uint256);
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function getApproved(uint256 tokenId) external view returns (address);
+    function isApprovedForAll(address owner, address operator) external view returns (bool);
+
+    // Запись
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+    function transferFrom(address from, address to, uint256 tokenId) external;
+    function approve(address to, uint256 tokenId) external;
+    function setApprovalForAll(address operator, bool approved) external;
+
+    // События
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
+}
+```
+
+Ключевое отличие от ERC-20: каждый токен идентифицируется уникальным `tokenId`. Нет понятия "amount" -- токен либо принадлежит вам, либо нет.
+
+## Модель владения NFT
+
+<ERC721OwnershipDiagram client:load />
+
+### Внутренние маппинги ERC-721
+
+```solidity
+// Кто владеет каким токеном
+mapping(uint256 => address) private _owners;
+
+// Сколько токенов у адреса (для balanceOf)
+mapping(address => uint256) private _balances;
+
+// Одобрение для конкретного токена
+mapping(uint256 => address) private _tokenApprovals;
+
+// Одобрение "на все" (operator)
+mapping(address => mapping(address => bool)) private _operatorApprovals;
+```
+
+### safeTransferFrom vs transferFrom
+
+`safeTransferFrom` проверяет, что получатель-контракт реализует интерфейс `IERC721Receiver`. Это предотвращает потерю NFT: если контракт-получатель не умеет обрабатывать NFT, транзакция откатится.
+
+```solidity
+// Получатель-контракт ДОЛЖЕН реализовать:
+interface IERC721Receiver {
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
+```
+
+## Metadata и tokenURI
+
+Каждый NFT может хранить ссылку на метаданные:
+
+```solidity
+// ERC721URIStorage -- расширение для per-token URI
+function tokenURI(uint256 tokenId) public view returns (string memory);
+```
+
+Метаданные обычно хранятся off-chain:
+
+| Хранилище | Плюсы | Минусы |
+|-----------|-------|--------|
+| IPFS | Децентрализовано, постоянно | Нужен пиннинг |
+| Arweave | Постоянное хранение | Дороже |
+| HTTP сервер | Быстро, просто | Централизовано, может исчезнуть |
+| On-chain (SVG) | Полностью on-chain | Дорого по газу |
+
+Типичный формат метаданных (JSON):
+
+```json
+{
+    "name": "Course Certificate #42",
+    "description": "Completion certificate for Crypto Fundamentals",
+    "image": "ipfs://QmImage.../cert42.png",
+    "attributes": [
+        { "trait_type": "Module", "value": "Ethereum" },
+        { "trait_type": "Grade", "value": "A" }
+    ]
+}
+```
+
+## ERC-1155 Multi-Token
+
+ERC-1155 объединяет ERC-20 и ERC-721 в одном контракте:
+
+```solidity
+interface IERC1155 {
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+    function balanceOfBatch(
+        address[] calldata accounts,
+        uint256[] calldata ids
+    ) external view returns (uint256[] memory);
+
+    function safeTransferFrom(
+        address from, address to,
+        uint256 id, uint256 amount,
+        bytes calldata data
+    ) external;
+
+    function safeBatchTransferFrom(
+        address from, address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) external;
+
+    function setApprovalForAll(address operator, bool approved) external;
+    function isApprovedForAll(address account, address operator) external view returns (bool);
+}
+```
+
+### Ключевые отличия от ERC-721
+
+1. **Один контракт для всего:** Fungible (id=0: 1000 монет) и non-fungible (id=2: 1 значок) в одном контракте
+2. **Batch операции:** `safeBatchTransferFrom` переводит несколько типов токенов за одну транзакцию
+3. **Нет индивидуального approve:** Только `setApprovalForAll` (оператор получает доступ ко ВСЕМ вашим токенам)
+4. **URI с плейсхолдером:** `uri(id)` возвращает шаблон с `{id}` -- клиент подставляет hex ID
+
+### Наш CourseMultiToken
+
+```solidity
+contract CourseMultiToken is ERC1155, Ownable {
+    uint256 public constant GOLD = 0;    // fungible: 1000 штук
+    uint256 public constant SILVER = 1;  // fungible: 5000 штук
+    uint256 public constant BADGE = 2;   // non-fungible: 1 штука
+
+    constructor() ERC1155("https://example.com/api/token/{id}.json") Ownable(msg.sender) {
+        _mint(msg.sender, GOLD, 1000, "");
+        _mint(msg.sender, SILVER, 5000, "");
+        _mint(msg.sender, BADGE, 1, "");
+    }
+}
+```
+
+GOLD и SILVER -- fungible (можно иметь любое количество). BADGE -- фактически non-fungible (только 1 в supply).
+
+## Сравнение стандартов
+
+<ERCComparisonDiagram client:load />
+
+### Когда какой стандарт использовать?
+
+| Сценарий | Стандарт | Почему |
+|----------|----------|--------|
+| Governance токен (голосование) | ERC-20 | Каждый токен одинаков, количество = сила голоса |
+| Коллекция уникального арта | ERC-721 | Каждое произведение уникально |
+| ENS домены | ERC-721 | Каждый домен уникален |
+| Игровые предметы (мечи, зелья) | ERC-1155 | Мечи уникальны, зелья одинаковы -- оба типа в одном контракте |
+| Фестивальные билеты | ERC-1155 | Обычные билеты (fungible) + VIP (non-fungible) |
+| Stablecoin (USDC) | ERC-20 | Каждый доллар одинаков |
+
+## Реализация с OpenZeppelin
+
+Наш `CourseNFT.sol`:
+
+```solidity
+contract CourseNFT is ERC721, ERC721URIStorage, Ownable {
+    uint256 private _nextTokenId;
+
+    constructor() ERC721("CourseNFT", "CNFT") Ownable(msg.sender) {}
+
+    function mint(address to, string memory uri) public onlyOwner returns (uint256) {
+        uint256 tokenId = _nextTokenId++;
+        _mint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+        return tokenId;
+    }
+
+    // Required overrides for ERC721URIStorage
+    function tokenURI(uint256 tokenId)
+        public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public view override(ERC721, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+}
+```
+
+**Обязательные override:** Когда контракт наследует от `ERC721` и `ERC721URIStorage`, Solidity требует явно указать, какую реализацию `tokenURI` и `supportsInterface` использовать. `super.tokenURI()` вызывает ERC721URIStorage (более специфичный), который возвращает per-token URI.
+
+## Алгоритмический уровень
+
+### ERC-721: O(1) ownership lookup
+
+```
+ownerOf(tokenId):     _owners[tokenId]            // O(1)
+balanceOf(address):   _balances[address]           // O(1)
+approve(to, tokenId): _tokenApprovals[tokenId] = to // O(1)
+```
+
+Каждая операция -- один SLOAD/SSTORE. Нет итерации по коллекции.
+
+### ERC-1155: mapping of mappings
+
+```
+balanceOf(account, id):  _balances[id][account]    // O(1)
+// batch operations iterate over arrays, but each element is O(1)
+```
+
+Batch transfer за одну транзакцию: `safeBatchTransferFrom` итерирует по массивам `ids` и `amounts`, но каждая отдельная операция -- O(1) SSTORE. Экономия газа идет за счет одного base cost транзакции вместо N.
+
+## Практика
+
+Закрепите знания в Ethereum-лабе:
+
+```bash
+# Тесты Foundry (mint, transfer, access control)
+forge test --match-contract CourseNFT -vvv
+
+# Тесты Hardhat (viem)
+npx hardhat test test/CourseNFT.test.ts
+
+# Деплой NFT на Anvil
+npx tsx scripts/deploy-nft.ts
+
+# Проверка через cast
+cast call <ADDRESS> "name()(string)" --rpc-url http://localhost:8545
+cast call <ADDRESS> "ownerOf(uint256)(address)" 0 --rpc-url http://localhost:8545
+cast call <ADDRESS> "tokenURI(uint256)(string)" 0 --rpc-url http://localhost:8545
+cast call <ADDRESS> "balanceOf(address)(uint256)" <YOUR_ADDR> --rpc-url http://localhost:8545
+```
+
+## Что дальше?
+
+Мы закончили с токенами -- от ERC-20 (валюты) до ERC-721 (NFT) и ERC-1155 (мультитокены). В следующем уроке переходим к **консенсусу**: как Ethereum перешел от Proof of Work к Proof of Stake, и как работает Beacon Chain.
