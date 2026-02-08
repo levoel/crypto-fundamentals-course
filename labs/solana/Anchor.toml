@@ -1,0 +1,21 @@
+# Anchor.toml - Course Counter Lab (LAB-04)
+# Anchor workspace configuration for the counter program
+
+[toolchain]
+anchor_version = "0.32.1"
+
+[features]
+resolution = true
+
+[programs.localnet]
+course_counter = "11111111111111111111111111111111"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[test.validator]
+url = "http://localhost:8899"
