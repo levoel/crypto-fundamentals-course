@@ -246,7 +246,7 @@ export function NitroDiagram() {
       {/* Pipeline */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-          Nitro Pipeline: TX -> Execution -> STF -> Compress -> Proof -> L1
+          Nitro Pipeline: TX → Execution → STF → Compress → Proof → L1
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {NITRO_PIPELINE.map((step, i) => {

@@ -134,7 +134,7 @@ template SumOfSquares() {
 }
 ```
 
-## Constraint operators: <== vs <-- vs ===
+## Constraint operators: `<==` vs `<--` vs `===`
 
 Это **самая важная тема** в Circom. Неправильное использование операторов -- причина #1 уязвимостей в ZK circuits.
 
@@ -306,7 +306,7 @@ template Cubic() {
 | `MiMC7(n)` | Alternative ZK hash | ~91 per round |
 | `GreaterThan(n)` | a > b comparison | ~n (bit decomposition) |
 | `GreaterEqThan(n)` | a >= b comparison | ~n |
-| `LessEqThan(n)` | a <= b comparison | ~n |
+| `LessEqThan(n)` | a ≤ b comparison | ~n |
 | `IsZero()` | a == 0 check | 2 |
 | `IsEqual()` | a == b check | 3 |
 | `Num2Bits(n)` | Number to binary | n |
@@ -368,7 +368,7 @@ signal input arr[10];  // OK: size known at compile time
 
 ### 4. Division is not integer division
 
-`a / b` в Circom -- это **field inverse**: a * b^{-1} mod p. Это НЕ целочисленное деление.
+`a / b` в Circom -- это **field inverse**: `a * b^{-1} mod p`. Это НЕ целочисленное деление.
 
 ```
 // В Circom: 7 / 2 = 7 * 2^(-1) mod p

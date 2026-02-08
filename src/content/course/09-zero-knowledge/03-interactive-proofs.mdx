@@ -195,10 +195,10 @@ def schnorr_sign(message, x):
 
 **Определение (Sigma Protocol):**
 
-Тройка (Commit, Challenge, Response) для отношения R = {(x, w) : f(x, w) = 1}:
+Тройка (Commit, Challenge, Response) для отношения R = \{(x, w) : f(x, w) = 1\}:
 
 1. P(w) -> a (commitment, random)
-2. V -> c (challenge, uniform in {0,1}^t)
+2. V -> c (challenge, uniform in \{0,1\}^t)
 3. P(w, a, c) -> z (response)
 
 Свойства:
@@ -207,8 +207,8 @@ def schnorr_sign(message, x):
 
 **Fiat-Shamir Heuristic:**
 Для Sigma protocol (P, V) для R, определим NIFS (Non-Interactive FS):
-- Prove(x, w): a <- P.Commit(w); c <- H(x || a); z <- P.Respond(w, a, c); output pi = (a, z)
-- Verify(x, pi): parse (a, z) = pi; c <- H(x || a); check V.Accept(x, a, c, z)
+- Prove(x, w): a ← P.Commit(w); c ← H(x || a); z ← P.Respond(w, a, c); output pi = (a, z)
+- Verify(x, pi): parse (a, z) = pi; c ← H(x || a); check V.Accept(x, a, c, z)
 
 **Безопасность:** В Random Oracle Model, Fiat-Shamir transform сохраняет soundness Sigma protocol.
 

@@ -326,7 +326,7 @@ npx tsx scripts/defi/supply-aave.ts
 | Concentrated Liquidity | DEFI-04 | V3 ticks: price(i) = 1.0001^i, capital efficiency 4x+ |
 | Impermanent Loss | DEFI-05 | IL = 2*sqrt(r)/(1+r) - 1, profitable if fees > IL |
 | Lending | DEFI-06 | Piecewise linear rates, aTokens, utilization-based pricing |
-| Ликвидация | DEFI-07 | HF = collateral*LT/debt, HF<1 = liquidatable |
+| Ликвидация | DEFI-07 | HF = collateral*LT/debt, HF&lt;1 = liquidatable |
 | Оракулы | DEFI-08 | Chainlink DON -> Aggregator -> Proxy -> Consumer |
 | Интеграция оракулов | DEFI-09 | Staleness check: price>0, updatedAt recent |
 | Стейблкоины | DEFI-10 | Fiat-backed vs crypto vs algorithmic (UST collapsed) |

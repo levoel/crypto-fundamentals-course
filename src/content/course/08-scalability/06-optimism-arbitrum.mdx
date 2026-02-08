@@ -111,7 +111,7 @@ Arbitrum использует двухслойную execution модель:
 **ArbOS:**
 - Кастомный L2 layer поверх Geth
 - Управляет L2-специфичной логикой:
-  - Cross-chain messaging (L1 <-> L2)
+  - Cross-chain messaging (L1 ↔ L2)
   - Gas metering (L2 gas + L1 data cost)
   - Precompiles (ArbSys at 0x64 для L2 block number)
 
@@ -408,7 +408,7 @@ Bisection эффективнее для больших execution traces. Single-
 | **Stylus** | WASM VM alongside EVM | Rust/C/C++ контракты, 10-100x дешевле |
 | **Orbit** | Кастомные L2/L3 chains | AnyTrust mode для gaming |
 | **L2 Deploy** | Идентично L1 | Тот же Solidity, Foundry, другой RPC URL |
-| **Anvil fork** | anvil --fork-url <L2_RPC> | Локальная копия L2 для тестирования |
+| **Anvil fork** | `anvil --fork-url <L2_RPC>` | Локальная копия L2 для тестирования |
 | **Precompiles** | L2-специфичные (ArbSys, L1Block) | Не эмулируются в Anvil |
 
 **Что дальше:** В SCALE-07 мы перейдем к **ZK Rollups** -- альтернативному подходу, где вместо fraud proofs используются **validity proofs** (криптографические доказательства корректности). Быстрее финальность (часы вместо дней), но сложнее математика. zkSync Era и StarkNet -- две ведущие реализации.

@@ -127,7 +127,7 @@ account.bump;        // number
 |-----------------|-----------------|
 | `contract.write.increment()` | `program.methods.increment().accounts({...}).rpc()` |
 | `contract.read.count()` | `program.account.counter.fetch(pda)` |
-| Аккаунты неявные (msg.sender) | Аккаунты явные (.accounts({...})) |
+| Аккаунты неявные (msg.sender) | Аккаунты явные (`.accounts({...})`) |
 | Один signer (wallet) | Множественные signers (.signers([])) |
 | ABI encoding | Borsh serialization via IDL |
 

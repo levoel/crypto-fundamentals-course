@@ -64,7 +64,7 @@ Module 8 (SCALE-07) рассказал **ЧТО** отличает SNARKs и STA
 
 ## FRI Protocol: сердце STARKs
 
-FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity) -- ключевой примитив STARKs. Он доказывает, что функция f "близка" к полиному степени <= d.
+FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity) -- ключевой примитив STARKs. Он доказывает, что функция f "близка" к полиному степени ≤ d.
 
 ### Зачем proximity testing?
 
@@ -130,9 +130,9 @@ f_folded(x) = f_even(x) + r * f_odd(x)
 
 FRI формально доказывает **proximity** к Reed-Solomon codeword:
 
-**Reed-Solomon код:** множество всех evaluations полиномов степени <= d на домене D размера N (где N >> d). Rate ρ = (d+1)/N.
+**Reed-Solomon код:** множество всех evaluations полиномов степени ≤ d на домене D размера N (где N >> d). Rate ρ = (d+1)/N.
 
-**FRI proximity theorem:** если FRI verifier принимает, то с высокой вероятностью исходная функция f отличается от какого-то полинома степени <= d не более чем в δ * N точках (где δ зависит от rate ρ и числа queries).
+**FRI proximity theorem:** если FRI verifier принимает, то с высокой вероятностью исходная функция f отличается от какого-то полинома степени ≤ d не более чем в δ * N точках (где δ зависит от rate ρ и числа queries).
 
 **Soundness error:** ε ≈ (1/|F|)^q + ρ^q, где q -- число queries, |F| -- размер поля.
 

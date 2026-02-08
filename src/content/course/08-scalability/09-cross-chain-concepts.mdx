@@ -152,7 +152,7 @@ Light client или state proof на destination chain. **Trustless верифи
 **Native bridge**, управляемый командой L2:
 - Optimism Bridge, Arbitrum Bridge, zkSync Bridge, StarkNet Bridge
 - Использует security самого rollup (data on L1, fraud/validity proofs)
-- **Самый безопасный** для L1<->L2 переводов
+- **Самый безопасный** для L1↔L2 переводов
 - **Медленный для withdrawals:** 7 дней для optimistic rollups, часы для ZK rollups
 
 ### General bridge (общий мост)
@@ -219,7 +219,7 @@ Pr[attack] = Pr[>= T validators corrupted]
 
 **Пример Wormhole (T=13, N=19):**
 - p = 0.05 (5% вероятность corruption каждого):
-  Pr[attack] < 10^(-12) (практически невозможно)
+  Pr[attack] &lt; 10^(-12) (практически невозможно)
 - p = 0.30 (30% -- state-level attack):
   Pr[attack] ~ 10^(-3) (1 из 1000)
 
@@ -235,6 +235,6 @@ Pr[attack] = Pr[>= T validators corrupted]
 2. **Message passing** -- передача данных между chains через relayer + proof verification
 3. **Три модели активов:** Lock-and-Mint (рискованно), Burn-and-Mint (безопасно, ограничено), Liquidity Pool (быстро)
 4. **Три модели доверия:** Natively verified (безопасно, дорого) -> Externally verified (средне) -> Optimistic (дешево, рискованно)
-5. **Canonical bridges** наследуют rollup security -- самые безопасные для L1<->L2
+5. **Canonical bridges** наследуют rollup security -- самые безопасные для L1↔L2
 6. **General bridges** быстрее, но имеют отдельную attack surface
 7. **Threshold matters:** 2/5 multisig = уязвимо, 13/19 = значительно безопаснее

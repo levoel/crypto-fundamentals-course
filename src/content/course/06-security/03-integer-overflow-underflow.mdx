@@ -14,7 +14,7 @@ import { OverflowVisualizationDiagram } from '../../../components/diagrams/modul
 
 ## Зачем это знать?
 
-В апреле 2018 года контракт **BEC Token** потерял $900M рыночной капитализации из-за одной строки кода: `amount * cnt` переполнилось в uint256, став равным 0. Проверка `require(totalAmount <= balances[msg.sender])` прошла (0 <= любой баланс), и `cnt` получателей получили `amount` токенов из воздуха.
+В апреле 2018 года контракт **BEC Token** потерял $900M рыночной капитализации из-за одной строки кода: `amount * cnt` переполнилось в uint256, став равным 0. Проверка `require(totalAmount <= balances[msg.sender])` прошла (0 ≤ любой баланс), и `cnt` получателей получили `amount` токенов из воздуха.
 
 Solidity 0.8+ исправил проблему **по умолчанию**: арифметические операции теперь проверяются автоматически. Но два случая остаются опасными:
 1. **unchecked блоки** -- явное отключение проверок для экономии gas
@@ -293,7 +293,7 @@ function test_batchOverflowDemo() public view {
 | Downcasting (uint256 -> uint128)? | Используйте `SafeCast.toUint128()` |
 | Арифметика в `unchecked`? | Добавьте require-проверки ДО операции |
 | Умножение пользовательских данных? | Никогда в `unchecked` |
-| Loop counter `i++`? | `unchecked { i++; }` безопасно (i < length) |
+| Loop counter `i++`? | `unchecked { i++; }` безопасно (i &lt; length) |
 
 ## Итоги
 

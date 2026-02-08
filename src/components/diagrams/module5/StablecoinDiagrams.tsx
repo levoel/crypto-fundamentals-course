@@ -572,11 +572,11 @@ export function USTDeathSpiralDiagram() {
       }}>
         <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
           <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>UST</div>
-          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$1 -> $0.01</div>
+          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$1 → $0.01</div>
         </div>
         <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
           <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LUNA</div>
-          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$80 -> $0.0001</div>
+          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$80 → $0.0001</div>
         </div>
         <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
           <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Потери</div>
