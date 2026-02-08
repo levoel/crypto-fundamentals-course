@@ -1,0 +1,407 @@
+---
+title: "Программы и инструкции Solana"
+description: "Анатомия инструкций, транзакции, Sealevel параллелизм и Cross-Program Invocation"
+order: 5
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Solana", "Programs", "Instructions", "Sealevel", "CPI", "Transactions", "Parallel Execution"]
+prerequisites: ["04-account-model"]
+---
+
+import { InstructionAnatomyDiagram, TransactionExecutionDiagram, CPIFlowDiagram } from '../../../components/diagrams/module4/ProgramsInstructionsDiagrams';
+
+# Программы и инструкции Solana
+
+## Зачем это блокчейну?
+
+В предыдущем уроке мы узнали, что Solana разделяет код и данные. Но как программа получает данные? Как она знает, что делать? В Ethereum вы отправляете транзакцию на адрес контракта с calldata -- EVM загружает код контракта и выполняет его. В Solana механизм принципиально другой: транзакция содержит **инструкции**, каждая из которых указывает программу, аккаунты и данные.
+
+Это различие -- не просто синтаксическое. Когда транзакция заранее объявляет, какие аккаунты будет читать и писать, runtime может автоматически найти параллелизм. Sealevel -- движок выполнения Solana -- использует эту информацию для одновременной обработки тысяч транзакций. В Ethereum это невозможно: эффекты транзакции неизвестны до запуска EVM.
+
+```python
+# Ethereum: транзакция = один вызов
+tx = {
+    "to": counter_contract,    # какой контракт вызвать
+    "data": encode("increment()"),  # что сделать
+    # Какие storage slots будут затронуты? Неизвестно до выполнения!
+}
+
+# Solana: транзакция = список инструкций с объявленными аккаунтами
+tx = Transaction([
+    Instruction(
+        program_id=counter_program,           # какую программу вызвать
+        accounts=[                             # какие аккаунты (с флагами!)
+            AccountMeta(counter_pda, writable=True, signer=False),
+            AccountMeta(authority, writable=True, signer=True),
+        ],
+        data=encode("increment"),              # что сделать
+    ),
+])
+# Runtime ЗНАЕТ заранее: counter_pda будет записан, authority подпишет
+```
+
+## Интуитивное объяснение: ресторан
+
+**Ethereum:** Вы приходите в ресторан и говорите официанту "принесите мне то, что шеф-повар решит". Повар (EVM) идет на кухню, открывает холодильники (storage), берет что хочет, готовит. Никто не знает заранее, какие продукты будут использованы.
+
+**Solana:** Вы приходите и говорите "мне нужны: помидоры (read), масло (read), сковорода (write)". Менеджер (Sealevel) видит ваш заказ и заказ соседнего стола ("мне нужны: рыба (read), соус (write)"). Продукты не пересекаются -- два повара готовят **одновременно**!
+
+## Анатомия инструкции: 3 поля
+
+Каждая инструкция Solana состоит из трех полей. Наведите курсор для подробностей.
+
+<InstructionAnatomyDiagram client:load />
+
+### Instruction в коде
+
+```python
+# Структура инструкции (псевдокод)
+class Instruction:
+    program_id: Pubkey        # адрес программы для вызова
+    accounts: list[AccountMeta]  # аккаунты с флагами доступа
+    data: bytes               # сериализованные аргументы
+
+# AccountMeta определяет права доступа к аккаунту
+class AccountMeta:
+    pubkey: Pubkey            # адрес аккаунта
+    is_signer: bool           # должен ли подписать транзакцию
+    is_writable: bool         # будет ли записан
+
+# Пример: инструкция increment для Counter program
+increment_ix = Instruction(
+    program_id=counter_program_id,
+    accounts=[
+        AccountMeta(counter_pda, is_signer=False, is_writable=True),   # данные
+        AccountMeta(authority,   is_signer=True,  is_writable=True),   # подписант
+        AccountMeta(SYSTEM_PROGRAM, is_signer=False, is_writable=False), # для CPI
+    ],
+    data=sha256(b"global:increment")[:8],  # Anchor discriminator
+)
+```
+
+### Discriminator: маршрутизация в Anchor
+
+```python
+# Anchor использует первые 8 байт data как дискриминатор инструкции
+# discriminator = SHA-256("global:<method_name>")[:8]
+
+# Пример:
+# "global:increment" -> SHA-256 -> первые 8 байт = 0xd0..94
+# "global:initialize" -> SHA-256 -> первые 8 байт = 0xaf..f0
+
+# Программа получает data, читает первые 8 байт и маршрутизирует:
+def process_instruction(program_id, accounts, data):
+    discriminator = data[:8]
+    if discriminator == sha256(b"global:increment")[:8]:
+        return handle_increment(accounts, data[8:])
+    elif discriminator == sha256(b"global:initialize")[:8]:
+        return handle_initialize(accounts, data[8:])
+    else:
+        raise ProgramError("Unknown instruction")
+```
+
+## Транзакции: атомарные пакеты инструкций
+
+Транзакция Solana -- это **атомарный пакет** из одной или нескольких инструкций:
+
+```python
+# Транзакция = message + signatures
+class Transaction:
+    signatures: list[Signature]     # Ed25519 подписи
+    message: Message
+
+class Message:
+    header: MessageHeader           # кол-во signers, readonly accounts
+    account_keys: list[Pubkey]      # все уникальные аккаунты
+    recent_blockhash: Hash          # для предотвращения replay
+    instructions: list[CompiledInstruction]  # 1+ инструкций
+
+# Ключевое свойство: АТОМАРНОСТЬ
+# Если любая инструкция fails -> ВСЯ транзакция откатывается
+# Это позволяет комбинировать несколько действий:
+
+tx = Transaction([
+    # Инструкция 1: создать ATA (Associated Token Account)
+    create_ata_instruction(payer, user, mint),
+    # Инструкция 2: минтить токены в ATA
+    mint_to_instruction(mint_authority, user_ata, amount=1000),
+    # Инструкция 3: перевести SOL
+    transfer_instruction(payer, user, lamports=1_000_000),
+])
+# Либо все 3 выполняются, либо ни одна!
+```
+
+### Лимиты транзакции
+
+```python
+# Лимиты одной транзакции:
+MAX_TRANSACTION_SIZE = 1232       # байт (включая подписи и message)
+MAX_ACCOUNTS = 256                # уникальных аккаунтов
+COMPUTE_UNIT_LIMIT = 200_000      # по умолчанию (можно увеличить до 1.4M)
+
+# Подписи занимают 64 байта каждая
+# Каждый Pubkey = 32 байта
+# Поэтому количество аккаунтов ограничено размером транзакции
+
+# Address Lookup Tables (ALT) обходят лимит:
+# Вместо 32-байтных Pubkey используются 1-байтные индексы в таблице
+```
+
+## Sealevel: параллельное выполнение
+
+Sealevel -- это runtime Solana для параллельного выполнения транзакций. Его ключевая идея: транзакции **объявляют** свои зависимости (read/write accounts) **до выполнения**.
+
+<TransactionExecutionDiagram client:load />
+
+Пройдите все шаги:
+1. Транзакции прибывают к валидатору
+2. Sealevel анализирует пересечения read/write sets
+3. Непересекающиеся транзакции -- параллельно
+4. Пересекающиеся -- последовательно
+5. Всё атомарно: fail в инструкции = откат всей TX
+
+### Алгоритм Sealevel
+
+```python
+# Упрощённый алгоритм Sealevel
+def schedule_transactions(transactions: list[Transaction]) -> list[list[Transaction]]:
+    """Разбивает транзакции на waves для параллельного выполнения."""
+    waves = []
+    remaining = list(transactions)
+
+    while remaining:
+        wave = []
+        used_write_accounts = set()
+        used_any_accounts = set()  # для write-write и read-write конфликтов
+
+        for tx in remaining[:]:
+            tx_reads = get_read_accounts(tx)
+            tx_writes = get_write_accounts(tx)
+
+            # Конфликт: write-write или write-read
+            has_conflict = (
+                tx_writes & used_any_accounts or  # write конфликт
+                tx_reads & used_write_accounts      # read-write конфликт
+            )
+
+            if not has_conflict:
+                wave.append(tx)
+                used_write_accounts |= tx_writes
+                used_any_accounts |= tx_writes | tx_reads
+                remaining.remove(tx)
+
+        waves.append(wave)
+
+    return waves
+
+# Каждая wave выполняется параллельно на разных ядрах CPU
+# waves выполняются последовательно
+```
+
+### Почему Ethereum не может так?
+
+```python
+# Ethereum: эффекты неизвестны до выполнения
+# Транзакция вызывает контракт A, который может:
+#   - вызвать контракт B (CALL)
+#   - записать в любой storage slot (SSTORE)
+#   - создать новый контракт (CREATE)
+#   - самоуничтожиться (SELFDESTRUCT)
+# Какие аккаунты будут затронуты? Узнаем только после выполнения EVM
+
+# Solana: эффекты объявлены заранее
+# Транзакция содержит ПОЛНЫЙ список аккаунтов с флагами:
+# - Account A: read-only
+# - Account B: writable
+# - Account C: signer + writable
+# Runtime знает ВСЁ до выполнения -> параллелизм
+
+# Следствие: в Solana программа НЕ МОЖЕТ обратиться к аккаунту,
+# который не указан в accounts[] инструкции
+# Это ограничение -- цена за параллелизм
+```
+
+## Cross-Program Invocation (CPI)
+
+Программы Solana могут вызывать друг друга через CPI. Это аналог `CALL` в EVM, но с важными отличиями.
+
+<CPIFlowDiagram client:load />
+
+### invoke: обычный CPI
+
+```rust
+// Rust (Anchor): обычный CPI -- вызов System Program для перевода SOL
+use anchor_lang::system_program;
+
+// CpiContext содержит: программу для вызова + аккаунты
+let cpi_ctx = CpiContext::new(
+    ctx.accounts.system_program.to_account_info(),
+    system_program::Transfer {
+        from: ctx.accounts.payer.to_account_info(),
+        to: ctx.accounts.recipient.to_account_info(),
+    },
+);
+system_program::transfer(cpi_ctx, amount)?;
+
+// Подписи передаются из исходной транзакции
+// payer уже подписал транзакцию -- эта подпись "проходит" через CPI
+```
+
+### invoke_signed: CPI от имени PDA
+
+```rust
+// Rust (Anchor): CPI от имени PDA -- программа "подписывает" за PDA
+// Это нужно когда PDA владеет токенами и должен их перевести
+
+let seeds = &[b"vault", ctx.accounts.authority.key().as_ref(), &[ctx.bumps.vault]];
+let signer_seeds = &[&seeds[..]];
+
+let cpi_ctx = CpiContext::new_with_signer(
+    ctx.accounts.token_program.to_account_info(),
+    token::Transfer {
+        from: ctx.accounts.vault_ata.to_account_info(),    // PDA's token account
+        to: ctx.accounts.user_ata.to_account_info(),
+        authority: ctx.accounts.vault.to_account_info(),    // PDA подписывает
+    },
+    signer_seeds,  // Runtime проверяет: seeds + bump + program_id == vault PDA
+);
+token::transfer(cpi_ctx, amount)?;
+```
+
+### Как runtime проверяет invoke_signed
+
+```python
+# Псевдокод проверки invoke_signed в runtime
+def verify_invoke_signed(
+    calling_program_id: Pubkey,
+    signer_seeds: list[list[bytes]],
+    instruction_accounts: list[AccountMeta],
+):
+    for seeds in signer_seeds:
+        # Вычисляем PDA из seeds + calling_program_id
+        expected_pda = sha256(
+            b''.join(seeds) + bytes(calling_program_id) + b"ProgramDerivedAddress"
+        )
+
+        if is_on_ed25519_curve(expected_pda):
+            raise ProgramError("Seeds produce on-curve address")
+
+        # Проверяем, что PDA есть среди аккаунтов инструкции
+        pda_pubkey = Pubkey(expected_pda)
+        found = False
+        for meta in instruction_accounts:
+            if meta.pubkey == pda_pubkey and meta.is_signer:
+                found = True
+                break
+
+        if not found:
+            raise ProgramError("PDA not found in instruction accounts")
+
+    # Подпись верифицирована! Программа имеет право действовать за PDA
+```
+
+### Глубина CPI
+
+```python
+# CPI имеет ограничение глубины:
+MAX_CPI_DEPTH = 4  # Program A -> B -> C -> D -> E (максимум 4 уровня)
+
+# Каждый уровень CPI потребляет compute units
+# Стек вызовов:
+#   Program A: вызывает invoke() для Program B
+#     Program B: вызывает invoke_signed() для Token Program
+#       Token Program: выполняет transfer
+#         (глубина 3 -- OK)
+
+# Compute budget: все CPI делят общий бюджет транзакции (200K по умолчанию)
+```
+
+## Математическое определение
+
+### Модель выполнения
+
+```
+Transaction T = (signatures, message)
+Message M = (header, account_keys, recent_blockhash, instructions)
+Instruction I = (program_id_index, account_indices, data)
+
+Execution semantics:
+  forall I_i in M.instructions:
+    P = account_keys[I_i.program_id_index]
+    A = [account_keys[j] for j in I_i.account_indices]
+    result_i = P.execute(A, I_i.data)
+    if result_i == Error:
+      REVERT all changes from I_0..I_i  # Atomicity
+      return Error
+
+Sealevel scheduling:
+  conflict(T_a, T_b) = write_set(T_a) ∩ (read_set(T_b) ∪ write_set(T_b)) != {}
+                      ∨ write_set(T_b) ∩ (read_set(T_a) ∪ write_set(T_a)) != {}
+  parallel(T_a, T_b) = ¬conflict(T_a, T_b)
+```
+
+### CPI формально
+
+```
+CPI(caller, callee, accounts, data, signer_seeds):
+  // Проверка: все accounts в caller's account list
+  forall a in accounts: a in caller.instruction_accounts
+
+  // Для invoke_signed: проверка PDA
+  forall seeds in signer_seeds:
+    pda = SHA-256(seeds || caller.program_id || "ProgramDerivedAddress")
+    assert ¬on_curve(pda)
+    assert pda in accounts ∧ accounts[pda].is_signer
+
+  // Выполнение
+  return callee.execute(accounts, data)
+```
+
+## Практика
+
+```python
+# Создание транзакции с несколькими инструкциями
+from solders.transaction import Transaction
+from solders.message import Message
+from solders.instruction import Instruction, AccountMeta
+from solders.pubkey import Pubkey
+from solders.keypair import Keypair
+from solders.hash import Hash
+
+# Инструкция 1: перевести SOL
+transfer_ix = Instruction(
+    program_id=Pubkey.from_string("11111111111111111111111111111111"),
+    accounts=[
+        AccountMeta(payer_pubkey, is_signer=True, is_writable=True),
+        AccountMeta(recipient_pubkey, is_signer=False, is_writable=True),
+    ],
+    data=encode_transfer(lamports=1_000_000),
+)
+
+# Инструкция 2: вызвать Counter program
+increment_ix = Instruction(
+    program_id=counter_program_id,
+    accounts=[
+        AccountMeta(counter_pda, is_signer=False, is_writable=True),
+        AccountMeta(payer_pubkey, is_signer=True, is_writable=True),
+    ],
+    data=sha256(b"global:increment")[:8],
+)
+
+# Обе инструкции в одной атомарной транзакции
+msg = Message.new_with_blockhash(
+    [transfer_ix, increment_ix],
+    payer_pubkey,
+    recent_blockhash,
+)
+tx = Transaction.new_unsigned(msg)
+tx.sign([payer_keypair], recent_blockhash)
+
+# Отправка
+result = client.send_transaction(tx)
+print(f"Signature: {result.value}")
+```
+
+## Что дальше?
+
+В следующих уроках мы перейдем к **Anchor framework** -- фреймворку для разработки программ Solana. Anchor автоматизирует то, что мы изучили в этом уроке: генерацию дискриминаторов, валидацию аккаунтов, сериализацию данных и CPI. Вы напишете свою первую программу на Solana и увидите, как `#[derive(Accounts)]` превращается в тот самый `Vec<AccountMeta>`, который мы разобрали.

@@ -1,0 +1,319 @@
+---
+title: "Модель аккаунтов Solana"
+description: "5 полей аккаунта, разделение кода и данных, правила владения, PDA-адреса и сравнение с Ethereum"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Solana", "Account Model", "PDA", "Programs", "Ownership", "Ed25519"]
+prerequisites: ["03-tower-bft"]
+---
+
+import { SolanaAccountStructureDiagram, EthVsSolanaStateDiagram, PDADerivationDiagram } from '../../../components/diagrams/module4/AccountModelDiagrams';
+
+# Модель аккаунтов Solana
+
+## Зачем это блокчейну?
+
+В Ethereum smart contract -- это единый объект, содержащий и код, и данные. Когда вы вызываете `counter.increment()`, EVM загружает байткод контракта, находит storage slot и обновляет значение -- всё внутри одного аккаунта.
+
+Solana полностью переворачивает эту модель. Программа (код) и данные живут в **разных аккаунтах**. Программа не хранит ничего внутри себя -- она получает аккаунты как аргументы и оперирует ими. Это разделение -- не прихоть архитектора, а фундамент для параллельного выполнения транзакций: когда данные живут в отдельных аккаунтах, runtime точно знает, какие транзакции можно выполнять одновременно.
+
+```python
+# Ethereum: контракт = объект со свойствами
+# counter.sol: code + storage в одном аккаунте
+contract Counter:
+    count: uint256 = 0       # данные ВНУТРИ контракта
+    def increment():         # код ВНУТРИ контракта
+        self.count += 1
+
+# Solana: программа = функция, данные = аргументы
+# program: code в одном аккаунте, данные в другом
+def increment(counter_account):    # код -- отдельный аккаунт
+    counter_account.data.count += 1  # данные -- отдельный аккаунт
+```
+
+## Интуитивное объяснение: программа как функция
+
+Представьте два подхода к организации библиотеки:
+
+**Ethereum (объектный подход):** Каждый шкаф -- это "умный контракт". Внутри шкафа хранятся и книги (данные), и инструкция по работе со шкафом (код). Чтобы взять книгу, вы обращаетесь к конкретному шкафу.
+
+**Solana (функциональный подход):** Есть один библиотекарь (программа), который знает правила. Книги хранятся в отдельных ящиках (data accounts). Библиотекарь не хранит книги -- вы приносите ему ящик, и он выполняет операцию по правилам.
+
+Это означает: один библиотекарь (программа) может обслуживать миллионы ящиков (аккаунтов), а несколько посетителей могут работать с разными ящиками **одновременно**.
+
+## Структура аккаунта Solana: 5 полей
+
+Каждый аккаунт Solana описывается ровно **пятью полями**. Наведите курсор на поле и переключайте между Data Account и Program Account.
+
+<SolanaAccountStructureDiagram client:load />
+
+### 5 полей аккаунта
+
+```python
+# Структура аккаунта Solana (псевдокод)
+class SolanaAccount:
+    lamports: u64        # баланс (1 SOL = 10^9 lamports)
+    data: bytes          # произвольные данные (Vec<u8>)
+    owner: Pubkey        # программа-владелец
+    executable: bool     # является ли программой
+    rent_epoch: u64      # эпоха rent
+
+# Пример data account:
+counter_account = SolanaAccount(
+    lamports=1_000_000_000,      # 1 SOL
+    data=serialize(Counter(count=42, authority=alice)),
+    owner=counter_program_id,     # программа Counter
+    executable=False,
+    rent_epoch=512,
+)
+
+# Пример program account:
+counter_program = SolanaAccount(
+    lamports=500_000,             # rent-exempt minimum
+    data=bpf_bytecode,            # скомпилированный BPF код
+    owner=BPF_LOADER_ID,          # BPF Loader
+    executable=True,
+    rent_epoch=512,
+)
+```
+
+### Rent: плата за хранение
+
+В отличие от Ethereum, где данные хранятся "бесплатно" (оплачен только газ при записи), Solana требует **rent** -- минимальный баланс для сохранения аккаунта:
+
+```python
+# Формула rent-exempt minimum:
+# min_balance = rent_rate * account_size * 2_years_in_epochs
+# На практике: ~0.00089 SOL за 1 байт данных
+
+# Пример: аккаунт Counter (8 bytes count + 32 bytes authority = 40 bytes)
+# + 128 bytes системные метаданные = 168 bytes
+# min_balance ≈ 168 * 6960 lamports/byte ≈ 1_169_280 lamports ≈ 0.00117 SOL
+
+from solders.rpc.responses import GetMinimumBalanceForRentExemptionResp
+# В коде: connection.getMinimumBalanceForRentExemption(data_size)
+```
+
+## Разделение кода и данных: Ethereum vs Solana
+
+Это самый важный концептуальный сдвиг при переходе от Ethereum к Solana.
+
+<EthVsSolanaStateDiagram client:load />
+
+### Сравнение моделей
+
+```python
+# === ETHEREUM: Code + Data = ONE account ===
+# Контракт Counter.sol:
+#   Storage slot 0: count (uint256)
+#   Storage slot 1: owner (address)
+# Всё хранится по адресу контракта
+
+# Чтение: eth_getStorageAt(contract_address, slot=0)
+# Запись: tx -> contract_address -> SSTORE(slot=0, new_value)
+
+# === SOLANA: Code и Data = РАЗНЫЕ accounts ===
+# Program account: содержит BPF bytecode (read-only)
+# Data account(s): содержат состояние, принадлежат программе
+
+# Чтение: getAccountInfo(counter_pda) -> account.data
+# Запись: tx -> program_id, accounts=[counter_pda], data=[increment]
+#         программа десериализует counter_pda.data, обновляет, сериализует обратно
+```
+
+### Следствия разделения
+
+| Свойство | Ethereum | Solana |
+|----------|----------|--------|
+| Обновление кода | Невозможно (proxy pattern) | Upgradeable через authority |
+| Параллелизм | Невозможен (неизвестны эффекты) | Sealevel (объявленные read/write) |
+| Стоимость хранения | Единоразовый газ за SSTORE | Постоянный rent (rent-exempt threshold) |
+| Создание хранилища | Неявное (slot создается при записи) | Явное (аккаунт нужно создать и оплатить) |
+| Размер хранилища | Неограничен (дорого) | Фиксирован при создании (10 MB max) |
+
+## Три правила владения
+
+Solana runtime обеспечивает 3 строгих правила владения:
+
+```python
+# Правило 1: Только owner может изменять data
+assert account.owner == calling_program_id  # иначе AccessViolation
+
+# Правило 2: Только owner может дебетовать lamports
+assert account.owner == calling_program_id  # иначе AccessViolation
+# Программа может уменьшить lamports своего аккаунта
+
+# Правило 3: Любой может кредитовать lamports
+# Не нужна проверка owner для зачисления
+account.lamports += amount  # всегда разрешено
+```
+
+### System Program: владелец по умолчанию
+
+Когда вы создаете новый аккаунт, его owner -- **System Program** (`11111111111111111111111111111111`). Чтобы передать аккаунт программе, вызывается `system_program::create_account()` или `system_program::assign()`:
+
+```python
+# Создание аккаунта и передача владения программе Counter
+system_program.create_account(
+    from_pubkey=payer,          # кто платит rent
+    new_account_pubkey=counter,  # адрес нового аккаунта
+    lamports=min_balance,        # rent-exempt minimum
+    space=40,                    # размер data в байтах
+    owner=counter_program_id,    # новый owner = программа Counter
+)
+# Теперь counter.owner == counter_program_id
+# Только Counter program может изменять counter.data
+```
+
+## PDA: Program Derived Address
+
+PDA -- это адреса, которые **не лежат на кривой Ed25519**. Это означает, что у PDA нет приватного ключа, и никто не может подписать транзакцию от его имени. Только программа-владелец может "подписать" за свой PDA через `invoke_signed`.
+
+### Зачем нужны PDA?
+
+```python
+# Проблема: как программе "владеть" аккаунтом без приватного ключа?
+# В Ethereum: контракт = адрес, msg.sender = контракт при внутреннем вызове
+# В Solana: программа не может подписать транзакцию (нет приватного ключа)
+
+# Решение: PDA -- детерминистический адрес, привязанный к программе
+# PDA гарантированно НЕ на кривой Ed25519 -> нет приватного ключа
+# Программа может "подписать" за PDA через invoke_signed
+# Runtime проверяет: seeds + bump + program_id == PDA address
+```
+
+### Derivation PDA: от seeds до адреса
+
+PDA вычисляется из произвольных seeds и program_id. Bump перебирается с 255 вниз, пока результат хеширования не окажется ВНЕ кривой Ed25519.
+
+<PDADerivationDiagram client:load />
+
+Пройдите все шаги:
+1. Определите seeds (произвольные байтовые массивы)
+2. Сформируйте входные данные (seeds + bump + program_id + magic)
+3. Вычислите хеш и проверьте: на кривой или нет?
+4. Если на кривой -- следующий bump. Если нет -- PDA найден!
+
+### Алгоритм PDA derivation
+
+```python
+# Псевдокод PDA derivation
+def find_program_address(seeds: list[bytes], program_id: Pubkey) -> (Pubkey, int):
+    for bump in range(255, -1, -1):  # 255, 254, 253, ...
+        hash_input = b''.join(seeds) + bytes([bump]) + bytes(program_id) + b"ProgramDerivedAddress"
+        candidate = sha256(hash_input)
+
+        if not is_on_ed25519_curve(candidate):
+            return (Pubkey(candidate), bump)  # canonical bump
+
+    raise Exception("Could not find valid PDA")
+
+# Использование:
+counter_pda, bump = find_program_address(
+    seeds=[b"counter", bytes(authority_pubkey)],
+    program_id=counter_program_id,
+)
+# counter_pda -- детерминистический адрес, уникальный для этих seeds + program_id
+# bump -- canonical bump (обычно 254 или 253, 255 попадает на кривую в ~50% случаев)
+```
+
+### PDA vs Ethereum mappings
+
+```python
+# Ethereum: storage slot для mapping(address => uint256)
+# slot = keccak256(key . base_slot)
+mapping_slot = keccak256(abi.encode(user_address, 0))  # slot 0 = mapping declaration
+value = eth_getStorageAt(contract, mapping_slot)
+
+# Solana: PDA-адрес для аналогичного хранилища
+# address = SHA-256(seeds + bump + program_id)
+balance_pda = find_program_address(
+    seeds=[b"balance", bytes(user_pubkey)],
+    program_id=token_program,
+)
+# balance_pda -- отдельный аккаунт с данными
+# Программа создает этот аккаунт при первом обращении
+```
+
+## Математическое определение
+
+### Ed25519 и PDA
+
+Кривая Ed25519 определена уравнением:
+
+```
+-x^2 + y^2 = 1 + d * x^2 * y^2
+```
+
+где `d = -121665/121666 (mod p)`, `p = 2^255 - 19`.
+
+Точка `(x, y)` лежит на кривой, если удовлетворяет этому уравнению. PDA -- это 32-байтное значение, которое НЕ декодируется в валидную точку Ed25519:
+
+```python
+# Проверка: лежит ли 32-байтный хеш на кривой Ed25519
+def is_on_ed25519_curve(candidate: bytes) -> bool:
+    """
+    Пытаемся декомпрессировать candidate как y-координату точки Ed25519.
+    Если x^2 = (y^2 - 1) / (d * y^2 + 1) не имеет квадратного корня в GF(p),
+    то точка НЕ на кривой -> валидный PDA.
+    """
+    p = 2**255 - 19
+    y = int.from_bytes(candidate, 'little') % p
+    d = -121665 * pow(121666, -1, p) % p
+
+    # x^2 = (y^2 - 1) * inverse(d * y^2 + 1)
+    numerator = (y * y - 1) % p
+    denominator = (d * y * y + 1) % p
+    x_squared = numerator * pow(denominator, -1, p) % p
+
+    # Проверяем, существует ли квадратный корень
+    # Критерий Эйлера: x^((p-1)/2) == 1 (mod p) <=> x -- квадратичный вычет
+    return pow(x_squared, (p - 1) // 2, p) == 1
+```
+
+### Модель аккаунтов формально
+
+```
+Account : Pubkey -> { lamports: u64, data: Vec<u8>, owner: Pubkey, executable: bool, rent_epoch: u64 }
+
+Ownership rules:
+  forall a in Accounts, p in Programs:
+    modify(a.data, p)     iff a.owner == p.id
+    debit(a.lamports, p)  iff a.owner == p.id
+    credit(a.lamports, _) -- always allowed
+
+PDA derivation:
+  PDA(seeds, program_id) = SHA-256(seeds || [bump] || program_id || "ProgramDerivedAddress")
+  where bump = max { b in [0, 255] | result not on Ed25519 }
+```
+
+## Практика
+
+```python
+# Работа с аккаунтами через solana-py
+from solders.pubkey import Pubkey
+
+# Вычисление PDA
+program_id = Pubkey.from_string("CounterProgram111111111111111111111111111")
+seeds = [b"counter", bytes(authority_pubkey)]
+pda, bump = Pubkey.find_program_address(seeds, program_id)
+print(f"PDA: {pda}, bump: {bump}")
+
+# Получение информации об аккаунте
+from solana.rpc.api import Client
+client = Client("http://localhost:8899")
+
+account_info = client.get_account_info(pda)
+if account_info.value:
+    acc = account_info.value
+    print(f"Lamports: {acc.lamports}")
+    print(f"Owner: {acc.owner}")
+    print(f"Executable: {acc.executable}")
+    print(f"Data length: {len(acc.data)} bytes")
+    print(f"Rent epoch: {acc.rent_epoch}")
+```
+
+## Что дальше?
+
+В следующем уроке мы разберём **программы и инструкции** -- как формируются транзакции, как Sealevel обеспечивает параллельное выполнение и как программы вызывают друг друга через CPI (Cross-Program Invocation). Вы увидите, как разделение кода и данных делает возможным то, что невозможно в Ethereum.
