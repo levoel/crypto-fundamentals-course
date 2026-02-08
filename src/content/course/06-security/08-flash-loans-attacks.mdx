@@ -1,0 +1,297 @@
+---
+title: "Flash Loan Attacks"
+description: "Flash loan как инструмент vs flash loan attack. Oracle manipulation, spot price уязвимость, notable attacks timeline. Защита: Chainlink, TWAP, timelock"
+order: 8
+difficulty: "advanced"
+estimatedTime: 45
+topics: ["Flash Loan", "Oracle Manipulation", "Spot Price", "Chainlink", "TWAP", "DeFi Exploits", "Security"]
+prerequisites: ["06-lending-protocols", "05-mev-concepts"]
+---
+
+import { FlashLoanAttackStepsDiagram, DeFiAttacksTimelineDiagram } from '../../../components/diagrams/module6/FlashLoanAttackDiagrams';
+
+# Flash Loan Attacks
+
+## Зачем это критически важно?
+
+Flash loan атаки привели к потерям **$500M+** в DeFi. Но вот что критически важно понять:
+
+> **Flash loan -- это ИНСТРУМЕНТ, а не уязвимость.** Flash loan позволяет занять миллионы долларов без залога на 1 транзакцию. Это легитимный финансовый примитив. Уязвимость -- в протоколах, которые ИСПОЛЬЗУЮТСЯ flash loan для эксплуатации.
+
+**Корневая уязвимость в 90%+ flash loan атак:** использование **spot price** (текущие резервы DEX) как ценового oracle. Spot price можно манипулировать в рамках одной транзакции.
+
+В этом уроке:
+1. Разделим flash loan tool от flash loan attack
+2. Пошагово разберем oracle manipulation
+3. Изучим крупнейшие атаки ($8M - $197M)
+4. Научимся защищать протоколы
+
+## Интуитивное объяснение: бесплатный кредит на 12 секунд
+
+### Аналогия: мгновенный кредит
+
+Представьте, что банк выдает вам $10 миллионов БЕЗ залога, но с условием: вы должны вернуть ВСЕ в течение 12 секунд. Если не вернете -- все действия отменяются, как будто ничего не произошло.
+
+Что можно сделать за 12 секунд?
+- Купить актив на одной бирже, продать на другой (**арбитраж** -- легитимно)
+- Погасить долг и перевзять под лучшую ставку (**рефинансирование** -- легитимно)
+- Манипулировать цену на DEX и эксплуатировать уязвимый протокол (**атака**)
+
+### Flash Loan: инструмент vs атака
+
+| Характеристика | Flash Loan (инструмент) | Flash Loan Attack |
+|---------------|------------------------|-------------------|
+| Что это | Займ без залога на 1 tx | Использование займа для exploit |
+| Легитимность | 100% легитимно | Эксплуатация уязвимости |
+| Примеры | Арбитраж, рефинансирование, liquidation | Oracle manipulation |
+| Кто виноват | Никто (это фича) | Уязвимый протокол |
+| Можно запретить? | Нет (атомарность EVM) | Нет, но можно защитить протоколы |
+
+> **Ключевое различие:** Flash loan -- как молоток. Молотком можно строить дома (арбитраж) или разбить окно (атака). Запрещать молоток бессмысленно -- нужно ставить защиту на окна.
+
+## Flash Loan: как работает механизм
+
+### Атомарность EVM
+
+Flash loan возможен благодаря **атомарности транзакций** в EVM:
+
+```
+Одна транзакция = одна атомарная операция:
+  1. Borrow 10,000 ETH                    ← lender.flashLoan()
+  2. ... делаем что угодно с 10,000 ETH ...  ← onFlashLoan() callback
+  3. Return 10,009 ETH (+ 0.09% fee)      ← approve + transferFrom
+
+  Если шаг 3 не выполнен → ВСЯ транзакция ревертится
+  (шаги 1 и 2 тоже отменяются)
+```
+
+### Aave V3 Flash Loan interface
+
+```solidity
+// Aave V3 Pool
+function flashLoan(
+    address receiverAddress,    // кто получает callback
+    address[] calldata assets,  // какие токены занять
+    uint256[] calldata amounts, // сколько каждого
+    uint256[] calldata interestRateModes, // 0 = no debt (must repay)
+    address onBehalfOf,
+    bytes calldata params,      // произвольные данные для callback
+    uint16 referralCode
+) external;
+
+// Callback interface -- ваш контракт должен реализовать это
+interface IFlashLoanSimpleReceiver {
+    function executeOperation(
+        address asset,
+        uint256 amount,
+        uint256 premium,      // fee to repay
+        address initiator,
+        bytes calldata params
+    ) external returns (bool);
+}
+```
+
+### Стоимость flash loan
+
+| Протокол | Комиссия | Макс. сумма |
+|----------|----------|-------------|
+| Aave V3 | 0.05% (flash loan) / 0.09% (default) | Вся ликвидность пула |
+| Uniswap V2 | 0.3% (swap fee) | Все резервы пула |
+| Uniswap V3 | 0% (flash callback) | Все резервы пула |
+| dYdX | 0% (+ 2 wei) | Вся ликвидность |
+| Balancer | 0% | Вся ликвидность |
+
+## Oracle Manipulation: анатомия атаки
+
+Теперь самое важное -- как flash loan ИСПОЛЬЗУЕТСЯ для атаки.
+
+<FlashLoanAttackStepsDiagram client:load />
+
+### Корневая уязвимость: spot price oracle
+
+```solidity
+// VULNERABLE: использует текущие резервы DEX как oracle
+contract VulnerableOracle {
+    IUniswapV2Pair public pair;
+
+    function getPrice() external view returns (uint256) {
+        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
+        // Spot price = reserve1 / reserve0
+        // ПРОБЛЕМА: reserves можно сдвинуть за 1 транзакцию!
+        return (uint256(reserve1) * 1e18) / uint256(reserve0);
+    }
+}
+```
+
+**Почему это опасно:**
+- `getReserves()` возвращает ТЕКУЩИЕ резервы в ЭТОМ БЛОКЕ
+- Flash loan + swap может сдвинуть резервы на 80%+ за 1 tx
+- Протокол, использующий этот oracle, примет решение на основе ЛОЖНОЙ цены
+
+### Сравнение: spot price vs Chainlink vs TWAP
+
+| Характеристика | Spot Price (getReserves) | Chainlink | TWAP (Uniswap V3) |
+|---------------|--------------------------|-----------|---------------------|
+| Манипулируемость | 1 транзакция | Практически невозможно | Требует N блоков |
+| Стоимость манипуляции | $0 (flash loan) | $1B+ (51% oracle attack) | Пропорциональна pool size * N |
+| Задержка | 0 блоков | 1-2 блока (heartbeat) | N блоков (настраиваемо) |
+| Точность | Мгновенная (но ненадежная) | Высокая | Средняя (сглаженная) |
+| Подходит для | Ничего on-chain | Lending, derivatives | DEX, on-chain pricing |
+
+## Крупнейшие Flash Loan атаки
+
+<DeFiAttacksTimelineDiagram client:load />
+
+### Детали ключевых атак
+
+#### bZx (Февраль 2020) -- $8.1M
+
+Первая крупная flash loan атака. Атакующий:
+1. Занял ETH через dYdX flash loan
+2. Использовал часть как залог на bZx для short
+3. Продал остальное ETH на Uniswap V1 (сдвинул цену)
+4. Short позиция стала прибыльной из-за сдвига цены
+5. Вернул flash loan, оставил прибыль
+
+#### Euler Finance (Март 2023) -- $197M
+
+Крупнейшая flash loan атака:
+1. Flash loan от Aave
+2. Deposit в Euler
+3. Self-liquidation через donation bug (donateToReserves)
+4. Создание bad debt (long > short из-за бага в расчете)
+5. Repeat 6 раз
+
+> **Уникально:** Атакующий вернул все $197M через 3 недели после переговоров.
+
+## Lab: Oracle Manipulation PoC
+
+В нашем Foundry workspace есть готовый PoC. Файлы:
+
+### Уязвимый oracle контракт
+
+```solidity
+// contracts/security/OracleManipulable.sol
+contract OracleManipulable {
+    IUniswapV2Pair public immutable pair;
+
+    function getPrice() external returns (uint256 price) {
+        (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
+        price = (uint256(reserve1) * 1e18) / uint256(reserve0);
+        emit PriceQueried(price, reserve0, reserve1);
+    }
+}
+```
+
+### Foundry тест (oracle manipulation)
+
+```bash
+# Запуск PoC теста
+forge test --match-path test/security/OracleManipulation.t.sol -vvv
+```
+
+Тест доказывает: один swap 500 WETH в пул с 1000 WETH сдвигает oracle цену на **55%+**.
+
+### Flash loan атака PoC
+
+```bash
+# Запуск flash loan attack теста
+forge test --match-path test/security/FlashLoanAttack.t.sol -vvv
+```
+
+Тест доказывает: flash loan -> dump -> manipulated price -> swap back -> repay.
+
+## Защита протоколов от Flash Loan атак
+
+### 1. Chainlink Price Feeds (рекомендуется)
+
+```solidity
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+contract SecureOracle {
+    AggregatorV3Interface internal priceFeed;
+
+    constructor(address _priceFeed) {
+        priceFeed = AggregatorV3Interface(_priceFeed);
+    }
+
+    function getPrice() external view returns (uint256) {
+        (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
+
+        // Staleness check
+        require(block.timestamp - updatedAt < 3600, "Stale price");
+        require(price > 0, "Invalid price");
+
+        return uint256(price);
+    }
+}
+```
+
+Chainlink агрегирует цены от 20+ независимых data sources. Манипуляция потребует контроля над большинством sources -- экономически нецелесообразно.
+
+### 2. TWAP (Time-Weighted Average Price)
+
+```solidity
+// Uniswap V3 TWAP -- усредняет цену за N секунд
+function getTWAP(address pool, uint32 twapInterval) external view returns (uint256) {
+    uint32[] memory secondsAgos = new uint32[](2);
+    secondsAgos[0] = twapInterval; // N seconds ago
+    secondsAgos[1] = 0;           // now
+
+    (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondsAgos);
+
+    int56 tickDiff = tickCumulatives[1] - tickCumulatives[0];
+    int24 avgTick = int24(tickDiff / int56(int32(twapInterval)));
+
+    // Convert tick to price
+    return getQuoteAtTick(avgTick, baseAmount, baseToken, quoteToken);
+}
+```
+
+TWAP устойчив к flash loan: для манипуляции нужно держать сдвинутую цену N блоков, что стоит пропорционально `pool_size * N`.
+
+### 3. Circuit Breakers (дополнительно)
+
+```solidity
+contract ProtectedProtocol {
+    uint256 public lastPrice;
+    uint256 public constant MAX_DEVIATION = 10; // 10%
+
+    function updatePrice() external {
+        uint256 newPrice = oracle.getPrice();
+
+        // Reject price changes > 10% in one block
+        if (lastPrice > 0) {
+            uint256 deviation = newPrice > lastPrice
+                ? ((newPrice - lastPrice) * 100) / lastPrice
+                : ((lastPrice - newPrice) * 100) / lastPrice;
+
+            require(deviation <= MAX_DEVIATION, "Price deviation too high");
+        }
+
+        lastPrice = newPrice;
+    }
+}
+```
+
+### Чеклист защиты
+
+- [ ] **Никогда** не используйте `getReserves()` как oracle
+- [ ] Используйте Chainlink для цен (lending, derivatives)
+- [ ] Добавьте staleness check для Chainlink (`updatedAt < 1 hour`)
+- [ ] Для on-chain pricing: TWAP с минимум 30-минутным окном
+- [ ] Circuit breaker: отклоняйте изменения цены > 10% за блок
+- [ ] Timelock на критические операции (governance)
+- [ ] Audit: проверьте все места, где протокол читает цену
+
+## Ключевые выводы
+
+1. **Flash loan = инструмент, НЕ уязвимость.** Уязвимость -- spot price oracle
+2. **Spot price (getReserves) = manupulable** в 1 транзакции
+3. **$500M+** потеряно из-за oracle manipulation (bZx, Harvest, PancakeBunny, Mango, Euler)
+4. **Chainlink** -- правильный oracle для lending/derivatives
+5. **TWAP** -- правильный oracle для on-chain pricing
+6. **Circuit breaker** -- дополнительная защита от аномальных цен
+7. **Аудит oracle usage** -- первое, что проверяют security auditors
+
+> **Золотое правило:** Если ваш протокол принимает финансовые решения на основе цены -- эта цена ОБЯЗАНА быть manipulation-resistant. getReserves() таковым НЕ является.

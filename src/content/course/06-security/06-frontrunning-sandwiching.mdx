@@ -1,0 +1,239 @@
+---
+title: "Frontrunning и Sandwich Attacks"
+description: "Анатомия sandwich attack: 6 шагов с конкретными числами. Mempool visibility, gas price ordering, защита через amountOutMin и Flashbots Protect"
+order: 6
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Frontrunning", "Sandwich Attack", "Mempool", "Slippage", "amountOutMin", "Gas Price Ordering"]
+prerequisites: ["05-mev-concepts"]
+---
+
+import { SandwichAttackDiagram, MempoolVisualizationDiagram } from '../../../components/diagrams/module6/FrontrunSandwichDiagrams';
+
+# Frontrunning и Sandwich Attacks
+
+## Зачем это знать?
+
+В предыдущем уроке мы увидели MEV supply chain и классификацию типов MEV. Теперь разберем самый распространенный вредный тип -- **sandwich attack** -- на уровне отдельных транзакций, с конкретными числами.
+
+**Sandwich attack** -- причина ~60% всего вредного MEV на Ethereum. Каждый день тысячи пользователей теряют деньги, потому что не установили slippage protection. Понимание механики атаки -- первый шаг к защите.
+
+В этом уроке:
+1. Разберем 6 шагов sandwich attack с конкретными суммами
+2. Увидим, как mempool делает транзакции "прозрачными" для атакующих
+3. Научимся защищаться: amountOutMin, Flashbots Protect, MEV-aware DEX
+
+## Интуитивное объяснение: очередь с нечестным участником
+
+### Аналогия: обменный пункт
+
+Представьте обменный пункт с фиксированным запасом валюты:
+
+1. Вы стоите в очереди и хотите купить 1,000 EUR за USD
+2. За вами видит объявленную заявку нечестный спекулянт
+3. Он ВКЛИНИВАЕТСЯ перед вами и покупает 500 EUR (цена растет из-за ограниченного запаса)
+4. Вы покупаете EUR по ЗАВЫШЕННОЙ цене
+5. Спекулянт ПОСЛЕ вас продает свои EUR по новой (тоже завышенной) цене
+
+Вы получили меньше EUR, чем ожидали. Разница -- прибыль спекулянта.
+
+В блокчейне "вклинивание" реализуется через более высокий gas price. Транзакции в блоке упорядочены по gas price (descending), и searcher просто платит на 1 gwei больше, чтобы оказаться ПЕРЕД жертвой.
+
+## Анатомия Sandwich Attack: 6 шагов
+
+Разберем конкретный пример с числами. Пул: 1,000 ETH / 2,000,000 DAI. Жертва хочет свопить 10 ETH.
+
+<SandwichAttackDiagram client:load />
+
+### Почему amountOutMin = 0 критично?
+
+Параметр `amountOutMin` в Uniswap Router определяет МИНИМАЛЬНО допустимый output. Если output ниже этого значения, транзакция ревертится.
+
+```solidity
+// Uniswap V2 Router: swapExactETHForTokens
+function swapExactETHForTokens(
+    uint amountOutMin,     // <-- ЗАЩИТА от slippage
+    address[] calldata path,
+    address to,
+    uint deadline
+) external payable returns (uint[] memory amounts);
+```
+
+| amountOutMin | Результат | Безопасность |
+|-------------|-----------|-------------|
+| 0 | Принимает ЛЮБУЮ цену | Приглашение к sandwich |
+| 95% от expected | Защита от 5% slippage | Разумная защита |
+| 99% от expected | Защита от 1% slippage | Строгая защита |
+| expected amount | Минимальный slippage | Может не исполниться |
+
+> **Правило:** НИКОГДА не ставьте `amountOutMin = 0`. Это эквивалент "я согласен получить 1 DAI за 10 ETH". Вспомните урок DEFI-02: слайпадж -- это не баг, это фича AMM, и вы обязаны контролировать его.
+
+### Кто устанавливает gas price ordering?
+
+В Ethereum транзакции в блоке упорядочены по **effective priority fee** (EIP-1559):
+
+```
+Transaction ordering in a block:
+  1. Highest priority fee first
+  2. If equal: arbitrary (builder decides)
+```
+
+Searcher размещает:
+- **Frontrun tx:** priority fee ВЫШЕ жертвы (чтобы быть перед ней)
+- **Backrun tx:** priority fee НИЖЕ жертвы (чтобы быть после нее)
+
+Через Flashbots bundles searcher гарантирует атомарный порядок: frontrun -> victim -> backrun.
+
+## Mempool: прозрачная очередь
+
+Вот почему sandwich attack вообще возможен: публичный mempool делает все ожидающие транзакции видимыми.
+
+<MempoolVisualizationDiagram client:load />
+
+### Как searcher находит жертву
+
+```python
+# Simplified mempool monitoring
+for pending_tx in mempool.stream():
+    # Decode: is this a Uniswap swap?
+    if pending_tx.to == UNISWAP_ROUTER:
+        decoded = decode_function_call(pending_tx.data)
+
+        if decoded.function == "swapExactETHForTokens":
+            # Check slippage protection
+            if decoded.amountOutMin == 0:
+                # PERFECT VICTIM: no slippage protection
+                execute_sandwich(pending_tx)
+
+            elif decoded.amountOutMin < expected_output * 0.95:
+                # Loose slippage: 5%+ tolerance
+                # Can still extract some MEV
+                profit = simulate_sandwich(pending_tx)
+                if profit > gas_cost:
+                    execute_sandwich(pending_tx)
+```
+
+### Frontrunning vs Sandwich
+
+| Характеристика | Frontrunning | Sandwich |
+|----------------|-------------|----------|
+| Количество tx атакующего | 1 (перед жертвой) | 2 (перед и после) |
+| Механизм | Копирование tx жертвы | Манипуляция цены |
+| Пример | Арбитраж: searcher копирует найденный арб | DEX swap: frontrun + backrun |
+| Жертва теряет | Всю прибыль (tx ревертится) | Часть output (больший slippage) |
+| Сложность | Простая | Требует расчета optimal amount |
+
+## Алгоритмический уровень: расчет прибыли sandwich
+
+### Математика sandwich attack
+
+Для пула с резервами $(x, y)$ и формулой $xy = k$:
+
+**Frontrun:** searcher вносит $\delta_f$ единиц tokenA
+
+```
+output_frontrun = y * δ_f / (x + δ_f)
+new_x = x + δ_f
+new_y = y - output_frontrun
+```
+
+**Victim tx:** жертва вносит $\Delta$ единиц tokenA по уже СДВИНУТОЙ цене
+
+```
+output_victim = new_y * Δ / (new_x + Δ)
+newer_x = new_x + Δ
+newer_y = new_y - output_victim
+```
+
+**Backrun:** searcher продает полученные в frontrun токены
+
+```
+output_backrun = newer_x * output_frontrun / (newer_y + output_frontrun)
+profit = output_backrun - δ_f - gas_cost
+```
+
+### Оптимальный frontrun amount
+
+Searcher оптимизирует $\delta_f$ для максимизации profit:
+
+```
+max_δf profit(δ_f) = backrun_output(δ_f) - δ_f - gas
+
+subject to:
+  victim_output ≥ victim.amountOutMin  (иначе victim tx ревертится)
+```
+
+Ограничение `amountOutMin` -- это именно то, что лимитирует searcher. Если `amountOutMin = 0`, ограничения нет, и searcher может извлечь МАКСИМУМ.
+
+### Concrete example с расчетом
+
+```
+Pool: x = 1000 ETH, y = 2,000,000 DAI
+Victim: swap 10 ETH, amountOutMin = 0
+Searcher: frontrun δ_f = 5 ETH
+
+Step 1 (frontrun):
+  output_f = 2,000,000 * 5 / (1000 + 5) = 9,950.25 DAI
+  new_x = 1005, new_y = 1,990,049.75
+
+Step 2 (victim):
+  output_v = 1,990,049.75 * 10 / (1005 + 10) = 19,605.42 DAI
+  newer_x = 1015, newer_y = 1,970,444.33
+
+Step 3 (backrun):
+  output_b = 1015 * 9,950.25 / (1,970,444.33 + 9,950.25) = 5.10 ETH
+  profit = 5.10 - 5.00 - gas ≈ 0.10 ETH - gas ≈ $180
+```
+
+Жертва потеряла: 19,741 (ожидаемый output) - 19,605 = ~$136 DAI.
+
+## Защита от Sandwich Attacks
+
+### 1. amountOutMin (базовая защита)
+
+Всегда устанавливайте `amountOutMin`:
+
+```typescript
+import { parseEther } from 'viem';
+
+// Get expected output
+const amounts = await router.read.getAmountsOut([
+  parseEther("10"),
+  [WETH_ADDRESS, DAI_ADDRESS]
+]);
+
+const expectedOutput = amounts[1];
+const slippageTolerance = 0.5; // 0.5%
+const amountOutMin = expectedOutput * BigInt(1000 - slippageTolerance * 10) / 1000n;
+
+// Swap with protection
+await router.write.swapExactETHForTokens([
+  amountOutMin,  // NEVER 0!
+  [WETH_ADDRESS, DAI_ADDRESS],
+  userAddress,
+  BigInt(Math.floor(Date.now() / 1000) + 300) // 5 min deadline
+], { value: parseEther("10") });
+```
+
+### 2. Flashbots Protect (рекомендуется)
+
+Следующий урок полностью посвящен Flashbots. Краткая суть: добавьте custom RPC `rpc.flashbots.net/fast` в кошелек, и транзакции не попадут в публичный mempool.
+
+### 3. MEV-aware DEX агрегаторы
+
+| Сервис | Механизм | Преимущество |
+|--------|----------|-------------|
+| CoW Swap | Batch auctions (off-chain matching) | Нет mempool exposure |
+| 1inch Fusion | Auction-based execution | MEV protection + лучшая цена |
+| Uniswap X | Dutch auction fills | Competitive execution |
+
+## Ключевые выводы
+
+1. **Sandwich = frontrun + victim tx + backrun** в одном блоке
+2. **amountOutMin = 0** -- главная уязвимость (принимает любую цену)
+3. **Gas price ordering** позволяет searcher размещать tx перед/после жертвы
+4. **Публичный mempool** делает все pending tx видимыми для searchers
+5. **Защита:** amountOutMin > 0, Flashbots Protect, MEV-aware DEX
+6. **Searcher прибыль** ограничена amountOutMin жертвы
+
+> **Следующий урок:** Flashbots Protect -- как скрыть транзакции от MEV-ботов бесплатно.

@@ -1,0 +1,201 @@
+---
+title: "MEV: Maximum Extractable Value"
+description: "MEV supply chain: users -> searchers -> block builders -> relays -> validators. PBS, MEV-Boost, классификация MEV: вредный vs полезный"
+order: 5
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["MEV", "Searchers", "Block Builders", "PBS", "MEV-Boost", "Sandwich", "Arbitrage", "Liquidation"]
+prerequisites: ["02-amm-concept"]
+---
+
+import { MEVSupplyChainDiagram, MEVTypesTableDiagram } from '../../../components/diagrams/module6/MEVConceptDiagrams';
+
+# MEV: Maximum Extractable Value
+
+## Зачем это разработчику?
+
+Каждый раз, когда вы отправляете транзакцию в Ethereum, вы участвуете в невидимой экономике. Между моментом отправки транзакции и ее включением в блок существует **12-секундное окно**, в котором специализированные боты анализируют, переупорядочивают и извлекают прибыль из ваших действий.
+
+**MEV (Maximum Extractable Value)** -- это прибыль, которую можно извлечь путем включения, исключения или переупорядочивания транзакций в блоке. До Merge это называлось Miner Extractable Value. После PoS -- Maximum Extractable Value.
+
+Понимание MEV необходимо для:
+- **Smart contract разработчиков:** ваш контракт будут атаковать MEV-ботами
+- **DeFi пользователей:** без защиты вы теряете деньги на каждом свопе
+- **Protocol designers:** архитектура протокола должна учитывать MEV
+
+В этом уроке мы разберем полную MEV supply chain: кто извлекает MEV, как, и почему это одновременно угроза и необходимость.
+
+## Интуитивное объяснение: невидимая экономика
+
+### Аналогия: фондовая биржа без правил
+
+Представьте фондовую биржу, где:
+- Все ордера видны ВСЕМ до исполнения (mempool = прозрачная очередь)
+- Любой может вставить свой ордер ПЕРЕД вашим, заплатив больше за "ускорение" (gas price priority)
+- Нет регулятора, запрещающего frontrunning (в отличие от SEC в TradFi)
+
+Это и есть Ethereum mempool. Каждые 12 секунд собирается новый блок, и в это окно все ожидающие транзакции видны всем. Боты-searchers мониторят этот "зал ожидания" и ищут прибыльные возможности.
+
+### Масштаб проблемы
+
+- **$600M+** извлечено MEV-ботами на Ethereum (с 2020 года)
+- **90%+** валидаторов используют MEV-Boost
+- **~$1M** MEV извлекается **каждый день**
+
+## MEV Supply Chain: 5 участников
+
+MEV -- не одиночный актор. Это целая цепочка поставок с 5 специализированными ролями:
+
+<MEVSupplyChainDiagram client:load />
+
+### Proposer-Builder Separation (PBS)
+
+До Merge (PoS) майнеры сами собирали блоки и извлекали MEV. После Merge роли разделились:
+
+| Роль | Старая модель (PoW) | Новая модель (PBS) |
+|------|---------------------|--------------------|
+| Кто собирает блок | Miner | Block Builder |
+| Кто подписывает блок | Miner | Validator (Proposer) |
+| Кто ищет MEV | Miner (или его боты) | Searcher (отдельный актор) |
+| Посредник | Нет | Relay |
+
+**PBS** (Proposer-Builder Separation) -- архитектурный принцип, разделяющий построение и подписание блока. Это снижает централизацию: validator не обязан иметь MEV-инфраструктуру.
+
+### MEV-Boost
+
+**MEV-Boost** -- open-source middleware от Flashbots, реализующий PBS:
+
+```
+Searcher -> Bundle -> Builder -> Block -> Relay -> Validator (Proposer)
+                                                        |
+                                                   Подписывает блок
+                                                   с наивысшей ставкой
+```
+
+1. Searcher находит MEV-возможность и создает **bundle** (пакет транзакций)
+2. Bundle отправляется builder через Flashbots API
+3. Builder собирает оптимальный блок из bundles + обычных tx
+4. Block передается relay (commit-reveal: validator не видит содержимое)
+5. Validator выбирает блок с наивысшей **bid** (ставкой) и подписывает
+
+> **Факт:** Более 90% Ethereum валидаторов используют MEV-Boost. Это де-факто стандарт.
+
+## Типы MEV: спектр от вредного до полезного
+
+MEV -- не однозначно "плохой". Это **спектр**: от вредных атак до необходимых для здоровья рынка операций.
+
+<MEVTypesTableDiagram client:load />
+
+### Вредный MEV: sandwich и frontrunning
+
+**Sandwich attack** -- самый распространенный вредный MEV. Атакующий "обертывает" транзакцию жертвы двумя своими:
+
+```
+Block ordering:
+  1. Searcher tx: buy token (frontrun)  -- цена растет
+  2. Victim tx:   buy token             -- покупает по завышенной цене
+  3. Searcher tx: sell token (backrun)   -- searcher фиксирует прибыль
+```
+
+Жертва получает меньше токенов, чем ожидала. Разница -- прибыль searcher.
+
+**Frontrunning (displacement)** -- еще проще: searcher видит прибыльную транзакцию (например, арбитраж) и копирует ее с более высоким gas price.
+
+### Полезный MEV: арбитраж и ликвидации
+
+**Арбитраж** -- выравнивание цен между DEX. Без арбитражеров цена ETH на Uniswap и Sushiswap могла бы отличаться на 5-10%. Searchers держат спред в пределах 0.01-0.1%.
+
+**Ликвидации** -- защита lending-протоколов от bad debt. Когда Health Factor < 1, searcher ликвидирует позицию и получает бонус. Без ликвидаторов Aave потеряет все средства депозиторов.
+
+### Нейтральный MEV: JIT liquidity
+
+**JIT (Just-In-Time) liquidity** -- searcher добавляет ликвидность в Uniswap V3 непосредственно перед крупным свопом и убирает после. Трейдер получает лучшую цену (меньше slippage), но постоянные LP теряют часть комиссий.
+
+## Алгоритмический уровень: как работает MEV-бот
+
+### Pseudo-code searcher бота
+
+```python
+# Simplified MEV searcher logic
+import mempool
+
+while True:
+    pending_txs = mempool.subscribe()
+
+    for tx in pending_txs:
+        # Decode transaction calldata
+        if tx.to == UNISWAP_ROUTER:
+            decoded = decode_swap(tx.data)
+
+            # Check for sandwich opportunity
+            if decoded.amountOutMin == 0:  # No slippage protection!
+                profit = simulate_sandwich(
+                    victim_tx=tx,
+                    pool=decoded.pool,
+                    frontrun_amount=calculate_optimal_frontrun(decoded)
+                )
+
+                if profit > gas_cost * 2:  # Safety margin
+                    bundle = create_sandwich_bundle(tx, frontrun_amount)
+                    flashbots.send_bundle(bundle)
+
+            # Check for arbitrage
+            arb_profit = check_cross_dex_arb(decoded.pool)
+            if arb_profit > 0:
+                arb_tx = create_arb_tx(decoded.pool)
+                flashbots.send_bundle([arb_tx])
+```
+
+### Экономика searcher
+
+| Статья | Значение |
+|--------|----------|
+| Доход от MEV | $100 - $50,000 за транзакцию |
+| Gas cost | $5 - $500 за bundle |
+| Builder tip | 90%+ прибыли (конкуренция) |
+| Чистая маржа | 1-10% от извлеченного MEV |
+| Инфраструктура | $5,000-50,000/мес (colocation, nodes) |
+
+> **Парадокс MEV:** Searchers конкурируют друг с другом, отдавая бОльшую часть прибыли builders и validators. В итоге searcher маржа стремится к нулю -- это "MEV competition" в действии.
+
+## Математический уровень: формализация MEV
+
+### Определение MEV
+
+Для блока $B$ с множеством транзакций $T = \{t_1, t_2, ..., t_n\}$:
+
+```
+MEV(B) = max_π(profit(π(T))) - profit(T_default)
+```
+
+Где:
+- $\pi(T)$ -- перестановка (reordering) транзакций
+- $T_{default}$ -- транзакции в порядке поступления (FIFO)
+- $profit(\cdot)$ -- прибыль от данного упорядочивания
+
+MEV -- это **разница** между оптимальным и стандартным упорядочиванием.
+
+### Прибыль sandwich attack
+
+Для пула с резервами $(x, y)$ и victim swap $\Delta x$:
+
+```
+profit_sandwich = backrun_output - frontrun_input
+                = f(x, y, Δx_front, Δx_victim) - Δx_front - gas
+```
+
+Оптимальный frontrun amount зависит от:
+- Размера пула (чем больше -- тем больше нужно капитала)
+- Размера транзакции жертвы
+- Slippage tolerance жертвы (amountOutMin)
+
+## Ключевые выводы
+
+1. **MEV supply chain:** Users -> Searchers -> Builders -> Relays -> Validators
+2. **PBS разделяет роли:** builder собирает блок, proposer подписывает
+3. **MEV -- спектр:** sandwich вредит, арбитраж полезен, JIT нейтрален
+4. **90% валидаторов** используют MEV-Boost
+5. **amountOutMin = 0** -- приглашение к sandwich attack
+6. **Searcher маржа стремится к 0** из-за конкуренции
+
+> **Следующий урок:** Детальная анатомия sandwich attack и frontrunning -- пошаговый разбор с конкретными числами.

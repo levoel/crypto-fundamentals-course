@@ -1,0 +1,258 @@
+---
+title: "Flashbots Protect"
+description: "Flashbots Protect RPC: приватный mempool, MEV-Boost, 90% MEV refund, защита от failed tx. Настройка за 30 секунд"
+order: 7
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Flashbots", "MEV-Boost", "Flashbots Protect", "Private Mempool", "MEV Refund", "RPC"]
+prerequisites: ["06-frontrunning-sandwiching"]
+---
+
+import { FlashbotsProtectFlowDiagram } from '../../../components/diagrams/module6/FlashbotsDiagrams';
+
+# Flashbots Protect
+
+## Зачем Flashbots?
+
+В предыдущих уроках мы увидели проблему: публичный mempool делает транзакции "прозрачными", и searchers используют это для sandwich attacks. **Flashbots** -- организация, создавшая инфраструктуру для решения MEV-проблемы.
+
+**Flashbots Protect** -- бесплатный RPC endpoint, который:
+1. Скрывает транзакции от публичного mempool (нет sandwich)
+2. Возвращает 90% MEV пользователю (MEV refund)
+3. Не включает failed tx в блок (бесплатный revert)
+
+Более **12 миллионов транзакций** уже защищены Flashbots Protect.
+
+## Интуитивное объяснение: секретный тоннель
+
+### Аналогия: VIP-вход
+
+Публичный mempool -- это главный вход в здание, где все видят всех. Flashbots Protect -- VIP-тоннель: вы проходите напрямую к лифту, минуя толпу. Никто не видит, куда вы идете, пока вы не окажетесь в нужном месте (блоке).
+
+### Как это работает технически
+
+Стандартный путь:
+```
+Wallet -> Public Mempool -> Searchers SEE your tx -> Sandwich -> Block
+```
+
+Flashbots Protect:
+```
+Wallet -> Flashbots RPC -> Private Pool -> Builder -> Block (no sandwich)
+```
+
+Ключевая разница: транзакция НИКОГДА не появляется в публичном mempool. Searchers физически не могут ее увидеть.
+
+## Flashbots Protect: пошаговый flow
+
+<FlashbotsProtectFlowDiagram client:load />
+
+### Настройка в MetaMask (30 секунд)
+
+1. Откройте MetaMask -> Settings -> Networks -> Add Network
+2. Заполните:
+
+| Поле | Значение |
+|------|----------|
+| Network Name | Flashbots Protect |
+| RPC URL | `https://rpc.flashbots.net/fast` |
+| Chain ID | 1 |
+| Symbol | ETH |
+| Block Explorer | `https://etherscan.io` |
+
+3. Переключитесь на сеть "Flashbots Protect"
+4. Все транзакции теперь идут через приватный канал
+
+> **Вариант `/fast`:** URL `rpc.flashbots.net/fast` отправляет транзакцию ВСЕМ builders (не только Flashbots builder). Это увеличивает скорость включения. Стандартный `rpc.flashbots.net` отправляет только Flashbots builder.
+
+### Программная настройка (viem)
+
+```typescript
+import { createWalletClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+
+// Flashbots Protect RPC
+const FLASHBOTS_RPC = 'https://rpc.flashbots.net/fast';
+
+const client = createWalletClient({
+  account: privateKeyToAccount('0x...'),
+  chain: mainnet,
+  transport: http(FLASHBOTS_RPC), // <-- приватный endpoint
+});
+
+// Все транзакции через этот client защищены от sandwich
+const hash = await client.sendTransaction({
+  to: UNISWAP_ROUTER,
+  data: swapCalldata,
+  value: parseEther("10"),
+});
+```
+
+### Программная настройка (ethers.js)
+
+```typescript
+import { ethers } from 'ethers';
+
+// Flashbots Protect RPC
+const provider = new ethers.JsonRpcProvider('https://rpc.flashbots.net/fast');
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+
+// Все транзакции через этот wallet защищены
+const tx = await wallet.sendTransaction({
+  to: UNISWAP_ROUTER,
+  data: swapCalldata,
+  value: ethers.parseEther("10"),
+});
+```
+
+## MEV-Boost: инфраструктура Flashbots
+
+### Что такое MEV-Boost?
+
+**MEV-Boost** -- open-source sidecar для Ethereum валидаторов. Позволяет получать блоки от внешних builders вместо локального построения.
+
+```
+Without MEV-Boost:
+  Validator builds own block -> proposes -> limited MEV capture
+
+With MEV-Boost:
+  Builders compete -> relay delivers best block -> validator proposes
+  -> validator earns builder bid (MEV share)
+```
+
+### Экосистема
+
+| Компонент | Примеры | Роль |
+|-----------|---------|------|
+| Searchers | Wintermute, Jump, proprietary bots | Находят MEV |
+| Builders | Flashbots, BeaverBuild, Titan Builder | Собирают блоки |
+| Relays | Flashbots, bloXroute, Ultra Sound, Agnostic | Передают блоки |
+| Validators | Lido, Coinbase, Rocket Pool | Подписывают блоки |
+
+### Статистика MEV-Boost (2024)
+
+| Метрика | Значение |
+|---------|----------|
+| Adoption | >90% валидаторов |
+| Blocks built by builders | ~90% всех блоков |
+| Builder competition | 10+ активных builders |
+| Protected transactions | 12M+ через Flashbots Protect |
+| Total MEV extracted | $600M+ (с 2020 года) |
+
+## Три уровня защиты Flashbots
+
+### 1. Sandwich Protection (основная)
+
+Транзакция не попадает в публичный mempool:
+- Searchers не видят pending tx
+- Невозможно построить frontrun/backrun
+- Защита 100% от sandwich
+
+### 2. Failed Transaction Protection
+
+Если ваша транзакция ревертится on-chain (например, цена изменилась), Flashbots НЕ включает ее в блок:
+
+```
+Standard RPC:
+  tx reverts on-chain -> you PAY gas for failed tx (~$5-50)
+
+Flashbots Protect:
+  tx would revert -> builder SKIPS it -> you pay NOTHING
+  (nonce is freed for next tx)
+```
+
+Это экономит $5-50 на каждой failed transaction.
+
+### 3. MEV Refund (90% возврат)
+
+Если ваша транзакция генерирует MEV (например, backrun opportunity после вашего свопа), Flashbots возвращает **90% этого MEV** вам:
+
+```
+Your swap: buy 100 ETH on Uniswap
+This creates arb opportunity worth $100
+Without Flashbots: searcher takes $100, you get $0
+With Flashbots Protect: you get $90 back (90% refund)
+```
+
+> **Как работает refund:** Builder включает backrun tx после вашей и отправляет 90% прибыли обратно на ваш адрес в том же блоке.
+
+## Алгоритмический уровень: Flashbots Bundle API
+
+### Sending bundles (для разработчиков)
+
+```typescript
+import { Flashbots } from '@flashbots/ethers-provider-bundle';
+import { ethers } from 'ethers';
+
+// Connect to Flashbots relay
+const flashbotsProvider = await Flashbots.create(
+  provider,       // standard Ethereum provider
+  authSigner      // wallet for bundle signing (NOT the tx signer)
+);
+
+// Create bundle
+const bundle = [
+  {
+    signer: wallet,
+    transaction: {
+      to: UNISWAP_ROUTER,
+      data: swapCalldata,
+      value: ethers.parseEther("10"),
+      chainId: 1,
+      type: 2, // EIP-1559
+      maxFeePerGas: ethers.parseUnits("30", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("2", "gwei"),
+    },
+  },
+];
+
+// Send bundle for next block
+const blockNumber = await provider.getBlockNumber();
+const response = await flashbotsProvider.sendBundle(bundle, blockNumber + 1);
+
+// Wait for result
+const resolution = await response.wait();
+if (resolution === 0) {
+  console.log("Bundle included!");
+} else {
+  console.log("Bundle not included, retrying...");
+}
+```
+
+### Bundle guarantees
+
+| Гарантия | Описание |
+|----------|----------|
+| Атомарность | Все tx в bundle выполняются или ни одна |
+| Порядок | tx выполняются строго в указанном порядке |
+| Приватность | Bundle не попадает в публичный mempool |
+| No reverts | Если tx ревертится, весь bundle отклоняется |
+
+## Ограничения Flashbots
+
+### Что Flashbots НЕ может
+
+1. **Не защищает от on-chain MEV** -- если ваш контракт сам эмитит exploitable events, MEV будет извлечен из следующих блоков
+2. **Не работает на L2** -- Flashbots Protect доступен только на Ethereum mainnet (L2 имеют sequencers с собственной MEV-политикой)
+3. **Не мгновенный** -- транзакция может ждать до 25 блоков (~5 минут)
+4. **Централизация** -- Flashbots relay видит все protected tx (trust assumption)
+
+### Альтернативы Flashbots
+
+| Сервис | Подход | Сеть |
+|--------|--------|------|
+| MEV Blocker (CoW) | Auction-based MEV rebate | Ethereum |
+| Blink by bloXroute | Private tx submission | Ethereum |
+| Chainlink Fair Sequencing | Fair ordering protocol | Cross-chain |
+
+## Ключевые выводы
+
+1. **Flashbots Protect:** бесплатный RPC для sandwich protection
+2. **Настройка:** добавьте `rpc.flashbots.net/fast` в MetaMask
+3. **Три защиты:** sandwich prevention, failed tx protection, 90% MEV refund
+4. **MEV-Boost:** 90%+ валидаторов используют для оптимизации блоков
+5. **Bundle API:** для разработчиков -- атомарные, приватные пакеты транзакций
+6. **12M+ транзакций** уже защищены через Flashbots Protect
+
+> **Следующий урок:** Flash Loan атаки -- как инструмент flash loan используется для oracle manipulation и эксплуатации DeFi-протоколов.
