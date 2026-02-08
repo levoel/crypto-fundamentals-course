@@ -1,0 +1,301 @@
+---
+title: "Anchor: основы фреймворка"
+description: "Макросы #[program], #[derive(Accounts)], #[account], автоматические проверки, 8-байтный discriminator и структура Anchor-программы"
+order: 6
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Anchor", "Macros", "Discriminator", "Account Validation", "Constraints", "Solana"]
+prerequisites: ["05-programs-instructions"]
+---
+
+import { AnchorProgramStructureDiagram, AnchorChecksTableDiagram } from '../../../components/diagrams/module4/AnchorBasicsDiagrams';
+
+# Anchor: основы фреймворка
+
+## Зачем это нужно
+
+В предыдущих уроках мы узнали, как работает Solana: аккаунты, программы, инструкции, PDA. Если вы попробуете написать программу на чистом Rust с `solana_program` crate, вы обнаружите, что **70% кода -- это boilerplate**: десериализация аккаунтов, проверка owner, проверка signer, вычисление discriminator, обработка ошибок. Anchor -- фреймворк, который генерирует этот boilerplate за вас.
+
+> Anchor для Solana -- это то же, что Hardhat/Foundry для Ethereum: инструмент, который превращает сырой runtime в удобную среду разработки. Но Anchor идёт дальше -- он не только организует проект, но и генерирует код валидации аккаунтов на этапе компиляции.
+
+```rust
+// Без Anchor: ~50 строк на валидацию одной инструкции
+let account = next_account_info(accounts)?;
+if account.owner != program_id { return Err(ProgramError::IncorrectProgramId); }
+let data = account.try_borrow_data()?;
+if data.len() < 8 { return Err(ProgramError::InvalidAccountData); }
+// ... ещё 40 строк проверок ...
+
+// С Anchor: 5 строк
+#[account(
+    mut,
+    seeds = [b"counter", authority.key().as_ref()],
+    bump = counter.bump,
+    has_one = authority,
+)]
+pub counter: Account<'info, Counter>,
+```
+
+## Интуитивное объяснение: фреймворк как контракт безопасности
+
+Представьте, что вы строите дом. Вы можете сами проверять каждый кирпич, каждый провод, каждую трубу. Или нанять строительную компанию с системой контроля качества -- она автоматически проверяет материалы, соединения, нагрузки.
+
+Anchor -- это "строительная компания" для Solana-программ:
+- **Вы описываете**: какие аккаунты нужны и какие у них ограничения
+- **Anchor генерирует**: все проверки, сериализацию, dispatch, error handling
+- **Вы пишете**: только бизнес-логику
+
+Но важно понимать границу: строительная компания проверяет материалы и конструкцию, но **не проверяет, правильно ли вы спроектировали планировку**. Anchor проверяет аккаунты, но не проверяет вашу бизнес-логику.
+
+<AnchorProgramStructureDiagram client:load />
+
+Нажмите на каждый макрос, чтобы увидеть, что именно он генерирует. Обратите внимание:
+- `#[program]` создаёт entrypoint и dispatch
+- `#[derive(Accounts)]` генерирует все constraint-проверки
+- `#[account]` создаёт Borsh (де)сериализацию и discriminator
+- `#[error_code]` создаёт типизированные ошибки
+
+## Алгоритмический уровень: макросы и код
+
+### Структура Anchor-программы
+
+Каждая Anchor-программа состоит из трёх ключевых частей:
+
+```rust
+use anchor_lang::prelude::*;
+
+// 1. Program ID -- уникальный адрес программы на блокчейне
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+
+// 2. Instructions -- функции программы
+#[program]
+pub mod course_counter {
+    use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.authority = ctx.accounts.authority.key();
+        counter.count = 0;
+        counter.bump = ctx.bumps.counter;
+        Ok(())
+    }
+
+    pub fn increment(ctx: Context<Increment>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.count = counter.count.checked_add(1)
+            .ok_or(CourseError::Overflow)?;
+        Ok(())
+    }
+}
+
+// 3. Account structs -- какие аккаунты нужны каждой инструкции
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = Counter::SPACE,
+        seeds = [b"counter", authority.key().as_ref()],
+        bump,
+    )]
+    pub counter: Account<'info, Counter>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+// 4. Data structs -- что хранится в аккаунтах
+#[account]
+pub struct Counter {
+    pub authority: Pubkey,  // 32 bytes
+    pub count: u64,         // 8 bytes
+    pub bump: u8,           // 1 byte
+}
+```
+
+### 8-байтный Discriminator
+
+Каждый тип аккаунта получает уникальный 8-байтный discriminator:
+
+```
+discriminator = SHA-256("account:Counter")[:8]
+              = [0xff, 0x04, 0x22, ...]  (первые 8 байт хеша)
+```
+
+При `init` Anchor записывает discriminator в первые 8 байт `account.data`. При каждом чтении -- сравнивает. Это защищает от подмены типа аккаунта: атакующий не может передать аккаунт типа `Profile` вместо `Counter`.
+
+**Аналогия с Ethereum:** в Solidity нет discriminator -- тип контракта определяется его адресом. В Solana один program может работать с разными типами аккаунтов, поэтому discriminator необходим.
+
+### Account Types: что проверяет каждый тип
+
+```rust
+// Account<'info, T> -- десериализованный аккаунт
+// Проверяет: discriminator + owner == program_id
+pub counter: Account<'info, Counter>,
+
+// Signer<'info> -- аккаунт, подписавший транзакцию
+// Проверяет: is_signer == true
+pub authority: Signer<'info>,
+
+// Program<'info, T> -- программа (для CPI)
+// Проверяет: program_id совпадает с ожидаемым
+pub system_program: Program<'info, System>,
+
+// SystemAccount<'info> -- аккаунт System Program
+// Проверяет: owner == System Program
+pub recipient: SystemAccount<'info>,
+
+// UncheckedAccount<'info> -- БЕЗ проверок!
+// Используйте только с /// CHECK: комментарием
+/// CHECK: This account is validated in handler
+pub unchecked: UncheckedAccount<'info>,
+```
+
+### Constraints: декларативная валидация
+
+```rust
+#[account(
+    init,                    // Создать новый аккаунт
+    payer = authority,       // Кто платит за rent
+    space = 49,              // Размер в байтах (8 + 32 + 8 + 1)
+    seeds = [b"counter", authority.key().as_ref()],  // PDA seeds
+    bump,                    // Найти canonical bump
+)]
+
+#[account(
+    mut,                     // Аккаунт можно изменять
+    seeds = [...],           // Проверить PDA
+    bump = counter.bump,     // Использовать сохранённый bump
+    has_one = authority,     // counter.authority == authority.key()
+    constraint = counter.count < 1000 @ CourseError::MaxReached,
+)]
+
+#[account(
+    mut,
+    close = authority,       // Закрыть: обнулить data, вернуть lamports
+    has_one = authority,
+)]
+```
+
+## Что Anchor проверяет, а что -- нет
+
+Это **критически важная** таблица. Студенты часто думают, что Anchor проверяет всё. Это не так.
+
+<AnchorChecksTableDiagram client:load />
+
+Переключите фильтр между "Автоматические" и "Ручные" проверки. Наведите курсор на каждую строку, чтобы увидеть:
+- Что именно проверяется
+- Как Anchor это реализует
+- Что происходит без этой проверки
+
+**Ключевой вывод:** Anchor автоматически проверяет 6 аспектов (ownership, discriminator, signer, PDA, constraints, lifecycle). Но 6 аспектов требуют ручной проверки: бизнес-логика, remaining_accounts, post-CPI data, CPI target, overflow, cross-instruction consistency.
+
+## Математический уровень: Instruction Dispatch
+
+Когда транзакция вызывает `program.methods.initialize()`, Anchor TypeScript клиент формирует instruction data:
+
+```
+instruction_data = discriminator + serialized_args
+                 = SHA-256("global:initialize")[:8] + borsh_serialize(args)
+```
+
+На стороне программы `#[program]` макрос генерирует dispatch:
+
+```rust
+// Сгенерировано #[program]:
+pub fn process_instruction(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> ProgramResult {
+    let disc = &instruction_data[..8];
+
+    if disc == sha256("global:initialize")[:8] {
+        // Десериализовать аккаунты как Initialize
+        // Вызвать course_counter::initialize(ctx)
+    } else if disc == sha256("global:increment")[:8] {
+        // Десериализовать аккаунты как Increment
+        // Вызвать course_counter::increment(ctx)
+    } else {
+        return Err(ProgramError::InvalidInstructionData);
+    }
+}
+```
+
+**Сравнение с Ethereum:**
+- Ethereum: `selector = keccak256("increment()")[:4]` (4 байта)
+- Solana/Anchor: `discriminator = SHA-256("global:initialize")[:8]` (8 байт)
+
+Anchor использует 8 байт вместо 4, что снижает вероятность коллизии с 1/2^32 до 1/2^64.
+
+## Space Calculation: сколько байт выделить
+
+Каждый аккаунт Solana -- это массив байт фиксированного размера. При `init` вы указываете `space`:
+
+```rust
+// Counter: authority (Pubkey) + count (u64) + bump (u8)
+//          32           +     8       +    1    = 41 байт данных
+// + 8 байт discriminator
+// Итого: 8 + 32 + 8 + 1 = 49 байт
+
+impl Counter {
+    pub const SPACE: usize = 8 + 32 + 8 + 1;
+}
+```
+
+**Частая ошибка:** забыть 8 байт discriminator. Без них Anchor не сможет записать discriminator, и вы получите `AccountDiscriminatorMismatch`.
+
+| Тип | Размер (байт) |
+|-----|---------------|
+| bool | 1 |
+| u8 / i8 | 1 |
+| u16 / i16 | 2 |
+| u32 / i32 | 4 |
+| u64 / i64 | 8 |
+| u128 / i128 | 16 |
+| Pubkey | 32 |
+| String | 4 + len |
+| Vec\<T\> | 4 + len * sizeof(T) |
+| Option\<T\> | 1 + sizeof(T) |
+
+## Практика
+
+### Lab 4a: первая сборка
+
+```bash
+# Проверьте версии инструментов
+anchor --version   # 0.32.1
+solana --version   # >= 2.1.x
+rustc --version    # >= 1.89.0
+
+# Если нет keypair:
+solana-keygen new
+
+# Настройте Solana CLI на локальный валидатор:
+solana config set --url http://localhost:8899
+
+# Запустите Docker-валидатор:
+cd labs/solana
+docker compose up -d
+
+# Запросите SOL для тестов:
+solana airdrop 5
+
+# Соберите программу:
+anchor build
+
+# Синхронизируйте ключи:
+anchor keys sync
+
+# Посмотрите сгенерированный IDL:
+cat target/idl/course_counter.json | head -30
+
+# Посмотрите TypeScript-типы:
+cat target/types/course_counter.ts | head -30
+```
+
+**Важно:** `anchor build` и `anchor test` выполняются на **хост-машине** (где установлен Rust + Anchor). Docker-контейнер предоставляет только `solana-test-validator` -- это RPC-эндпоинт, а не среда сборки.
+
+## Что дальше
+
+Теперь, когда вы понимаете структуру Anchor-программы и что делают макросы, мы перейдём к **паттернам разработки**: жизненный цикл аккаунтов (init -> use -> close), вычисление space, модульная структура программы и PDA-паттерны.

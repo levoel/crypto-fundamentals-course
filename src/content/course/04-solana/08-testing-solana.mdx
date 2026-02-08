@@ -1,0 +1,420 @@
+---
+title: "Тестирование Solana-программ"
+description: "Anchor-тесты с Mocha/Chai, MethodsBuilder API, позитивные и негативные кейсы, Docker-валидатор"
+order: 8
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["Testing", "Mocha", "Chai", "Anchor", "MethodsBuilder", "Solana", "TypeScript"]
+prerequisites: ["07-anchor-development"]
+---
+
+import { TestWorkflowDiagram, AnchorTestArchitectureDiagram } from '../../../components/diagrams/module4/TestingSolanaDiagrams';
+
+# Тестирование Solana-программ
+
+## Зачем это нужно
+
+Программа на Solana -- это BPF-байткод, который после деплоя исполняется тысячами валидаторов. Ошибка в программе может привести к потере средств пользователей. В отличие от Ethereum, где контракт можно обновить через proxy, Solana-программы по умолчанию **обновляемые** (через authority), но обновление production-программы -- это серьёзная процедура. Тесты -- ваша первая и главная линия защиты.
+
+> В Phase 4 мы писали тесты для Ethereum-контрактов: Foundry (Solidity) и Hardhat (TypeScript). В Solana экосистеме Anchor предоставляет TypeScript-тесты с Mocha/Chai по умолчанию. MethodsBuilder API делает вызовы интуитивными: `program.methods.initialize().accounts({...}).rpc()`.
+
+```typescript
+// Один тест -- но за ним стоит 5 уровней:
+// Mocha -> Anchor Client -> @solana/web3.js -> JSON-RPC -> Validator
+it("initializes the counter", async () => {
+  await program.methods
+    .initialize()
+    .accounts({ counter: counterPDA, authority: authority.publicKey })
+    .rpc();
+
+  const account = await program.account.counter.fetch(counterPDA);
+  expect(account.count.toNumber()).to.equal(0);
+});
+```
+
+## Интуитивное объяснение: тест как генеральная репетиция
+
+Представьте, что вы ставите спектакль:
+1. **Сцена** -- Docker-валидатор (localhost:8899), имитирующий настоящий блокчейн
+2. **Актёры** -- аккаунты (counter PDA, authority, wrong authority)
+3. **Сценарий** -- TypeScript-тест (describe/it)
+4. **Режиссёр** -- Mocha (запускает сцены в порядке)
+5. **Критик** -- Chai (assert/expect: всё ли прошло по плану?)
+
+Каждый `it()` -- это отдельная сцена. Сначала "актёры" выполняют действия (rpc-вызовы), потом "критик" проверяет результат (expect).
+
+<TestWorkflowDiagram client:load />
+
+Пройдите все 5 шагов workflow: Build -> Keys Sync -> Deploy -> Test -> Verify. На каждом шаге:
+- Какая CLI-команда выполняется
+- Что она создаёт (артефакты)
+- Сколько времени занимает
+
+## Алгоритмический уровень: архитектура тестов
+
+### 5 уровней тест-стека
+
+<AnchorTestArchitectureDiagram client:load />
+
+Нажмите на каждый уровень, чтобы увидеть его роль и код. Стек работает сверху вниз:
+
+1. **Mocha + Chai** -- определяет тесты (describe/it/expect)
+2. **@coral-xyz/anchor** -- строит инструкции из IDL, сериализует
+3. **@solana/web3.js v1** -- подписывает транзакции, отправляет через RPC
+4. **JSON-RPC** -- HTTP-транспорт к валидатору (localhost:8899)
+5. **Validator** -- исполняет BPF-программу в Docker-контейнере
+
+### Setup: Provider и Program
+
+```typescript
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { CourseCounter } from "../target/types/course_counter";
+import { expect } from "chai";
+
+describe("course-counter", () => {
+  // Provider = connection + wallet
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+
+  // Program: типизированный клиент из IDL
+  const program = anchor.workspace
+    .CourseCounter as Program<CourseCounter>;
+
+  // Authority = текущий wallet
+  const authority = provider.wallet;
+
+  // Derive PDA (тот же алгоритм, что в программе)
+  const [counterPDA] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("counter"), authority.publicKey.toBuffer()],
+    program.programId
+  );
+  // ...
+});
+```
+
+**Откуда берутся типы `CourseCounter`?** `anchor build` генерирует `target/types/course_counter.ts` из IDL. TypeScript получает полную типизацию: имена инструкций, поля аккаунтов, типы аргументов.
+
+### MethodsBuilder API
+
+Anchor предоставляет цепочечный API для построения инструкций:
+
+```typescript
+await program.methods      // Начинаем с methods
+  .initialize()            // Имя инструкции из #[program]
+  .accounts({              // Аккаунты из #[derive(Accounts)]
+    counter: counterPDA,
+    authority: authority.publicKey,
+    systemProgram: anchor.web3.SystemProgram.programId,
+  })
+  .signers([])             // Дополнительные подписанты (если нужны)
+  .rpc();                  // Отправить транзакцию
+```
+
+**Чтение данных:**
+
+```typescript
+// Десериализация через IDL-типы
+const account = await program.account.counter.fetch(counterPDA);
+account.count;       // BN (big number)
+account.authority;   // PublicKey
+account.bump;        // number
+```
+
+**Сравнение с Ethereum:**
+
+| Ethereum (viem) | Solana (Anchor) |
+|-----------------|-----------------|
+| `contract.write.increment()` | `program.methods.increment().accounts({...}).rpc()` |
+| `contract.read.count()` | `program.account.counter.fetch(pda)` |
+| Аккаунты неявные (msg.sender) | Аккаунты явные (.accounts({...})) |
+| Один signer (wallet) | Множественные signers (.signers([])) |
+| ABI encoding | Borsh serialization via IDL |
+
+### Тест 1: Initialize (позитивный)
+
+```typescript
+it("initializes the counter", async () => {
+  const tx = await program.methods
+    .initialize()
+    .accounts({
+      counter: counterPDA,
+      authority: authority.publicKey,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .rpc();
+
+  // Читаем созданный аккаунт
+  const account = await program.account.counter.fetch(counterPDA);
+
+  // Проверяем начальные значения
+  expect(account.count.toNumber()).to.equal(0);
+  expect(account.authority.toString()).to.equal(
+    authority.publicKey.toString()
+  );
+  console.log("  TX:", tx);
+});
+```
+
+### Тест 2-3: Increment (позитивный)
+
+```typescript
+it("increments the counter", async () => {
+  await program.methods
+    .increment()
+    .accounts({
+      counter: counterPDA,
+      authority: authority.publicKey,
+    })
+    .rpc();
+
+  const account = await program.account.counter.fetch(counterPDA);
+  expect(account.count.toNumber()).to.equal(1);
+});
+
+it("increments again", async () => {
+  await program.methods
+    .increment()
+    .accounts({
+      counter: counterPDA,
+      authority: authority.publicKey,
+    })
+    .rpc();
+
+  const account = await program.account.counter.fetch(counterPDA);
+  expect(account.count.toNumber()).to.equal(2);
+});
+```
+
+### Тест 4: Wrong Authority (негативный)
+
+```typescript
+it("fails with wrong authority", async () => {
+  // Создаём новый keypair -- он не является authority counter'а
+  const wrongAuthority = anchor.web3.Keypair.generate();
+
+  try {
+    await program.methods
+      .increment()
+      .accounts({
+        counter: counterPDA,
+        authority: wrongAuthority.publicKey,  // Неверный!
+      })
+      .signers([wrongAuthority])
+      .rpc();
+
+    // Если дошли сюда -- тест провалился
+    expect.fail("Should have thrown error");
+  } catch (err) {
+    // Anchor должен вернуть ошибку:
+    // - ConstraintSeeds (PDA не совпадает) или
+    // - CourseError::Unauthorized (has_one проверка)
+    expect(err).to.be.instanceOf(Error);
+  }
+});
+```
+
+**Почему этот тест работает?** PDA вычисляется из `[b"counter", authority.key()]`. Если `authority` != оригинальный authority, seeds дают другой PDA. А `has_one = authority` проверяет `counter.authority == authority.key()`. В обоих случаях -- ошибка.
+
+## Запуск тестов
+
+### Вариант 1: anchor test (рекомендуемый)
+
+```bash
+# anchor test = build + deploy + test
+# Запускает свой solana-test-validator на время тестов
+anchor test
+```
+
+### Вариант 2: Docker-валидатор
+
+```bash
+# Запустить Docker-валидатор
+docker compose up -d
+
+# Собрать программу
+anchor build
+
+# Задеплоить на Docker-валидатор
+anchor deploy --provider.cluster localnet
+
+# Запустить тесты (пропустить встроенный валидатор)
+anchor test --skip-local-validator
+```
+
+### Вариант 3: отдельные шаги
+
+```bash
+# Только сборка
+anchor build
+
+# Только деплой
+anchor deploy
+
+# Только тесты (без пересборки и деплоя)
+npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
+```
+
+## Математический уровень: Transaction Confirmation
+
+Когда `.rpc()` отправляет транзакцию, она проходит уровни подтверждения:
+
+```
+1. processed  -- лидер обработал транзакцию          (~400ms)
+2. confirmed  -- 2/3 валидаторов проголосовали        (~6.4s)
+3. finalized  -- 32+ слотов votes on top              (~13s)
+```
+
+По умолчанию Anchor использует `confirmed` commitment. Для тестов на localnet все три уровня практически мгновенны (один валидатор).
+
+Каждая транзакция содержит:
+
+```
+Transaction {
+  signatures: [authority_signature],
+  message: {
+    header: { numRequiredSignatures: 1, ... },
+    accountKeys: [authority, counter_pda, system_program, program_id],
+    recentBlockhash: "...",    // ~60 секунд validity
+    instructions: [{
+      programIdIndex: 3,       // course_counter
+      accounts: [1, 0, 2],     // counter, authority, system
+      data: "base58(...)",     // discriminator + args
+    }],
+  },
+}
+```
+
+## Продвинутые паттерны тестирования
+
+### Тестирование overflow
+
+```typescript
+it("detects overflow", async () => {
+  // Для реального теста overflow нужно установить count = u64::MAX
+  // Это можно сделать через прямой вызов или mock
+  // Здесь показана концепция:
+
+  // Предположим count уже = u64::MAX (через helper)
+  try {
+    await program.methods
+      .increment()
+      .accounts({ counter: counterPDA, authority: authority.publicKey })
+      .rpc();
+    expect.fail("Should overflow");
+  } catch (err) {
+    // CourseError::Overflow = 6001
+    expect(err.toString()).to.include("6001");
+  }
+});
+```
+
+### Тестирование с несколькими пользователями
+
+```typescript
+it("each user has own counter", async () => {
+  const user2 = anchor.web3.Keypair.generate();
+
+  // Airdrop SOL to user2
+  const sig = await provider.connection.requestAirdrop(
+    user2.publicKey,
+    2 * anchor.web3.LAMPORTS_PER_SOL
+  );
+  await provider.connection.confirmTransaction(sig);
+
+  // Derive user2's PDA
+  const [user2PDA] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("counter"), user2.publicKey.toBuffer()],
+    program.programId
+  );
+
+  // Initialize user2's counter
+  await program.methods
+    .initialize()
+    .accounts({
+      counter: user2PDA,
+      authority: user2.publicKey,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([user2])
+    .rpc();
+
+  // Verify: user2's counter is independent
+  const acc = await program.account.counter.fetch(user2PDA);
+  expect(acc.count.toNumber()).to.equal(0);
+  expect(acc.authority.toString()).to.equal(user2.publicKey.toString());
+});
+```
+
+### Альтернативные тест-фреймворки
+
+| Фреймворк | Скорость | Язык | Особенности |
+|-----------|----------|------|-------------|
+| **Mocha + Anchor** (наш выбор) | ~5-15s | TypeScript | Default, простой, IDL-типы |
+| LiteSVM | ~0.5s | Rust/TS/Python | In-process, time travel, no validator |
+| Mollusk | ~0.1s | Rust | Instruction-level, минимальный overhead |
+| Bankrun | ~1s | TypeScript | Jest-compatible, in-process |
+
+Для курса мы используем **Mocha + Anchor** -- это стандартный подход, который учит реальный deployment flow.
+
+## Модуль 4: итоги
+
+Мы прошли полный цикл Solana-разработки -- от архитектуры до тестирования:
+
+| Урок | Тема | Ключевые концепции |
+|------|------|-------------------|
+| SOL-01 | Архитектура | 8 инноваций, сравнение с Ethereum, Sealevel |
+| SOL-02 | Proof of History | SHA-256 цепочка, криптографические часы, верификация |
+| SOL-03 | Tower BFT | Vote tower, lockout, confirmation levels, Gulf Stream |
+| SOL-04 | Account Model | 5 полей, Programs vs Data, PDA derivation |
+| SOL-05 | Programs & Instructions | Instruction anatomy, Sealevel parallelism, CPI |
+| SOL-06 | Anchor Basics | Макросы, discriminator, auto vs manual checks |
+| SOL-07 | Anchor Development | Lifecycle, constraints, modular structure, PDA patterns |
+| SOL-08 | Testing | Mocha/Chai, MethodsBuilder, positive/negative tests |
+
+**Путь от идеи до тестированной программы:**
+
+```
+Идея -> State design (Counter struct)
+     -> Instructions (Initialize, Increment)
+     -> Constraints (#[account(...)])
+     -> Build (anchor build -> .so + IDL + types)
+     -> Deploy (anchor deploy -> validator)
+     -> Test (anchor test -> Mocha + Chai)
+     -> Verify (solana account <PDA>)
+```
+
+## Практика
+
+### Lab 4b: запуск тестов
+
+```bash
+cd labs/solana
+
+# Вариант 1: полный цикл
+anchor test
+
+# Вариант 2: с Docker-валидатором
+docker compose up -d
+anchor build
+anchor test --skip-local-validator
+
+# Ожидаемый результат:
+#   course-counter
+#     ✓ initializes the counter
+#     ✓ increments the counter
+#     ✓ increments again
+#     ✓ fails with wrong authority
+#   4 passing
+```
+
+### Упражнения для самостоятельной работы
+
+1. **Добавьте `decrement`:** создайте `instructions/decrement.rs` с `checked_sub` и тест
+2. **Добавьте `reset`:** обнуление counter (только authority может reset)
+3. **Тест overflow:** установите count = u64::MAX и проверьте ошибку Overflow
+4. **Второй пользователь:** напишите тест, где два пользователя имеют независимые счётчики
+
+## Что дальше
+
+Модуль 4 (Solana) завершён. В следующем модуле мы перейдём к **DeFi и продвинутым темам** -- AMM, lending protocols, oracles. Знания Ethereum и Solana из модулей 3 и 4 станут фундаментом для понимания кросс-чейн протоколов.

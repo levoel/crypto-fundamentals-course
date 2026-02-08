@@ -1,0 +1,317 @@
+---
+title: "Разработка на Anchor"
+description: "Жизненный цикл аккаунтов, вычисление space, модульная структура, constraints и PDA-паттерны"
+order: 7
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["Anchor", "Account Lifecycle", "Constraints", "PDA", "Modular Structure", "Space Calculation", "Solana"]
+prerequisites: ["06-anchor-basics"]
+---
+
+import { AccountLifecycleDiagram, ConstraintValidationDiagram } from '../../../components/diagrams/module4/AnchorDevelopmentDiagrams';
+
+# Разработка на Anchor
+
+## Зачем это нужно
+
+В предыдущем уроке мы узнали, что делают макросы Anchor и какие проверки они генерируют. Теперь перейдём к практике: как организовать программу, как управлять жизненным циклом аккаунтов, как правильно рассчитать space, и какие паттерны используют production-программы.
+
+> Если SOL-06 был "что делает Anchor", то SOL-07 -- это "как писать production Anchor-программы". Разница как между знанием синтаксиса JavaScript и умением структурировать Node.js-приложение.
+
+```rust
+// Плоский файл: всё в lib.rs (учебный пример)
+// vs
+// Модульная структура: production-паттерн
+programs/course-counter/src/
+├── lib.rs                    // Entrypoint + dispatch
+├── instructions/
+│   ├── mod.rs                // Re-exports
+│   ├── initialize.rs         // Init handler + accounts
+│   └── increment.rs          // Increment handler + accounts
+├── state/
+│   ├── mod.rs
+│   └── counter.rs            // Counter struct + SPACE
+├── constants.rs              // PDA seeds, limits
+└── error.rs                  // Custom errors
+```
+
+## Интуитивное объяснение: аккаунт как арендованная квартира
+
+На Solana аккаунт -- это "арендованная квартира" в блокчейне:
+
+1. **Создание (init):** Вы арендуете квартиру -- платите залог (rent-exemption lamports), получаете ключи (PDA). Управляющая компания (ваша программа) записывает вас как жильца.
+
+2. **Использование (mut):** Вы живёте в квартире -- обставляете мебелью (данные), принимаете гостей (read), делаете ремонт (write). Но управляющая компания проверяет, что вы -- законный жилец (has_one = authority).
+
+3. **Расширение (realloc):** Если квартира стала тесной -- можно попросить расширить (realloc). Доплачиваете за дополнительную площадь.
+
+4. **Закрытие (close):** Выезжаете -- квартиру очищают (data = 0), залог возвращают (lamports -> authority).
+
+<AccountLifecycleDiagram client:load />
+
+Пройдите все 5 фаз: от несуществующего аккаунта до закрытия. На каждом шаге обратите внимание:
+- Какой constraint используется
+- Как меняется состояние аккаунта (exists, data, lamports, owner)
+- Что происходит "под капотом" (CPI к System Program при init, обнуление при close)
+
+## Алгоритмический уровень: паттерны разработки
+
+### Жизненный цикл аккаунта в коде
+
+**Фаза 1: Init (создание)**
+
+```rust
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = Counter::SPACE,    // 49 байт
+        seeds = [b"counter", authority.key().as_ref()],
+        bump,
+    )]
+    pub counter: Account<'info, Counter>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+```
+
+`init` делает три вещи через CPI к System Program:
+1. `CreateAccount` -- создаёт аккаунт с указанным space
+2. Переводит lamports для rent-exemption
+3. Назначает owner = наша программа
+
+Затем Anchor записывает 8-байтный discriminator в начало data.
+
+**Фаза 2: Use (чтение/запись)**
+
+```rust
+#[derive(Accounts)]
+pub struct Increment<'info> {
+    #[account(
+        mut,
+        seeds = [b"counter", authority.key().as_ref()],
+        bump = counter.bump,       // Сохранённый bump -- не пересчитываем!
+        has_one = authority @ CourseError::Unauthorized,
+    )]
+    pub counter: Account<'info, Counter>,
+    pub authority: Signer<'info>,
+}
+
+pub fn handler(ctx: Context<Increment>) -> Result<()> {
+    let counter = &mut ctx.accounts.counter;
+    counter.count = counter.count.checked_add(1)
+        .ok_or(CourseError::Overflow)?;
+    Ok(())
+}
+```
+
+**Почему `bump = counter.bump`?** При каждом вызове Anchor проверяет PDA: `create_program_address(seeds + [bump])`. Если указать `bump` (без значения), Anchor вызовет `findProgramAddress`, который перебирает от 255 вниз -- тратит CU. Сохранённый bump в аккаунте позволяет избежать этого перебора.
+
+**Фаза 3: Close (закрытие)**
+
+```rust
+#[derive(Accounts)]
+pub struct CloseCounter<'info> {
+    #[account(
+        mut,
+        close = authority,         // Возврат lamports на authority
+        has_one = authority,
+    )]
+    pub counter: Account<'info, Counter>,
+    pub authority: Signer<'info>,
+}
+```
+
+`close` выполняет:
+1. Записывает нули во все `account.data`
+2. Переводит все lamports на `target` (authority)
+3. Runtime удаляет аккаунт в конце слота (когда lamports == 0)
+
+### Порядок валидации constraints
+
+Когда Anchor получает инструкцию, он проверяет constraints в определённом порядке:
+
+<ConstraintValidationDiagram client:load />
+
+Пройдите все 7 шагов. Обратите внимание:
+1. Discriminator проверяется **первым** -- если тип аккаунта неверный, остальные проверки бессмысленны
+2. Owner проверяется **вторым** -- аккаунт должен принадлежать нашей программе
+3. Seeds + Bump -- PDA-проверка
+4. Signer -- подпись транзакции
+5. Mutable -- аккаунт помечен как writable
+6. has_one -- поле аккаунта совпадает с переданным аккаунтом
+7. Десериализация -- только если все проверки пройдены
+
+Если **любая** проверка не проходит -- автоматический revert. Handler вызывается только после **всех** 7 проверок.
+
+### Модульная структура программы
+
+Production-программы разделяют код по файлам:
+
+```rust
+// programs/course-counter/src/lib.rs
+use anchor_lang::prelude::*;
+
+mod constants;    // PDA seeds, limits
+mod error;        // Custom errors
+mod instructions; // Handler functions
+mod state;        // Account data structs
+
+use instructions::*;
+
+declare_id!("11111111111111111111111111111111");
+
+#[program]
+pub mod course_counter {
+    use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        instructions::initialize::handler(ctx)
+    }
+
+    pub fn increment(ctx: Context<Increment>) -> Result<()> {
+        instructions::increment::handler(ctx)
+    }
+}
+```
+
+**Зачем модульность?**
+
+| Файл | Содержимое | Зачем |
+|------|-----------|-------|
+| `lib.rs` | Entrypoint, dispatch | Единая точка входа, легко читать |
+| `instructions/*.rs` | Accounts struct + handler | Каждая инструкция изолирована |
+| `state/*.rs` | Account structs + SPACE | Данные отделены от логики |
+| `constants.rs` | Seeds, limits, magic numbers | Нет "магических строк" в коде |
+| `error.rs` | Custom errors | Централизованная обработка ошибок |
+
+### Constants: избегаем "магических строк"
+
+```rust
+// constants.rs
+pub const COUNTER_SEED: &[u8] = b"counter";
+pub const MAX_COUNT: u64 = 1_000_000;
+```
+
+```rust
+// initialize.rs -- использует константу
+use crate::constants::COUNTER_SEED;
+
+seeds = [COUNTER_SEED, authority.key().as_ref()],
+```
+
+**Почему это важно:** если seed `b"counter"` написан в 5 местах и вы меняете его в одном -- PDA расходится. Одна константа = одна точка правды.
+
+### Custom Errors: типизированные ошибки
+
+```rust
+// error.rs
+use anchor_lang::prelude::*;
+
+#[error_code]
+pub enum CourseError {
+    #[msg("You are not authorized to perform this action")]
+    Unauthorized,    // 6000
+    #[msg("Counter overflow")]
+    Overflow,        // 6001
+}
+```
+
+В handler:
+
+```rust
+// has_one использует ошибку напрямую:
+has_one = authority @ CourseError::Unauthorized
+
+// В логике handler:
+counter.count = counter.count
+    .checked_add(1)
+    .ok_or(CourseError::Overflow)?;
+```
+
+TypeScript-тест получает типизированную ошибку через IDL -- можно проверить конкретный error code.
+
+### PDA Patterns: один аккаунт на пользователя
+
+Самый частый паттерн -- **per-user PDA**:
+
+```rust
+seeds = [b"counter", authority.key().as_ref()]
+```
+
+Это создаёт уникальный аккаунт для каждого пользователя:
+- Alice: `PDA = hash(b"counter" + alice_pubkey + program_id)`
+- Bob: `PDA = hash(b"counter" + bob_pubkey + program_id)`
+
+**Аналогия с Ethereum:** это эквивалент `mapping(address => Counter)` в Solidity. Но в Solana каждый "элемент mapping" -- отдельный аккаунт.
+
+**Предотвращение коллизий seeds:** всегда включайте тип аккаунта как префикс:
+
+```rust
+// Хорошо: уникальные префиксы
+seeds = [b"counter", user.key().as_ref()]
+seeds = [b"profile", user.key().as_ref()]
+
+// Плохо: может коллидировать
+seeds = [user_input]  // Атакующий контролирует длину
+```
+
+## Математический уровень: Rent-Exemption
+
+Аккаунты на Solana платят "ренту" за хранение данных. Если баланс достаточен для 2 лет ренты, аккаунт становится **rent-exempt** (ренту не списывают):
+
+```
+rent_exemption = (account_size + 128) * lamports_per_byte_year * 2
+
+Для Counter (49 байт):
+rent = (49 + 128) * 3480 * 2 = 1,231,680 lamports ≈ 0.00123 SOL
+```
+
+128 байт -- это metadata overhead (owner, lamports, executable flag и пр.). `lamports_per_byte_year` зависит от текущей ставки ренты (типично ~3480).
+
+При `init` Anchor автоматически рассчитывает rent-exemption и переводит нужную сумму от `payer`.
+
+## Сравнение с Ethereum
+
+| Аспект | Ethereum (Solidity) | Solana (Anchor) |
+|--------|-------------------|-----------------|
+| Хранение данных | Storage slots в контракте | Отдельные аккаунты |
+| Стоимость хранения | 22,100 gas за SSTORE (cold) | Rent-exemption lamports (один раз) |
+| Маппинг | `mapping(address => T)` | PDA per user |
+| Удаление данных | SSTORE(0) -> refund | close -> refund lamports |
+| Типизация | ABI encoding | 8-byte discriminator + Borsh |
+| Ошибки | Custom errors (4 bytes) | #[error_code] (8 bytes) |
+
+## Практика
+
+Изучите модульную структуру counter-программы:
+
+```bash
+# Структура файлов
+tree programs/course-counter/src/
+
+# Прочитайте lib.rs -- только entrypoint
+cat programs/course-counter/src/lib.rs
+
+# Прочитайте initialize.rs -- init constraint + handler
+cat programs/course-counter/src/instructions/initialize.rs
+
+# Прочитайте state/counter.rs -- Counter struct + SPACE
+cat programs/course-counter/src/state/counter.rs
+
+# Проверьте SPACE: 8 + 32 + 8 + 1 = 49
+# discriminator(8) + authority(32) + count(8) + bump(1) = 49
+
+# Добавьте decrement инструкцию (упражнение):
+# 1. Создайте instructions/decrement.rs
+# 2. Добавьте Decrement accounts struct
+# 3. Используйте checked_sub вместо checked_add
+# 4. Добавьте pub mod decrement в instructions/mod.rs
+# 5. Добавьте pub fn decrement в lib.rs
+```
+
+## Что дальше
+
+Мы построили и структурировали Anchor-программу. В следующем уроке -- **тестирование**: как писать TypeScript-тесты с Mocha/Chai, как использовать MethodsBuilder API, как тестировать негативные сценарии (wrong authority, overflow), и как запускать тесты против Docker-валидатора.
