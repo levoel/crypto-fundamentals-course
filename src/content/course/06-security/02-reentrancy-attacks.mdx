@@ -1,0 +1,344 @@
+---
+title: "Reentrancy атаки"
+description: "4 варианта reentrancy (single-function, cross-function, cross-contract, read-only), CEI pattern, ReentrancyGuard, ReentrancyGuardTransient (EIP-1153)"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 45
+topics: ["Reentrancy", "CEI", "ReentrancyGuard", "EIP-1153", "The DAO", "SWC-107"]
+prerequisites: ["06-security/01-vulnerability-overview"]
+---
+
+import { SingleReentrancyDiagram, CrossFunctionReentrancyDiagram, ReadOnlyReentrancyDiagram } from '../../../components/diagrams/module6/ReentrancyDiagrams';
+
+# Reentrancy атаки
+
+## Зачем это знать?
+
+Reentrancy -- самая "иконическая" уязвимость Ethereum. The DAO hack (июнь 2016, $60M) привел к хардфорку Ethereum и созданию Ethereum Classic. Спустя 8 лет reentrancy остается в OWASP Top 10 (#5), потому что появляются **новые варианты**: cross-contract, read-only (Curve, 2023).
+
+Вы уже знаете **CEI pattern** (Checks-Effects-Interactions) из ETH-07. В этом уроке мы:
+1. Разберем **почему** нарушение CEI приводит к reentrancy
+2. Изучим **4 варианта** reentrancy (от простого к сложному)
+3. Напишем **эксплойт** и **защиту** в Foundry
+4. Сравним **ReentrancyGuard** и **ReentrancyGuardTransient** (EIP-1153)
+
+## Интуитивное объяснение: повторный вход
+
+### Аналогия с банкоматом
+
+Представьте банкомат с ошибкой: он выдает наличные **до** списания с вашего счета. Вы вставляете карту, запрашиваете $100, и пока банкомат отсчитывает купюры, вы **быстро нажимаете "снять" ещё раз**. Банкомат проверяет баланс -- $100 все еще есть (списание не произошло!) -- и выдает ещё $100. Повторяете до опустошения банкомата.
+
+Это и есть reentrancy: **обратный вызов** (callback) происходит **до обновления состояния**.
+
+### Почему это работает в Ethereum?
+
+В Ethereum, когда контракт отправляет ETH через `call{}`, получатель может быть **контрактом** с функцией `receive()` или `fallback()`. Этот callback получает управление **до** того, как вызывающий контракт продолжит выполнение. Если вызывающий контракт не обновил свое состояние перед `call{}`, callback может вызвать ту же функцию снова -- и проверки пройдут, потому что состояние **stale** (устаревшее).
+
+## Вариант 1: Single-function Reentrancy
+
+Самый классический вариант. Атакующий повторно вызывает **ту же функцию** через callback.
+
+### Уязвимый код
+
+```solidity
+// VulnerableVault.sol -- INTENTIONALLY VULNERABLE
+contract VulnerableVault {
+    mapping(address => uint256) public balances;
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() external {
+        uint256 balance = balances[msg.sender];
+        require(balance > 0, "No balance");
+
+        // BUG: Interaction BEFORE Effect
+        (bool success, ) = msg.sender.call{value: balance}("");
+        require(success, "Transfer failed");
+
+        // Эта строка выполняется ПОСЛЕ всех re-entrant вызовов
+        balances[msg.sender] = 0;
+    }
+}
+```
+
+### Контракт атакующего
+
+```solidity
+contract Attacker {
+    VulnerableVault public vault;
+
+    function attack() external payable {
+        vault.deposit{value: 1 ether}();
+        vault.withdraw();
+    }
+
+    // Вызывается при получении ETH от vault
+    receive() external payable {
+        if (address(vault).balance >= 1 ether) {
+            vault.withdraw(); // Re-enter!
+        }
+    }
+}
+```
+
+### Пошаговая анимация
+
+<SingleReentrancyDiagram client:load />
+
+### Формальный анализ
+
+Инвариант, который нарушается:
+
+```
+Инвариант: forall addr A:
+  balances[A] >= 0 AND
+  sum(all balances) <= address(this).balance
+
+Нарушение: во время callback,
+  balances[attacker] = 1 ETH (stale)
+  но vault уже отправил ETH
+  => sum(balances) > address(this).balance
+```
+
+### Foundry эксплойт
+
+```solidity
+// test/security/ReentrancyExploit.t.sol
+function test_reentrancyExploit() public {
+    // Vault has 10 ETH from Alice and Bob
+    assertEq(address(vault).balance, 10 ether);
+
+    // Attacker deploys exploit contract and attacks with 1 ETH
+    vm.prank(attacker);
+    Attacker attackerContract = new Attacker(address(vault));
+    vm.deal(attacker, 1 ether);
+    attackerContract.attack{value: 1 ether}();
+
+    // Vault is completely drained
+    assertEq(address(vault).balance, 0);
+    assertEq(address(attackerContract).balance, 11 ether);
+}
+```
+
+## Вариант 2: Cross-function Reentrancy
+
+Атакующий вызывает **другую функцию** того же контракта через callback. CEI в одной функции недостаточно, если другая функция использует **общий state**.
+
+<CrossFunctionReentrancyDiagram client:load />
+
+### Пример
+
+```solidity
+contract VulnerableBank {
+    mapping(address => uint256) public balances;
+
+    function withdraw() external {
+        uint256 bal = balances[msg.sender];
+        require(bal > 0);
+
+        (bool ok, ) = msg.sender.call{value: bal}("");
+        require(ok);
+
+        balances[msg.sender] = 0; // Обновление ПОСЛЕ call
+    }
+
+    // Вторая функция, использующая тот же mapping
+    function transfer(address to, uint256 amount) external {
+        require(balances[msg.sender] >= amount);
+        balances[msg.sender] -= amount;
+        balances[to] += amount;
+    }
+}
+```
+
+В callback атакующий вызывает `transfer()` вместо `withdraw()`. Поскольку `balances[attacker]` не обновлен, transfer проходит и переводит средства сообщнику.
+
+> **Ключевое отличие:** CEI в withdraw() **не защищает** от cross-function reentrancy, если transfer() использует тот же mapping.
+
+## Вариант 3: Cross-contract Reentrancy
+
+Атакующий использует callback для взаимодействия с **другим контрактом**, который зависит от состояния первого.
+
+```
+Контракт A: Vault (содержит ETH, ведет balances)
+Контракт B: Lending (использует A.balances для оценки залога)
+
+Атака:
+1. Attacker вызывает A.withdraw()
+2. В callback вызывает B.borrow()
+3. B читает A.balances[attacker] -- все еще > 0
+4. B выдает займ на основе stale данных
+```
+
+Этот вариант особенно опасен в **DeFi composability** -- протоколы используют данные друг друга, и неконсистентное состояние одного протокола может обмануть другой.
+
+## Вариант 4: Read-only Reentrancy
+
+Самый коварный вариант. Атакующий использует callback для чтения **view-функции**, которая возвращает неконсистентные данные.
+
+<ReadOnlyReentrancyDiagram client:load />
+
+### Почему это опасно?
+
+1. **View-функции не изменяют state** -> `nonReentrant` modifier на них кажется бессмысленным
+2. **Аудиторы часто пропускают** -- view-функции считаются "безопасными"
+3. **Curve attack (июль 2023)** -- $62M потерь из-за read-only reentrancy через Vyper
+
+### Пример с ценой LP-токена
+
+```solidity
+// Pool contract
+function getPrice() external view returns (uint256) {
+    return totalAssets / totalSupply; // View function
+}
+
+function withdraw(uint256 shares) external {
+    uint256 amount = shares * totalAssets / totalSupply;
+
+    // Interaction BEFORE Effect:
+    msg.sender.call{value: amount}("");  // <- callback point
+
+    totalAssets -= amount;  // <- too late!
+    totalSupply -= shares;
+}
+
+// Lending contract (victim)
+function borrow(uint256 collateralShares) external {
+    uint256 price = pool.getPrice(); // Reads stale price!
+    uint256 value = collateralShares * price;
+    // Выдает займ по завышенной оценке залога
+}
+```
+
+## Защита от reentrancy
+
+### Уровень 1: CEI Pattern
+
+**Checks-Effects-Interactions** -- переупорядочивание кода:
+
+```solidity
+function withdraw() external {
+    uint256 bal = balances[msg.sender]; // CHECK
+    require(bal > 0);
+
+    balances[msg.sender] = 0;           // EFFECT (до call!)
+
+    (bool ok, ) = msg.sender.call{value: bal}(""); // INTERACTION
+    require(ok);
+}
+```
+
+**Защищает от:** single-function reentrancy.
+**НЕ защищает от:** cross-function, cross-contract, read-only.
+
+### Уровень 2: ReentrancyGuard (OpenZeppelin)
+
+Mutex-блокировка: `nonReentrant` modifier устанавливает lock = 2 при входе и сбрасывает в 1 при выходе. Повторный вход видит lock = 2 и reverts.
+
+```solidity
+import {ReentrancyGuard} from
+    "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract SafeVault is ReentrancyGuard {
+    function withdraw() external nonReentrant {
+        // CEI pattern + nonReentrant (defense in depth)
+        uint256 bal = balances[msg.sender];
+        require(bal > 0);
+        balances[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: bal}("");
+        require(ok);
+    }
+
+    function transfer(address to, uint256 amt) external nonReentrant {
+        // nonReentrant на ВСЕХ функциях с общим state!
+        require(balances[msg.sender] >= amt);
+        balances[msg.sender] -= amt;
+        balances[to] += amt;
+    }
+}
+```
+
+**Защищает от:** single-function, cross-function.
+**Стоимость:** ~7100 gas (SSTORE: cold write 1->2, warm write 2->1).
+
+### Уровень 3: ReentrancyGuardTransient (EIP-1153)
+
+С Dencun upgrade (март 2024) появился **transient storage** (EIP-1153). Transient storage автоматически очищается в конце транзакции -- не нужен SSTORE для сброса.
+
+```solidity
+import {ReentrancyGuardTransient} from
+    "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+
+contract CheapSafeVault is ReentrancyGuardTransient {
+    function withdraw() external nonReentrant {
+        // Тот же API, но ~200 gas вместо ~7100
+    }
+}
+```
+
+| | ReentrancyGuard | ReentrancyGuardTransient |
+|---|---|---|
+| **Storage type** | Regular (SSTORE) | Transient (TSTORE) |
+| **Gas (set lock)** | ~5000 (cold SSTORE) | ~100 (TSTORE) |
+| **Gas (reset lock)** | ~2100 (warm SSTORE) | ~100 (TSTORE) |
+| **Total overhead** | ~7100 gas | ~200 gas |
+| **Auto-cleanup** | Нет (explicit reset) | Да (end of tx) |
+| **EVM support** | Все версии | Cancun+ (EIP-1153) |
+| **OZ version** | v4+ | v5+ |
+
+> **Рекомендация:** Для новых контрактов с Solidity 0.8.24+ используйте ReentrancyGuardTransient. Экономия ~6900 gas на каждый вызов nonReentrant функции.
+
+### Уровень 4: Защита от read-only reentrancy
+
+```solidity
+// В Pool: проверка lock в view-функции
+function getPrice() external view returns (uint256) {
+    require(!_reentrancyGuardEntered(), "ReentrancyGuard: reentrant call");
+    return totalAssets / totalSupply;
+}
+```
+
+OpenZeppelin v5 предоставляет `_reentrancyGuardEntered()` -- публичную проверку lock-состояния, которую можно использовать в view-функциях.
+
+## Сводная таблица: 4 варианта reentrancy
+
+| Вариант | Механизм | CEI | ReentrancyGuard | Read-only protection |
+|---------|----------|:---:|:---:|:---:|
+| **Single-function** | callback -> та же функция | Да | Да | -- |
+| **Cross-function** | callback -> другая функция с общим state | Нет | Да | -- |
+| **Cross-contract** | callback -> другой контракт, читающий state | Нет | Частично | -- |
+| **Read-only** | callback -> view-функция возвращает stale data | Нет | Нет | Да |
+
+## Лабораторная работа
+
+### Запуск тестов
+
+```bash
+# Тест эксплойта reentrancy
+forge test --match-path test/security/ReentrancyExploit.t.sol -vvv
+```
+
+### Что демонстрируют тесты
+
+1. **test_reentrancyExploit** -- атакующий с 1 ETH полностью drains vault с 10 ETH
+2. **test_fixedVaultPreventsReentrancy** -- VulnerableVaultFixed (CEI + ReentrancyGuard) предотвращает атаку
+3. **test_normalWithdrawWorks** -- нормальный withdraw работает на обоих контрактах
+
+### Файлы
+
+- `contracts/security/VulnerableVault.sol` -- уязвимый контракт
+- `contracts/security/VulnerableVaultFixed.sol` -- исправленный с CEI + ReentrancyGuard
+- `test/security/ReentrancyExploit.t.sol` -- Foundry тесты
+
+## Итоги
+
+**Что мы узнали:**
+1. **4 варианта reentrancy:** single-function (классический), cross-function (общий state), cross-contract (DeFi composability), read-only (view-функции)
+2. **CEI pattern** защищает только от single-function варианта
+3. **ReentrancyGuard** защищает от single и cross-function (mutex на все функции)
+4. **ReentrancyGuardTransient** (EIP-1153) -- та же защита за ~200 gas вместо ~7100
+5. **Read-only reentrancy** требует специальной защиты: lock check в view-функциях
+
+**Что дальше:** В SEC-03 мы разберем integer overflow/underflow -- уязвимость, которая привела к BEC Token hack ($900M), и поймем, почему unchecked блоки и unsafe downcasting остаются опасными в Solidity 0.8+.

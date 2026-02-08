@@ -1,0 +1,380 @@
+---
+title: "Access Control уязвимости"
+description: "Ownable, Ownable2Step, AccessControl (RBAC), реальные атаки на access control, UnsafeToken эксплойт"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["Access Control", "Ownable", "Ownable2Step", "AccessControl", "RBAC", "SWC-100", "SWC-106"]
+prerequisites: ["06-security/03-integer-overflow-underflow"]
+---
+
+import { AccessControlComparisonDiagram, RoleHierarchyDiagram } from '../../../components/diagrams/module6/AccessControlDiagrams';
+
+# Access Control уязвимости
+
+## Зачем это знать?
+
+Access Control -- **уязвимость #1** по OWASP Smart Contract Top 10 (2025). Не из-за сложности, а из-за катастрофических последствий: одна пропущенная строка (`onlyOwner`) может стоить сотен миллионов долларов.
+
+**Poly Network ($611M, 2021):** атакующий обошел проверку подписи в cross-chain bridge и получил возможность менять keeper-ов. Фактически -- стал "владельцем" контракта.
+
+**Ronin Bridge ($624M, 2022):** 5 из 9 validator keys были скомпрометированы. Недостаточная защита multi-sig -- это тоже access control.
+
+Access Control -- это не "добавить modifier и забыть". Это **систематический подход**: кто может вызвать что, при каких условиях, и как передается контроль.
+
+## Интуитивное объяснение
+
+### Аналогия с офисным зданием
+
+Представьте корпоративный офис:
+
+- **Нет контроля доступа:** двери открыты, любой может войти в серверную, бухгалтерию, кабинет CEO
+- **Ownable (один ключ):** у CEO есть мастер-ключ от всех дверей. Если CEO потерял ключ -- здание незащищено
+- **Ownable2Step:** чтобы передать мастер-ключ, новый CEO должен прийти в офис и принять его лично. Защита от "отправки ключа не тому человеку"
+- **RBAC (AccessControl):** каждый сотрудник имеет бейдж с ролями. Бухгалтер заходит в бухгалтерию, разработчик -- в серверную, но не наоборот. Admin может выдавать и отзывать бейджи
+
+## Проблема: отсутствие контроля доступа
+
+### UnsafeToken: уязвимый ERC-20
+
+```solidity
+// contracts/security/UnsafeToken.sol -- INTENTIONALLY VULNERABLE
+contract UnsafeToken is ERC20 {
+    constructor() ERC20("UnsafeToken", "UNSAFE") {
+        _mint(msg.sender, 1_000_000 * 1e18);
+    }
+
+    // VULNERABLE: кто угодно может минтить бесконечные токены!
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
+
+    // VULNERABLE: кто угодно может сжечь ЧУЖИЕ токены!
+    function burn(address from, uint256 amount) public {
+        _burn(from, amount);
+    }
+}
+```
+
+### Сценарии атаки
+
+**Атака 1: бесконечный mint**
+```solidity
+// Атакующий минтит 1 миллиард токенов
+unsafeToken.mint(attacker, 1_000_000_000 * 1e18);
+// Продает на DEX -- цена обрушается
+// Все держатели теряют средства
+```
+
+**Атака 2: сжигание чужих токенов**
+```solidity
+// Атакующий сжигает ВСЕ токены Alice
+unsafeToken.burn(alice, unsafeToken.balanceOf(alice));
+// Alice потеряла все средства без возможности восстановления
+```
+
+### Сравнение с исправленной версией
+
+<AccessControlComparisonDiagram client:load />
+
+## Решение: Ownable
+
+### OpenZeppelin Ownable (v5)
+
+```solidity
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract UnsafeTokenFixed is ERC20, Ownable {
+    constructor(address initialOwner)
+        ERC20("UnsafeTokenFixed", "SAFETK")
+        Ownable(initialOwner) // OZ v5: явный initialOwner
+    {
+        _mint(initialOwner, 1_000_000 * 1e18);
+    }
+
+    // FIXED: только owner может минтить
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+
+    // FIXED: пользователь может сжечь только СВОИ токены
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
+}
+```
+
+### Ownable API (OpenZeppelin v5)
+
+| Функция | Кто может вызвать | Действие |
+|---------|:-:|---------|
+| `owner()` | Любой (view) | Возвращает текущего owner |
+| `transferOwnership(newOwner)` | Только owner | **Немедленная** передача |
+| `renounceOwnership()` | Только owner | Отказ от ownership (навсегда) |
+| `onlyOwner` modifier | -- | Reverts если caller != owner |
+
+### Риски Ownable
+
+1. **Потеря ключа** -- owner потерял private key = потеря контроля навсегда
+2. **Ошибка в адресе** -- `transferOwnership(0x1234...)` с опечаткой = потеря ownership
+3. **Компрометация ключа** -- единственная точка отказа (single point of failure)
+
+## Решение: Ownable2Step
+
+### Двухшаговая передача
+
+```solidity
+import {Ownable2Step} from
+    "@openzeppelin/contracts/access/Ownable2Step.sol";
+
+contract SafeToken is ERC20, Ownable2Step {
+    constructor(address initialOwner)
+        ERC20("SafeToken", "SAFE")
+        Ownable(initialOwner)
+    {}
+}
+```
+
+### Процесс передачи
+
+```
+Шаг 1: Текущий owner
+  owner.transferOwnership(newOwner)
+  -> pendingOwner = newOwner
+  -> Ownership НЕ передана!
+
+Шаг 2: Новый owner подтверждает
+  newOwner.acceptOwnership()
+  -> owner = newOwner
+  -> pendingOwner = address(0)
+  -> Ownership передана!
+```
+
+**Защита:** если owner ошибся в адресе, newOwner не может вызвать `acceptOwnership()`, и владение остается у текущего owner.
+
+### Ownable2Step API
+
+| Функция | Кто может вызвать | Действие |
+|---------|:-:|---------|
+| `transferOwnership(newOwner)` | Только owner | Устанавливает pendingOwner |
+| `acceptOwnership()` | Только pendingOwner | Подтверждает передачу |
+| `pendingOwner()` | Любой (view) | Текущий кандидат на ownership |
+
+## Решение: AccessControl (RBAC)
+
+### Когда Ownable недостаточно?
+
+DeFi-протоколы часто требуют **гранулярный контроль**:
+
+- **Minter** может создавать токены (Treasury, стейкинг)
+- **Pauser** может приостановить контракт (security team)
+- **Upgrader** может обновить реализацию (governance)
+- **Admin** может назначать/отзывать роли
+
+С Ownable все эти функции контролирует один адрес. С **AccessControl** каждая операция имеет свою роль.
+
+### OpenZeppelin AccessControl (v5)
+
+```solidity
+import {AccessControl} from
+    "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract ProtocolToken is ERC20, AccessControl {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    constructor(address admin) ERC20("Protocol", "PROTO") {
+        // DEFAULT_ADMIN_ROLE может назначать другие роли
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(MINTER_ROLE, admin);
+    }
+
+    function mint(address to, uint256 amount)
+        external onlyRole(MINTER_ROLE)
+    {
+        _mint(to, amount);
+    }
+
+    function pause() external onlyRole(PAUSER_ROLE) {
+        // Pause logic
+    }
+}
+```
+
+### AccessControl API
+
+| Функция | Действие |
+|---------|---------|
+| `hasRole(role, account)` | Проверяет наличие роли (view) |
+| `grantRole(role, account)` | Назначает роль (только admin role) |
+| `revokeRole(role, account)` | Отзывает роль (только admin role) |
+| `renounceRole(role, account)` | Отказ от роли (только сам account) |
+| `getRoleAdmin(role)` | Возвращает admin role для данной роли |
+| `onlyRole(role)` modifier | Reverts если caller не имеет role |
+
+### Иерархия ролей
+
+```
+DEFAULT_ADMIN_ROLE (может назначать любые роли)
+├── MINTER_ROLE (может минтить)
+├── PAUSER_ROLE (может приостанавливать)
+├── UPGRADER_ROLE (может обновлять proxy)
+└── CUSTOM_ROLE (кастомная роль)
+```
+
+Каждая роль имеет свой **admin role**. По умолчанию admin role = `DEFAULT_ADMIN_ROLE`. Можно настроить иерархию через `_setRoleAdmin()`.
+
+## Эволюция access control
+
+<RoleHierarchyDiagram client:load />
+
+## Алгоритмический анализ: как работает modifier
+
+### onlyOwner internals
+
+```solidity
+// Simplified OZ Ownable v5
+abstract contract Ownable {
+    address private _owner;
+
+    modifier onlyOwner() {
+        if (msg.sender != _owner) {
+            revert OwnableUnauthorizedAccount(msg.sender);
+        }
+        _;
+    }
+}
+```
+
+**Gas cost:** ~2400 gas (SLOAD для _owner + comparison).
+
+### onlyRole internals
+
+```solidity
+// Simplified OZ AccessControl v5
+abstract contract AccessControl {
+    mapping(bytes32 role => mapping(address account => bool)) private _roles;
+
+    modifier onlyRole(bytes32 role) {
+        if (!_roles[role][msg.sender]) {
+            revert AccessControlUnauthorizedAccount(msg.sender, role);
+        }
+        _;
+    }
+}
+```
+
+**Gas cost:** ~2600 gas (SLOAD для nested mapping + comparison).
+
+### Формальная модель
+
+```
+Access Control как матрица:
+  Rows: адреса (subjects)
+  Columns: функции (resources)
+  Values: boolean (has access)
+
+  Ownable: все колонки имеют одно значение (owner = true, rest = false)
+  RBAC: каждая колонка может иметь свой набор значений
+
+  Инвариант:
+  forall function F with modifier onlyRole(R):
+    forall tx T calling F:
+      hasRole(R, T.sender) == true
+```
+
+## Лабораторная работа
+
+### Запуск тестов
+
+```bash
+# Тесты access control
+forge test --match-path test/security/AccessControlExploit.t.sol -vvv
+```
+
+### Что демонстрируют тесты
+
+```solidity
+// Exploit: атакующий минтит 1 миллиард токенов
+function test_attackerCanMintUnlimited() public {
+    vm.prank(attacker);
+    unsafeToken.mint(attacker, 1_000_000_000 * 1e18);
+    assertEq(unsafeToken.balanceOf(attacker), 1_000_000_000 * 1e18);
+}
+
+// Exploit: атакующий сжигает чужие токены
+function test_attackerCanBurnOthersTokens() public {
+    vm.prank(attacker);
+    unsafeToken.burn(alice, 100_000 * 1e18);
+    assertEq(unsafeToken.balanceOf(alice), 0);
+}
+
+// Defense: исправленный контракт reverts
+function test_fixedToken_attackerCannotMint() public {
+    vm.prank(attacker);
+    vm.expectRevert();
+    fixedToken.mint(attacker, 1_000_000 * 1e18);
+}
+
+// Defense: owner МОЖЕТ минтить
+function test_fixedToken_ownerCanMint() public {
+    vm.prank(deployer);
+    fixedToken.mint(alice, 50_000 * 1e18);
+    assertEq(fixedToken.balanceOf(alice), 150_000 * 1e18);
+}
+```
+
+### Файлы
+
+- `contracts/security/UnsafeToken.sol` -- уязвимый контракт
+- `contracts/security/UnsafeTokenFixed.sol` -- исправленный с Ownable
+- `test/security/AccessControlExploit.t.sol` -- Foundry тесты
+
+## Чеклист разработчика
+
+| Контекст | Рекомендация |
+|----------|-------------|
+| Простой токен / NFT | **Ownable2Step** (2-шаговая передача) |
+| DeFi протокол | **AccessControl** (RBAC) + TimelockController |
+| DAO | **Governor** + TimelockController (OZ) |
+| Proxy (upgradeable) | **ProxyAdmin** с Ownable2Step |
+| Multi-sig | **Gnosis Safe** (4/7 или 3/5 signers) |
+| Критические операции | **Timelock** (задержка 24-48h) |
+
+## Сравнительная таблица
+
+| Аспект | Нет AC | Ownable | Ownable2Step | AccessControl |
+|--------|:------:|:-------:|:------------:|:-------------:|
+| Защита от атак | Нет | Базовая | Базовая | Гранулярная |
+| Передача владения | -- | 1 шаг (опасно) | 2 шага (безопасно) | Роли (гибко) |
+| Множество ролей | Нет | Нет | Нет | Да |
+| Gas overhead | 0 | ~2400 | ~2400 | ~2600 |
+| Для кого | Никого | Простые контракты | Рекомендуется | DeFi протоколы |
+
+## Реальные примеры (post-mortem)
+
+### Poly Network ($611M, 2021)
+
+- **Уязвимость:** функция `_executeCrossChainTx()` позволяла вызов произвольного контракта с произвольными данными
+- **Атака:** атакующий вызвал `putCurEpochConPubKeyBytes()` -- функцию для смены keeper-ов -- через cross-chain message
+- **Причина:** отсутствие проверки, что target contract != самый привилегированный контракт
+- **Урок:** access control должен проверять не только "кто вызывает", но и "что вызывается"
+
+### Ronin Bridge ($624M, 2022)
+
+- **Уязвимость:** 5 из 9 validator keys были у одной организации (Sky Mavis)
+- **Атака:** компрометация ключей через social engineering
+- **Причина:** centralized multi-sig (5/9 controlled by 1 entity)
+- **Урок:** multi-sig threshold должен учитывать **реальное распределение** ключей
+
+## Итоги
+
+**Что мы узнали:**
+1. **Access Control -- уязвимость #1** по OWASP SC Top 10 (2025). Не по сложности, а по последствиям.
+2. **Ownable** -- простой one-owner паттерн. Риск: потеря ключа, ошибка в адресе.
+3. **Ownable2Step** -- двухшаговая передача. Защита от случайной передачи. Рекомендуется для простых контрактов.
+4. **AccessControl (RBAC)** -- множество ролей с иерархией. Для DeFi протоколов и DAO.
+5. **Разница в одной строке:** `public` vs `public onlyOwner` = разница между $0 и $611M потерь.
+
+**Что дальше:** В SEC-05 мы разберем Oracle Manipulation и Flash Loan атаки -- как мгновенные займы (DEFI-06) превращаются в инструмент манипуляции ценами.

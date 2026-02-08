@@ -1,0 +1,307 @@
+---
+title: "Integer Overflow и Underflow"
+description: "BatchOverflow history, Solidity 0.8+ checked arithmetic, unchecked блоки, unsafe downcasting, SafeCast"
+order: 3
+difficulty: "intermediate"
+estimatedTime: 35
+topics: ["Integer Overflow", "Underflow", "unchecked", "SafeCast", "BatchOverflow", "SWC-101"]
+prerequisites: ["06-security/02-reentrancy-attacks"]
+---
+
+import { OverflowVisualizationDiagram } from '../../../components/diagrams/module6/IntegerOverflowDiagrams';
+
+# Integer Overflow и Underflow
+
+## Зачем это знать?
+
+В апреле 2018 года контракт **BEC Token** потерял $900M рыночной капитализации из-за одной строки кода: `amount * cnt` переполнилось в uint256, став равным 0. Проверка `require(totalAmount <= balances[msg.sender])` прошла (0 <= любой баланс), и `cnt` получателей получили `amount` токенов из воздуха.
+
+Solidity 0.8+ исправил проблему **по умолчанию**: арифметические операции теперь проверяются автоматически. Но два случая остаются опасными:
+1. **unchecked блоки** -- явное отключение проверок для экономии gas
+2. **Unsafe downcasting** -- приведение uint256 к uint8/uint16/uint128 **без проверки**
+
+В этом уроке мы разберем, почему overflow до сих пор релевантен, где он скрывается, и как защищаться.
+
+## Интуитивное объяснение: одометр автомобиля
+
+### Аналогия
+
+Представьте аналоговый одометр с 5 цифрами (max = 99999). Когда пробег достигает 99999 и вы проезжаете ещё 1 км:
+- **Механический одометр:** показывает 00000 (overflow -- "обнуление")
+- **Цифровой одометр:** загорается ошибка и останавливается (checked arithmetic)
+- **Целочисленная арифметика:** uint8 max = 255; 255 + 1 = 0 (если unchecked)
+
+### Почему это опасно?
+
+В контексте смарт-контрактов overflow означает, что:
+- **Баланс** может "обнулиться" или стать огромным
+- **Проверка `require(total <= balance)`** может пройти при total = 0 (overflow)
+- **Приведение типов** может обрезать значение без предупреждения
+
+## Визуализация: uint8 overflow
+
+<OverflowVisualizationDiagram client:load />
+
+## История: от pre-0.8 к 0.8+
+
+### Эра pre-0.8: SafeMath
+
+До Solidity 0.8 (до 2021 года) **все арифметические операции были unchecked**. Overflow происходил молча. Разработчики использовали библиотеку **SafeMath** от OpenZeppelin:
+
+```solidity
+// Pre-0.8: без SafeMath
+uint8 x = 255;
+x += 1; // x = 0 (silent overflow!)
+
+// Pre-0.8: с SafeMath
+using SafeMath for uint256;
+uint256 x = 255;
+x = x.add(1); // REVERT (SafeMath проверяет)
+```
+
+**Проблема SafeMath:** разработчики забывали её использовать. Одна пропущенная строка -- и уязвимость.
+
+### Эра 0.8+: Checked by Default
+
+Solidity 0.8+ включил **автоматические проверки overflow/underflow** на уровне компилятора:
+
+```solidity
+// Solidity 0.8+: автоматические проверки
+uint8 x = 255;
+x += 1; // REVERT с Panic(0x11) -- arithmetic overflow
+```
+
+Это решило проблему для **90% случаев**. Но появились два новых вектора атаки.
+
+### BatchOverflow (BEC Token, 2018)
+
+Конкретный exploit, уничтоживший $900M:
+
+```solidity
+// Уязвимый код BEC Token (pre-0.8)
+function batchTransfer(address[] _receivers, uint256 _value) public {
+    uint256 cnt = _receivers.length;
+    uint256 amount = uint256(cnt) * _value; // OVERFLOW!
+
+    // Если cnt=2, _value=2^255, то amount = 0 (overflow)
+    require(amount <= balances[msg.sender]); // 0 <= any balance: PASS!
+
+    balances[msg.sender] -= amount; // -= 0 (ничего не списано)
+    for (uint256 i = 0; i < cnt; i++) {
+        balances[_receivers[i]] += _value; // Каждый получает 2^255 токенов!
+    }
+}
+```
+
+**Результат:** из ниоткуда создано огромное количество токенов. Цена обрушилась.
+
+## Два оставшихся вектора в Solidity 0.8+
+
+### Вектор 1: unchecked блоки
+
+Solidity 0.8 добавил ключевое слово `unchecked` для явного отключения проверок:
+
+```solidity
+function gas_optimized() external pure returns (uint256) {
+    uint256 sum;
+    // ~120 gas экономии на каждую операцию
+    unchecked {
+        for (uint256 i = 0; i < 100; i++) {
+            sum += i;
+        }
+    }
+    return sum;
+}
+```
+
+**Когда unchecked безопасен:**
+```solidity
+// Безопасно: i++ в цикле (i < array.length гарантирует i < 2^256)
+for (uint256 i = 0; i < array.length; ) {
+    // ...
+    unchecked { i++; }
+}
+
+// Безопасно: вычитание после проверки
+require(a >= b);
+unchecked { uint256 diff = a - b; } // Не может underflow
+
+// Безопасно: умножение с предварительной проверкой
+require(a <= type(uint256).max / b);
+unchecked { uint256 product = a * b; }
+```
+
+**Когда unchecked ОПАСЕН:**
+```solidity
+// ОПАСНО: пользовательский ввод без проверки
+function transfer(uint256 amount) external {
+    unchecked {
+        balances[msg.sender] -= amount; // Underflow если amount > balance!
+    }
+}
+
+// ОПАСНО: результат умножения может overflow
+unchecked {
+    uint256 total = price * quantity; // Может быть 0 при overflow!
+}
+```
+
+### Вектор 2: Unsafe Downcasting
+
+**Критически важно:** Solidity 0.8+ проверяет overflow только для **арифметических операций** (+, -, *, /). Приведение типов (type casting) **НЕ проверяется**:
+
+```solidity
+uint256 bigValue = 256;
+uint8 smallValue = uint8(bigValue); // smallValue = 0 (silent truncation!)
+
+uint256 price = 100_000; // $100k
+uint8 stored = uint8(price); // stored = 160 (100000 mod 256)
+// Теперь "цена" = $160 вместо $100,000
+```
+
+### Downcasting в реальном коде
+
+Downcasting часто встречается для экономии storage:
+
+```solidity
+struct Position {
+    uint128 amount;    // max ~3.4 * 10^38 -- достаточно для wei
+    uint64 timestamp;  // max ~1.8 * 10^19 -- достаточно для секунд
+    uint64 price;      // ОПАСНО! max ~1.8 * 10^19 wei = ~18 ETH
+}
+
+function updatePosition(uint256 _amount, uint256 _price) external {
+    // Если _amount > type(uint128).max, молча обрезается!
+    positions[msg.sender] = Position({
+        amount: uint128(_amount),  // UNSAFE DOWNCAST
+        timestamp: uint64(block.timestamp),
+        price: uint64(_price)      // UNSAFE DOWNCAST
+    });
+}
+```
+
+### Решение: SafeCast (OpenZeppelin)
+
+```solidity
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+using SafeCast for uint256;
+
+function updatePosition(uint256 _amount, uint256 _price) external {
+    positions[msg.sender] = Position({
+        amount: _amount.toUint128(),     // Reverts если > type(uint128).max
+        timestamp: block.timestamp.toUint64(),
+        price: _price.toUint64()         // Reverts если > type(uint64).max
+    });
+}
+```
+
+## Алгоритмический анализ
+
+### Как работает overflow на уровне битов
+
+uint8 использует 8 бит. Максимальное значение = 2^8 - 1 = 255 (0xFF):
+
+```
+  11111111  (255)
++ 00000001  (1)
+-----------
+ 100000000  (256) -- но 9-й бит отбрасывается!
+= 00000000  (0)
+```
+
+**Формула:** `(a + b) mod 2^n`, где n = количество бит.
+
+### Математическое определение overflow
+
+```
+Для unsigned integer типа uint_n (n бит):
+  Диапазон: [0, 2^n - 1]
+
+Overflow: a + b > 2^n - 1
+  Результат без проверки: (a + b) mod 2^n
+
+Underflow: a - b < 0
+  Результат без проверки: (a - b + 2^n) mod 2^n
+
+Downcasting uint_m -> uint_n (m > n):
+  Результат: value mod 2^n (отбрасываются старшие m-n бит)
+```
+
+### Gas стоимость проверок
+
+```
+Arithmetic operation (ADD, SUB, MUL):
+  Unchecked:  ~3 gas
+  Checked:    ~3 gas + ~120 gas (overflow check)
+
+Экономия на 100 операций: ~12,000 gas
+Средняя стоимость транзакции: ~50,000-200,000 gas
+Доля экономии: ~6-24%
+```
+
+> **Практическое правило:** используйте unchecked только в hot paths (циклы, математические библиотеки) где overflow **математически невозможен**.
+
+## Лабораторная работа
+
+### Запуск тестов
+
+```bash
+# Тесты overflow
+forge test --match-path test/security/OverflowExploit.t.sol -vvv
+```
+
+### Что демонстрируют тесты
+
+```solidity
+// Safe: 255 + 1 reverts (Panic 0x11)
+function test_safeAddReverts() public {
+    vm.expectRevert();
+    overflow.safeAdd(255, 1);
+}
+
+// Unchecked: 255 + 1 = 0 (wraps!)
+function test_uncheckedAddWraps() public view {
+    uint8 result = overflow.uncheckedAdd(255, 1);
+    assertEq(result, 0);
+}
+
+// Downcast: uint256(256) -> uint8 = 0 (truncation!)
+function test_downcastTruncates256() public view {
+    uint8 result = overflow.unsafeDowncast(256);
+    assertEq(result, 0);
+}
+
+// BatchOverflow: amount * count = 0 (overflow)
+function test_batchOverflowDemo() public view {
+    uint256 amount = type(uint256).max / 2 + 1;
+    (uint256 total, ) = overflow.batchOverflowDemo(amount, 2);
+    assertEq(total, 0); // Overflowed to 0!
+}
+```
+
+### Файлы
+
+- `contracts/security/LegacyOverflow.sol` -- демонстрация safe, unchecked, downcast
+- `test/security/OverflowExploit.t.sol` -- Foundry тесты
+
+## Чеклист разработчика
+
+| Проверка | Действие |
+|----------|---------|
+| Используете `unchecked`? | Убедитесь, что overflow **математически невозможен** |
+| Downcasting (uint256 -> uint128)? | Используйте `SafeCast.toUint128()` |
+| Арифметика в `unchecked`? | Добавьте require-проверки ДО операции |
+| Умножение пользовательских данных? | Никогда в `unchecked` |
+| Loop counter `i++`? | `unchecked { i++; }` безопасно (i < length) |
+
+## Итоги
+
+**Что мы узнали:**
+1. **BatchOverflow** (BEC Token, 2018) -- overflow в умножении обнулил total, а получатели получили токены из воздуха
+2. **Solidity 0.8+ checked by default** -- арифметические операции проверяются автоматически, Panic(0x11) при overflow
+3. **unchecked блоки** остаются опасными -- используйте только когда overflow математически невозможен
+4. **Unsafe downcasting** НЕ проверяется в 0.8+ -- используйте SafeCast из OpenZeppelin
+5. **Gas экономия** от unchecked: ~120 gas на операцию, но риск катастрофического бага
+
+**Что дальше:** В SEC-04 мы разберем Access Control -- уязвимость #1 по OWASP Smart Contract Top 10. Одна пропущенная строка `onlyOwner` может стоить $611M (Poly Network).
