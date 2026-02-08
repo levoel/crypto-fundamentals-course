@@ -1,0 +1,270 @@
+---
+title: "Audit Methodology"
+description: "4-фазный процесс аудита: scoping (10%), automated (20%), manual (60%), reporting (10%). Severity classification, audit report template, invariant analysis. Почему инструменты находят ~20%, а manual review ~80%"
+order: 9
+difficulty: "advanced"
+estimatedTime: 50
+topics: ["Audit", "Methodology", "Severity Classification", "Invariant Analysis", "Report Template", "Scoping", "Threat Model"]
+prerequisites: ["06-security/08-flash-loans-attacks"]
+---
+
+import { AuditPipelineDiagram, AuditChecklistDiagram } from '../../../components/diagrams/module6/AuditMethodologyDiagrams';
+
+# Методология аудита смарт-контрактов
+
+## Зачем это критически важно?
+
+Smart contract аудит -- последняя линия обороны перед деплоем. В DeFi нет "откатить транзакцию", нет "горячая линия поддержки". Код = закон. Баг в коде = потеря средств.
+
+> **Факт:** В 2023 году потери от эксплойтов smart contract составили **$1.7B+**. Более 60% эксплуатированных протоколов НЕ проходили аудит. Из оставшихся 40% -- многие имели аудит, но с неполным scope.
+
+В этом уроке:
+1. Разберем 4-фазный процесс аудита
+2. Научимся классифицировать severity findings
+3. Создадим template аудит-отчета
+4. Формализуем invariant analysis
+
+## 4-фазный процесс аудита
+
+Профессиональный аудит smart contract состоит из **4 фаз** с четким распределением времени:
+
+<AuditPipelineDiagram client:load />
+
+### Распределение эффективности
+
+Вот ключевое понимание, которое отличает junior security researcher от senior:
+
+| Метод | % findings | Типы findings | Скорость |
+|-------|-----------|---------------|----------|
+| Automated tools (Slither, Mythril) | ~20% | Known patterns, SWC, gas | Секунды-минуты |
+| Manual review | ~80% | Business logic, economic, cross-contract | Часы-дни |
+| **Вместе** | **~95%+** | **Layered defense** | **Дни-недели** |
+
+> **Ключевой вывод:** Инструменты находят ~20% уязвимостей, manual review -- ~80%. Аудит БЕЗ manual review = security theater. Аудит БЕЗ инструментов = неэффективность.
+
+## Фаза 1: Scoping (10% времени)
+
+### Что входит в scope?
+
+Scoping определяет ГРАНИЦЫ аудита. Плохой scoping -- главная причина "пропущенных" уязвимостей.
+
+```
+Scope Document checklist:
+
+1. Контракты:
+   - Какие .sol файлы в scope?
+   - Какие библиотеки (OpenZeppelin, etc.)?
+   - Lines of Code (nSLOC -- non-comment source lines)
+
+2. Интеграции:
+   - Какие внешние протоколы? (Uniswap, Aave, Chainlink)
+   - Какие oracle?
+   - Какие токен стандарты? (ERC-20, ERC-721, ERC-4626)
+
+3. Deployment:
+   - Какая chain? (Mainnet, Arbitrum, Optimism)
+   - Upgradeable? (proxy pattern)
+   - Timelock? Multisig?
+
+4. Threat Model:
+   - Кто атакующий? (external user, malicious admin, MEV bot)
+   - Какие активы под угрозой? (TVL, user funds)
+   - Attack surface: external functions, admin functions
+```
+
+### Threat Model
+
+Threat model отвечает на вопрос: **"от кого мы защищаемся?"**
+
+| Threat Actor | Capabilities | Мотивация | Пример атаки |
+|-------------|-------------|-----------|-------------|
+| External attacker | Flash loans, MEV, unlimited capital | Profit | Oracle manipulation |
+| Malicious admin | Access to admin functions | Rug pull | Emergency withdraw to self |
+| MEV bot | Transaction ordering, sandwich | Profit | Frontrun large swaps |
+| Governance attacker | 51% governance tokens | Protocol takeover | Malicious proposal |
+
+## Фаза 2: Automated Analysis (20% времени)
+
+Подробнее об инструментах -- в следующем уроке (SEC-10). Здесь -- принципы:
+
+### Workflow автоматического анализа
+
+```
+1. Slither (static analysis)     → Быстрый первый проход
+   ↓ findings
+2. Mythril (symbolic execution)  → Глубокий анализ
+   ↓ findings
+3. Triage: TP vs FP vs Info      → Фильтрация шума
+   ↓ confirmed findings
+4. Report: automated findings    → Входные данные для manual review
+```
+
+### Triage: True Positive vs False Positive
+
+Каждый finding от инструмента нужно классифицировать:
+
+| Классификация | Сокращение | Описание | Действие |
+|--------------|-----------|----------|----------|
+| True Positive | TP | Настоящая уязвимость | Включить в отчет |
+| False Positive | FP | Ложное срабатывание | Отметить как FP с объяснением |
+| Informational | Info | Не баг, но стоит отметить | Включить в отчет с низким severity |
+
+> **Опыт:** Slither на типичном контракте дает 30-50% false positive rate. Способность отличить TP от FP -- ключевой навык.
+
+## Фаза 3: Manual Review (60% времени)
+
+### Line-by-line review
+
+Ядро аудита. Аудитор читает каждую строку кода и задает вопросы:
+
+```
+Для каждой функции:
+□ Кто может вызвать? (access control)
+□ С какими параметрами? (input validation)
+□ Что происходит со state? (state changes)
+□ Есть ли external calls? (reentrancy risk)
+□ Корректна ли math? (overflow, precision loss)
+□ Что если вызвать 2 раза? (double-spend)
+□ Что если вызвать из другого контракта? (cross-contract)
+□ Можно ли front-run? (MEV)
+```
+
+### Invariant Analysis (формализация)
+
+Invariant -- утверждение, которое ВСЕГДА должно быть истинным:
+
+```solidity
+// Примеры invariants для Vault контракта:
+
+// INV-01: Сумма всех balances == address(this).balance
+// ∀ state: Σ balances[user] == address(vault).balance
+
+// INV-02: totalSupply == сумма всех shares
+// ∀ state: totalSupply == Σ shares[user]
+
+// INV-03: withdraw не может вывести больше, чем deposited
+// ∀ user: withdrawn[user] <= deposited[user]
+
+// INV-04: После deposit баланс пользователя увеличивается
+// ∀ user, amount: balances[user]' == balances[user] + amount
+```
+
+**Как найти уязвимость через invariants:**
+
+1. Определить все invariants протокола
+2. Для каждого invariant -- попытаться его нарушить
+3. Если invariant можно нарушить -- это уязвимость
+
+> **Пример:** INV-01 нарушается при reentrancy: атакующий выводит ETH (balance уменьшается), но state update еще не произошел (balances[user] не обнулен). Σ balances > address(vault).balance.
+
+## Фаза 4: Reporting (10% времени)
+
+### Severity Classification
+
+Стандартная классификация severity:
+
+| Severity | Критерий | Пример | Действие |
+|----------|---------|--------|----------|
+| **Critical** | Потеря ВСЕХ средств, необратимо | Reentrancy в withdraw с drain | Немедленный fix, блокировка деплоя |
+| **High** | Потеря ЧАСТИ средств или обход контроля | Unprotected initialize() | Fix до деплоя |
+| **Medium** | Потеря средств при специфических условиях | Integer overflow в edge case | Fix рекомендуется |
+| **Low** | Минимальный impact, best practice нарушение | Missing event emission | Fix опционален |
+| **Informational** | Нет impact, стилистика/gas | Floating pragma | На усмотрение команды |
+
+### Audit Report Template
+
+Структура профессионального отчета:
+
+```markdown
+# Security Audit Report: [Protocol Name]
+
+## Executive Summary
+- Scope: X контрактов, Y nSLOC
+- Timeline: Z auditor-days
+- Findings: C critical, H high, M medium, L low, I informational
+
+## Methodology
+- Tools: Slither, Mythril
+- Manual review: line-by-line
+- Invariant analysis
+
+## Findings
+
+### [H-01] Reentrancy in VulnerableVault.withdraw()
+
+**Severity:** High
+**Status:** Confirmed → Fixed (commit abc123)
+
+**Description:**
+Функция withdraw() выполняет external call ПЕРЕД обновлением state.
+Это позволяет атакующему рекурсивно вызвать withdraw() до обнуления баланса.
+
+**Impact:**
+Атакующий может вывести ВСЕ средства из vault (полный drain).
+
+**Proof of Concept:**
+[Solidity код PoC теста]
+
+**Recommendation:**
+1. Применить CEI pattern (state update перед external call)
+2. Добавить ReentrancyGuard (nonReentrant modifier)
+
+**Fix verification:**
+Commit abc123 корректно реализует CEI + ReentrancyGuard.
+```
+
+### Пример finding: H-01
+
+Рассмотрим finding для нашего VulnerableVault из предыдущих уроков:
+
+```
+Finding: H-01 Reentrancy in VulnerableVault.withdraw()
+
+Severity: HIGH
+Location: VulnerableVault.sol, lines 45-52
+
+Root cause:
+  balances[msg.sender] = 0  выполняется ПОСЛЕ  msg.sender.call{value: amount}("")
+
+Attack scenario:
+  1. Attacker deposits 1 ETH
+  2. Attacker calls withdraw()
+  3. In receive() callback, attacker calls withdraw() again
+  4. balances[msg.sender] still == 1 ETH (not yet zeroed)
+  5. Repeat until vault drained
+
+PoC: test/security/ReentrancyExploit.t.sol (forge test -vvv)
+
+Recommendation:
+  Apply CEI: move balances[msg.sender] = 0 BEFORE external call.
+  Add nonReentrant modifier as defense-in-depth.
+```
+
+## Security Audit Checklist
+
+Используйте этот интерактивный чеклист для систематической проверки:
+
+<AuditChecklistDiagram client:load />
+
+## Стоимость и timeline аудита
+
+| Размер проекта | nSLOC | Timeline | Стоимость (2024) |
+|----------------|-------|----------|------------------|
+| Малый (1-2 контракта) | 200-500 | 1-2 недели | $5K-15K |
+| Средний (3-5 контрактов) | 500-1500 | 2-4 недели | $15K-50K |
+| Большой (DeFi протокол) | 1500-5000 | 4-8 недель | $50K-200K |
+| Massive (L2, bridge) | 5000+ | 8-16 недель | $200K-500K+ |
+
+> **Экономика:** Стоимость аудита = 0.1-1% от TVL. Стоимость эксплойта = 10-100% от TVL. ROI аудита очевиден.
+
+## Ключевые выводы
+
+1. **4 фазы аудита:** scoping (10%), automated (20%), manual (60%), reporting (10%)
+2. **Automated tools: ~20% findings.** Manual review: ~80% findings
+3. **Triage -- ключевой навык:** отличить TP от FP от Info
+4. **Invariant analysis** формализует "что должно быть всегда истинно"
+5. **Severity classification:** Critical/High/Medium/Low/Informational
+6. **Audit report = продукт.** Без PoC finding = теория
+7. **Scoping определяет качество.** Плохой scope = пропущенные баги
+
+> **Правило аудитора:** Если вы не можете написать PoC для finding -- вы не понимаете уязвимость достаточно глубоко. PoC = доказательство, не предположение.

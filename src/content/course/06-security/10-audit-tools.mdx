@@ -1,0 +1,415 @@
+---
+title: "Audit Tools"
+description: "Slither, Mythril, Aderyn: Docker-команды, интерпретация output, triage findings. Layered defense: static analysis + symbolic execution + manual review. Module 6 recap"
+order: 10
+difficulty: "advanced"
+estimatedTime: 55
+topics: ["Slither", "Mythril", "Aderyn", "Docker", "SWC", "Static Analysis", "Symbolic Execution", "Triage", "Security Tools"]
+prerequisites: ["06-security/09-audit-methodology"]
+---
+
+import { ToolComparisonDiagram, SlitherOutputGuideDiagram } from '../../../components/diagrams/module6/AuditToolsDiagrams';
+
+# Инструменты аудита: Slither, Mythril, Aderyn
+
+## Зачем нужны инструменты?
+
+В предыдущем уроке мы узнали: automated tools находят ~20% уязвимостей. Кажется мало? Но эти 20% -- **low-hanging fruit**, которые инструменты находят за СЕКУНДЫ. Без инструментов аудитор тратит часы на проверки, которые автоматизированы.
+
+> **Аналогия:** Automated tools = spell checker. Не заменяет редактора, но ловит опечатки мгновенно. Публиковать книгу без spell check -- непрофессионально. Аудировать контракт без Slither -- непрофессионально.
+
+В этом уроке:
+1. Запустим **Slither** через Docker и разберем output
+2. Запустим **Mythril** через Docker и прочитаем SWC-classified findings
+3. Научимся **triage** findings (TP vs FP vs Info)
+4. Сравним все инструменты
+5. Подведем итог всего модуля Security
+
+## Сравнение инструментов
+
+<ToolComparisonDiagram client:load />
+
+## Slither: Static Analysis
+
+### Что такое Slither?
+
+**Slither** -- статический анализатор от Trail of Bits. Разбирает Solidity AST (Abstract Syntax Tree) и применяет 200+ детекторов для поиска уязвимостей.
+
+**Как работает:**
+```
+Solidity code → Compile → AST → Slither IR (SlithIR) → Detectors → Findings
+```
+
+Slither НЕ выполняет код. Он анализирует СТРУКТУРУ кода: control flow, data flow, dependencies.
+
+### Запуск через Docker
+
+```bash
+# Из директории labs/ethereum/
+# Первый запуск скачает образ (~2 GB)
+docker compose --profile security run slither \
+  contracts/security/VulnerableVault.sol \
+  --solc-remaps '@openzeppelin/=node_modules/@openzeppelin/'
+```
+
+**Пояснение параметров:**
+- `--profile security` -- активирует security services в docker-compose
+- `contracts/security/VulnerableVault.sol` -- путь к контракту (внутри контейнера /share/)
+- `--solc-remaps` -- маппинг импортов OpenZeppelin
+
+### Slither output: разбор по строкам
+
+<SlitherOutputGuideDiagram client:load />
+
+### Ключевые Slither детекторы
+
+| Детектор | Severity | Что ищет | SWC |
+|----------|----------|---------|------|
+| `reentrancy-eth` | High | Reentrancy с ETH transfer | SWC-107 |
+| `reentrancy-no-eth` | Medium | Reentrancy без ETH (state change) | SWC-107 |
+| `unprotected-upgrade` | High | initialize() без access control | -- |
+| `arbitrary-send-eth` | High | Отправка ETH на произвольный адрес | -- |
+| `controlled-delegatecall` | High | delegatecall с user-controlled address | SWC-112 |
+| `suicidal` | High | selfdestruct без access control | SWC-106 |
+| `unchecked-lowlevel` | Medium | Unchecked return value of low-level call | SWC-104 |
+| `divide-before-multiply` | Medium | Precision loss: a/b*c вместо a*c/b | -- |
+| `tx-origin` | Medium | Использование tx.origin для auth | SWC-115 |
+| `solc-version` | Info | Floating pragma version | SWC-103 |
+
+### Slither в CI/CD pipeline
+
+```yaml
+# .github/workflows/security.yml
+name: Security Analysis
+on: [push]
+jobs:
+  slither:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crytic/slither-action@v0.4.0
+        with:
+          target: 'contracts/'
+          slither-args: '--filter-paths node_modules'
+          fail-on: 'high'
+```
+
+> **Best practice:** Запускайте Slither на каждый PR. Fail pipeline если найдены High severity findings.
+
+## Mythril: Symbolic Execution
+
+### Что такое Mythril?
+
+**Mythril** -- символический исполнитель от ConsenSys. В отличие от Slither, Mythril ВЫПОЛНЯЕТ код символически: вместо конкретных значений использует символы (x, y) и решает уравнения через SMT solver (Z3).
+
+**Как работает:**
+```
+Solidity → Bytecode → EVM simulation → Symbolic execution → Z3 solver → Findings
+```
+
+Mythril может найти баги, которые Slither пропускает: multi-transaction attacks, conditional bugs, integer overflow paths.
+
+### Запуск через Docker
+
+```bash
+# Из директории labs/ethereum/
+# Первый запуск скачает образ (~1.5 GB)
+docker compose --profile security run mythril \
+  analyze /tmp/contracts/security/VulnerableVault.sol \
+  --solv 0.8.28
+```
+
+**Пояснение параметров:**
+- `analyze` -- команда анализа
+- `/tmp/contracts/security/VulnerableVault.sol` -- путь внутри контейнера (volume mounted to /tmp)
+- `--solv 0.8.28` -- версия Solidity compiler
+
+### Mythril output: SWC classification
+
+Mythril классифицирует findings по **SWC Registry** (Smart Contract Weakness Classification):
+
+```
+==== Integer Arithmetic Bugs ====
+SWC ID: 101
+Severity: High
+Contract: VulnerableVault
+Function name: deposit()
+PC address: 0x1a3
+Estimated Gas Usage: 812 - 897
+----
+The arithmetic operator can underflow.
+It is possible to cause an integer overflow or underflow
+in the arithmetic operation.
+----
+Transaction Sequence:
+  Caller: [ATTACKER]
+  Function: deposit()
+  Call value: 115792089237316195423570985008687907853...
+```
+
+### Ключевые SWC коды
+
+| SWC ID | Название | Mythril находит? | Описание |
+|--------|---------|-------------------|----------|
+| SWC-101 | Integer Overflow/Underflow | Да | Арифметическое переполнение |
+| SWC-104 | Unchecked Call Return Value | Да | Не проверен результат low-level call |
+| SWC-106 | Unprotected SELFDESTRUCT | Да | selfdestruct без access control |
+| SWC-107 | Reentrancy | Да | State change после external call |
+| SWC-110 | Assert Violation | Да | assert() может быть violated |
+| SWC-112 | Delegatecall to Untrusted Callee | Да | delegatecall на user input |
+| SWC-115 | Authorization through tx.origin | Да | tx.origin вместо msg.sender |
+
+### Mythril: важные флаги
+
+```bash
+# Увеличить глубину анализа (дольше, но находит больше)
+--execution-timeout 300     # 5 минут вместо default 60 сек
+--max-depth 50              # Глубже исследовать execution paths
+--transaction-count 3       # Multi-transaction анализ (default: 1)
+
+# Пример: глубокий анализ critical контракта
+docker compose --profile security run mythril \
+  analyze /tmp/contracts/security/VulnerableVault.sol \
+  --solv 0.8.28 \
+  --execution-timeout 300 \
+  --max-depth 50 \
+  --transaction-count 3
+```
+
+> **Trade-off:** Больше depth/timeout = больше findings, но exponentially больше время. Для CI/CD -- default. Для manual аудита -- максимальные настройки.
+
+## Aderyn: AST Pattern Matching
+
+### Что такое Aderyn?
+
+**Aderyn** -- инструмент от Cyfrin (Patrick Collins). Написан на Rust, работает через AST pattern matching. Молодой проект, но быстро развивается.
+
+**Ключевые отличия:**
+- **Скорость:** Rust = молниеносный анализ
+- **Детекторы:** Фокус на практических уязвимостях из реальных аудитов Cyfrin
+- **Output:** Чистый Markdown отчет
+
+### Запуск (установка)
+
+```bash
+# Через cargo (Rust)
+cargo install aderyn
+
+# Запуск
+aderyn ./contracts/security/
+
+# Output: report.md в текущей директории
+```
+
+### Aderyn vs Slither: когда что использовать
+
+| Сценарий | Рекомендация |
+|----------|-------------|
+| CI/CD pipeline | Slither (mature, много детекторов) |
+| Быстрая проверка | Aderyn (быстрый, чистый output) |
+| Deep analysis | Mythril (symbolic execution) |
+| Полный аудит | Slither + Mythril + Manual review |
+| Learning | Все три + сравнить результаты |
+
+## Triage Findings: Практическое руководство
+
+### Workflow triage
+
+```
+Slither output (30-50 findings)
+  ↓ фильтр по severity
+High/Medium findings (10-15)
+  ↓ ручной анализ каждого
+True Positive (3-5)     → Включить в отчет
+False Positive (5-8)    → Отметить как FP
+Informational (2-3)     → Low priority в отчете
+```
+
+### Как отличить TP от FP
+
+**True Positive (TP) -- настоящая уязвимость:**
+- Можете написать PoC exploit
+- Нарушает invariant протокола
+- Приводит к потере/блокировке средств
+
+**False Positive (FP) -- ложное срабатывание:**
+- Контекст, который инструмент не понимает
+- Access control защищает функцию
+- Dead code / unreachable path
+- Intended behavior
+
+**Пример FP:** Slither детектор `arbitrary-send-eth` находит `owner.call{value: balance}("")` в функции `emergencyWithdraw()` с `onlyOwner` modifier. Это FP: отправка средств owner -- intended behavior.
+
+### Классический false positive pattern
+
+```solidity
+// Slither: "reentrancy-eth" на withdraw()
+// Но функция имеет nonReentrant modifier!
+function withdraw(uint256 amount) external nonReentrant {
+    require(balances[msg.sender] >= amount);
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success);
+    balances[msg.sender] -= amount; // Slither: "state after call!"
+}
+```
+
+Slither видит pattern "state change after external call", но НЕ учитывает `nonReentrant`. Это FP.
+
+## Layered Defense: стратегия
+
+Ни один инструмент не находит все. Стратегия **layered defense**:
+
+```
+Layer 1: Slither (static)
+  → Быстрый, широкий, catches known patterns
+  → ~50-70% recall на known vulnerability classes
+  → Запускать ПЕРВЫМ
+
+Layer 2: Mythril (symbolic)
+  → Медленный, глубокий, finds multi-tx bugs
+  → ~30-50% recall, но находит то, что Slither пропускает
+  → Запускать на critical контрактах
+
+Layer 3: Manual Review (человек)
+  → Business logic, economic attacks, cross-contract
+  → ~80% recall на critical/high findings
+  → НЕОБХОДИМ для любого серьезного аудита
+
+Layer 4: Formal Verification (если бюджет позволяет)
+  → Halmos, Certora, KEVM
+  → Математическое доказательство invariants
+  → Для протоколов с TVL > $100M
+```
+
+> **Золотое правило:** `Slither + Mythril + Manual review` = минимальный набор для серьезного аудита. Ни один компонент нельзя убрать.
+
+## Lab: запуск инструментов на наших контрактах
+
+### Подготовка
+
+```bash
+# Перейти в директорию лабораторной
+cd labs/ethereum/
+
+# Убедитесь, что контракты скомпилированы
+forge build
+```
+
+### Упражнение 1: Slither на VulnerableVault
+
+```bash
+# Запуск Slither
+docker compose --profile security run slither \
+  contracts/security/VulnerableVault.sol \
+  --solc-remaps '@openzeppelin/=node_modules/@openzeppelin/'
+
+# Ожидаемый output: 3-5 findings (reentrancy-eth, etc.)
+# Задание: классифицируйте каждый finding как TP/FP/Info
+```
+
+### Упражнение 2: Mythril на VulnerableVault
+
+```bash
+# Запуск Mythril (может занять 1-3 минуты)
+docker compose --profile security run mythril \
+  analyze /tmp/contracts/security/VulnerableVault.sol \
+  --solv 0.8.28
+
+# Ожидаемый output: SWC-107 (reentrancy), возможно SWC-101
+# Задание: сравните findings с результатами Slither
+```
+
+### Упражнение 3: Сравнение результатов
+
+```
+Создайте таблицу:
+
+| Finding | Slither | Mythril | Triage |
+|---------|---------|---------|--------|
+| Reentrancy in withdraw() | ✓ (reentrancy-eth) | ✓ (SWC-107) | TP |
+| Unprotected initialize() | ✓ (unprotected-upgrade) | ? | TP |
+| Event after call | ✓ (reentrancy-events) | ✗ | Info |
+| ...     | ...     | ...     | ...    |
+```
+
+> **Задание:** Запустите оба инструмента на каждом контракте в `contracts/security/` и сравните результаты. Сколько findings нашел только Slither? Только Mythril? Оба?
+
+## Написание аудит-отчета
+
+### Собираем все вместе
+
+Вот полный workflow создания audit report для наших контрактов:
+
+```markdown
+1. Scope: contracts/security/ (8 контрактов, ~500 nSLOC)
+2. Automated: Slither (X findings) + Mythril (Y findings)
+3. Triage: Z true positives
+4. Manual review: business logic check
+5. Report: severity classification + PoC
+
+Шаблон finding:
+
+### [H-01] Reentrancy in VulnerableVault.withdraw()
+
+**Severity:** High | **Likelihood:** High | **Impact:** Critical
+
+**Description:**
+withdraw() выполняет external call (msg.sender.call{value}) перед state update
+(balances[msg.sender] = 0). Атакующий может рекурсивно вызвать withdraw().
+
+**PoC:**
+forge test --match-path test/security/ReentrancyExploit.t.sol -vvv
+
+**Recommendation:**
+Apply CEI pattern + ReentrancyGuard.
+
+**References:**
+- SWC-107
+- contracts/security/ReentrancyVulnerable.sol (SEC-02)
+```
+
+## Ключевые выводы
+
+1. **Slither** -- быстрый static analysis, 200+ детекторов, идеален для CI/CD
+2. **Mythril** -- symbolic execution, находит глубокие баги, но медленный
+3. **Aderyn** -- быстрый Rust-инструмент от Cyfrin, дополняет Slither
+4. **Triage** (TP/FP/Info) -- ключевой навык, ~50% findings от инструментов = FP
+5. **Layered defense:** Slither + Mythril + Manual = минимальный набор
+6. **Docker compose** упрощает запуск: `--profile security run slither/mythril`
+7. **CI/CD integration:** Slither на каждый PR, fail на High findings
+
+---
+
+## Module 6 Recap: Security & Audit
+
+Поздравляем! Вы завершили модуль Security -- самый критически важный модуль для любого разработчика smart contract.
+
+| Концепция | Урок | Ключевой вывод |
+|-----------|------|----------------|
+| OWASP Top 10 | SEC-01 | Access Control -- #1, reentrancy -- #5. Ландшафт сменился с 2016 |
+| Reentrancy | SEC-02 | 4 варианта: single, cross-function, cross-contract, read-only |
+| Integer Overflow | SEC-03 | 0.8+ защищает, но unchecked и downcasting -- риски |
+| Access Control | SEC-04 | От нуля до RBAC: Ownable -> Ownable2Step -> AccessControl |
+| MEV | SEC-05 | Supply chain: users -> searchers -> builders -> relays -> validators |
+| Sandwich | SEC-06 | Frontrun + backrun = profit за счет пользователя |
+| Flashbots | SEC-07 | Private mempool, Protect RPC, 90% MEV refund |
+| Flash Loan атаки | SEC-08 | Уязвимость в оракуле, не во flash loan |
+| Методология аудита | SEC-09 | 4 фазы: scoping, auto, manual (60%), reporting |
+| Инструменты аудита | SEC-10 | Slither + Mythril + manual = layered defense |
+
+### Что вы теперь умеете
+
+После этого модуля вы можете:
+- Идентифицировать 10 основных типов уязвимостей smart contract
+- Написать PoC exploit для reentrancy, integer overflow, access control
+- Понять MEV supply chain и защитить транзакции через Flashbots
+- Запустить Slither и Mythril через Docker
+- Провести triage findings (TP vs FP vs Info)
+- Написать структурированный audit report
+- Формализовать invariants протокола
+
+### Следующий модуль
+
+В следующем модуле -- **Governance & Scalability**. DAO governance с OpenZeppelin Governor, Layer 2 решения (Optimistic Rollups, ZK Rollups), cross-chain bridges и будущее масштабирования Ethereum.
+
+> **Переход:** Security -> Governance & Scalability. Теперь, когда вы умеете находить и исправлять уязвимости, следующий шаг -- понять как протоколы УПРАВЛЯЮТСЯ (governance) и как Ethereum МАСШТАБИРУЕТСЯ (L2).
