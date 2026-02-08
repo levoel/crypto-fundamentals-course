@@ -1,0 +1,250 @@
+---
+title: "Структура блока Bitcoin"
+description: "80 байт заголовка, дерево Меркла и связывание блоков в цепочку"
+order: 3
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Блок", "Заголовок", "Merkle Root", "nBits", "Nonce", "Цепочка блоков"]
+prerequisites: ["02-utxo-model"]
+---
+
+import { BlockHeaderExplorer, BlockChainLinkDiagram, MerkleInBlockDiagram } from '../../../components/diagrams/module2/BlockStructureDiagrams';
+
+# Структура блока Bitcoin
+
+## Зачем это блокчейну?
+
+Каждые ~10 минут майнер собирает транзакции из мемпула, формирует блок и добавляет его в цепочку. Но что именно находится внутри блока? Всего **80 байт заголовка** определяют целостность всей цепочки -- от Genesis Block 3 января 2009 года до последнего блока, добавленного несколько минут назад.
+
+Понимание структуры блока критично для разработчика: это основа Proof-of-Work, механизм связывания блоков, и место, где дерево Меркла (CRYPTO-13/14) встречается с реальными транзакциями.
+
+```python
+import hashlib
+import struct
+import time
+
+def sha256d(data: bytes) -> bytes:
+    """Double SHA-256 -- основная хеш-функция Bitcoin"""
+    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+
+# Заголовок блока: 80 байт, 6 полей
+# Именно эти 80 байт хешируются для получения block hash
+header = struct.pack('<I', 1)            # version (4 bytes, little-endian)
+header += b'\x00' * 32                   # prev_hash (32 bytes)
+header += bytes.fromhex(                 # merkle_root (32 bytes)
+    "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a"
+)
+header += struct.pack('<I', 1231006505)  # timestamp (4 bytes)
+header += bytes.fromhex("ffff001d")      # nbits (4 bytes)
+header += struct.pack('<I', 2083236893)  # nonce (4 bytes)
+
+print(f"Размер заголовка: {len(header)} байт")  # 80
+block_hash = sha256d(header)
+print(f"Block Hash: {block_hash[::-1].hex()[:20]}...")  # reversed для display
+```
+
+## Заголовок блока (80 байт)
+
+Заголовок блока состоит из 6 полей фиксированного размера. Нажмите на каждое поле, чтобы узнать его роль:
+
+<BlockHeaderExplorer client:load />
+
+### Подробнее о каждом поле
+
+**Version (4 байта)** -- версия протокола. Используется для сигнализации поддержки soft fork через BIP 9 (bit-поля). Например, бит 1 обозначал поддержку SegWit.
+
+**Previous Block Hash (32 байта)** -- SHA-256d хеш заголовка предыдущего блока. Это поле **связывает блоки в цепочку**. Изменение любого бита в предыдущем блоке изменяет его хеш, что ломает все последующие блоки.
+
+**Merkle Root (32 байта)** -- корень дерева Меркла, построенного из txid всех транзакций блока. Позволяет проверить включение транзакции в блок за O(log n) с помощью Merkle Proof (см. CRYPTO-13/14).
+
+**Timestamp (4 байта)** -- Unix timestamp (секунды). Не обязательно точный -- узлы допускают отклонение до ~2 часов. Используется в алгоритме корректировки сложности.
+
+**nBits (4 байта)** -- компактное представление целевого значения (target). Майнер должен найти такой nonce, чтобы `SHA256d(header) < target`.
+
+**Nonce (4 байта)** -- единственное поле, которое майнер свободно меняет при поиске хеша < target. 4 байта = 2^32 вариантов. Если nonce исчерпан, меняют timestamp или extraNonce в coinbase.
+
+```python
+import struct
+
+# Парсинг заголовка блока (80 байт -> 6 полей)
+def parse_block_header(raw: bytes) -> dict:
+    assert len(raw) == 80, f"Header must be 80 bytes, got {len(raw)}"
+    return {
+        "version": struct.unpack('<I', raw[0:4])[0],
+        "prev_hash": raw[4:36][::-1].hex(),    # reversed для display
+        "merkle_root": raw[36:68][::-1].hex(),  # reversed для display
+        "timestamp": struct.unpack('<I', raw[68:72])[0],
+        "nbits": raw[72:76].hex(),
+        "nonce": struct.unpack('<I', raw[76:80])[0],
+    }
+
+# Genesis Block
+genesis_hex = (
+    "01000000"
+    "0000000000000000000000000000000000000000000000000000000000000000"
+    "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a"
+    "29ab5f49"
+    "ffff001d"
+    "1dac2b7c"
+)
+genesis_header = bytes.fromhex(genesis_hex)
+parsed = parse_block_header(genesis_header)
+
+for field, value in parsed.items():
+    print(f"{field:>12}: {value}")
+
+# Timestamp -> дата
+from datetime import datetime
+dt = datetime.utcfromtimestamp(parsed["timestamp"])
+print(f"\nДата Genesis Block: {dt} UTC")  # 2009-01-03 18:15:05
+```
+
+## Связывание блоков в цепочку
+
+Поле Previous Hash создаёт **однонаправленную связь** между блоками. Наведите на блок, чтобы увидеть, как изменение одного блока влияет на всю цепочку:
+
+<BlockChainLinkDiagram client:load />
+
+### Почему цепочку нельзя подделать?
+
+Если злоумышленник хочет изменить транзакцию в блоке N:
+
+1. Меняется Merkle Root блока N (дерево Меркла гарантирует это)
+2. Меняется хеш блока N (header hash зависит от Merkle Root)
+3. Previous Hash блока N+1 больше не совпадает
+4. Нужно пересчитать PoW для блока N+1 (найти новый nonce)
+5. ...и для блока N+2, N+3, и всех последующих
+
+Чтобы обогнать честную сеть, злоумышленнику нужно контролировать >50% вычислительной мощности -- это **атака 51%**.
+
+## Дерево Меркла в блоке
+
+Merkle Root в заголовке блока -- это корень дерева Меркла, построенного из txid всех транзакций. Помните деревья Меркла из CRYPTO-13/14? Вот где они применяются:
+
+<MerkleInBlockDiagram client:load />
+
+### Зачем Merkle Root в заголовке?
+
+1. **Компактность** -- 32 байта фиксируют любое количество транзакций (от 1 до тысяч)
+2. **Merkle Proof** -- SPV-узел может проверить включение транзакции, скачав только O(log n) хешей
+3. **Неизменяемость** -- изменение любой транзакции меняет Merkle Root, а значит и хеш блока
+
+```python
+import hashlib
+
+def sha256d(data: bytes) -> bytes:
+    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+
+def merkle_root(tx_hashes: list[bytes]) -> bytes:
+    """Вычислить Merkle Root из списка txid (как в Bitcoin)."""
+    if len(tx_hashes) == 0:
+        return b'\x00' * 32
+    if len(tx_hashes) == 1:
+        return tx_hashes[0]
+
+    level = tx_hashes[:]
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level.append(level[-1])  # Дублирование (конвенция Bitcoin)
+        next_level = []
+        for i in range(0, len(level), 2):
+            next_level.append(sha256d(level[i] + level[i + 1]))
+        level = next_level
+    return level[0]
+
+# 4 транзакции
+txids = [sha256d(f"tx_{i}".encode()) for i in range(4)]
+root = merkle_root(txids)
+print(f"Merkle Root: {root[::-1].hex()[:16]}...")  # reversed для display
+```
+
+## nBits и компактное представление
+
+Поле nBits кодирует целевое значение (target) в компактном формате: 1 байт экспонента + 3 байта мантисса.
+
+```python
+def nbits_to_target(nbits_hex: str) -> int:
+    """Декодировать nBits в целевое значение."""
+    nbits = int(nbits_hex, 16)
+    exponent = nbits >> 24
+    mantissa = nbits & 0x7FFFFF
+    if nbits & 0x800000:  # sign bit
+        mantissa = -mantissa
+    target = mantissa * (256 ** (exponent - 3))
+    return target
+
+# Genesis Block: nBits = 0x1d00ffff
+genesis_target = nbits_to_target("1d00ffff")
+print(f"nBits: 0x1d00ffff")
+print(f"Экспонента: 0x1d = {0x1d}")
+print(f"Мантисса: 0x00ffff = {0x00ffff}")
+print(f"Target: {genesis_target:#066x}")
+print(f"\nМайнер должен найти nonce такой, что:")
+print(f"SHA256d(header) < target")
+
+# Вероятность за одну попытку:
+# target / 2^256 ≈ 1 / difficulty
+# Genesis difficulty ≈ 1 (самый лёгкий уровень)
+```
+
+Подробнее об алгоритме корректировки сложности (каждые 2016 блоков) -- в BTC-07.
+
+## Алгоритмический уровень
+
+Проверим хеш Genesis Block вручную:
+
+```python
+import hashlib
+import struct
+
+def sha256d(data: bytes) -> bytes:
+    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+
+# Собираем Genesis Block header (80 байт)
+version = struct.pack('<I', 1)
+prev_hash = bytes(32)  # все нули
+merkle_root = bytes.fromhex(
+    "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a"
+)
+timestamp = struct.pack('<I', 1231006505)
+nbits = bytes.fromhex("ffff001d")  # обратите внимание на endianness!
+nonce = struct.pack('<I', 2083236893)
+
+header = version + prev_hash + merkle_root + timestamp + nbits + nonce
+assert len(header) == 80
+
+block_hash = sha256d(header)
+# Display format (big-endian / reversed):
+display_hash = block_hash[::-1].hex()
+print(f"Genesis Block Hash: {display_hash}")
+# Ожидается: 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+
+# Проверяем: hash < target?
+hash_int = int.from_bytes(block_hash, 'little')
+target = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
+print(f"\nhash < target: {hash_int < target}")  # True -- блок валиден!
+```
+
+## Практика
+
+Исследуйте структуру блока на regtest:
+
+```bash
+CLI="bitcoin-cli -regtest -rpcuser=student -rpcpassword=learn"
+
+# Получить хеш лучшего блока
+BEST_HASH=$($CLI getbestblockhash)
+echo "Best block: $BEST_HASH"
+
+# Получить блок с полной детализацией (verbosity 2 = включая транзакции)
+$CLI getblock "$BEST_HASH" 2
+
+# Отдельные поля заголовка:
+$CLI getblockheader "$BEST_HASH"
+```
+
+Подробный лаб: `labs/bitcoin/scripts/lab-01-transactions.sh` (секция 6).
+
+## Что дальше?
+
+В следующем уроке мы изучим **Bitcoin Script** -- язык программирования, который определяет условия траты каждого UTXO. Вы увидите, как стековая машина выполняет OP_DUP, OP_HASH160, OP_CHECKSIG и проверяет, имеет ли отправитель право тратить UTXO.

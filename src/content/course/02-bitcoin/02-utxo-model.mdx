@@ -1,0 +1,249 @@
+---
+title: "Модель UTXO"
+description: "UTXO — фундаментальная модель данных Bitcoin: транзакции как графы, а не балансы"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["UTXO", "Транзакции", "Входы", "Выходы", "Сдача", "Coinbase"]
+prerequisites: ["01-bitcoin-architecture"]
+---
+
+import { UTXOFlowDiagram, UTXOSetVisualization, ChangeAddressDiagram } from '../../../components/diagrams/module2/UTXODiagrams';
+
+# Модель UTXO
+
+## Зачем это блокчейну?
+
+В традиционном банке у вас есть баланс на счёте. Вы видите число: "10 000 руб." Банк хранит это число в своей базе данных и обновляет его при каждой операции.
+
+В Bitcoin баланса не существует. Вместо этого ваш кошелёк хранит набор **неизрасходованных выходов** (Unspent Transaction Outputs, UTXO). Каждая транзакция **потребляет** старые UTXO и **создаёт** новые. Это фундаментальное архитектурное решение, которое обеспечивает параллельную валидацию, приватность и простоту проверки.
+
+```python
+# Баланс в Bitcoin -- это НЕ число в базе данных.
+# Это сумма всех UTXO, которые вы можете потратить:
+
+my_utxos = [
+    {"txid": "a1b2c3...", "vout": 0, "amount": 0.5},
+    {"txid": "d4e5f6...", "vout": 1, "amount": 0.3},
+    {"txid": "789abc...", "vout": 0, "amount": 1.2},
+]
+
+balance = sum(u["amount"] for u in my_utxos)
+print(f"Баланс = {balance} BTC")  # 2.0 BTC
+
+# Нет никакого поля "balance" -- только UTXO
+```
+
+## Интуитивное объяснение: купюры в кошельке
+
+Представьте, что UTXO -- это **купюры в физическом кошельке**. У вас есть купюра в 500 руб. и купюра в 300 руб. Чтобы заплатить 600 руб.:
+
+1. Вы отдаёте **обе** купюры (500 + 300 = 800)
+2. Вы получаете **сдачу** 200 руб. новой купюрой
+3. Старые купюры больше не существуют
+
+Точно так же работает Bitcoin:
+- **Входы** (inputs): UTXO, которые вы тратите (старые "купюры")
+- **Выходы** (outputs): новые UTXO, которые создаются (новые "купюры")
+- **Комиссия** (fee): разница между входами и выходами -- уходит майнеру
+
+## Поток UTXO
+
+Пройдите пошагово через процесс создания транзакции:
+
+<UTXOFlowDiagram client:load />
+
+### Формула комиссии
+
+Это самое важное правило Bitcoin-транзакций:
+
+```
+fee = sum(inputs) - sum(outputs)
+```
+
+В транзакции **нет явного поля "fee"**. Комиссия -- это просто разница между суммой входов и суммой выходов. Если вы забудете создать выход для сдачи, вся разница уйдёт майнеру как комиссия.
+
+```python
+# ОПАСНО: забыли сдачу
+inputs_total = 1.0   # BTC
+output_bob = 0.3     # BTC
+# fee = 1.0 - 0.3 = 0.7 BTC -- ПОТЕРЯ!
+
+# ПРАВИЛЬНО:
+inputs_total = 1.0       # BTC
+output_bob = 0.3         # BTC
+output_change = 0.6999   # BTC (сдача)
+fee = inputs_total - output_bob - output_change  # 0.0001 BTC
+```
+
+## Множество UTXO
+
+Каждый полный узел Bitcoin поддерживает **UTXO Set** -- глобальное множество всех неизрасходованных выходов. На момент 2024 года это ~100 миллионов записей.
+
+<UTXOSetVisualization client:load />
+
+### Зачем узлам UTXO Set?
+
+Когда узел получает новую транзакцию, он должен быстро проверить:
+1. Существуют ли указанные UTXO? (не потрачены ли уже?)
+2. Может ли отправитель их потратить? (правильная подпись?)
+
+UTXO Set -- это по сути key-value хранилище, где ключ = `(txid, vout)`, значение = `(amount, scriptPubKey)`. Bitcoin Core хранит его в LevelDB для быстрого доступа.
+
+```python
+# Структура UTXO Set (концептуально):
+utxo_set = {
+    ("a1b2c3...", 0): {"amount": 0.5, "scriptPubKey": "OP_0 <hash>"},
+    ("a1b2c3...", 1): {"amount": 0.3, "scriptPubKey": "OP_0 <hash>"},
+    # ... ~100 миллионов записей
+}
+
+# Проверка транзакции:
+def validate_input(txid, vout, signature):
+    if (txid, vout) not in utxo_set:
+        raise ValueError("UTXO not found or already spent!")  # Double-spend!
+    utxo = utxo_set[(txid, vout)]
+    if not verify_script(signature, utxo["scriptPubKey"]):
+        raise ValueError("Invalid signature!")  # Нет права тратить
+    return utxo["amount"]
+```
+
+## Сдача и приватность
+
+Адреса сдачи -- важный элемент приватности Bitcoin. Почему сдача идёт на *новый* адрес, а не на исходный?
+
+<ChangeAddressDiagram client:load />
+
+### HD-кошельки и адреса
+
+Современные кошельки (BIP 32/44/84) автоматически генерируют новый адрес для каждой операции сдачи. Это затрудняет анализ цепочки транзакций:
+
+```python
+# HD-кошелёк (Hierarchical Deterministic):
+# m/84'/0'/0'/0/0 -- первый адрес для получения
+# m/84'/0'/0'/0/1 -- второй адрес для получения
+# m/84'/0'/0'/1/0 -- первый адрес сдачи
+# m/84'/0'/0'/1/1 -- второй адрес сдачи
+
+# Наблюдатель видит:
+# Input: 1 BTC (адрес A)
+# Output 1: 0.3 BTC (адрес B)  -- кому?
+# Output 2: 0.6999 BTC (адрес C)  -- кому?
+# Без дополнительной информации невозможно определить,
+# какой из выходов -- оплата, а какой -- сдача.
+```
+
+## Coinbase транзакция
+
+Первая транзакция в каждом блоке -- особенная. Она называется **coinbase** и создаёт новые биткоины:
+
+- **Нет входов** -- новые монеты "из ниоткуда" (эмиссия)
+- **Выход** = block reward + сумма комиссий всех транзакций в блоке
+- Block reward начался с 50 BTC и halving каждые 210 000 блоков:
+  - 2009: 50 BTC
+  - 2012: 25 BTC
+  - 2016: 12.5 BTC
+  - 2020: 6.25 BTC
+  - 2024: 3.125 BTC
+
+```python
+# Coinbase transaction -- единственная транзакция без входов:
+coinbase_tx = {
+    "inputs": [{
+        "txid": "0000...0000",  # Нулевой txid (нет предыдущей транзакции)
+        "vout": 0xffffffff,     # Специальный маркер
+        "coinbase": "блок #840000",  # Произвольные данные (до 100 байт)
+    }],
+    "outputs": [{
+        "amount": 3.125 + 0.5,  # Block reward + fees
+        "scriptPubKey": "OP_1 <miner_pubkey>",  # P2TR адрес майнера
+    }],
+}
+
+# Coinbase UTXO нельзя тратить 100 блоков (правило зрелости)
+```
+
+## Алгоритмический уровень
+
+Работаем с UTXO программно через python-bitcoinlib:
+
+```python
+from bitcoin import SelectParams
+from bitcoin.rpc import Proxy
+from bitcoin.core import b2lx, lx, COIN
+
+SelectParams('regtest')
+rpc = Proxy(service_url='http://student:learn@localhost:18443')
+
+# Получаем список UTXO
+utxos = rpc.call('listunspent')
+print(f"Найдено UTXO: {len(utxos)}")
+
+for u in utxos[:5]:
+    # Обратите внимание на endianness:
+    # rpc возвращает txid в display format (big-endian)
+    # lx() конвертирует display -> internal (little-endian)
+    print(f"  txid: {u['txid'][:16]}... vout: {u['vout']} "
+          f"amount: {u['amount']} BTC "
+          f"addr: {u['address'][:20]}...")
+
+# Вычисляем баланс из UTXO (не getbalance!)
+balance_from_utxo = sum(u['amount'] for u in utxos)
+balance_rpc = float(rpc.call('getbalance'))
+print(f"\nБаланс из UTXO: {balance_from_utxo} BTC")
+print(f"Баланс из RPC:  {balance_rpc} BTC")
+print(f"Совпадают: {abs(balance_from_utxo - balance_rpc) < 1e-8}")
+```
+
+## Математический уровень
+
+Формально модель UTXO можно описать так:
+
+**Определение.** UTXO -- это кортеж `(txid, vout, scriptPubKey, amount)`, где:
+- `txid` -- 256-битный хеш транзакции, создавшей этот выход
+- `vout` -- индекс выхода в транзакции (0, 1, 2, ...)
+- `scriptPubKey` -- условие траты (Script)
+- `amount` -- количество сатоши (1 BTC = 10^8 сатоши)
+
+**Определение.** Транзакция `T` -- это функция:
+
+```
+T: {UTXO_1, ..., UTXO_m} -> {UTXO'_1, ..., UTXO'_n}
+```
+
+с ограничениями:
+1. Все входные UTXO должны существовать в UTXO Set
+2. Для каждого входа предоставлена валидная подпись (scriptSig/witness)
+3. `sum(inputs) >= sum(outputs)` (разница = комиссия)
+4. `sum(inputs) - sum(outputs) >= 0` (комиссия неотрицательна)
+
+**Инвариант UTXO Set:**
+
+```
+UTXO_Set(block_n+1) = UTXO_Set(block_n) - spent(block_n+1) + created(block_n+1)
+```
+
+Каждый блок удаляет потраченные UTXO и добавляет новые. UTXO Set -- это "снимок" текущего состояния всех монет.
+
+## Практика
+
+Закрепите модель UTXO на практике:
+
+1. **Bash-лаб** (секции 1-4 в `lab-01-transactions.sh`):
+   - Просмотр UTXO через `listunspent`
+   - Отправка транзакции через `sendtoaddress`
+   - Ручное создание raw transaction
+
+2. **Python notebook** (`10-bitcoin-transactions.ipynb`):
+   - Подключение к regtest через python-bitcoinlib
+   - Парсинг raw transaction
+   - Вычисление баланса из UTXO
+
+```bash
+# Быстрый старт:
+docker exec bitcoin-regtest bash /scripts/lab-01-transactions.sh
+```
+
+## Что дальше?
+
+В следующем уроке мы изучим **структуру блока**: 80 байт заголовка, которые связывают блоки в цепочку, и как дерево Меркла из Phase 2 используется для фиксации набора транзакций.

@@ -5,3 +5,4 @@ ecdsa==0.19.1
 python-bitcoinlib==0.12.2
 cryptography==46.0.4
 galois==0.4.10
+bitcoin-utils==0.7.3
