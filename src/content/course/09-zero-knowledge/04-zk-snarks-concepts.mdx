@@ -1,0 +1,290 @@
+---
+title: "zk-SNARKs: от вычисления к доказательству"
+description: "Arithmetic circuits, R1CS constraint system, QAP polynomial encoding -- как ЛЮБОЕ вычисление становится доказуемым утверждением"
+order: 4
+difficulty: "advanced"
+estimatedTime: 45
+topics: ["zk-SNARK", "Arithmetic Circuit", "R1CS", "QAP", "Schwartz-Zippel", "Flattening"]
+prerequisites: ["03-interactive-proofs"]
+---
+
+import { ArithmeticCircuitDiagram, R1CSMatrixDiagram, ComputationToProofDiagram } from '../../../components/diagrams/module9/SNARKConceptDiagrams';
+
+# zk-SNARKs: от вычисления к доказательству
+
+## Зачем это блокчейну?
+
+В ZK rollups (Module 8, SCALE-07) мы видели, что prover генерирует validity proof, а on-chain verifier проверяет его за миллисекунды. Но КАК именно произвольное вычисление (исполнение 1000 транзакций) превращается в маленький proof (~128 bytes)?
+
+Ответ -- pipeline: **computation -> arithmetic circuit -> R1CS -> QAP -> proof**. Этот урок проходит каждый шаг на конкретном примере: `x^3 + x + 5 = 35`.
+
+> **Аналогия:** Представьте, что вы хотите доказать преподавателю, что решили уравнение x^3 + x + 5 = 35. Вместо того, чтобы показывать всю работу (решение кубического уравнения), вы "компилируете" задачу в формат, где преподаватель проверяет ответ за секунду -- не пересчитывая ничего. SNARK -- это такой "компилятор доказательств".
+
+## Что означает SNARK?
+
+**S**uccinct **N**on-interactive **AR**gument of **K**nowledge:
+
+- **Succinct** -- proof маленький (O(1) bytes), verification быстрая (O(1) time). Независимо от сложности вычисления.
+- **Non-interactive** -- prover отправляет proof один раз. Никакого ping-pong с verifier (в отличие от interactive proofs из ZK-03).
+- **ARgument** -- computational soundness: обманщик не может создать ложный proof, если у него нет бесконечных вычислительных ресурсов.
+- **of Knowledge** -- prover не просто знает, что утверждение истинно -- он знает WITNESS (конкретное значение x=3). Из proof можно "извлечь" witness (extractor theorem).
+
+## Полный pipeline
+
+<ComputationToProofDiagram client:load />
+
+Каждый этап трансформирует задачу в более формальное представление. Конечная цель: формат, для которого существует эффективный proof system (Groth16, PLONK, etc.).
+
+## Шаг 1: Arithmetic Circuit
+
+### Интуитивный уровень
+
+Arithmetic circuit -- это "схема" из двух типов gates: **умножение (**)** и **сложение (+)**. Любая программа компилируется в такую схему. Входы -- переменные и константы, выход -- результат вычисления.
+
+Наш пример: `x^3 + x + 5 = 35` для x = 3.
+
+<ArithmeticCircuitDiagram client:load />
+
+### Flattening: почему x^3 нельзя напрямую
+
+**Критическое ограничение:** каждый gate допускает умножение ровно ДВУХ переменных. `x * x * x` -- это три переменные, что запрещено.
+
+Решение -- **flattening** (уплощение):
+
+```
+// НЕЛЬЗЯ (non-quadratic constraint):
+out = x * x * x + x + 5
+
+// МОЖНО (после flattening):
+v1 = x * x          // gate 1: умножение двух переменных
+v2 = v1 * x         // gate 2: умножение двух переменных
+out = v2 + x + 5    // gate 3: сложение (допускается)
+```
+
+Каждая промежуточная переменная (v1, v2) -- это выход одного gate. В Circom (ZK-07) попытка написать `x * x * x` вызовет ошибку **non-quadratic constraint**.
+
+### Алгоритмический уровень
+
+```
+function flatten(expression):
+    """Преобразует произвольное выражение в набор binary gates."""
+    gates = []
+    for each multiplication in expression:
+        if operands > 2:
+            introduce intermediate variable
+            split into binary multiplications
+    for each addition:
+        combine as linear combination (допускается в R1CS)
+    return gates
+
+# Наш пример:
+flatten("x^3 + x + 5 = 35") ->
+    gate_1: v1 = x * x
+    gate_2: v2 = v1 * x
+    gate_3: out = v2 + x + 5    # linear combination
+    assertion: out == 35
+```
+
+## Шаг 2: R1CS (Rank-1 Constraint System)
+
+### Интуитивный уровень
+
+R1CS -- это "система уравнений" для нашей circuit. Каждый gate становится одной строкой в системе: `(A_i . s) * (B_i . s) = (C_i . s)`, где s -- witness vector (все значения), а A, B, C -- матрицы "селекторов", которые выбирают нужные переменные.
+
+**Аналогия:** R1CS -- это как заполнить таблицу: для каждой операции указываем, какие входы слева (A), какие справа (B), и какой результат (C). Verifier проверяет: "левый вход * правый вход = выход" для каждой строки.
+
+<R1CSMatrixDiagram client:load />
+
+### Конструкция R1CS для x^3 + x + 5 = 35
+
+**Witness vector:** s = [1, x, v1, v2, out] = [1, 3, 9, 27, 35]
+
+Первый элемент -- всегда 1 (для констант).
+
+**Constraint 1:** v1 = x * x
+
+Нужно выбрать x слева, x справа, v1 как результат:
+- A1 = [0, 1, 0, 0, 0] -- выбирает x (позиция 1)
+- B1 = [0, 1, 0, 0, 0] -- выбирает x (позиция 1)
+- C1 = [0, 0, 1, 0, 0] -- выбирает v1 (позиция 2)
+
+Проверка: (A1 . s) * (B1 . s) = 3 * 3 = 9 = (C1 . s). Верно.
+
+**Constraint 2:** v2 = v1 * x
+
+- A2 = [0, 0, 1, 0, 0] -- выбирает v1
+- B2 = [0, 1, 0, 0, 0] -- выбирает x
+- C2 = [0, 0, 0, 1, 0] -- выбирает v2
+
+Проверка: 9 * 3 = 27. Верно.
+
+**Constraint 3:** out = v2 + x + 5
+
+R1CS допускает только форму A * B = C (умножение). Перепишем: (v2 + x + 5) * 1 = out.
+
+- A3 = [5, 1, 0, 1, 0] -- выбирает 5*1 + x + v2 (линейная комбинация)
+- B3 = [1, 0, 0, 0, 0] -- выбирает константу 1
+- C3 = [0, 0, 0, 0, 1] -- выбирает out
+
+Проверка: (5*1 + 1*3 + 0 + 1*27 + 0) * (1*1) = 35 * 1 = 35. Верно.
+
+### Полная R1CS система
+
+3 constraints, 5 переменных. Матрицы A, B, C размером 3x5:
+
+```
+A = [[0, 1, 0, 0, 0],    B = [[0, 1, 0, 0, 0],    C = [[0, 0, 1, 0, 0],
+     [0, 0, 1, 0, 0],         [0, 1, 0, 0, 0],         [0, 0, 0, 1, 0],
+     [5, 1, 0, 1, 0]]         [1, 0, 0, 0, 0]]         [0, 0, 0, 0, 1]]
+
+s = [1, 3, 9, 27, 35]
+
+For each row i: (A_i . s) * (B_i . s) = (C_i . s)
+  Row 1: 3 * 3 = 9     ✓
+  Row 2: 9 * 3 = 27    ✓
+  Row 3: 35 * 1 = 35   ✓
+```
+
+Все constraints удовлетворены -- witness валиден.
+
+### Алгоритмический уровень
+
+```
+function verify_r1cs(A, B, C, s):
+    """Проверяет, что witness s удовлетворяет R1CS."""
+    n_constraints = len(A)
+    for i in range(n_constraints):
+        left = dot_product(A[i], s)
+        right = dot_product(B[i], s)
+        output = dot_product(C[i], s)
+        assert left * right == output, f"Constraint {i} failed"
+    return True
+
+# Пример:
+s = [1, 3, 9, 27, 35]
+A = [[0,1,0,0,0], [0,0,1,0,0], [5,1,0,1,0]]
+B = [[0,1,0,0,0], [0,1,0,0,0], [1,0,0,0,0]]
+C = [[0,0,1,0,0], [0,0,0,1,0], [0,0,0,0,1]]
+
+verify_r1cs(A, B, C, s)  # True
+```
+
+**Размер R1CS** для реального ZK rollup: миллионы constraints (каждая EVM операция = десятки gates). Verifier не может проверять каждую строку -- слишком долго. Нужен следующий шаг: QAP.
+
+## Шаг 3: QAP (Quadratic Arithmetic Program)
+
+### Интуитивный уровень
+
+QAP -- это "полиномиальное кодирование" R1CS. Вместо проверки N constraints по отдельности, мы кодируем ВСЕ constraints в полиномы. Если полиномы совпадают в случайной точке -- с огромной вероятностью R1CS выполнена целиком.
+
+**Аналогия:** Представьте 1000 уравнений. Проверять каждое -- O(1000). Но если "сжать" все 1000 уравнений в один полином и проверить его значение в одной случайной точке -- это O(1). Если значения совпали -- значит все 1000 уравнений верны (с вероятностью ошибки 1/p, где p -- размер поля, ~2^254).
+
+### Ключевая идея: Schwartz-Zippel lemma
+
+> **Schwartz-Zippel lemma:** Если два разных полинома степени d определены над полем размера p, они совпадают не более чем в d точках. Если мы проверяем в СЛУЧАЙНОЙ точке и они совпали -- вероятность ошибки <= d/p.
+
+Для наших целей: d ~ тысячи (степень полинома), p ~ 2^254 (размер поля). Вероятность ошибки ~ 10^(-70). Это надежнее, чем вероятность того, что компьютер самопроизвольно выдаст правильный ответ.
+
+### Концептуальный обзор QAP
+
+Идея (без доказательства конструкции):
+
+1. **Interpolation:** Каждый столбец матриц A, B, C превращается в полином через Lagrange interpolation. Constraint i соответствует точке x = i.
+
+2. **Witness encoding:** Witness vector s "встраивается" в полиномы: A(x) = sum(s_j * A_j(x)), аналогично B(x), C(x).
+
+3. **Divisibility check:** Если R1CS выполнена, то A(x) * B(x) - C(x) делится на target polynomial T(x) = (x-1)(x-2)...(x-n). Prover вычисляет H(x) = (A(x)*B(x) - C(x)) / T(x).
+
+4. **Random evaluation:** Verifier выбирает случайную точку r и проверяет: A(r) * B(r) - C(r) = H(r) * T(r). Одна точка, одна проверка, все constraints.
+
+```
+// Концепт QAP check:
+// Prover знает: A(x), B(x), C(x), H(x) из witness
+// Verifier проверяет в случайной точке r:
+
+A(r) * B(r) - C(r) == H(r) * T(r)
+
+// Если равенство выполнено -> с вероятностью > 1 - 10^(-70)
+// ВСЕ R1CS constraints удовлетворены
+```
+
+### Математический уровень
+
+Формально, QAP instance Q = (t(x), {v_i(x)}, {w_i(x)}, {y_i(x)}) состоит из:
+
+- **Target polynomial** t(x) = prod(x - r_i) для точек evaluation
+- **Polynomials** v_i, w_i, y_i (из interpolation столбцов A, B, C)
+
+Witness s = (c_0, c_1, ..., c_m) удовлетворяет Q если:
+
+t(x) | (sum(c_i * v_i(x)) * sum(c_i * w_i(x)) - sum(c_i * y_i(x)))
+
+То есть существует h(x) такой, что:
+
+A(x) * B(x) - C(x) = h(x) * t(x)
+
+Prover вычисляет h(x) и предоставляет evaluations в зашифрованной точке s (из trusted setup). Verifier проверяет равенство через bilinear pairing (Groth16).
+
+## Почему это работает: от N проверок к одной
+
+| Этап | Что проверяем | Сложность |
+|------|---------------|-----------|
+| R1CS напрямую | N constraints по отдельности | O(N) |
+| QAP в точке | Одно полиномиальное равенство | O(1) |
+| Groth16 proof | 3 pairing operations | O(1) |
+
+Переход R1CS -> QAP: **сжатие N проверок в одну**. Schwartz-Zippel гарантирует, что одна случайная проверка эквивалентна всем N с подавляющей вероятностью.
+
+## Полный пример: x^3 + x + 5 = 35
+
+Соберем все вместе:
+
+```
+1. COMPUTATION
+   Программа: f(x) = x^3 + x + 5
+   Утверждение: f(3) = 35
+   Witness: x = 3 (приватный)
+
+2. ARITHMETIC CIRCUIT (flattening)
+   v1 = x * x          (= 9)
+   v2 = v1 * x         (= 27)
+   out = v2 + x + 5    (= 35)
+   → 3 gates
+
+3. R1CS
+   s = [1, 3, 9, 27, 35]
+   3 constraints, матрицы A(3x5), B(3x5), C(3x5)
+   (A_i . s) * (B_i . s) = (C_i . s) для i = 1,2,3
+
+4. QAP
+   Interpolate каждый столбец A, B, C в полиномы
+   A(x)*B(x) - C(x) = H(x)*T(x)
+   Проверка в одной случайной точке
+
+5. TRUSTED SETUP (ZK-05)
+   Ceremony генерирует CRS: proving key + verification key
+
+6. PROOF (Groth16)
+   π = [A, B, C] -- 3 group elements, ~128 bytes
+   Verification: одно pairing equation
+```
+
+## Масштаб в реальных системах
+
+| Приложение | Constraints | Variables | Proof Size | Verify Time |
+|------------|-------------|-----------|------------|-------------|
+| x^3+x+5=35 (наш пример) | 3 | 5 | ~128 B | < 1ms |
+| Zcash transaction | ~100K | ~50K | 192 B | ~10ms |
+| zkEVM block (1000 txs) | ~100M | ~50M | 128 B | ~10ms |
+| zkML inference | ~1B | ~500M | 128 B | ~10ms |
+
+**Ключевое наблюдение:** proof size и verification time ПОСТОЯННЫ (Groth16). Растет только prover time.
+
+## Ключевые выводы
+
+1. **SNARK pipeline:** computation -> arithmetic circuit -> R1CS -> QAP -> proof. Каждый шаг формализует вычисление дальше.
+2. **Flattening:** R1CS допускает только умножение двух переменных. x^3 разбивается на v1=x*x, v2=v1*x. В Circom: "non-quadratic constraint" error.
+3. **R1CS:** матрицы A, B, C "селектируют" переменные. Для каждого constraint: (A.s)*(B.s) = (C.s).
+4. **QAP:** кодирует ВСЕ constraints в полиномы. Schwartz-Zippel: проверка в одной случайной точке заменяет N проверок.
+5. **Succinctness:** proof ~128 bytes, verification O(1) -- независимо от сложности исходного вычисления.
+6. **Следующий урок (ZK-05):** Groth16 -- как именно QAP proof генерируется и верифицируется через trusted setup и bilinear pairings.

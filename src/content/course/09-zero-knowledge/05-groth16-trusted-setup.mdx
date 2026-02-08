@@ -1,0 +1,298 @@
+---
+title: "Groth16 и Trusted Setup"
+description: "Groth16 proving system -- 3 group elements, bilinear pairings, trusted setup ceremony, MPC (Zcash, Ethereum KZG), и PLONK как следующее поколение"
+order: 5
+difficulty: "advanced"
+estimatedTime: 40
+topics: ["Groth16", "Trusted Setup", "Bilinear Pairing", "MPC Ceremony", "Powers of Tau", "Toxic Waste", "PLONK"]
+prerequisites: ["04-zk-snarks-concepts"]
+---
+
+import { TrustedSetupDiagram, Groth16LifecycleDiagram } from '../../../components/diagrams/module9/Groth16Diagrams';
+
+# Groth16 и Trusted Setup
+
+## Зачем это блокчейну?
+
+В предыдущем уроке мы построили pipeline: computation -> circuit -> R1CS -> QAP. Но QAP -- это только формат. Нужен **proof system**, который:
+
+1. Позволяет prover создать маленький proof из QAP witness
+2. Позволяет verifier проверить proof без доступа к witness
+3. Гарантирует soundness (невозможность подделки) и zero-knowledge (приватность)
+
+**Groth16** (Jens Groth, 2016) -- самый развернутый SNARK: ~128 bytes proof, 3 pairing operations для verification. Используется в Zcash, zkSync, Filecoin, Tornado Cash, и десятках других проектов.
+
+> **Аналогия:** QAP -- это "формат задачи" (как PDF). Groth16 -- это "движок проверки" (как PDF reader). Trusted setup -- это "ключ шифрования", который связывает формат и движок. Без ключа prover не может создать proof, а verifier не может его проверить.
+
+## Groth16: самый компактный SNARK
+
+### Интуитивный уровень
+
+Groth16 proof состоит из **трех элементов эллиптической кривой**: π = [A, B, C].
+
+- **A** -- элемент группы G1 (~32 bytes)
+- **B** -- элемент группы G2 (~64 bytes)
+- **C** -- элемент группы G1 (~32 bytes)
+- **Итого: ~128 bytes**
+
+Для сравнения: одна Bitcoin транзакция ~ 250 bytes. Groth16 proof МЕНЬШЕ одной транзакции, но доказывает корректность МИЛЛИОНОВ вычислений.
+
+<Groth16LifecycleDiagram client:load />
+
+### Три фазы Groth16
+
+**Setup (one-time):**
+- Trusted setup ceremony генерирует proving key (pk) и verification key (vk)
+- pk используется prover для создания proofs
+- vk размещается on-chain в verifier contract
+
+**Prove (off-chain):**
+- Prover берет witness (приватный вход), public inputs, и pk
+- Вычисляет π = (A, B, C) через elliptic curve operations
+- Computationally intensive: секунды-минуты
+
+**Verify (on-chain):**
+- Verifier берет π, public inputs, и vk
+- Проверяет одно pairing equation
+- Fast: миллисекунды, ~200-300K gas on Ethereum
+
+## Bilinear Pairings: "magic function"
+
+### Интуитивный уровень
+
+Bilinear pairing -- это функция e: G1 x G2 -> GT, которая "переносит" умножение из экспонент:
+
+```
+e(aG, bH) = e(G, H)^(ab)
+```
+
+**Вход:** две точки на эллиптических кривых (G1 и G2).
+**Выход:** элемент целевой группы GT.
+**Магическое свойство:** позволяет проверить `a * b = c` БЕЗ знания a и b.
+
+**Аналогия:** Представьте "запечатанные конверты" с числами. Bilinear pairing позволяет проверить, что "число в конверте 1 * число в конверте 2 = число в конверте 3", не вскрывая ни один конверт.
+
+### Алгоритмический уровень
+
+```
+# Bilinear pairing -- black box:
+# Input: P из G1, Q из G2
+# Output: e(P, Q) из GT
+
+# Ключевое свойство (bilinearity):
+e(aP, bQ) = e(P, Q)^(ab)
+e(P + R, Q) = e(P, Q) * e(R, Q)
+
+# Groth16 verification equation:
+# Verifier проверяет:
+e(A, B) = e(alpha, beta) * e(sum(x_i * L_i), gamma) * e(C, delta)
+
+# Где:
+# A, B, C -- proof elements (от prover)
+# alpha, beta, gamma, delta -- verification key (от trusted setup)
+# x_i -- public inputs
+# L_i -- Lagrange polynomials evaluated at verification key points
+```
+
+Одно уравнение, три pairing operations. Если равенство выполнено -- proof валиден.
+
+### Математический уровень
+
+Groth16 verification equation проверяет, что prover знает witness w такой, что QAP divisibility выполнена:
+
+A(τ) * B(τ) - C(τ) = H(τ) * T(τ)
+
+Но вместо проверки полиномов напрямую (требует знания τ), verification key содержит зашифрованные значения: [α]₁, [β]₂, [γ]₂, [δ]₂, и Lagrange evaluations.
+
+Pairing equation:
+
+e([A]₁, [B]₂) = e([α]₁, [β]₂) · e(Σ xᵢ[Lᵢ(τ)]₁, [γ]₂) · e([C]₁, [δ]₂)
+
+Soundness: если prover не знает witness, он не может найти A, B, C удовлетворяющие это уравнение (предполагая hardness of discrete logarithm и q-type assumption).
+
+## Trusted Setup
+
+### Зачем нужен Trusted Setup?
+
+Groth16 вычисляет proof в "зашифрованной" точке τ. Никто не должен знать τ -- иначе можно подделать proof. Trusted setup ceremony генерирует:
+
+- Powers of τ: [τ, τ², τ³, ...] на эллиптической кривой (зашифрованные -- нельзя извлечь τ из [τ]G)
+- Proving key и verification key, привязанные к конкретной circuit
+
+**Toxic waste** = само значение τ (и все промежуточные секреты). Должно быть уничтожено после ceremony.
+
+<TrustedSetupDiagram client:load />
+
+### Phase 1: Powers of Tau
+
+Phase 1 -- **универсальная** ceremony. Генерирует structured reference string (SRS), переиспользуемый для ЛЮБОЙ circuit до определенного размера.
+
+```
+# Phase 1: Powers of Tau ceremony
+# N участников: P1, P2, ..., PN
+
+P1: generates s1, publishes [s1]G, [s1^2]G, ..., [s1^d]G
+P2: takes P1's output, multiplies by s2:
+    [s1*s2]G, [(s1*s2)^2]G, ..., [(s1*s2)^d]G
+...
+PN: takes P(N-1)'s output, multiplies by sN:
+    [tau]G, [tau^2]G, ..., [tau^d]G
+    where tau = s1 * s2 * ... * sN
+
+# Каждый участник уничтожает свой si
+# Никто не знает tau = s1 * s2 * ... * sN
+```
+
+**Ключевая гарантия:** если ХОТЯ БЫ ОДИН участник честно уничтожил свой секрет si, toxic waste (tau) невозможно восстановить. Вся система безопасна.
+
+### Phase 2: Circuit-Specific
+
+Phase 2 берет результат Phase 1 и специализирует его для конкретной R1CS/QAP circuit:
+
+- Генерирует proving key (pk) -- большой (~MB), используется prover
+- Генерирует verification key (vk) -- маленький (~KB), размещается on-chain
+- При изменении circuit нужна новая Phase 2 (Phase 1 переиспользуется)
+
+### Toxic Waste: что если утечка?
+
+Если кто-то знает τ, он может:
+
+1. **Создавать поддельные proofs** для ложных утверждений
+2. **Фальсифицировать транзакции** (в случае Zcash -- печатать монеты)
+3. **Подрывать всю систему** без возможности обнаружения
+
+Поэтому toxic waste ОБЯЗАН быть уничтожен. MPC ceremony гарантирует это.
+
+## MPC Ceremonies: реальные примеры
+
+### Zcash Sprout (2016)
+
+- **6 участников** в первой ceremony
+- Координировались лично, физическая изоляция
+- Участник Sean Bowe: "Я сжег компьютер, использованный для ceremony"
+- Критика: всего 6 человек, высокий risk of collusion
+
+### Zcash Sapling (2018)
+
+- **87 участников** из разных стран
+- Phase 1 (Powers of Tau): открытая, любой мог участвовать
+- Phase 2: координированная с проверками
+- Участники включали: Edward Snowden (анонимный contribution подтвержден позже)
+
+### Ethereum KZG Ceremony (2023)
+
+- **141,416 участников** из 177 стран
+- Самая масштабная MPC ceremony в истории криптографии
+- Powers of Tau для EIP-4844 (Proto-Danksharding, blob transactions)
+- Открытая для всех: custom code, browser, CLI
+- Уникальная entropy: один участник использовал космические лучи для генерации случайности
+
+```
+# Сравнение MPC ceremonies:
+
+| Ceremony | Год | Участники | Для чего |
+|----------|-----|-----------|----------|
+| Zcash Sprout | 2016 | 6 | Zcash shielded txs |
+| Zcash Sapling | 2018 | 87 | Zcash Sapling upgrade |
+| Hermez | 2021 | 1,088 | Polygon Hermez rollup |
+| Ethereum KZG | 2023 | 141,416 | EIP-4844 blob commitments |
+```
+
+**Тренд:** с 6 до 141,416 участников за 7 лет. Чем больше участников -- тем сильнее гарантия безопасности.
+
+## Groth16 vs PLONK: следующее поколение
+
+### Проблема Groth16
+
+Groth16 требует **per-circuit trusted setup**: Phase 2 ceremony для КАЖДОЙ новой circuit. Обновили программу -- новая ceremony. Это дорого и неудобно.
+
+### PLONK (2019): universal setup
+
+**PLONK** (Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge) решает эту проблему:
+
+| Свойство | Groth16 | PLONK |
+|----------|---------|-------|
+| Setup | Per-circuit (Phase 1 + Phase 2) | Universal (одна ceremony для всех) |
+| Proof size | ~128 bytes (3 elements) | ~400 bytes (larger) |
+| Verification | 3 pairings | 1 pairing + commitments |
+| Update | Новая ceremony при изменении circuit | Нет -- та же SRS |
+
+PLONK использует **universal и updatable SRS**: одна ceremony, любая circuit. Не нужна новая ceremony при обновлении программы.
+
+> **Важно:** В этом курсе мы фокусируемся на Groth16, так как он наиболее развернут и его proof structure иллюстрирует ключевые концепции. PLONK, Marlin, Halo2 -- тема продвинутых курсов.
+
+## Алгоритмический уровень: полный Groth16 flow
+
+```
+# Groth16 Full Flow
+
+# 1. COMPILE
+circuit = compile("x^3 + x + 5 = 35")    # Circom/R1CS
+qap = to_qap(circuit)                      # R1CS -> QAP
+
+# 2. SETUP (one-time ceremony)
+tau = mpc_ceremony(participants=141416)     # Toxic waste (destroyed)
+pk, vk = groth16_setup(qap, tau)           # Proving & verification keys
+
+# 3. PROVE (off-chain, heavy)
+witness = [1, 3, 9, 27, 35]               # Private input: x=3
+public_inputs = [35]                        # Public: expected output
+proof = groth16_prove(pk, witness, public_inputs)
+# proof = (A, B, C) -- 3 curve points, ~128 bytes
+
+# 4. VERIFY (on-chain, cheap)
+valid = groth16_verify(vk, public_inputs, proof)
+# Checks: e(A, B) = e(alpha, beta) * e(L, gamma) * e(C, delta)
+# Cost: ~200-300K gas, ~10ms
+```
+
+## Мост к Module 8: ZK rollups
+
+В Module 8 (SCALE-07) мы узнали, что ZK rollups используют validity proofs. Теперь мы понимаем КАК эти proofs конструируются:
+
+```
+ZK Rollup Proof Pipeline:
+
+1000 транзакций
+    ↓ compile
+Arithmetic circuit (millions of gates)
+    ↓ flatten
+R1CS (millions of constraints)
+    ↓ interpolate
+QAP (high-degree polynomials)
+    ↓ Groth16 + trusted setup
+Proof: π = [A, B, C] (~128 bytes)
+    ↓ on-chain verify
+e(A, B) = e(α, β) · e(L, γ) · e(C, δ)
+    ↓
+State transition accepted! ✓
+```
+
+**Полный цикл:** секвенсер собирает транзакции -> prover компилирует в circuit -> генерирует Groth16 proof -> отправляет на L1 -> verifier contract проверяет pairing equation -> state finalized.
+
+**Стоимость:** ~300K gas для verification. Amortized на 1000 транзакций: ~300 gas per tx (vs ~21,000 gas для обычного L1 transfer). **Сжатие в ~70 раз.**
+
+## Математический уровень
+
+### Groth16 Security
+
+Безопасность Groth16 основана на следующих предположениях:
+
+1. **q-Power Knowledge of Exponent (q-PKE):** невозможно вычислить [aτⁱ]₁ без знания a, имея только [τⁱ]₁ и [ατⁱ]₁.
+
+2. **q-Strong Diffie-Hellman (q-SDH):** имея [1, τ, τ², ..., τᵍ] в G1, невозможно вычислить (c, [1/(τ+c)]₁) для нового c.
+
+3. **Generic bilinear group model:** атакующий может работать с group elements только через group operations.
+
+**Soundness:** вероятность создания валидного proof для ложного утверждения = negl(λ), где λ -- security parameter (~128 bit).
+
+**Zero-knowledge:** proof не раскрывает информации о witness. Simulator может создать "поддельный" proof без witness, неотличимый от настоящего (в модели trusted setup).
+
+## Ключевые выводы
+
+1. **Groth16** -- самый компактный SNARK: proof = 3 group elements (~128 bytes), verification = 1 pairing equation (~300K gas)
+2. **Bilinear pairing** e(aG, bH) = e(G, H)^(ab): позволяет проверить умножение без раскрытия множителей. "Magic function" для ZK verification.
+3. **Trusted setup = две фазы:** Phase 1 (Powers of Tau, universal) + Phase 2 (circuit-specific). Toxic waste ОБЯЗАН быть уничтожен.
+4. **MPC ceremonies:** если ХОТЯ БЫ ОДИН участник честен, система безопасна. Zcash: 87 участников. Ethereum KZG: 141,416 участников.
+5. **PLONK** (next generation): universal setup, нет per-circuit ceremony. Proof больше (~400 bytes), но удобнее в production.
+6. **Pipeline ZK rollup:** computation -> circuit -> R1CS -> QAP -> Groth16 proof -> on-chain verification. ~128 bytes доказывают миллионы вычислений.
