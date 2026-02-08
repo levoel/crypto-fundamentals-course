@@ -1,0 +1,26 @@
+# Circom ZK Lab - Docker Compose
+# Provides Circom 2.2.3 + snarkjs + circomlib environment
+#
+# Usage:
+#   docker compose up -d circom-lab
+#   docker compose exec circom-lab bash
+#   # Inside container:
+#   ./scripts/setup.sh circuits/multiplier.circom
+#   ./scripts/prove.sh circuits/multiplier.circom inputs/multiplier_input.json
+#   ./scripts/verify.sh circuits/multiplier.circom
+
+services:
+  circom-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: circom-zk-lab
+    volumes:
+      - ./circuits:/home/node/work/circuits
+      - ./scripts:/home/node/work/scripts
+      - ./inputs:/home/node/work/inputs
+      - ./ptau:/home/node/work/ptau
+    working_dir: /home/node/work
+    stdin_open: true
+    tty: true
+    command: ["bash"]
