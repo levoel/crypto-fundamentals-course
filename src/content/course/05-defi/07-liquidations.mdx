@@ -1,0 +1,397 @@
+---
+title: "Ликвидации"
+description: "Health Factor, LTV vs Liquidation Threshold, пошаговый сценарий ликвидации, close factor, liquidation bonus, MEV-боты, каскадные ликвидации"
+order: 7
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["Liquidation", "Health Factor", "Close Factor", "Liquidation Bonus", "MEV", "Flash Loan Liquidation", "Cascading Liquidations"]
+prerequisites: ["06-lending-protocols"]
+---
+
+import { HealthFactorGaugeDiagram, LiquidationStepThroughDiagram, LiquidationCascadeDiagram, LiquidatorProfitDiagram } from '../../../components/diagrams/module5/LiquidationDiagrams';
+
+# Ликвидации
+
+## Зачем это блокчейну?
+
+В DeFi-кредитовании нет коллекторов и судебных приставов. Единственный механизм защиты кредиторов -- **ликвидация**: автоматический процесс, при котором залог заемщика продается для погашения долга. Любой адрес может быть ликвидатором и получить **бонус** (5-10%) за погашение чужого долга.
+
+Ликвидации -- это одновременно:
+- **Защитный механизм** протокола (предотвращение bad debt)
+- **Штраф** для заемщика (потеря части залога)
+- **MEV-возможность** для ботов (прибыль от бонуса)
+- **Системный риск** при каскадных ликвидациях
+
+В этом уроке мы пройдем полный цикл: от формулы Health Factor до реального сценария ликвидации с конкретными числами.
+
+## Health Factor: формула здоровья позиции
+
+### Интуитивное объяснение
+
+**Health Factor (HF)** -- это "запас прочности" позиции заемщика. Представьте его как уровень топлива:
+
+- **HF > 1.5:** Полный бак. Можно спать спокойно
+- **HF 1.0 - 1.5:** Мигает лампочка. Нужно внимание
+- **HF < 1.0:** Двигатель заглох. Ликвидация разрешена
+
+<HealthFactorGaugeDiagram client:load />
+
+### Формула
+
+```
+HF = SUM(collateral_i * price_i * liquidation_threshold_i) / SUM(debt_j * price_j)
+```
+
+Для простого случая (1 залог, 1 долг):
+
+```
+HF = (Collateral_USD * Liquidation_Threshold) / Debt_USD
+```
+
+### Пример с числами
+
+10 ETH при $2,000/ETH, долг 12,000 USDC, WETH LT = 82.5%:
+
+```
+HF = (10 * 2000 * 0.825) / 12000
+   = 16,500 / 12,000
+   = 1.375
+```
+
+Позиция здоровая (HF > 1).
+
+## LTV vs Liquidation Threshold
+
+Это два **разных** параметра. Путаница между ними -- частая ошибка:
+
+### LTV (Loan-to-Value)
+
+**Ограничивает новые займы.** Определяет максимальную сумму, которую можно занять.
+
+```
+Max Borrow = Collateral * LTV
+```
+
+WETH: LTV = 80%. При залоге $20,000 максимальный займ = $16,000.
+
+### Liquidation Threshold
+
+**Определяет ликвидацию.** Используется в формуле Health Factor.
+
+```
+HF = (Collateral * Liquidation_Threshold) / Debt
+```
+
+WETH: LT = 82.5%. Ликвидация когда HF < 1, то есть когда:
+
+```
+Collateral * 0.825 < Debt
+```
+
+### Почему LTV < Liquidation Threshold?
+
+**Buffer zone** между ними (2.5% для WETH) означает:
+- Вы **можете** занять до 80% залога
+- Но ликвидация наступает только при 82.5%
+- У вас есть **буфер 2.5%** чтобы отреагировать
+
+```
+  0%                 80%     82.5%                    100%
+  |__________________|________|________________________|
+  Safe zone           Buffer   Danger: HF < 1
+                              (ликвидация разрешена)
+```
+
+### Сравнение по активам
+
+| Актив | LTV | Liq. Threshold | Buffer | Liq. Bonus |
+|-------|-----|---------------|--------|------------|
+| WETH | 80% | 82.5% | 2.5% | 5% |
+| WBTC | 73% | 78% | 5% | 6.25% |
+| USDC | 77% | 80% | 3% | 4.5% |
+| DAI | 67% | 77% | 10% | 4% |
+| LINK | 53% | 68% | 15% | 7% |
+
+> **Закономерность:** Чем волатильнее актив, тем ниже LTV, шире buffer и выше liquidation bonus. Это компенсирует риск резкого падения цены.
+
+## Пошаговый сценарий ликвидации
+
+Разберем реалистичный сценарий от начала до конца: Bob вносит 10 ETH, занимает USDC, цена падает, происходит ликвидация.
+
+<LiquidationStepThroughDiagram client:load />
+
+### Хронология в числах
+
+| Событие | ETH Price | Collateral | Debt | HF |
+|---------|-----------|-----------|------|-----|
+| Начало | $2,000 | $20,000 | $0 | Inf |
+| Borrow | $2,000 | $20,000 | $12,000 | 1.375 |
+| Price drop | $1,400 | $14,000 | $12,000 | 0.963 |
+| Ликвидация | $1,400 | $14,000 -> $7,700 | $12,000 -> $6,000 | 1.059 |
+
+### Цена ликвидации
+
+Для 10 ETH залога и 12,000 USDC долга:
+
+```
+HF = 1 когда:
+Collateral * LT = Debt
+10 * P_eth * 0.825 = 12,000
+P_eth = 12,000 / (10 * 0.825)
+P_eth = $1,454.55
+```
+
+> Любая цена ETH ниже **$1,454** делает позицию ликвидируемой.
+
+## Close Factor и Liquidation Bonus
+
+### Close Factor (50%)
+
+Ликвидатор может погасить **до 50%** долга заемщика за одну транзакцию. Это ограничение предотвращает полную ликвидацию позиции и дает заемщику шанс восстановить HF.
+
+```
+Max Liquidation = Debt * Close Factor = 12,000 * 0.5 = 6,000 USDC
+```
+
+### Liquidation Bonus (5% для WETH)
+
+Ликвидатор получает залог **со скидкой**. За каждый погашенный $1 долга он получает $1.05 залога:
+
+```
+Collateral Received = Debt Repaid * (1 + Liquidation Bonus) / Collateral Price
+                    = 6,000 * 1.05 / 1,400
+                    = 4.5 ETH (стоимостью $6,300)
+```
+
+### Прибыль ликвидатора
+
+<LiquidatorProfitDiagram client:load />
+
+### Разбор profit
+
+```
+Revenue:   4.5 ETH * $1,400 = $6,300 (залог получен)
+Cost:      6,000 USDC        = $6,000 (долг погашен)
+Gas:       ~200k gas          = ~$30
+---
+Net Profit: $6,300 - $6,000 - $30 = $270
+```
+
+## MEV-боты и ликвидации
+
+### Как работают MEV-ликвидаторы
+
+1. **Мониторинг:** Бот сканирует каждый блок, вычисляя HF всех позиций
+2. **Обнаружение:** Позиция с HF < 1 найдена
+3. **Flash Loan:** Бот берет flash loan (0.05% комиссия) чтобы не иметь собственного капитала
+4. **Ликвидация:** Погашает долг, получает залог с бонусом
+5. **Swap:** Продает залог за stable, возвращает flash loan
+6. **Profit:** Разница минус gas и flash loan fee
+
+### Flash Loan Liquidation
+
+```
+1. Flash Loan: borrow 6,000 USDC (fee = 3 USDC)
+2. Liquidate: pay 6,000 USDC, receive 4.5 ETH
+3. Swap: sell 4.5 ETH on Uniswap -> ~6,300 USDC
+4. Repay: return 6,000 + 3 = 6,003 USDC
+5. Profit: 6,300 - 6,003 = $297 - gas
+```
+
+> Flash loan позволяет ликвидировать **без собственного капитала**. Любой бот может ликвидировать позиции стоимостью в миллионы долларов, имея только ETH на gas.
+
+### Конкуренция между ботами
+
+- **Priority Gas Auction (PGA):** Боты конкурируют, повышая gas price
+- **Flashbots:** Приватные транзакции через MEV-relay (не видны в mempool)
+- **Backrunning:** Бот отправляет транзакцию сразу после oracle price update
+- **Profit compression:** Конкуренция сжимает маржу до ~$10-50 за ликвидацию
+
+## Каскадные ликвидации
+
+### Positive Feedback Loop
+
+Ликвидации создают **самоусиливающийся цикл**:
+
+<LiquidationCascadeDiagram client:load />
+
+### Механизм каскада
+
+```
+1. ETH price drops
+2. Positions with HF < 1 get liquidated
+3. Liquidators receive ETH collateral
+4. Liquidators sell ETH for USDC (to realize profit)
+5. Additional selling pressure on ETH
+6. ETH price drops further
+7. More positions become liquidatable
+8. GOTO 2
+```
+
+### Black Thursday: 12 марта 2020
+
+**Контекст:** ETH упал на **43%** за 24 часа ($194 -> $111). Это была самая масштабная каскадная ликвидация в истории DeFi.
+
+**Последствия:**
+- **$8.3M bad debt** в MakerDAO (долг не погашен)
+- Ликвидационные аукционы MakerDAO прошли с **нулевыми ставками** (боты не успели)
+- Gas prices взлетели до **700+ gwei**
+- Многие ликвидаторы не смогли отправить транзакции
+- MakerDAO провел аукцион MKR для покрытия убытков
+
+**Уроки:**
+1. **Gas spikes** блокируют ликвидаторов -- нужны механизмы для экстремальных условий
+2. **Oracle delays** в volatile markets создают окно для exploitation
+3. **Cascading liquidations** -- системный риск для всего DeFi
+4. **Circuit breakers** не существуют в DeFi (нет "остановки торгов")
+
+### Защитные механизмы Aave V3
+
+После уроков Black Thursday:
+- **Close Factor 100%** при HF < 0.95 (полная ликвидация для критических позиций)
+- **Price Oracle Sentinel:** Задержка ликвидаций при нестабильных ценах (L2)
+- **Isolation Mode:** Новые рискованные активы в изолированных пулах
+- **Supply/Borrow Caps:** Лимиты на максимальный объем supply/borrow для каждого актива
+- **E-Mode:** Сниженный бонус для коррелированных активов (меньше selling pressure)
+
+## Алгоритмический уровень: ликвидация в коде
+
+```python
+# Liquidation algorithm (simplified Aave V3)
+
+def can_liquidate(user: Address, pool: AavePool) -> bool:
+    """Check if user's position is liquidatable"""
+    account = pool.getUserAccountData(user)
+    return account.health_factor < 1e18  # 1.0 in WAD
+
+def liquidation_call(
+    pool: AavePool,
+    collateral_asset: Address,    # Актив залога (WETH)
+    debt_asset: Address,          # Актив долга (USDC)
+    user: Address,                # Заемщик
+    debt_to_cover: uint256,       # Сумма долга к погашению
+    receive_aToken: bool          # Получить aToken или underlying
+):
+    # 1. Проверка: позиция ликвидируема?
+    health_factor = calculate_health_factor(user)
+    require(health_factor < 1e18, "Position healthy")
+
+    # 2. Проверка close factor
+    max_debt_to_cover = total_debt * CLOSE_FACTOR  # 50%
+    actual_debt = min(debt_to_cover, max_debt_to_cover)
+
+    # 3. Расчет залога к изъятию
+    # collateral_value = debt_value * (1 + liquidation_bonus)
+    collateral_amount = (
+        actual_debt * debt_price / collateral_price *
+        (1 + liquidation_bonus)
+    )
+
+    # 4. Перевод долга: ликвидатор -> протокол
+    transfer(debt_asset, liquidator, pool, actual_debt)
+
+    # 5. Уменьшение долга заемщика
+    burn_debt_tokens(user, actual_debt)
+
+    # 6. Перевод залога: протокол -> ликвидатор
+    if receive_aToken:
+        transfer_atoken(collateral_asset, user, liquidator, collateral_amount)
+    else:
+        withdraw_and_transfer(collateral_asset, user, liquidator, collateral_amount)
+
+    # 7. Обновление состояния
+    update_interest_rates(collateral_asset)
+    update_interest_rates(debt_asset)
+```
+
+## Математический уровень
+
+### Health Factor с мульти-коллатералом
+
+$$
+HF = \frac{\sum_{i=1}^{n} C_i \cdot P_i^{oracle} \cdot LT_i}{\sum_{j=1}^{m} D_j \cdot P_j^{oracle}}
+$$
+
+В Aave V3 все цены приведены к **base currency** (USD с 8 десятичными знаками):
+
+$$
+HF = \frac{totalCollateralBase \cdot avgLiqThreshold / 10^4}{totalDebtBase}
+$$
+
+Где avgLiqThreshold -- взвешенное среднее по коллатералам.
+
+### Liquidation Amount
+
+Максимальная сумма долга к погашению:
+
+$$
+D_{max} = D_{total} \cdot f_{close}
+$$
+
+Где $f_{close} = 0.5$ (50% close factor), или $f_{close} = 1.0$ если $HF < 0.95$.
+
+Количество залога к изъятию:
+
+$$
+C_{seized} = \frac{D_{repaid} \cdot P_D \cdot (1 + \beta)}{P_C}
+$$
+
+Где $\beta$ -- liquidation bonus (0.05 для WETH = 5%).
+
+### Profit ликвидатора
+
+$$
+\pi = D_{repaid} \cdot \beta - gas - fee_{flash}
+$$
+
+Для flash loan ликвидации:
+
+$$
+\pi = 6000 \cdot 0.05 - 30 - 3 = \$267
+$$
+
+### Liquidation Price derivation
+
+Ликвидация происходит при $HF = 1$:
+
+$$
+\frac{C \cdot P_{liq} \cdot LT}{D} = 1
+$$
+
+$$
+P_{liq} = \frac{D}{C \cdot LT}
+$$
+
+## Практика: fork тест getUserAccountData
+
+Запустите тест из DEFI-06 и обратите внимание на вывод health factor:
+
+```bash
+MAINNET_RPC_URL=... forge test --profile fork \
+  --match-test test_healthFactorAfterBorrow -vvv
+```
+
+Тест выводит:
+- `totalCollateralBase`: залог в USD (8 decimals)
+- `totalDebtBase`: долг в USD
+- `LTV`: максимальный займ (basis points)
+- `liquidationThreshold`: порог ликвидации
+- `healthFactor`: в WAD (1e18 = 1.0)
+
+Проверьте, что `healthFactor` соответствует формуле:
+
+```
+HF = collateral * liquidationThreshold / (debt * 10000)
+```
+
+## Связь с оракулами
+
+Ликвидации зависят от **ценовых оракулов** (Chainlink). Если oracle дает неверную цену:
+- **Завышенная цена:** Позиции не ликвидируются вовремя, протокол накапливает bad debt
+- **Заниженная цена:** Здоровые позиции ликвидируются ошибочно
+
+В следующих уроках мы разберем:
+- **DEFI-08:** Chainlink Price Feeds -- как работают оракулы
+- **DEFI-09:** Oracle Design -- проблема оракулов, TWAP, манипуляции ценами
+
+> Ликвидации, кредитование и оракулы -- три столпа DeFi risk management. Ошибка в любом из них может привести к потере миллионов.

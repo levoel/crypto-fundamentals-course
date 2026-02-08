@@ -1,0 +1,471 @@
+---
+title: "Lending протоколы"
+description: "Aave V3: модель процентных ставок, kinked curve, aTokens, LTV vs liquidation threshold, E-Mode, flash loans"
+order: 6
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["Aave", "Lending", "Interest Rate", "aTokens", "LTV", "Liquidation Threshold", "E-Mode"]
+prerequisites: ["02-amm-concept"]
+---
+
+import { InterestRateCurveDiagram, SupplyBorrowFlowDiagram, ATokenGrowthDiagram } from '../../../components/diagrams/module5/LendingProtocolDiagrams';
+
+# Lending протоколы
+
+## Зачем это блокчейну?
+
+В традиционных финансах банк принимает депозиты и выдает кредиты. Процентная ставка определяется кредитным комитетом, а заемщик проходит проверку личности и кредитной истории. В DeFi все это заменяет **смарт-контракт**: ставки устанавливаются алгоритмически, а залог (collateral) заменяет кредитную историю.
+
+**Aave V3** -- крупнейший lending-протокол с TVL более $15 миллиардов. Одна формула -- **kinked interest rate curve** -- определяет, сколько платят заемщики и получают депозиторы. Понимание этой формулы позволяет предсказывать ставки, оценивать риски и строить стратегии.
+
+В этом уроке мы разберем модель Aave на трех уровнях: интуитивно (аналогия с парковкой), алгоритмически (пошаговый расчет) и математически (формулы в коде).
+
+## Интуитивное объяснение: кредитование без банка
+
+### Как работает DeFi-кредитование?
+
+В DeFi lending каждый актив имеет свой **пул ликвидности**:
+
+- **Suppliers (кредиторы):** Депонируют токены и получают проценты
+- **Borrowers (заемщики):** Берут токены, предоставив залог, и платят проценты
+- **Процентная ставка:** Определяется **utilization rate** -- доля заемных средств от общего пула
+
+### Аналогия с парковкой
+
+Представьте многоуровневую парковку на 100 мест:
+
+- **U = 20% (20 мест занято):** Парковка полупустая. Цена за час -- минимальная, чтобы привлечь клиентов
+- **U = 80% (80 мест занято):** Парковка почти заполнена. Цена повышается, но разумно
+- **U = 95% (95 мест занято):** Критическая загрузка! Цена взлетает в 10-20 раз, чтобы стимулировать выезд
+
+Точно так же работает Aave: при высокой утилизации ставки резко растут, чтобы стимулировать возврат займов и привлечь новых кредиторов.
+
+## Utilization Rate и Kinked Curve
+
+### Utilization Rate
+
+**Utilization Rate (U)** -- ключевая переменная, определяющая все ставки в пуле:
+
+```
+U = Total Borrows / Total Liquidity
+```
+
+Где Total Liquidity = Total Deposits (все депонированные средства).
+
+### Kinked Curve (ломаная кривая)
+
+Aave V3 использует **piecewise linear** модель с двумя наклонами. Кривая "ломается" (kink) в точке **U_optimal**:
+
+<InterestRateCurveDiagram client:load />
+
+### Формула Borrow Rate
+
+**Ниже оптимальной утилизации** (U <= U_optimal):
+
+```
+R_borrow = R_base + R_slope1 * (U / U_optimal)
+```
+
+**Выше оптимальной утилизации** (U > U_optimal):
+
+```
+R_borrow = R_base + R_slope1 + R_slope2 * ((U - U_optimal) / (1 - U_optimal))
+```
+
+### Параметры USDC на Aave V3
+
+| Параметр | Значение | Назначение |
+|----------|----------|------------|
+| U_optimal | 90% | Целевая утилизация |
+| R_base | 0% | Базовая ставка (при U=0) |
+| R_slope1 | 3.5% | Наклон до U_optimal |
+| R_slope2 | 60% | Наклон после U_optimal (крутой!) |
+| Reserve Factor | 10% | Доля процентов для протокола |
+
+### Числовые примеры
+
+**При U = 45%** (нормальная загрузка):
+```
+R_borrow = 0% + 3.5% * (45 / 90) = 1.75%
+```
+
+**При U = 90%** (оптимальная):
+```
+R_borrow = 0% + 3.5% * (90 / 90) = 3.5%
+```
+
+**При U = 95%** (выше оптимальной):
+```
+R_borrow = 0% + 3.5% + 60% * ((95 - 90) / (100 - 90))
+         = 3.5% + 60% * 0.5
+         = 33.5% !
+```
+
+> **Ключевой вывод:** Ставка прыгает с 3.5% до 33.5% при увеличении утилизации всего на 5% (90%->95%). Это и есть "kink" -- резкий излом кривой, стимулирующий возврат займов.
+
+### Supply Rate
+
+Ставка для кредиторов (suppliers):
+
+```
+R_supply = R_borrow * U * (1 - Reserve Factor)
+```
+
+- **U** -- утилизация: проценты распределяются среди всех кредиторов, но только заемные средства генерируют доход
+- **Reserve Factor** -- доля протокола (treasury): 10% для USDC, 15% для ETH
+
+## Supply и Borrow Flow на Aave V3
+
+Рассмотрим пошаговый пример: Alice вносит 10 ETH как залог и занимает USDC.
+
+<SupplyBorrowFlowDiagram client:load />
+
+### Полный flow в коде
+
+```typescript
+import { parseEther, parseUnits } from 'viem';
+
+// 1. Wrap ETH -> WETH (Aave работает с ERC-20)
+await wethContract.write.deposit({ value: parseEther("10") });
+
+// 2. Approve: разрешить Aave Pool тратить WETH
+await wethContract.write.approve([AAVE_POOL, parseEther("10")]);
+
+// 3. Supply: внести WETH как залог
+await aavePool.write.supply([
+  WETH_ADDRESS,         // asset
+  parseEther("10"),     // amount
+  userAddress,          // onBehalfOf
+  0,                    // referralCode
+]);
+// Теперь у Alice 10 aWETH (interest-bearing receipt token)
+
+// 4. Borrow: занять USDC
+await aavePool.write.borrow([
+  USDC_ADDRESS,         // asset
+  parseUnits("12000", 6), // amount (USDC = 6 decimals!)
+  2,                    // interestRateMode: 2 = variable
+  0,                    // referralCode
+  userAddress,          // onBehalfOf
+]);
+// Alice получает 12,000 USDC, начинается начисление процентов
+```
+
+> **Критично:** USDC имеет 6 decimals, а не 18! Используйте `parseUnits("12000", 6)`, не `parseEther("12000")`. Ошибка в decimals -- катастрофическая.
+
+## aTokens: Interest-Bearing Receipt Tokens
+
+### Что такое aToken?
+
+Когда вы депонируете актив в Aave, вы получаете **aToken** -- "расписку" (receipt), баланс которой **автоматически растет** с начислением процентов. aWETH, aUSDC, aDAI -- это ERC-20 токены, которые можно трансферить, использовать как залог в других протоколах и т.д.
+
+<ATokenGrowthDiagram client:load />
+
+### Механизм Rebasing
+
+aToken использует **scaled balance** и **liquidity index**:
+
+```
+actualBalance = scaledBalance * liquidityIndex
+```
+
+- **scaledBalance** -- записывается при депозите и не меняется
+- **liquidityIndex** -- глобальная переменная, растущая с каждым начислением процентов
+
+Когда вы вызываете `balanceOf(alice)`, контракт вычисляет `scaledBalance * liquidityIndex`. Баланс "растет" без транзакций, потому что index увеличивается.
+
+### Пример
+
+1. Alice депонирует 10 ETH, когда liquidityIndex = 1.0
+2. scaledBalance = 10 / 1.0 = 10
+3. Через месяц liquidityIndex = 1.002 (0.2% прирост)
+4. balanceOf(alice) = 10 * 1.002 = **10.02 aWETH**
+5. Alice может withdraw 10.02 ETH
+
+### В коде Aave V3
+
+```solidity
+// Simplified from AToken.sol
+function balanceOf(address user) public view returns (uint256) {
+    return _userState[user].balance.rayMul(
+        POOL.getReserveNormalizedIncome(_underlyingAsset)
+    );
+}
+```
+
+`getReserveNormalizedIncome` возвращает текущий liquidityIndex, который растет с каждым блоком на основе текущей ставки.
+
+## LTV vs Liquidation Threshold
+
+Это два **разных** параметра, и их путаница приводит к ошибкам:
+
+### LTV (Loan-to-Value) -- максимальный займ
+
+**LTV** определяет, сколько вы **можете** занять:
+
+```
+Max Borrow = Collateral * LTV
+```
+
+WETH на Aave V3: LTV = 80%. При залоге $20,000 вы можете занять до $16,000.
+
+### Liquidation Threshold -- порог ликвидации
+
+**Liquidation Threshold** определяет, когда позиция **ликвидируется**:
+
+```
+Health Factor = (Collateral * Liquidation Threshold) / Debt
+```
+
+WETH на Aave V3: Liquidation Threshold = 82.5%. Ликвидация когда HF < 1.
+
+### Буферная зона
+
+| Параметр | WETH | USDC | DAI |
+|----------|------|------|-----|
+| LTV | 80% | 77% | 67% |
+| Liq. Threshold | 82.5% | 80% | 77% |
+| Buffer | 2.5% | 3% | 10% |
+
+> **Buffer = Liquidation Threshold - LTV.** Это зона между "максимум что можно занять" и "ликвидация". Чем больше buffer, тем безопаснее актив, но тем меньше capital efficiency.
+
+### Зачем два параметра?
+
+- **LTV** ограничивает **новые займы** -- вы не можете занять больше, чем позволяет LTV
+- **Liquidation Threshold** определяет **ликвидацию** -- даже если вы заняли на пределе LTV, ликвидация не произойдет мгновенно
+
+Между LTV и Liquidation Threshold -- "буферная зона", которая дает заемщику время отреагировать на падение цены залога.
+
+## E-Mode: Efficiency Mode
+
+Aave V3 представил **E-Mode** для пар связанных активов (например, stETH/ETH или USDC/DAI):
+
+### Как работает E-Mode
+
+Если залог и займ из одной категории (например, оба stablecoins):
+- **LTV увеличивается** до 97%
+- **Liquidation Threshold увеличивается** до 97.5%
+- **Liquidation Bonus уменьшается** до 1%
+
+### Пример E-Mode для стейблкоинов
+
+| Параметр | Normal | E-Mode (stablecoins) |
+|----------|--------|---------------------|
+| LTV | 77% | 97% |
+| Liq. Threshold | 80% | 97.5% |
+| Liq. Bonus | 5% | 1% |
+
+> E-Mode безопасен для коррелированных активов: USDC и DAI практически не расходятся в цене, поэтому высокий LTV оправдан. Но для ETH/USDC -- нет, потому что волатильность ETH высокая.
+
+## Flash Loans
+
+Aave изобрел **flash loans** -- займ без залога, который возвращается **в той же транзакции**.
+
+### Механизм
+
+1. Вы берете flash loan (любая сумма, без залога)
+2. Используете средства (арбитраж, ликвидация, рефинансирование)
+3. Возвращаете займ + 0.05% комиссию
+4. Если не вернули -- вся транзакция **откатывается** (revert)
+
+### Пример: Flash Loan ликвидация
+
+```solidity
+// Simplified flash loan liquidation
+function executeOperation(
+    address[] calldata assets,
+    uint256[] calldata amounts,
+    uint256[] calldata premiums,
+    address initiator,
+    bytes calldata params
+) external returns (bool) {
+    // 1. Получили flash loan: 6000 USDC
+    // 2. Ликвидируем позицию: отдаем 6000 USDC, получаем 4.5 ETH
+    pool.liquidationCall(WETH, USDC, borrower, 6000e6, false);
+
+    // 3. Продаем ETH за USDC на Uniswap
+    // 4.5 ETH * $1400 = $6300 -> swap -> ~6300 USDC
+    router.swapExactTokensForTokens(wethBalance, 0, path, address(this), deadline);
+
+    // 4. Возвращаем flash loan: 6000 + 3 USDC (0.05% fee)
+    // 5. Прибыль: ~$297 (6300 - 6000 - 3)
+    IERC20(USDC).approve(address(pool), amounts[0] + premiums[0]);
+
+    return true;
+}
+```
+
+## Compound V3: альтернативная модель
+
+Для сравнения рассмотрим **Compound V3 (Comet)**, второй крупнейший lending-протокол:
+
+| Аспект | Aave V3 | Compound V3 |
+|--------|---------|-------------|
+| Модель | Multi-asset pool | Single-asset (1 base asset) |
+| Залог | Множество активов | Множество, но займ только в USDC/WETH |
+| aTokens | Rebasing ERC-20 | Внутренний учет (не ERC-20) |
+| Ставки | Kinked curve per asset | Kinked curve per market |
+| Flash Loans | Да (0.05%) | Нет |
+| E-Mode | Да | Нет (но single-base = natural E-Mode) |
+
+> **Ключевое отличие:** В Aave можно занять любой актив. В Compound V3 каждый "рынок" имеет один base asset (USDC или WETH). Это упрощает модель рисков, но ограничивает гибкость.
+
+## Aave V4: взгляд в будущее
+
+> **Примечание:** Aave V4 находится в разработке. Мы учим V3 как текущий production-стандарт. V4 упомянут для полноты картины.
+
+Ключевые новации Aave V4:
+- **Unified Liquidity Layer:** Единый пул ликвидности вместо отдельных пулов для каждого актива
+- **Soft Liquidations:** Постепенная ликвидация вместо дискретной (аналогично crvUSD)
+- **Dynamic Interest Rate Model:** Автоматическая подстройка параметров kinked curve
+- **GHO Integration:** Нативная интеграция стейблкоина GHO
+
+## Алгоритмический уровень: псевдокод модели ставок
+
+```python
+# Aave V3 Interest Rate Model (simplified)
+
+def calculate_rates(
+    total_deposits: uint256,
+    total_borrows: uint256,
+    params: InterestRateParams
+) -> (borrow_rate, supply_rate):
+
+    # 1. Utilization Rate
+    if total_deposits == 0:
+        return (0, 0)
+    utilization = total_borrows / total_deposits
+
+    # 2. Borrow Rate (piecewise linear)
+    if utilization <= params.optimal_utilization:
+        borrow_rate = (
+            params.base_rate +
+            params.slope1 * utilization / params.optimal_utilization
+        )
+    else:
+        excess = utilization - params.optimal_utilization
+        max_excess = 1 - params.optimal_utilization
+        borrow_rate = (
+            params.base_rate +
+            params.slope1 +
+            params.slope2 * excess / max_excess
+        )
+
+    # 3. Supply Rate
+    supply_rate = borrow_rate * utilization * (1 - params.reserve_factor)
+
+    return (borrow_rate, supply_rate)
+
+
+def calculate_health_factor(
+    collaterals: list[Collateral],
+    debts: list[Debt]
+) -> float:
+    """
+    HF = SUM(collateral_i * price_i * liquidation_threshold_i) /
+         SUM(debt_j * price_j)
+    """
+    numerator = sum(
+        c.amount * c.price * c.liquidation_threshold
+        for c in collaterals
+    )
+    denominator = sum(d.amount * d.price for d in debts)
+
+    if denominator == 0:
+        return float('inf')  # No debt = infinite HF
+
+    return numerator / denominator
+```
+
+## Математический уровень
+
+### Interest Rate Model
+
+Пусть $U$ -- utilization rate, $U^* = U_{optimal}$.
+
+**Borrow rate:**
+
+$$
+R_b = \begin{cases}
+R_0 + R_1 \cdot \frac{U}{U^*} & \text{if } U \leq U^* \\
+R_0 + R_1 + R_2 \cdot \frac{U - U^*}{1 - U^*} & \text{if } U > U^*
+\end{cases}
+$$
+
+**Supply rate:**
+
+$$
+R_s = R_b \cdot U \cdot (1 - f_{reserve})
+$$
+
+### Health Factor
+
+Для позиции с $n$ залоговых активов и $m$ заемных:
+
+$$
+HF = \frac{\sum_{i=1}^{n} C_i \cdot P_i \cdot LT_i}{\sum_{j=1}^{m} D_j \cdot P_j}
+$$
+
+Где:
+- $C_i$ -- количество залогового актива $i$
+- $P_i$ -- цена актива $i$ (от Oracle)
+- $LT_i$ -- liquidation threshold актива $i$
+- $D_j$ -- количество заемного актива $j$
+
+**Ликвидация разрешена когда $HF < 1$.**
+
+### Liquidation Price
+
+Для позиции с одним залогом (ETH) и одним долгом (USDC):
+
+$$
+P_{liq} = \frac{D \cdot P_D}{C \cdot LT}
+$$
+
+Для 10 ETH залога, 12,000 USDC долга, LT = 0.825:
+
+$$
+P_{liq} = \frac{12000}{10 \cdot 0.825} = \$1,454.55
+$$
+
+## Практика: Fork Test
+
+Запустите fork-тесты для Aave V3 на реальных данных mainnet:
+
+### Forge
+
+```bash
+# Запуск Aave V3 fork-теста
+MAINNET_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY \
+  forge test --profile fork --match-path test/defi/AaveFork.t.sol -vvv
+```
+
+Тесты проверяют:
+- `getUserAccountData` для свежего адреса (0 залога, HF = max)
+- Supply WETH: залог появляется, aTokens начислены
+- Borrow DAI: health factor вычислен корректно, LTV в ожидаемых рамках
+
+### Hardhat 3
+
+```bash
+# Запуск с EDR mainnet fork
+MAINNET_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY \
+  npx hardhat test test/defi/AaveFork.test.ts --network mainnetFork
+```
+
+Тесты читают реальные данные:
+- Свежий адрес: 0 collateral, 0 debt, HF = max uint256
+- Whale-адрес: реальная позиция с коллатералом и (возможно) долгом
+- WETH reserve data: liquidity index, текущие ставки, aToken адрес
+
+> Обратите внимание на inline ABI в тесте -- мы **не** устанавливаем `@aave/v3-core` как зависимость. Для fork-тестирования достаточно ABI нужных функций.
+
+## Что дальше
+
+В следующем уроке (**DEFI-07: Ликвидации**) мы разберем:
+
+- Health Factor формула: как Aave решает, когда ликвидировать
+- Пошаговый сценарий ликвидации (10 ETH, 12000 USDC, ETH drops to $1400)
+- Close Factor и Liquidation Bonus: механика прибыли ликвидатора
+- MEV-боты и flash loan ликвидации
+- Каскадные ликвидации: Black Thursday как системный риск DeFi
