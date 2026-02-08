@@ -2,16 +2,17 @@
 // Requires Node.js >= 22.10.0
 // Docs: https://hardhat.org/docs
 
-import { HardhatUserConfig } from "hardhat/config";
+import { defineConfig } from "hardhat/config";
+import HardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 
-const config: HardhatUserConfig = {
+export default defineConfig({
   solidity: "0.8.28",
+  plugins: [HardhatToolboxViem],
   networks: {
     // Connect to Anvil Docker container
     anvil: {
+      type: "http",
       url: "http://localhost:8545",
     },
   },
-};
-
-export default config;
+});

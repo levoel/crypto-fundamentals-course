@@ -1,0 +1,22 @@
+# Foundry Configuration
+# Coexists with Hardhat in the same project directory.
+# Forge tests (*.t.sol) use this config; Hardhat tests (*.test.ts) use hardhat.config.ts.
+
+[profile.default]
+src = "contracts"
+out = "artifacts-forge"
+libs = ["node_modules", "lib"]
+test = "test"
+evm_version = "cancun"
+solc_version = "0.8.28"
+
+remappings = [
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+    "forge-std/=lib/forge-std/src/",
+]
+
+# Formatter settings (forge fmt)
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false
