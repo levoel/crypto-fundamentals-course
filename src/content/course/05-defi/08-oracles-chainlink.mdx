@@ -1,0 +1,183 @@
+---
+title: "Оракулы и Chainlink"
+description: "Проблема оракулов, архитектура Chainlink DON, AggregatorV3Interface и ценовые фиды"
+order: 8
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Oracle", "Chainlink", "Price Feed", "AggregatorV3Interface", "DON"]
+prerequisites: ["07-liquidations"]
+---
+
+import { OracleArchitectureDiagram, PriceFeedDataFlowDiagram } from '../../../components/diagrams/module5/OracleChainlinkDiagrams';
+
+# Оракулы и Chainlink
+
+## Зачем это блокчейну?
+
+Как смарт-контракт узнает курс ETH/USD? Блокчейн -- замкнутая система, **изолированная от внешнего мира**. Внутри EVM нет ни HTTP-запросов, ни API-вызовов. Каждый узел сети должен воспроизвести одинаковый результат -- а внешние данные недетерминированы.
+
+Оракулы решают эту проблему: **доверенная сеть узлов** передает реальные данные на блокчейн. Если оракул врет -- все контракты, зависящие от него, ломаются. Aave использует оракулы для оценки залога. Uniswap V3 записывает наблюдения для TWAP. MakerDAO/Sky опирается на оракулы для ликвидаций. Один некорректный ценовой фид = миллионы долларов потерь.
+
+## Проблема оракулов
+
+### Почему контракты не могут получить данные извне?
+
+Смарт-контракты исполняются детерминированно: все 10,000+ узлов Ethereum должны вычислить **одинаковый результат** для каждой транзакции. Если контракт мог бы вызвать HTTP API:
+
+1. Каждый узел получил бы ответ в разное время
+2. Цена могла бы измениться между вызовами
+3. API мог бы упасть для части узлов
+4. **Консенсус был бы невозможен**
+
+### Оракул = мост между off-chain и on-chain
+
+**Интуитивно:** Оракул -- это "посланник", который приносит данные из реального мира в блокчейн. Но одному посланнику доверять опасно -- он может солгать или быть подкуплен.
+
+**Алгоритмически:** Оракул -- это система, где множество независимых узлов получают данные из множества источников, агрегируют их off-chain, и записывают консенсусный результат on-chain через один контракт.
+
+**Математически:** Пусть $n$ узлов возвращают значения $p_1, p_2, ..., p_n$. Агрегатор вычисляет медиану $\tilde{p} = \text{median}(p_1, ..., p_n)$. Для BFT-устойчивости нужно $n \geq 3f + 1$, где $f$ -- количество потенциально злонамеренных узлов.
+
+## Архитектура Chainlink
+
+Chainlink -- крупнейшая сеть оракулов, обеспечивающая данные для DeFi-протоколов с TVL более $50 миллиардов.
+
+<OracleArchitectureDiagram client:load />
+
+### Компоненты архитектуры
+
+**1. DON (Decentralized Oracle Network)**
+
+Множество независимых операторов узлов (Deutsche Telekom, Swisscom, Infura и др.). Каждый узел:
+- Получает данные из нескольких независимых API-источников
+- Агрегирует полученные значения (обычно медиана)
+- Отправляет свой ответ в Aggregator контракт
+
+**2. Aggregator Contract**
+
+Собирает ответы от всех узлов DON и вычисляет **медиану**. Медиана устойчива к выбросам: даже если несколько узлов скомпрометированы, итоговый результат остается корректным.
+
+**3. Proxy Contract**
+
+Прокси с **постоянным адресом**. Указывает на текущий Aggregator. При обновлении агрегатора адрес прокси не меняется -- ваш контракт продолжает работать без изменений.
+
+**4. Consumer Contract**
+
+Ваш смарт-контракт. Вызывает `latestRoundData()` через `AggregatorV3Interface`. Это **единственная точка интеграции** -- вся сложность оракульной сети абстрагирована.
+
+## AggregatorV3Interface
+
+Стандартный интерфейс Chainlink для чтения ценовых данных:
+
+<PriceFeedDataFlowDiagram client:load />
+
+### Ключевые детали
+
+**Decimals:** Все USD-пары используют 8 десятичных знаков. ETH стоит $2,000 -- `answer = 200000000000` (2000 * 10^8).
+
+**Heartbeat:** Гарантированное обновление каждые N секунд. Для ETH/USD -- каждые 3600 секунд (1 час). Даже если цена не изменилась, фид обновится.
+
+**Deviation threshold:** Немедленное обновление при движении цены более чем на X%. Для ETH/USD -- 0.5%. Если ETH резко вырос на 1%, обновление произойдет не через час, а немедленно.
+
+## Ключевые адреса фидов (Mainnet)
+
+| Pair | Address | Decimals |
+|------|---------|----------|
+| ETH/USD | `0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419` | 8 |
+| BTC/USD | `0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c` | 8 |
+| USDC/USD | `0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6` | 8 |
+| DAI/USD | `0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9` | 8 |
+| LINK/USD | `0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c` | 8 |
+
+> Полный список: [data.chain.link](https://data.chain.link). На каждом L2 (Arbitrum, Optimism, Base) свои адреса фидов.
+
+## PriceFeedConsumer: интеграция в контракт
+
+Разберем контракт `contracts/defi/PriceFeedConsumer.sol` -- минимальный пример интеграции Chainlink:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {AggregatorV3Interface} from
+    "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+
+contract PriceFeedConsumer {
+    AggregatorV3Interface public immutable ethUsdFeed;
+
+    // Mainnet: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+    constructor(address _ethUsdFeed) {
+        ethUsdFeed = AggregatorV3Interface(_ethUsdFeed);
+    }
+```
+
+### getEthUsdPrice: чтение цены
+
+```solidity
+    function getEthUsdPrice() external view returns (int256 price) {
+        (, price,, uint256 updatedAt,) = ethUsdFeed.latestRoundData();
+        require(price > 0, "Invalid price");
+    }
+```
+
+Вызываем `latestRoundData()` и проверяем, что цена положительная. В продакшне нужны дополнительные проверки (staleness, round completion) -- об этом подробнее в следующем уроке.
+
+### ethToUsd: конвертация с десятичными
+
+```solidity
+    function ethToUsd(uint256 ethAmount) external view returns (uint256 usdValue) {
+        (, int256 price,,,) = ethUsdFeed.latestRoundData();
+        require(price > 0, "Invalid price");
+        // price: 8 decimals, ethAmount: 18 decimals
+        // result: 18 decimals = ethAmount(18) * price(8) / 1e8
+        usdValue = (ethAmount * uint256(price)) / 1e8;
+    }
+```
+
+**Десятичная математика:**
+- `ethAmount` = 1 ETH = `1e18` (18 decimals)
+- `price` = $2,000 = `200000000000` (8 decimals)
+- `result` = `1e18 * 200000000000 / 1e8` = `2000e18` (18 decimals)
+
+Формула: `usdValue = ethAmount * price / 10^(priceDec)`, где `priceDec = 8`.
+
+## Другие оракулы
+
+Chainlink -- стандарт для production DeFi, но есть альтернативы:
+
+### Pyth Network
+**Pull-based модель:** Данные хранятся off-chain, потребитель "вытягивает" их при необходимости. Низкая латентность (sub-second updates). Популярен на Solana.
+
+### UMA (Optimistic Oracle)
+**Оптимистичный подход:** Любой может предложить ответ на вопрос (не только цену). Если никто не оспорит -- ответ принимается. Диспуты разрешаются через голосование UMA-холдеров.
+
+### TWAP (Time-Weighted Average Price)
+**On-chain оракул:** Рассчитывается из наблюдений Uniswap V3. Средневзвешенная цена за период. Устойчив к flash loan манипуляциям, но отстает от реальной цены.
+
+| Оракул | Модель | Латентность | Устойчивость к манипуляциям |
+|--------|--------|-------------|---------------------------|
+| Chainlink | Push (DON) | ~1 блок | Высокая (медиана от 31 узла) |
+| Pyth | Pull | Sub-second | Высокая (множество источников) |
+| UMA | Optimistic | Часы | Средняя (зависит от диспутов) |
+| TWAP | On-chain | Минуты-часы | Высокая (дорого манипулировать) |
+
+## Связь с lending
+
+В уроках DEFI-06/07 мы изучили Aave и ликвидации. Теперь понятно, откуда Aave берет цены:
+
+- **Оценка залога:** Chainlink фид определяет стоимость залога в USD
+- **Health factor:** Рассчитывается на основе oracle price: $HF = \frac{\text{Collateral} \times LT}{\text{Debt}}$
+- **Ликвидации:** Когда oracle price обновляется и HF < 1, кипер ликвидирует позицию
+- **Stale oracle = delayed liquidation = bad debt:** Если оракул не обновляется, ликвидации задерживаются, протокол накапливает необеспеченный долг
+
+> Chainlink -- критическая инфраструктура DeFi. От корректности ценовых фидов зависит безопасность десятков миллиардов долларов.
+
+## Практика: Fork Test
+
+Запустите fork-тест для PriceFeedConsumer:
+
+```bash
+# В директории labs/ethereum/
+npx hardhat test test/defi/PriceFeedConsumer.test.ts --network mainnetFork
+```
+
+Тест развертывает PriceFeedConsumer на форке Ethereum mainnet, читает реальную цену ETH/USD из Chainlink фида и проверяет конвертацию ETH в USD.

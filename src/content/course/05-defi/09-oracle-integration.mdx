@@ -1,0 +1,254 @@
+---
+title: "Интеграция оракулов"
+description: "Best practices: staleness check, валидация, L2 sequencer uptime, fallback оракулы и TWAP"
+order: 9
+difficulty: "advanced"
+estimatedTime: 25
+topics: ["Oracle Integration", "Staleness", "L2 Sequencer", "TWAP", "Fallback Oracle"]
+prerequisites: ["08-oracles-chainlink"]
+---
+
+import { StalenessCheckFlowDiagram } from '../../../components/diagrams/module5/OracleIntegrationDiagrams';
+
+# Интеграция оракулов
+
+## Зачем это блокчейну?
+
+Вызвать `latestRoundData()` легко. Сложнее -- **правильно проверить результат**. Без проверок ваш контракт может использовать цену недельной давности или отрицательную цену. Это приводит к эксплойтам стоимостью миллионы долларов.
+
+В этом уроке мы разберем полный чеклист проверок для production-ready интеграции оракулов: staleness check, round validation, L2 sequencer uptime и fallback стратегии.
+
+## Decision Tree для проверки
+
+Три обязательные проверки перед использованием данных Chainlink:
+
+<StalenessCheckFlowDiagram client:load />
+
+### Check 1: price > 0
+
+```solidity
+(, int256 price,, uint256 updatedAt,) = priceFeed.latestRoundData();
+require(price > 0, "Invalid price");
+```
+
+**Зачем:** Chainlink может вернуть 0 или отрицательное значение при сбое фида. Нулевая цена в lending-протоколе означает:
+- Залог оценен в $0 -- мгновенная ликвидация всех позиций
+- Долг оценен в $0 -- бесконечные займы без залога
+
+### Check 2: answeredInRound >= roundId
+
+```solidity
+(uint80 roundId, int256 price,,, uint80 answeredInRound) = priceFeed.latestRoundData();
+require(answeredInRound >= roundId, "Stale round");
+```
+
+**Зачем:** Если `answeredInRound < roundId`, ответ получен в предыдущем раунде. Это означает, что в текущем раунде не набралось достаточно ответов от узлов DON -- данные могут быть неактуальными.
+
+### Check 3: Staleness (updatedAt)
+
+```solidity
+require(block.timestamp - updatedAt < 3600, "Stale price");
+```
+
+**Зачем:** Проверяет, что данные обновлены недавно. Значение `maxStaleness` зависит от heartbeat фида:
+
+| Фид | Heartbeat | Рекомендуемый maxStaleness |
+|-----|-----------|---------------------------|
+| ETH/USD | 3600s (1h) | 3600 - 7200s |
+| BTC/USD | 3600s (1h) | 3600 - 7200s |
+| USDC/USD | 86400s (24h) | 86400 - 90000s |
+| Volatile токен | 120s (2min) | 120 - 300s |
+
+> **Ловушка:** Слишком маленький maxStaleness (например, 60 секунд для ETH/USD с heartbeat 3600s) вызовет постоянные revert. Слишком большой (1 неделя) -- не защитит от устаревших данных.
+
+### Полный production-ready паттерн
+
+```solidity
+function getValidatedPrice(
+    AggregatorV3Interface feed,
+    uint256 maxStaleness
+) internal view returns (int256) {
+    (
+        uint80 roundId,
+        int256 price,
+        ,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    ) = feed.latestRoundData();
+
+    require(price > 0, "Invalid price");
+    require(answeredInRound >= roundId, "Stale round");
+    require(block.timestamp - updatedAt < maxStaleness, "Stale price");
+
+    return price;
+}
+```
+
+## L2 Sequencer Uptime
+
+### Проблема
+
+На L2 (Optimism, Arbitrum) транзакции проходят через **секвенсор**. Если секвенсор падает:
+
+1. Транзакции накапливаются в очереди
+2. Chainlink не может обновить цену на L2
+3. Секвенсор восстанавливается
+4. **Все накопленные транзакции исполняются одновременно**
+5. Цена Chainlink может быть устаревшей в момент исполнения
+
+### Решение: Sequencer Uptime Feed
+
+Chainlink предоставляет специальный фид, показывающий статус секвенсора:
+
+```solidity
+AggregatorV3Interface sequencerFeed = AggregatorV3Interface(
+    0xFdB631F5EE196F0ed6FAa767959853A9F217697D // Arbitrum sequencer uptime
+);
+
+(, int256 answer, uint256 startedAt,,) = sequencerFeed.latestRoundData();
+
+// answer == 0: sequencer is up
+// answer == 1: sequencer is down
+bool isSequencerUp = answer == 0;
+require(isSequencerUp, "Sequencer is down");
+
+// Grace period after sequencer comes back up
+uint256 timeSinceUp = block.timestamp - startedAt;
+require(timeSinceUp > GRACE_PERIOD, "Grace period not elapsed");
+```
+
+**Grace period:** Обычно 3600 секунд (1 час). Дает Chainlink время обновить цену после восстановления секвенсора.
+
+## Fallback оракулы
+
+### Паттерн: Primary -> Secondary -> Revert
+
+Не полагайтесь на единственный оракул. Если primary (Chainlink) выходит из строя, используйте secondary:
+
+```solidity
+function getPrice() internal view returns (uint256) {
+    // Try Chainlink first
+    try chainlinkFeed.latestRoundData() returns (
+        uint80 roundId, int256 price, , uint256 updatedAt, uint80 answeredInRound
+    ) {
+        if (price > 0 && answeredInRound >= roundId
+            && block.timestamp - updatedAt < maxStaleness) {
+            return uint256(price);
+        }
+    } catch {}
+
+    // Fallback: TWAP from Uniswap V3
+    uint256 twapPrice = getTWAPPrice();
+    if (twapPrice > 0) {
+        return twapPrice;
+    }
+
+    // Both failed -- revert
+    revert("No valid price available");
+}
+```
+
+### Стратегии fallback
+
+| Стратегия | Плюсы | Минусы |
+|-----------|-------|--------|
+| Chainlink -> Pyth | Два независимых оракула | Разные интерфейсы |
+| Chainlink -> TWAP | Полностью on-chain fallback | TWAP может быть манипулирован |
+| Chainlink + Pyth (медиана) | Устойчивость к любому сбою | Сложность, дороже по gas |
+| Circuit breaker | Пауза протокола при расхождении | Остановка операций |
+
+## TWAP vs Spot
+
+### Time-Weighted Average Price
+
+TWAP из Uniswap V3 -- средневзвешенная цена за период. Рассчитывается из **observations** (кумулятивных тиков, записываемых с каждым блоком):
+
+$$TWAP = \frac{\text{tickCumulative}_2 - \text{tickCumulative}_1}{\text{timestamp}_2 - \text{timestamp}_1}$$
+
+### Сравнение
+
+| Характеристика | Spot (Chainlink) | TWAP (Uniswap V3) |
+|----------------|-----------------|-------------------|
+| Актуальность | Реальная цена | Средняя за период |
+| Flash loan защита | Зависит от DON | Устойчив (нужно менять цену на N блоков) |
+| Стоимость манипуляции | Очень высокая (DON) | Пропорциональна объему пула * время |
+| Gas cost | view call | Computation-heavy |
+| Зависимости | Off-chain инфраструктура | Только on-chain |
+| Лучше для | Lending, derivatives | Governance, NFT pricing |
+
+**Интуитивно:** Spot-цена -- "температура прямо сейчас". TWAP -- "средняя температура за месяц". Для ликвидаций нужна актуальная температура. Для governance -- средняя стабильнее.
+
+## Распространенные уязвимости
+
+### 1. latestRoundData() без проверок
+
+**Самая частая ошибка** (~60% контрактов по данным аудиторов):
+
+```solidity
+// ОПАСНО: никаких проверок
+(, int256 price,,,) = feed.latestRoundData();
+uint256 value = amount * uint256(price) / 1e8;
+```
+
+### 2. Жестко закодированный maxStaleness
+
+```solidity
+// ОПАСНО: maxStaleness = 1 неделя -- бессмысленная проверка
+require(block.timestamp - updatedAt < 604800, "Stale");
+
+// ОПАСНО: maxStaleness = 1 минута для фида с heartbeat 1 час
+require(block.timestamp - updatedAt < 60, "Stale"); // Постоянные revert!
+```
+
+### 3. Нет обработки L2 sequencer
+
+```solidity
+// ОПАСНО: на L2 цена может быть устаревшей после даунтайма секвенсора
+(, int256 price,,,) = feed.latestRoundData();
+// Нет проверки sequencer uptime feed!
+```
+
+### 4. Единственный оракул без fallback
+
+```solidity
+// РИСКОВАННО: если Chainlink не отвечает, весь протокол останавливается
+(, int256 price,,,) = feed.latestRoundData();
+require(price > 0, "Invalid"); // revert при сбое Chainlink
+// Нет альтернативного источника
+```
+
+### 5. Oracle manipulation через flash loan
+
+```solidity
+// ОПАСНО: чтение spot-цены из DEX без TWAP
+uint256 price = tokenReserve / ethReserve; // Manimpulable via flash loan!
+```
+
+> **Правило:** Никогда не используйте спотовую цену DEX пула напрямую. Всегда используйте TWAP или Chainlink DON.
+
+## Чеклист интеграции оракулов
+
+При написании production-контракта проверьте:
+
+- [ ] `price > 0` -- защита от нулевой/отрицательной цены
+- [ ] `answeredInRound >= roundId` -- защита от stale round
+- [ ] `block.timestamp - updatedAt < maxStaleness` -- staleness check
+- [ ] `maxStaleness` соответствует heartbeat фида
+- [ ] L2: проверка sequencer uptime feed + grace period
+- [ ] Fallback oracle при недоступности primary
+- [ ] Нет чтения spot-цены из DEX без TWAP
+- [ ] Правильная обработка decimals (8 для USD-пар)
+
+## Практика: Fork Test
+
+Запустите fork-тест PriceFeedConsumer для проверки интеграции оракулов:
+
+```bash
+# В директории labs/ethereum/
+npx hardhat test test/defi/PriceFeedConsumer.test.ts --network mainnetFork
+```
+
+Тест развертывает контракт на форке mainnet и читает реальные данные из Chainlink ETH/USD фида. Попробуйте:
+1. Прочитать `getEthUsdPrice()` и сравнить с текущей ценой ETH
+2. Конвертировать разные суммы ETH в USD через `ethToUsd()`
+3. Проверить decimals: `getEthUsdPrice()` возвращает 8 decimals, `ethToUsd()` -- 18 decimals
