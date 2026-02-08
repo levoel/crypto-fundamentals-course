@@ -1,0 +1,346 @@
+---
+title: "Токеномика"
+description: "Supply, distribution, vesting, governance, veCRV модель и итоги модуля DeFi"
+order: 12
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Tokenomics", "Supply", "Vesting", "Governance", "veCRV", "Vote Escrow"]
+prerequisites: ["11-derivatives-perpetuals"]
+---
+
+import { TokenDistributionDiagram, VestingScheduleDiagram } from '../../../components/diagrams/module5/TokenomicsDiagrams';
+
+# Токеномика
+
+## Зачем это блокчейну?
+
+Каждый DeFi-протокол имеет свой токен. Но зачем он нужен? Governance (голосование), fee sharing (доля комиссий), staking (обеспечение безопасности), или просто спекуляция?
+
+**Токеномика** -- это наука о том, как дизайн токена влияет на поведение участников. Правильная токеномика создает устойчивые стимулы, неправильная -- спираль смерти (как мы видели с UST в DEFI-10).
+
+В этом уроке мы разберем пять ключевых аспектов: supply mechanics, distribution, vesting, governance и utility. А в конце -- подведем итоги всего модуля DeFi.
+
+## Supply Mechanics: сколько токенов и как они создаются
+
+### Три модели предложения
+
+**1. Fixed Supply (фиксированное предложение)**
+
+Общее количество токенов определено при запуске. Новые токены **не могут быть созданы**.
+
+- **BTC:** 21,000,000 BTC (halvings каждые ~4 года)
+- **UNI:** 1,000,000,000 UNI (фиксировано при genesis)
+- **Эффект:** дефляционное давление при растущем спросе. "Digital scarcity"
+
+**2. Inflationary (инфляционное предложение)**
+
+Протокол выпускает новые токены по расписанию (обычно для наград валидаторам/LP).
+
+- **ETH:** ~0.5-1% годовой эмиссии для валидаторов. Post-merge с EIP-1559: **net deflationary** при высоком usage (больше ETH сжигается в base fee, чем выпускается)
+- **CRV:** continuous emissions для LP rewards (убывающий график)
+- **Эффект:** постоянное давление на продажу от получателей наград
+
+**3. Elastic (эластичное предложение)**
+
+Supply автоматически подстраивается через rebase механизм:
+
+- **AMPL (Ampleforth):** если цена > $1, supply увеличивается (каждый кошелек получает больше AMPL). Если цена < $1, supply сокращается
+- **OHM (Olympus):** protocol-owned liquidity с rebasing
+- **Эффект:** нестабильная модель, часто приводит к death spiral
+
+### Ключевая метрика: Circulating vs Total Supply
+
+```
+Market Cap = Circulating Supply * Price
+Fully Diluted Valuation (FDV) = Total Supply * Price
+```
+
+**Пример UNI:**
+- Total Supply: 1B UNI
+- Circulating: ~750M UNI (остальное в vesting/treasury)
+- Если Price = $10: Market Cap = $7.5B, FDV = $10B
+- Разница $2.5B -- это **будущее давление на продажу** от unlock events
+
+> **Правило:** Большая разница между Market Cap и FDV -- красный флаг. Токены в vesting будут продаваться при unlock.
+
+## Распределение токенов
+
+Как распределяются токены при запуске определяет, кто имеет власть и стимулы:
+
+<TokenDistributionDiagram client:load />
+
+### Паттерны распределения
+
+| Категория | Типичная доля | Назначение |
+|-----------|---------------|------------|
+| Community | 40-60% | LP rewards, airdrops, treasury, grants |
+| Team | 15-25% | Мотивация разработчиков (с vesting) |
+| Investors | 10-25% | Seed, Series A, стратегические инвесторы |
+| Treasury | 5-15% | Резерв для будущих инициатив |
+| Advisors | 1-5% | Консультанты (с vesting) |
+
+### Case Studies
+
+**UNI (Uniswap)** -- "справедливое" распределение:
+- 60% community (крупнейшая доля среди DeFi blue chips)
+- Ретроактивный airdrop: 400 UNI каждому, кто взаимодействовал до snapshot
+- Результат: широкая база governance участников
+
+**CRV (Curve)** -- ориентация на LP:
+- 62% community LP rewards (стимулирует ликвидность)
+- Модель veCRV создала целую экосистему ("Curve Wars")
+- Результат: глубочайшая ликвидность для стейблкоинов
+
+**COMP (Compound)** -- ориентация на usage:
+- 42% distribution to protocol users (lenders + borrowers)
+- Первый крупный пример "liquidity mining"
+- Результат: быстрый рост TVL, но и "дегенеративный фарминг"
+
+## Vesting: график разблокировки
+
+Зачем блокировать токены? Чтобы создатели не продали все в первый день.
+
+<VestingScheduleDiagram client:load />
+
+### Структура vesting
+
+**TGE (Token Generation Event):**
+- Момент создания токена
+- Обычно 5-15% supply доступны сразу (airdrop, initial liquidity)
+- Создает начальный рынок и price discovery
+
+**Cliff (обрыв):**
+- Период полной блокировки (обычно 6-12 месяцев)
+- Team/investor токены **заморожены**
+- Защита от "rug pull" -- основатели не могут продать и уйти
+- Cliff end -- момент высокого риска для цены (unlock event)
+
+**Linear Vesting (линейное разблокирование):**
+- После cliff: токены разблокируются равномерно
+- Месячный или квартальный график на 2-4 года
+- Минимизирует давление на продажу
+- Выравнивает долгосрочные стимулы
+
+### Token Unlock Events
+
+Крупные unlock -- **предсказуемые точки давления** на цену:
+
+```
+Token Unlock -> Recipients receive tokens
+             -> Some sell immediately (pressure)
+             -> Price typically drops 5-15% around unlock
+             -> Market recovers if fundamentals strong
+```
+
+Ресурсы: [Token Unlocks](https://token.unlocks.app/) отслеживает графики для всех крупных проектов.
+
+## Governance: управление протоколом
+
+### Модели governance
+
+**1. Simple Voting (1 token = 1 vote)**
+
+Самая простая модель: количество токенов = количество голосов.
+
+```solidity
+// Simplified governance voting
+function castVote(uint proposalId, bool support) external {
+    uint votes = token.balanceOf(msg.sender);
+    proposal.forVotes += support ? votes : 0;
+    proposal.againstVotes += support ? 0 : votes;
+}
+```
+
+**Проблема:** "Плутократия" -- кит с 51% токенов контролирует протокол.
+
+**2. Delegation (делегирование)**
+
+Держатели токенов могут **передать** свои голоса другому адресу без передачи самих токенов:
+
+- Я владею 1000 UNI, но не слежу за proposals
+- Делегирую голоса профессиональному delegate (например, a16z, Stanford blockchain club)
+- Delegate голосует моими 1000 UNI + своими + других делегатов
+
+**Эффект:** повышает participation rate с ~5% до ~30-40%.
+
+**3. Timelock (задержка исполнения)**
+
+Governance решения **не исполняются мгновенно** -- есть задержка (обычно 24-48 часов):
+
+```
+Proposal passes -> Timelock starts (48h) -> Execution
+                                          -> Users can exit if they disagree
+```
+
+**Защита от:** flash loan governance attacks (взять займ миллионов токенов -> проголосовать -> вернуть). Timelock дает время community среагировать.
+
+**4. Vote-Escrow: модель veCRV**
+
+Самая продвинутая модель governance в DeFi, изобретенная Curve Finance:
+
+```
+Lock CRV (1-4 года) -> Получить veCRV -> Voting power + Boost
+```
+
+Ключевые свойства:
+- **Lock duration = power:** 1000 CRV locked на 4 года = 1000 veCRV. 1000 CRV locked на 1 год = 250 veCRV
+- **Decay:** veCRV линейно уменьшается к дате unlock
+- **Non-transferable:** veCRV нельзя продать или передать
+- **Boost:** veCRV holders получают до 2.5x boost на LP rewards в пулах Curve
+
+**Curve Wars:**
+
+veCRV позволяет голосовать за **направление CRV emissions** в конкретные пулы. Это привело к "войне" за veCRV:
+- Convex Finance аккумулировал ~50% всех veCRV
+- Протоколы (Frax, Terra, Abracadabra) подкупали (bribed) vlCVX holders
+- Создалась целая индустрия "vote markets" (Votium, Hidden Hand)
+
+> **Инсайт:** veCRV выравнивает стимулы: чтобы иметь влияние, нужно заблокировать токены на годы. Это отсеивает спекулянтов и оставляет committed participants.
+
+## Utility: зачем нужен токен
+
+Не все токены одинаково полезны. Вот основные типы utility:
+
+### Gas Payment
+
+Нативные токены блокчейна используются для оплаты транзакций:
+- **ETH** -- gas для Ethereum (и L2s через blobs)
+- **SOL** -- gas для Solana
+- **Базовый спрос:** каждая транзакция создает demand для токена
+
+### Staking (обеспечение безопасности)
+
+Токен стейкается для обеспечения безопасности протокола:
+- **ETH staking:** 32 ETH -> валидатор Ethereum PoS. Reward: ~4% APR
+- **AAVE Safety Module:** стейкинг AAVE для страхования протокола. При дефиците средств стейкнутые AAVE слэшатся (до 30%)
+- **Implicit demand:** стейкнутые токены выведены из обращения
+
+### Fee Sharing (доля комиссий)
+
+Стейкеры получают часть дохода протокола:
+- **Sushi (xSUSHI):** стейк SUSHI -> получай долю от 0.05% комиссии каждого свопа
+- **GMX:** стейк GMX -> получай 30% от trading fees (в ETH/AVAX)
+- **Важно:** regulatory risk -- SEC может квалифицировать как security
+
+### Access (доступ)
+
+Токен открывает доступ к эксклюзивным функциям:
+- **Alpha tier:** держатели N токенов получают ранний доступ к новым пулам
+- **Premium features:** аналитика, автоматизация, сниженные комиссии
+
+### Governance (голосование)
+
+Право голоса при изменении параметров протокола:
+- **Compound:** COMP holders голосуют за изменение collateral factor, interest rate parameters
+- **Uniswap:** UNI holders голосуют за fee switch, grants, treasury allocations
+
+## Incentive Mechanisms: привлечение ликвидности
+
+### Liquidity Mining
+
+Пользователи получают токены протокола за предоставление ликвидности:
+
+```
+Deposit liquidity in pool -> Receive LP tokens
+Stake LP tokens in farm  -> Earn protocol tokens
+```
+
+**Пример Compound COMP mining (2020):**
+- Compound начал распределять COMP лендерам и заемщикам
+- TVL вырос с $100M до $1B за 2 недели
+- Запустил "DeFi Summer" 2020
+
+### Yield Farming
+
+Стратегия максимизации доходности через комбинирование incentive programs:
+
+```
+Deposit USDC in Aave      -> Earn AAVE tokens + lending APY
+Borrow ETH from Aave      -> Earn AAVE tokens for borrowing
+Deposit ETH in Uniswap LP -> Earn UNI tokens + trading fees
+```
+
+**Риски:** high APY привлекает краткосрочный капитал. Когда incentives заканчиваются -- "mercenary capital" уходит, TVL падает, цена токена падает, замкнутый круг.
+
+### Airdrops
+
+Ретроактивное распределение токенов ранним пользователям:
+
+| Проект | Snapshot | Критерии | Стоимость |
+|--------|----------|----------|-----------|
+| UNI (2020) | 1 Sep 2020 | Любое взаимодействие | ~$1,200 на адрес |
+| ENS (2021) | 31 Oct 2021 | Регистрация ENS доменов | $1,000-$40,000 |
+| ARB (2023) | 6 Feb 2023 | Использование Arbitrum | $500-$10,000 |
+| JUP (2024) | Nov 2023 | Использование Jupiter (Solana) | $500-$5,000 |
+
+**Sybil resistance:** протоколы все активнее борются с "airdrop фармерами" через:
+- Поведенческий анализ (кластеры адресов, идентичные паттерны)
+- Minimum transaction count/value
+- Взаимодействие с нескольких chains
+- Proof of humanity/gitcoin passport
+
+## Лабораторная работа: DeFi взаимодействие
+
+В этом модуле мы подготовили два standalone скрипта для взаимодействия с реальными DeFi-протоколами на Anvil fork:
+
+### Uniswap V2 Swap
+
+```bash
+# Запустите Anvil fork
+docker compose --profile fork up -d
+
+# Выполните swap ETH -> DAI
+npx tsx scripts/defi/swap-uniswap-v2.ts
+```
+
+Скрипт `swap-uniswap-v2.ts`:
+1. Подключается к Anvil fork (localhost:8546)
+2. Получает expected output через `getAmountsOut`
+3. Выполняет `swapExactETHForTokens` с 1% slippage tolerance
+4. Проверяет DAI баланс
+
+### Aave V3 Supply
+
+```bash
+# Supply ETH в Aave V3
+npx tsx scripts/defi/supply-aave.ts
+```
+
+Скрипт `supply-aave.ts`:
+1. Wrap ETH -> WETH (`weth.deposit()`)
+2. Approve Aave Pool (`weth.approve()`)
+3. Supply WETH to Aave V3 (`pool.supply()`)
+4. Читает account data: collateral, available borrow, health factor
+
+> Оба скрипта используют standalone ethers.js (не Hardhat tasks) и работают на Anvil fork mainnet состояния.
+
+## Итоги модуля: DeFi Protocols
+
+Мы прошли путь от обзора DeFi экосистемы до токеномики -- полный цикл децентрализованных финансов:
+
+| Концепция | Урок | Ключевой вывод |
+|-----------|------|----------------|
+| DeFi экосистема | DEFI-01 | 7 категорий: DEXes, lending, stablecoins, derivatives, oracles, aggregators, yield |
+| AMM (xy=k) | DEFI-02 | dy = y*dx/(x+dx), price = y/x, k constant |
+| Uniswap V2 | DEFI-03 | amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997) |
+| Concentrated Liquidity | DEFI-04 | V3 ticks: price(i) = 1.0001^i, capital efficiency 4x+ |
+| Impermanent Loss | DEFI-05 | IL = 2*sqrt(r)/(1+r) - 1, profitable if fees > IL |
+| Lending | DEFI-06 | Piecewise linear rates, aTokens, utilization-based pricing |
+| Ликвидация | DEFI-07 | HF = collateral*LT/debt, HF<1 = liquidatable |
+| Оракулы | DEFI-08 | Chainlink DON -> Aggregator -> Proxy -> Consumer |
+| Интеграция оракулов | DEFI-09 | Staleness check: price>0, updatedAt recent |
+| Стейблкоины | DEFI-10 | Fiat-backed vs crypto vs algorithmic (UST collapsed) |
+| Перпетуалы | DEFI-11 | Funding rate keeps perp price near spot |
+| Токеномика | DEFI-12 | Supply, distribution, vesting, governance (veCRV model) |
+
+## Что дальше?
+
+**Phase 7: Security & Audit** -- безопасность смарт-контрактов. Все DeFi-концепции из этого модуля станут контекстом для изучения атак и защит:
+
+- **Reentrancy:** классическая атака на DeFi-контракты (The DAO, Cream Finance)
+- **Flash Loan Attacks:** использование атомарных займов для манипуляции ценами
+- **MEV (Maximal Extractable Value):** frontrunning, sandwich attacks, arbitrage
+- **Oracle Manipulation:** атаки на ценовые оракулы DeFi-протоколов
+- **Audit Methodology:** как профессионально проверять безопасность смарт-контрактов
+
+Знание DeFi-механик (AMM формулы, lending параметры, oracle архитектура, perpetual liquidations) -- необходимая база для понимания того, **как** и **почему** происходят крупнейшие взломы в крипто.
