@@ -1,0 +1,192 @@
+---
+title: "Bitcoin Script"
+description: "Стековый язык Bitcoin -- опкоды, выполнение скриптов и валидация транзакций"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Bitcoin Script", "Opcodes", "Стек", "P2PKH", "Валидация", "scriptPubKey", "scriptSig"]
+prerequisites: ["02-utxo-model"]
+---
+
+import { P2PKHStackAnimation, OpcodeReferenceDiagram, ScriptEvalFlowDiagram } from '../../../components/diagrams/module2/ScriptExecutionDiagrams';
+
+# Bitcoin Script
+
+## Зачем это нужно в блокчейне
+
+Каждый выход Bitcoin-транзакции содержит скрипт-замок (**scriptPubKey**). Чтобы потратить UTXO, нужно предоставить скрипт-ключ (**scriptSig**), который "открывает" замок. Этот механизм -- **Bitcoin Script** -- определяет, КТО может потратить биткоины.
+
+> Когда вы создаете транзакцию, Bitcoin-нода выполняет два скрипта -- scriptSig и scriptPubKey -- на стековой виртуальной машине. Если после выполнения на стеке остается `true`, транзакция валидна. Если стек пуст или содержит `false` -- транзакция отклоняется сетью.
+
+## Интуитивное объяснение: замок и ключ
+
+Представьте scriptPubKey как **замок на сейфе**, а scriptSig как **комбинацию**:
+
+| Компонент | Аналогия | Роль |
+|-----------|----------|------|
+| **scriptPubKey** | Замок на сейфе | Определяет условия траты UTXO |
+| **scriptSig** | Комбинация к замку | Доказывает право на трату |
+| **Стек** | Рабочий стол мастера | Промежуточные данные при проверке |
+| **Результат** | Замок открыт / заперт | true = можно потратить |
+
+Отправитель "навешивает замок" (записывает scriptPubKey в выход транзакции). Получатель "подбирает комбинацию" (предоставляет scriptSig при трате).
+
+## Процесс валидации скрипта
+
+Как Bitcoin-нода проверяет транзакцию? Процесс состоит из фаз: сначала выполняется scriptSig, затем scriptPubKey на том же стеке:
+
+<ScriptEvalFlowDiagram client:load />
+
+**Ключевые правила:**
+
+1. **scriptSig выполняется первым** -- его результат остается на стеке
+2. **scriptPubKey выполняется на том же стеке** -- использует данные, оставленные scriptSig
+3. **Финальная проверка**: стек должен содержать одно ненулевое значение
+4. **Для P2SH**: дополнительный этап -- десериализация и выполнение redeemScript
+
+## P2PKH: выполнение по шагам
+
+Рассмотрим самый классический тип Bitcoin-транзакции -- **Pay-to-Public-Key-Hash (P2PKH)**. Это 7 шагов, которые Bitcoin-нода выполняет для каждого входа транзакции.
+
+Нажимайте "Далее" чтобы пройти все шаги выполнения скрипта:
+
+<P2PKHStackAnimation client:load />
+
+### Структура P2PKH скрипта
+
+```
+scriptSig:    <sig> <pubKey>
+scriptPubKey: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+```
+
+**Что происходит:**
+1. Отправитель предоставляет подпись и публичный ключ (scriptSig)
+2. Bitcoin Script дублирует ключ, хеширует его (Hash160)
+3. Сравнивает хеш с адресом получателя (pubKeyHash)
+4. Если совпадает -- проверяет ECDSA-подпись
+5. Если подпись валидна -- кладет `true` на стек
+
+## Справочник опкодов Bitcoin Script
+
+Bitcoin Script -- это стековый язык с ограниченным набором операций (~100 опкодов). Вот ключевые опкоды, которые важно знать:
+
+<OpcodeReferenceDiagram client:load />
+
+### Категории опкодов
+
+- **Криптография**: `OP_HASH160`, `OP_CHECKSIG`, `OP_CHECKMULTISIG` -- ядро верификации
+- **Стек**: `OP_DUP`, `OP_EQUALVERIFY`, `OP_EQUAL` -- манипуляция данными
+- **Поток**: `OP_IF/ELSE/ENDIF` -- условное ветвление
+- **Таймлоки**: `OP_CHECKLOCKTIMEVERIFY`, `OP_CHECKSEQUENCEVERIFY` -- блокировка по времени
+
+## Алгоритмический уровень: Script на Python
+
+Используя `python-bitcoinlib`, можно работать со скриптами программно:
+
+```python
+from bitcoin.core.script import (
+    CScript, OP_DUP, OP_HASH160, OP_EQUALVERIFY, OP_CHECKSIG
+)
+from bitcoin.core import Hash160
+
+# Создаем scriptPubKey для P2PKH
+pubkey_bytes = bytes.fromhex('0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798')
+pubkey_hash = Hash160(pubkey_bytes)
+
+script_pubkey = CScript([
+    OP_DUP,
+    OP_HASH160,
+    pubkey_hash,
+    OP_EQUALVERIFY,
+    OP_CHECKSIG
+])
+
+print("scriptPubKey (hex):", script_pubkey.hex())
+print("scriptPubKey (asm):", " ".join(str(op) for op in script_pubkey))
+# Вывод: OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG
+```
+
+### Декодирование скрипта
+
+```python
+from bitcoin.core.script import CScript
+
+# Декодируем scriptPubKey из hex
+raw_script = bytes.fromhex('76a914a914...7d8f88ac')
+script = CScript(raw_script)
+
+# Разбираем на опкоды
+for op in script:
+    if isinstance(op, int):
+        print(f"Opcode: {op:#04x}")
+    else:
+        print(f"Data:   {op.hex()}")
+```
+
+## Turing-неполнота: почему Bitcoin Script ограничен
+
+Bitcoin Script **намеренно НЕ является Turing-полным** языком:
+
+| Ограничение | Причина | Следствие |
+|-------------|---------|-----------|
+| **Нет циклов** | Гарантия завершения | Невозможно написать бесконечный скрипт |
+| **Нет состояния** | Изоляция | Каждый скрипт выполняется независимо |
+| **Ограниченный стек** | Предсказуемые ресурсы | Макс. 1000 элементов, 520 байт на элемент |
+| **Нет рекурсии** | Безопасность | Атакующий не может создать "бомбу" |
+
+**Это преимущество, а не недостаток:** каждая нода сети выполняет каждый скрипт каждой транзакции. Если бы Script был Turing-полным, атакующий мог бы создать скрипт, выполняющийся вечно (проблема остановки). Bitcoin решает это ограничением языка.
+
+> **Сравнение с Ethereum:** Solidity -- Turing-полный язык, поэтому Ethereum ввел концепцию gas для ограничения вычислений. Bitcoin вместо этого ограничивает сам язык.
+
+## Таймлоки: OP_CHECKLOCKTIMEVERIFY и OP_CHECKSEQUENCEVERIFY
+
+Два особых опкода делают возможными временные условия в скриптах:
+
+### OP_CHECKLOCKTIMEVERIFY (CLTV) -- BIP 65
+
+```
+<expiry_time> OP_CHECKLOCKTIMEVERIFY OP_DROP
+<pubKey> OP_CHECKSIG
+```
+
+**Что делает:** Проверяет, что транзакция НЕ может быть включена в блок до указанного времени (Unix timestamp) или высоты блока.
+
+**Пример использования:** "Алиса может потратить эти BTC не раньше 1 января 2026 года."
+
+### OP_CHECKSEQUENCEVERIFY (CSV) -- BIP 112
+
+```
+<relative_delay> OP_CHECKSEQUENCEVERIFY OP_DROP
+<pubKey> OP_CHECKSIG
+```
+
+**Что делает:** Проверяет, что UTXO не может быть потрачен раньше, чем через N блоков после его создания (относительный таймлок).
+
+**Пример использования:** "Эти BTC можно потратить через 144 блока (~24 часа) после подтверждения."
+
+> **Важно для Lightning Network:** Оба таймлока -- критический компонент платежных каналов (BTC-09) и HTLC (BTC-10). Без них невозможно построить безопасные off-chain транзакции.
+
+## Практика
+
+Откройте Jupyter notebook **11-bitcoin-script.ipynb** для практики:
+- Ручное создание P2PKH и P2SH scriptPubKey
+- Декодирование скриптов в человекочитаемый формат
+- Создание P2WPKH witness program
+- Сравнение размеров транзакций (P2PKH vs P2WPKH)
+
+Для работы с bitcoin-cli на regtest откройте **lab-02-script.sh**:
+- Создание адресов разных типов
+- Декодирование транзакций и скриптов
+- Исследование descriptor wallets
+
+## Итоги
+
+| Концепция | Описание | Ключевой момент |
+|-----------|----------|-----------------|
+| **Bitcoin Script** | Стековый язык для условий траты | Не Turing-полный (безопасность) |
+| **scriptPubKey** | Условие-замок на UTXO | Определяет КТО может потратить |
+| **scriptSig** | Данные для разблокировки | Предоставляет подпись и ключ |
+| **P2PKH** | Классический тип скрипта | 7 шагов: push, dup, hash, verify, checksig |
+| **Таймлоки** | Временные условия | CLTV (абсолютный), CSV (относительный) |
+
+**Следующий урок:** Типы транзакций Bitcoin -- от P2PKH до Taproot, включая SegWit и расчет веса транзакций.
