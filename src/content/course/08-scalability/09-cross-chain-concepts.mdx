@@ -1,0 +1,240 @@
+---
+title: "Cross-chain концепции"
+description: "Межсетевое взаимодействие: передача сообщений, модели передачи активов, и модели доверия"
+order: 9
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Cross-chain", "Interoperability", "Message Passing", "Asset Transfer", "Trust Models"]
+prerequisites: ["08-zksync-starknet"]
+---
+
+import { CrossChainMessagingDiagram, AssetTransferModelsDiagram, TrustSpectrumDiagram } from '../../../components/diagrams/module8/CrossChainDiagrams';
+
+# Cross-chain концепции
+
+## Зачем это блокчейну?
+
+У нас теперь десятки L2: Optimism, Arbitrum, Base, zkSync, StarkNet, Polygon, Scroll... У каждого свои пользователи, свой TVL, своя ликвидность. Как ETH на Optimism перевести на Arbitrum? Как вызвать контракт на другой сети? **Cross-chain интероперабельность** -- одна из самых важных И самых опасных проблем Web3.
+
+> **Аналогия:** L1 и L2 -- это города с разными банками. У каждого банка свои деньги, свои правила. Cross-chain bridge -- это обменный пункт на границе. Удобно, но каждый обменный пункт -- потенциальная точка ограбления.
+
+## Зачем нужен cross-chain?
+
+### Фрагментация ликвидности
+
+Один и тот же токен (ETH, USDC) существует на 10+ chains. Но ETH на Optimism != ETH на Arbitrum != ETH на zkSync. Каждый -- отдельный токен на отдельном блокчейне.
+
+**Проблемы:**
+- **Ликвидность размазана** -- вместо одного пула на одном chain, десятки маленьких пулов
+- **Пользовательский опыт** -- "у меня ETH на Optimism, но мне нужен ETH на Arbitrum"
+- **Протоколы deploy на многих L2** -- Uniswap на 10+ chains, Aave на 10+ chains
+
+### Multi-chain экосистема
+
+Разные chains оптимизированы для разного:
+- **Base:** дешевые транзакции, социальные приложения
+- **Arbitrum:** DeFi, сложные smart contracts
+- **StarkNet:** ZK-native приложения, gaming
+- **Solana:** высокий throughput, trading
+
+Пользователям нужно свободно перемещать активы и вызывать контракты across chains.
+
+## Передача сообщений (Message Passing)
+
+<CrossChainMessagingDiagram client:load />
+
+### 5 шагов cross-chain message
+
+1. **SOURCE TX:** Пользователь инициирует cross-chain действие на Source Chain. Контракт формирует message = (destination chain, payload, sender) и эмитирует событие.
+
+2. **RELAY:** Relayer (off-chain сервис) обнаруживает событие на source chain. Relayer получает proof (Merkle proof или подписи валидаторов).
+
+3. **VERIFICATION:** Relayer передает message + proof в receiving контракт на Destination Chain. Контракт верифицирует доказательство.
+
+4. **EXECUTION:** Если proof валиден, destination контракт выполняет payload. Пример: mint tokens, update state, trigger function call.
+
+5. **CONFIRMATION:** Execution подтверждено на destination chain. Source chain может получить confirmation (опционально).
+
+### Типы сообщений
+
+- **Arbitrary message passing:** передача любых данных между chains (вызов функции, обновление состояния)
+- **Asset transfers:** специализированный subset -- перемещение токенов между chains
+
+## Модели передачи активов
+
+<AssetTransferModelsDiagram client:load />
+
+### Lock-and-Mint
+
+```
+Source Chain:      lock(100 ETH) в bridge контракте
+                        ↓
+Destination Chain: mint(100 wETH) -- wrapped version
+                        ↓
+Withdrawal:        burn(100 wETH) → unlock(100 ETH)
+```
+
+**Самая распространенная модель.**
+
+- Примеры: Wrapped ETH на L2, Wrapped BTC (WBTC)
+- **Риск:** bridge контракт хранит ВСЕ locked assets. Это "honeypot" -- привлекательная цель для хакеров. Если bridge взломан, locked assets потеряны для ВСЕХ пользователей.
+
+### Burn-and-Mint
+
+```
+Source Chain:      burn(100 USDC)
+                        ↓
+Destination Chain: mint(100 USDC) -- native, не wrapped!
+```
+
+**Нет wrapped tokens.** Токен нативный на обоих chains.
+
+- Пример: USDC через Circle CCTP (Cross-Chain Transfer Protocol)
+- **Преимущество:** нет locked assets = нет honeypot, нет liquidity risk
+- **Ограничение:** требует поддержки от эмитента токена (Circle для USDC)
+
+### Liquidity Pool
+
+```
+Source Chain:      deposit(100 USDC) в pool
+                        ↓
+Destination Chain: withdraw(100 USDC) из pool (от liquidity providers)
+```
+
+**Быстрее всех** -- не ждем L1 finality.
+
+- Примеры: Across, Stargate
+- **Преимущество:** быстро (минуты), нет wrapped tokens
+- **Ограничение:** ограничен ликвидностью в пуле, LP берут комиссию
+
+### Risk Profile
+
+| Модель | Риск | Скорость | Универсальность |
+|--------|------|----------|-----------------|
+| Lock-and-Mint | Высокий (honeypot) | Средняя | Любой токен |
+| Burn-and-Mint | Низкий | Средняя | Только поддерживаемые |
+| Liquidity Pool | Средний | Быстрая | Популярные токены |
+
+## Модели доверия (Trust Models)
+
+<TrustSpectrumDiagram client:load />
+
+### Natively Verified (нативно верифицированные)
+
+Light client или state proof на destination chain. **Trustless верификация** -- безопасность эквивалентна L1.
+
+- Пример: **IBC** (Cosmos) -- каждый chain поддерживает light client другого chain
+- Пример: **Rollup native bridges** -- используют rollup security (fraud/validity proofs)
+- **Самый безопасный**, но самый дорогой (on-chain верификация state proof)
+
+### Externally Verified (внешне верифицированные)
+
+Набор валидаторов/guardians подписывают attestation о сообщении. Trust assumption: **honest majority** валидаторов.
+
+- Пример: **Wormhole** -- 19 guardians (13/19 threshold)
+- Пример: **Multichain** -- MPC validators
+- **Средний уровень безопасности.** Если T-of-N валидаторов скомпрометированы -- bridge взломан
+- **Большинство bridge hacks** произошли с externally verified bridges
+
+### Optimistic (оптимистичные)
+
+Сообщения считаются валидными, пока не оспорены. Challenge period для диспутов.
+
+- Пример: **Across** protocol
+- Пример: **Connext** (older versions)
+- Trust assumption: **хотя бы один честный watcher** мониторит сообщения
+- Если нет честного watcher -- невалидные сообщения проходят
+
+## L1-L2 Canonical Bridges vs General Bridges
+
+### Canonical bridge (каноничный мост)
+
+**Native bridge**, управляемый командой L2:
+- Optimism Bridge, Arbitrum Bridge, zkSync Bridge, StarkNet Bridge
+- Использует security самого rollup (data on L1, fraud/validity proofs)
+- **Самый безопасный** для L1<->L2 переводов
+- **Медленный для withdrawals:** 7 дней для optimistic rollups, часы для ZK rollups
+
+### General bridge (общий мост)
+
+**Третья сторона:**
+- LayerZero, Wormhole, Axelar, Across
+- Собственная security model (validators, guardians, DVNs)
+- **Быстрее:** минуты для любого направления
+- **Менее безопасный:** отдельная attack surface от rollup security
+
+### Когда что использовать?
+
+| Сценарий | Рекомендация |
+|----------|-------------|
+| Крупный перевод L1->L2 | Canonical bridge (максимальная безопасность) |
+| Крупный перевод L2->L1 | Canonical bridge (готовы ждать 7 дней) |
+| Быстрый перевод L2->L1 | General bridge (Across, Stargate) + ждем canonical для settlement |
+| L2->L2 перевод | General bridge (нет прямого canonical пути между L2) |
+| Маленький перевод | General bridge (скорость важнее) |
+
+## Алгоритмический уровень
+
+### Cross-chain message passing protocol
+
+```
+// Source chain
+function sendMessage(dest_chain, dest_contract, payload):
+  nonce = next_nonce++
+  msg_hash = hash(src_chain, dest_chain, nonce, sender, dest_contract, payload)
+  emit MessageSent(msg_hash, dest_chain, payload)
+  // Relayer отслеживает этот event
+
+// Relayer (off-chain)
+function relay(msg, proof):
+  dest_chain.receiveMessage(msg, proof)
+
+// Destination chain
+function receiveMessage(msg, proof):
+  require(verify_proof(msg.src_chain, msg.msg_hash, proof))
+  require(!processed[msg.msg_hash])    // prevent replay attack
+  processed[msg.msg_hash] = true
+  msg.dest_contract.call(msg.payload)  // execute payload
+```
+
+**Ключевые проверки:**
+1. **Proof verification** -- сообщение действительно произошло на source chain
+2. **Replay protection** -- одно сообщение нельзя выполнить дважды
+3. **Nonce ordering** -- (опционально) сообщения обрабатываются в порядке отправки
+
+## Математический уровень
+
+### Bridge security как multi-party computation
+
+Для externally verified bridge с N валидаторами и threshold T:
+- Сообщение принимается, если >= T валидаторов подписали
+
+**Security:**
+```
+Pr[attack] = Pr[>= T validators corrupted]
+           = sum(C(N,k) * p^k * (1-p)^(N-k), k=T..N)
+```
+
+Где p = вероятность corruption одного валидатора.
+
+**Пример Wormhole (T=13, N=19):**
+- p = 0.05 (5% вероятность corruption каждого):
+  Pr[attack] < 10^(-12) (практически невозможно)
+- p = 0.30 (30% -- state-level attack):
+  Pr[attack] ~ 10^(-3) (1 из 1000)
+
+**Пример Harmony (T=2, N=5):**
+- p = 0.05: Pr[attack] ~ 10^(-3) (в 10^9 раз хуже Wormhole!)
+- p = 0.30: Pr[attack] ~ 0.16 (16%!)
+
+**Вывод:** Low threshold (2/5) = крайне уязвимо. High threshold (13/19) = значительно безопаснее.
+
+## Ключевые выводы
+
+1. **Cross-chain** -- критическая проблема: десятки L2 с фрагментированной ликвидностью
+2. **Message passing** -- передача данных между chains через relayer + proof verification
+3. **Три модели активов:** Lock-and-Mint (рискованно), Burn-and-Mint (безопасно, ограничено), Liquidity Pool (быстро)
+4. **Три модели доверия:** Natively verified (безопасно, дорого) -> Externally verified (средне) -> Optimistic (дешево, рискованно)
+5. **Canonical bridges** наследуют rollup security -- самые безопасные для L1<->L2
+6. **General bridges** быстрее, но имеют отдельную attack surface
+7. **Threshold matters:** 2/5 multisig = уязвимо, 13/19 = значительно безопаснее

@@ -1,0 +1,295 @@
+---
+title: "Мосты и интероперабельность"
+description: "Архитектура мостов, $2.8B+ потерь от взломов, LayerZero/Wormhole/Axelar, и итоги Module 8"
+order: 10
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["Bridges", "LayerZero", "Wormhole", "Bridge Hacks", "ERC-7802", "Interoperability"]
+prerequisites: ["09-cross-chain-concepts"]
+---
+
+import { BridgeArchitectureDiagram, BridgeHacksTimelineDiagram, InteropComparisonDiagram } from '../../../components/diagrams/module8/BridgeDiagrams';
+
+# Мосты и интероперабельность
+
+## Зачем это блокчейну?
+
+Мосты -- **самая опасная точка Web3**. $2.8 миллиарда потеряно через атаки на мосты. Ronin ($624M), BNB Bridge ($570M), Wormhole ($326M), Nomad ($190M). Мосты -- это не просто "перевести токен". Это пересечение двух security domains, и **каждый шаг -- потенциальная уязвимость**.
+
+> **Аналогия:** Bridge = международный аэропорт. Два государства (chains) с разными законами (consensus). Паспортный контроль (verification). Таможня (validation). Каждый checkpoint -- возможность для подделки. И в 2022 году "террористы" украли $1.3B+ через эти checkpoints.
+
+## Bridge Architecture: Deep Dive
+
+<BridgeArchitectureDiagram client:load />
+
+### Lock-and-Mint с attack surface
+
+Рассмотрим стандартный lock-and-mint bridge и уязвимость каждого шага:
+
+**Шаг 1: LOCK** -- Пользователь отправляет 100 ETH в Bridge контракт на Ethereum.
+- **Attack surface:** Smart contract vulnerability в lock logic. Reentrancy, integer overflow, access control bypass.
+
+**Шаг 2: RELAY** -- Relayer/validator set обнаруживает Lock event. Валидаторы подписывают attestation.
+- **Attack surface:** Validator key compromise, collusion. Если T-of-N ключей украдены -- bridge потерян.
+
+**Шаг 3: VERIFY** -- Destination chain bridge верифицирует подписи (e.g., 13/19 threshold).
+- **Attack surface:** Signature verification bypass, proof verifier bugs. Если verifier имеет баг -- атакующий может подделать proof.
+
+**Шаг 4: MINT** -- Bridge минтит 100 wETH (wrapped) на destination chain.
+- **Attack surface:** Unauthorized minting, replay attack. Одна валидная транзакция переиспользуется многократно.
+
+**Bridge = сумма ВСЕХ этих attack surfaces.** Каждый шаг добавляет вектор атаки.
+
+## Хронология взломов мостов
+
+<BridgeHacksTimelineDiagram client:load />
+
+### Ronin Bridge (март 2022) -- $624M
+
+**Механизм:** Private key compromise. Lazarus Group (Северная Корея) скомпрометировал **5 из 9 валидаторов**.
+
+**Как произошло:**
+- Axie Infinity использовал 9 валидаторов, threshold 5/9
+- 4 валидатора Sky Mavis (создатели Axie) + 1 внешний (Axie DAO)
+- Lazarus скомпрометировал ключи через social engineering
+- Взлом оставался **незамеченным 6 ДНЕЙ**
+
+**Урок:** Разнообразие валидаторов + мониторинг. 5 из 9 от одной организации = недостаточная децентрализация.
+
+### BNB Bridge (октябрь 2022) -- $570M
+
+**Механизм:** Proof verifier bug. Атакующий подделал proofs для mint BNB.
+
+**Как произошло:**
+- Bug в IAVL proof verification на BNB Beacon Chain
+- Атакующий создал валидные-выглядящие proofs без реального lock
+- Заминтил 2M BNB (~$570M)
+- Chain была приостановлена для остановки атаки
+
+**Урок:** Proof verification -- КРИТИЧЕСКИЙ код. Один баг = неограниченный mint.
+
+### Wormhole (февраль 2022) -- $326M
+
+**Механизм:** Signature verification bypass на Solana стороне.
+
+**Как произошло:**
+- Wormhole использует guardian сеть (19 guardians, threshold 13/19)
+- Bug на Solana стороне позволил обойти верификацию подписей
+- Атакующий заминтил 120,000 wETH на Solana без реального lock на Ethereum
+- Jump Trading (investor) покрыл потери
+
+**Урок:** Cross-chain = cross-language = больше attack surface. Solidity + Rust (Solana) = два кодовых base для аудита.
+
+### Nomad (август 2022) -- $190M
+
+**Механизм:** Message verification flaw. Инициализационный баг.
+
+**Как произошло:**
+- Upgrade proxy неправильно инициализировал trusted root = 0x00
+- Любое сообщение с root 0x00 проходило верификацию
+- ЛЮБОЙ пользователь мог скопировать exploit транзакцию
+- "Самый демократичный" хак -- сотни адресов скопировали транзакцию
+
+**Урок:** Initialization bugs. Один неправильный параметр при upgrade = полная потеря средств.
+
+### Harmony Horizon (июнь 2022) -- $100M
+
+**Механизм:** Private key compromise. 2/5 multisig.
+
+**Как произошло:**
+- Bridge использовал 2-of-5 multisig
+- Компрометация 2 ключей = полный контроль
+- Скомпрометировав 2 ключа, атакующий получил контроль над bridge
+
+**Урок:** Low threshold multisig = недостаточная безопасность. 2/5 -- это СЛИШКОМ низкий threshold для сотен миллионов долларов.
+
+## Bridge Security: три столпа
+
+### 1. Economic Security
+
+**Сколько стоит скомпрометировать bridge?**
+
+- Размер validator stake (slashable)
+- Bond size для relayers
+- Insurance fund
+
+```
+Attack cost = min(stake_to_compromise, bribe_cost)
+Security margin = attack_cost / bridge_TVL
+```
+
+Rule of thumb: attack cost должен быть >= TVL bridge.
+
+### 2. Implementation Security
+
+**Насколько код защищен?**
+
+- Количество аудитов (минимум 3 от разных фирм)
+- Bug bounty размер (>= $1M для серьезных bridges)
+- Formal verification критических компонентов (proof verifier)
+- Code coverage тестами
+
+### 3. Environmental Security
+
+**Операционная безопасность:**
+
+- Key management (HSM -- Hardware Security Module)
+- 24/7 мониторинг аномалий
+- Incident response plan
+- Validator key rotation
+
+## Протоколы интероперабельности
+
+<InteropComparisonDiagram client:load />
+
+### LayerZero
+
+**Доминирующий протокол:** ~75% cross-chain volume (2025).
+
+**Архитектура: Ultra-Light Nodes (ULNs)**
+- Не требует full light client на каждом chain
+- Использует Decentralized Verifier Networks (DVNs) для верификации
+- DVNs конфигурируемы per-application -- разработчик выбирает уровень безопасности
+
+**Ключевые свойства:**
+- **Immutable messaging:** сообщения нельзя перехватить или изменить после отправки
+- **80+ поддерживаемых chains**
+- **Configurable security:** от 1 DVN (дешево, менее безопасно) до multiple DVNs (дорого, безопаснее)
+
+### Wormhole
+
+**Guardian Network:** 19 guardians (институциональные валидаторы). Threshold: 13/19.
+
+**После хака ($326M):**
+- Полный redeploy Solana-side контрактов
+- Усиление аудита
+- Jump Trading покрыл потери
+- Фокус на Solana экосистеме
+
+**Ключевые свойства:**
+- Lock-and-mint model
+- 30+ chains
+- Сильная позиция в Solana экосистеме
+
+### Axelar
+
+**Proof of Stake валидаторы:** Cosmos SDK-based network с собственным validator set.
+
+**Ключевые свойства:**
+- General Message Passing
+- 60+ chains
+- PoS security model
+- Cosmos IBC integration
+
+### Native Bridges
+
+**Rollup canonical bridges:** Optimism Bridge, Arbitrum Bridge, zkSync Bridge.
+
+**Ключевые свойства:**
+- Наследуют L1 security
+- Самые безопасные для L1<->L2
+- Медленные (7 дней withdrawal для optimistic rollups)
+- Ограничены парой L1<->конкретный L2
+
+## ERC-7802: Optimism Superchain Token Standard
+
+Стандарт для бесшовного bridging между OP Stack chains:
+
+- Унифицированный lock/mint interface для всех OP Stack chains
+- Один и тот же токен нативно доступен на всех chains Superchain (Base, OP Mainnet, etc.)
+- Eliminating необходимость в wrapped tokens между OP Stack chains
+- Использует shared security Superchain settlement
+
+**Значение:** первый шаг к "chainless" UX, где пользователь не думает о том, на каком chain находится.
+
+## Алгоритмический уровень
+
+### Bridge Security Checklist
+
+```
+function evaluateBridgeSecurity(bridge):
+  score = 0
+
+  // Economic security
+  if bridge.validator_count >= 15: score += 2
+  if bridge.threshold >= 2/3:     score += 2
+  if bridge.stake >= $100M:       score += 1
+
+  // Implementation security
+  if bridge.audits >= 3:          score += 2
+  if bridge.bug_bounty >= $1M:    score += 1
+  if bridge.formal_verification:  score += 2
+
+  // Environmental security
+  if bridge.key_management == "HSM": score += 1
+  if bridge.monitoring_24_7:         score += 1
+
+  return score / 12  // 0-1 security rating
+```
+
+**Применим к реальным bridges:**
+
+| Bridge | Validators | Threshold | Audits | Score |
+|--------|-----------|-----------|--------|-------|
+| Wormhole | 19 | 13/19 (68%) | 5+ | ~9/12 |
+| Harmony | 5 | 2/5 (40%) | 1 | ~3/12 |
+| Native (OP) | L1 validators | N/A | 10+ | ~11/12 |
+
+## Математический уровень
+
+### Интероперабельность как задача теории графов
+
+N chains формируют complete graph K_N:
+
+**Direct bridges:** N*(N-1)/2 соединений
+- Для N=50 chains: 50*49/2 = 1,225 bridges
+- Растет O(N^2) -- не масштабируется
+
+**Hub-and-spoke:** N соединений через relay chain
+- Для N=50 chains: 50 connections через hub
+- Растет O(N) -- масштабируется
+- Hub (LayerZero, Wormhole) = centralized relay
+
+**Trade-off:**
+```
+Direct (K_N):    connections = O(N^2), risk = distributed
+Hub-and-spoke:   connections = O(N),   risk = concentrated in hub
+```
+
+Hub model масштабируется лучше, но концентрирует risk в одной точке. Взлом hub = взлом ВСЕХ N chains.
+
+---
+
+## Module 8 Recap: Scalability
+
+Поздравляем! Вы завершили модуль Scalability -- от фундаментальной трилеммы до современных cross-chain протоколов.
+
+| Урок | Ключевая концепция | Практический навык |
+|------|-------------------|-------------------|
+| SCALE-01: Проблема масштабируемости | Трилемма: scalability vs security vs decentralization | Анализировать trade-offs блокчейн систем |
+| SCALE-02: Концепции Layer 2 | L2 наследует безопасность L1 через data availability | Классифицировать решения: rollup, validium, sidechain |
+| SCALE-03: State Channels | Off-chain транзакции с on-chain settlement | Описать lifecycle: open -> transact -> close |
+| SCALE-04: Plasma | Mass exit problem -- фундаментальный недостаток | Объяснять почему rollups заменили Plasma |
+| SCALE-05: Optimistic Rollups | Fraud proofs + 7-day challenge period | Сравнивать single-round vs multi-round fraud proofs |
+| SCALE-06: Optimism и Arbitrum | OP Stack (Superchain) vs Nitro (Stylus) | Развертывать контракты на L2 (same tooling) |
+| SCALE-07: ZK Rollups | Validity proofs = мгновенная финализация | Различать SNARK vs STARK и Type 1-4 zkEVM |
+| SCALE-08: zkSync и StarkNet | zkSync (Solidity) vs StarkNet (Cairo) | Сравнивать подходы к ZK масштабированию |
+| SCALE-09: Cross-chain | Lock-and-mint vs burn-and-mint vs liquidity pool | Анализировать trust models мостов |
+| SCALE-10: Мосты | $2.8B+ потерь. Bridge = сумма attack surfaces | Оценивать безопасность моста по trust model |
+
+### Что вы теперь умеете
+
+После этого модуля вы можете:
+- Объяснить blockchain trilemma и почему scaling -- фундаментальная проблема
+- Классифицировать L2 решения по data availability и security model
+- Описать эволюцию: state channels -> Plasma -> rollups
+- Различать optimistic rollups (fraud proofs, 7 дней) и ZK rollups (validity proofs, часы)
+- Сравнить OP Stack vs Arbitrum Nitro, zkSync Era vs StarkNet
+- Анализировать bridge security по trust model и attack surface
+- Оценить реальные bridge hacks и извлечь уроки
+
+## Что дальше?
+
+В следующем модуле -- **Zero-Knowledge Proofs**. Мы использовали validity proofs в ZK rollups, но КАК они работают? Groth16, trusted setup, арифметические схемы (circuits), и Circom -- язык для написания ZK-доказательств. Математика, которая стоит за "не нужно доверять, нужно проверять".
+
+> **Переход:** Scalability -> Zero-Knowledge Proofs. В SCALE-07 мы узнали, что prover генерирует proof, а verifier проверяет. Phase 9 расскажет КАК prover генерирует этот proof -- от polynomial commitments до R1CS constraints.

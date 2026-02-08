@@ -1,0 +1,223 @@
+---
+title: "zkSync Era и StarkNet"
+description: "Два ведущих ZK rollup: zkSync Era (Solidity, SNARKs) vs StarkNet (Cairo, STARKs). Экосистема ZK rollups."
+order: 8
+difficulty: "advanced"
+estimatedTime: 30
+topics: ["zkSync", "StarkNet", "Cairo", "Hyperchains", "Volition", "ZK Ecosystem"]
+prerequisites: ["07-zk-rollups-concepts"]
+---
+
+import { ZkSyncVsStarknetDiagram, ZKEcosystemMapDiagram } from '../../../components/diagrams/module8/ZkSyncStarknetDiagrams';
+
+# zkSync Era и StarkNet
+
+## Зачем это блокчейну?
+
+Два главных игрока в ZK rollups: **zkSync Era** (Matter Labs) -- знакомый Solidity, привычные инструменты. **StarkNet** (StarkWare) -- новый язык Cairo, зато квантово-устойчивые STARKs. Оба обещают 10,000+ TPS. Оба нативно поддерживают Account Abstraction. Но подходы РАДИКАЛЬНО разные.
+
+> **Аналогия:** zkSync = Android (привычная Java/Kotlin, совместимость с существующими приложениями). StarkNet = iOS (свой язык Swift/Cairo, оптимизирован для экосистемы, но нужно учить с нуля).
+
+## zkSync Era (Matter Labs)
+
+<ZkSyncVsStarknetDiagram client:load />
+
+### Архитектура
+
+**Type 4 zkEVM:** zkSync НЕ выполняет EVM bytecode напрямую. Solidity компилируется через zksolc (custom compiler) в zkSync bytecode, который выполняется на zkEVM.
+
+**Proof system:** zk-SNARKs (PLONK-based). Trusted setup required, но PLONK использует "universal and updatable" setup -- не нужна новая церемония для каждого контракта.
+
+### Native Account Abstraction
+
+Ключевое отличие zkSync -- **ВСЕ аккаунты являются smart contracts**. Нет разделения на EOA и contract accounts.
+
+Что это дает:
+- **Paymaster:** другой аккаунт платит gas за пользователя. Gasless транзакции для onboarding
+- **Custom validation:** собственная логика проверки транзакций (multisig, social recovery, session keys)
+- **Batch transactions:** несколько операций в одной транзакции
+
+Аналог EIP-4337 на Ethereum, но встроенный в протокол, а не overlay.
+
+### Hyperchains
+
+**L3 сети**, построенные поверх zkSync L2:
+- Shared security с zkSync L2 (который наследует безопасность Ethereum)
+- Кастомизация: собственный газовый токен, privacy features, специализированные VM
+- Interoperability между Hyperchains через zkSync settlement layer
+
+### Roadmap
+
+- Mainnet с 2023 года
+- EVM bytecode compatibility goal (2025-2026): выполнять EVM bytecode напрямую, без перекомпиляции
+- 10,000+ TPS target
+- Prover decentralization
+
+## StarkNet (StarkWare)
+
+### Архитектура
+
+**Cairo VM** -- полностью custom virtual machine, **НЕ совместимая с EVM**. Разработчики должны изучить Cairo -- язык, спроектированный специально для provability.
+
+**Proof system:** STARKs (Scalable Transparent ARguments of Knowledge). Нет trusted setup. Quantum resistant. Proofs больше, но proving быстрее для больших вычислений.
+
+### Cairo: язык для доказательств
+
+```
+// StarkNet: разработчик пишет Cairo
+#[starknet::contract]
+mod Counter {
+    #[storage]
+    struct Storage {
+        count: u128,
+    }
+
+    #[external(v0)]
+    fn increment(ref self: ContractState) {
+        let current = self.count.read();
+        self.count.write(current + 1);
+    }
+}
+```
+
+**Почему Cairo, а не Solidity?**
+- Cairo оптимизирован для generation proofs -- операции в Cairo эффективно "доказуемы"
+- EVM opcodes (KECCAK256, SSTORE) сложны для proving; Cairo использует Pedersen hash и другие ZK-friendly примитивы
+- Trade-off: мощнее для ZK-native приложений, но высокий порог входа
+
+### SHARP (Shared Prover)
+
+**Shared Prover Architecture Resources:** StarkNet транзакции делят prover инфраструктуру с StarkEx (dYdX, Immutable X, Sorare).
+
+Преимущества:
+- Амортизация стоимости proving (больше транзакций = дешевле на транзакцию)
+- Один proof покрывает транзакции из нескольких приложений
+
+### Volition
+
+**Гибридная data availability** -- выбор per-transaction:
+- **Rollup mode:** данные на Ethereum L1 (дороже, безопаснее)
+- **Validium mode:** данные off-chain (дешевле, менее безопасно)
+
+Пользователь решает сам: для крупного трансфера -- rollup mode. Для игрового NFT -- validium mode.
+
+### Native AA from Day 1
+
+StarkNet реализовал Account Abstraction **до EIP-4337**. Каждый аккаунт -- smart contract с кастомной логикой валидации. Это фундаментальное дизайн-решение, не ретрофит.
+
+### Roadmap
+
+- Mainnet с 2023 года
+- Sequencer decentralization roadmap (2026)
+- Cairo 2.0 с Rust-like синтаксисом (упрощение для разработчиков)
+- Appchains через Madara framework
+
+## Сравнение: итоги
+
+| Аспект | zkSync Era | StarkNet |
+|--------|-----------|----------|
+| Язык | Solidity (через zksolc) | Cairo (нужно учить) |
+| Proof | SNARKs (PLONK) | STARKs (transparent) |
+| Trusted Setup | Да (universal) | Нет |
+| Quantum Resistant | Нет | Да |
+| Account Abstraction | Native | Native |
+| Onboarding для Ethereum dev | Быстрый (Solidity) | Медленный (Cairo) |
+| ZK-native мощность | Средняя | Высокая |
+
+**Выбор:**
+- Ethereum разработчик хочет быстро развернуть на L2 -> **zkSync Era**
+- Разработчик строит ZK-native приложение (privacy, provable computation) -> **StarkNet**
+
+## Экосистема ZK Rollups
+
+<ZKEcosystemMapDiagram client:load />
+
+### Другие ZK rollups
+
+**Polygon zkEVM** (Type 2):
+- EVM equivalent -- существующие контракты работают почти без изменений
+- SNARK-based proof system
+- Backed by Polygon Labs, интеграция с Polygon экосистемой
+
+**Scroll** (Type 2):
+- Community-driven, фокус на Ethereum equivalence
+- SNARK-based, поэтапное движение к Type 1
+- Mainnet с 2023
+
+**Linea** (Type 2):
+- Построен ConsenSys (создатели MetaMask)
+- Enterprise-focused, интеграция с MetaMask и Infura
+- Mainnet с 2023
+
+**Taiko** (Type 1):
+- Full Ethereum equivalence -- самый совместимый, самый медленный proving
+- Community-driven, based rollup design
+- Mainnet с 2024
+
+## Алгоритмический уровень
+
+### Compilation pipeline
+
+```
+// zkSync: Developer пишет Solidity
+contract Counter {
+    uint256 count;
+    function inc() external { count++; }
+}
+
+// zkSync compiler (zksolc) транспилирует:
+// 1. Solidity -> Yul (intermediate representation)
+// 2. Yul -> zkSync bytecode (custom opcodes)
+// 3. zkSync bytecode выполняется на zkEVM
+// 4. Execution trace -> PLONK proof
+
+// StarkNet: Developer пишет Cairo
+// Cairo -> Sierra (Safe Intermediate Representation)
+// Sierra -> CASM (Cairo Assembly)
+// CASM -> execute + generate STARK proof
+```
+
+### Различия в Gas модели
+
+```
+// Ethereum: gas = execution cost
+// cost(KECCAK256) = 30 gas + 6 * words
+
+// zkSync: gas = execution + proving cost
+// KECCAK256 дороже (сложный circuit)
+// Native operations (storage) дешевле (оптимизированный circuit)
+
+// StarkNet: gas in Pedersen hash units
+// Pedersen hash: ZK-friendly, дешевый для proving
+// KECCAK256: дорогой (не ZK-friendly)
+```
+
+## Математический уровень
+
+### Сложность proof systems
+
+**SNARK (Groth16):**
+- Proof = 3 group elements (~288 bytes)
+- Verification = 3 pairings (bilinear map computations)
+- Setup: O(N) time, produces CRS (Common Reference String)
+
+**STARK:**
+- Proof = O(poly(log N)) hash values
+- Verification = O(poly(log N)) hash computations
+- Setup: нет (transparent)
+
+Для больших N (миллионы транзакций):
+- STARK proving быстрее (quasi-linear scaling)
+- STARK proof больше (logarithmic in computation size)
+- SNARK verification дешевле (constant size proof)
+
+Phase 9 выведет эти bound'ы формально.
+
+## Ключевые выводы
+
+1. **zkSync Era:** Solidity + SNARKs + native AA + Hyperchains. Быстрый onboarding для Ethereum разработчиков
+2. **StarkNet:** Cairo + STARKs + native AA + Volition + SHARP. Мощнее для ZK-native приложений, но нужно учить Cairo
+3. **Оба нативно поддерживают Account Abstraction** -- все аккаунты являются smart contracts
+4. **Type 2 (EVM equivalent)** -- наиболее активный сегмент экосистемы (Polygon zkEVM, Scroll, Linea)
+5. **Экосистема быстро растет** -- от 2 proектов в 2022 до 6+ mainnet в 2025
+6. **Tradeoff остается:** Solidity compatibility (zkSync) vs ZK-native power (Cairo/StarkNet)

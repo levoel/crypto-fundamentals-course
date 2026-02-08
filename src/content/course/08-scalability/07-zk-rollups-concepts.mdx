@@ -1,0 +1,192 @@
+---
+title: "ZK Rollups: концепции"
+description: "Validity proofs вместо fraud proofs: архитектура ZK rollups, SNARKs vs STARKs, и zkEVM спектр (Type 1-4)"
+order: 7
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["ZK Rollups", "Validity Proofs", "SNARK", "STARK", "zkEVM", "Prover-Verifier"]
+prerequisites: ["06-optimism-arbitrum"]
+---
+
+import { ZKArchitectureDiagram, SNARKvsSTARKDiagram, ZkEVMSpectrumDiagram } from '../../../components/diagrams/module8/ZKRollupDiagrams';
+
+# ZK Rollups: концепции
+
+## Зачем это блокчейну?
+
+Optimistic rollups ждут 7 дней, надеясь что никто не обнаружит мошенничество. А что если можно **МАТЕМАТИЧЕСКИ ДОКАЗАТЬ**, что все транзакции корректны? ZK rollups делают именно это: validity proof подтверждает состояние, и L1 принимает его мгновенно. Не нужно доверять, не нужно ждать. Только математика.
+
+> **Аналогия:** Optimistic rollup = сдать экзамен и надеяться, что преподаватель НЕ проверит (challenge period). ZK rollup = сдать экзамен вместе с математическим доказательством, что все ответы верны. Преподаватель проверяет доказательство за секунды и ставит зачет.
+
+## Ключевая идея: Validity Proofs
+
+В чем отличие от optimistic rollups?
+
+- **Optimistic:** предполагаем, что транзакции валидны. Если кто-то не согласен -- оспаривает (fraud proof). Ждем 7 дней для уверенности.
+- **ZK:** ДОКАЗЫВАЕМ, что транзакции валидны. Prover генерирует криптографическое доказательство off-chain. Verifier контракт проверяет proof on-chain. Если proof валиден -- state transition принят НЕМЕДЛЕННО.
+
+**Главное преимущество:** нет 7-дневного ожидания. Финализация за часы (время генерации и верификации proof).
+
+## Архитектура ZK Rollup
+
+<ZKArchitectureDiagram client:load />
+
+### 5 шагов ZK rollup
+
+1. **Transactions:** Пользователи отправляют транзакции секвенсеру. Секвенсер выполняет их и определяет новое состояние. Батч содержит 100-1000 транзакций.
+
+2. **Prover:** Off-chain prover генерирует validity proof (SNARK или STARK), доказывающий корректность state transition. Это вычислительно дорогая операция -- от минут до часов, в зависимости от батча и proof system.
+
+3. **Submit to L1:** Секвенсер публикует на Ethereum L1 три компонента:
+   - Сжатые данные транзакций (для data availability -- любой может восстановить состояние)
+   - Новый state root
+   - Validity proof
+
+4. **Verifier:** On-chain verifier контракт проверяет validity proof. Если proof валиден, state transition принимается **мгновенно**. Никакого 7-дневного challenge period.
+
+5. **Finality:** Состояние финализировано на L1 после верификации proof. Вывод средств можно начать немедленно (часы, а не 7 дней).
+
+**Ключевое отличие от optimistic:** шаг 4 -- это "verify proof" (миллисекунды), а не "wait 7 days".
+
+## SNARKs vs STARKs
+
+Два основных типа proof systems для ZK rollups. Оба доказывают корректность вычислений, но используют разную математику.
+
+<SNARKvsSTARKDiagram client:load />
+
+### SNARK (Succinct Non-interactive ARgument of Knowledge)
+
+**Преимущества:**
+- Маленький proof (~288 bytes) -- дешевая верификация on-chain
+- Быстрая верификация (~миллисекунды, ~300K gas)
+- Зрелая технология, широко развернута
+
+**Недостатки:**
+- **Trusted setup** -- требуется церемония генерации параметров. Если "toxic waste" (секретные значения из setup) не уничтожен, можно создавать поддельные proofs
+- Уязвим для квантовых компьютеров (основан на эллиптических кривых)
+
+### STARK (Scalable Transparent ARgument of Knowledge)
+
+**Преимущества:**
+- **Transparent** -- никакого trusted setup. Параметры публичные
+- **Quantum resistant** -- основан только на hash functions
+- Быстрее для больших вычислений (prover time scales лучше)
+
+**Недостатки:**
+- Больший proof (~45-200 KB) -- дороже верификация on-chain
+- Менее зрелая технология, меньше deployments
+
+> **Важно:** Математика доказательств (как именно proof генерируется) -- тема Phase 9 (ZK Proofs). Здесь мы изучаем, как эти proofs используются в АРХИТЕКТУРЕ rollup. Граница: "Мы показываем, что validity proof генерируется и верифицируется. Phase 9 объяснит КАК он генерируется."
+
+## zkEVM: спектр совместимости (Type 1-4)
+
+Классификация Виталика Бутерина описывает, насколько zkEVM совместим с оригинальным Ethereum:
+
+<ZkEVMSpectrumDiagram client:load />
+
+### Type 1: Full Ethereum equivalence
+
+- Доказывает execution Ethereum напрямую -- включая state tree, block structure
+- **Самая медленная генерация proof** (часы или дни)
+- **Лучшая совместимость** -- любой EVM bytecode работает без изменений
+- Пример: Taiko
+
+### Type 2: EVM equivalent
+
+- Небольшие отличия в state/block structure (упрощения для ускорения proving)
+- Хорошая совместимость -- большинство контрактов работает
+- Пример: Polygon zkEVM, Scroll, Linea
+
+### Type 3: Almost EVM equivalent
+
+- Некоторые opcodes отличаются или не поддерживаются
+- Большинство контрактов работает, но не все
+- Переходное состояние: проекты Type 3 обычно стремятся к Type 2
+
+### Type 4: High-level language equivalent
+
+- Компилирует Solidity (или Cairo) в custom VM bytecode
+- **Самая быстрая генерация proof** (минуты)
+- **Наименее совместим** -- не все EVM контракты работают, нужна перекомпиляция
+- Пример: zkSync Era, StarkNet (Cairo)
+
+**Tradeoff:** совместимость (сколько существующих контрактов работает) vs performance (как быстро генерируются proofs).
+
+## Сравнение финализации
+
+| Метрика | Optimistic Rollup | ZK Rollup |
+|---------|-------------------|-----------|
+| Finality на L1 | ~7 дней (challenge period) | Часы (proof generation + verification) |
+| Вывод средств | 7 дней (или через liquidity provider для fast exit) | Часы |
+| Security assumption | Хотя бы 1 честный verifier | Cryptographic soundness (математика) |
+| Data on L1 | Transaction data (calldata/blobs) | Transaction data + validity proof |
+
+ZK rollup: финализация быстрее, но proof generation дороже вычислительно.
+
+## Challenges: что мешает ZK rollups
+
+1. **Вычислительная сложность proving:** Генерация proof требует специализированного оборудования (GPU, FPGA). Энергоемко и дорого. Type 1 provers экстремально медленные.
+
+2. **Сложность circuits:** Не все EVM операции легко "доказать". Некоторые opcodes (KECCAK256, precompiles) требуют сложных circuit implementations.
+
+3. **Централизация provers:** Большинство provers сейчас централизованы. Децентрализация -- активная область исследований.
+
+4. **Стоимость:** On-chain верификация proof стоит ~300K gas. Для маленьких батчей overhead значительный.
+
+## Алгоритмический уровень
+
+ZK rollup flow в упрощенном виде:
+
+```
+function submitBatch(txs, new_state_root, proof):
+  // Prover уже сгенерировал proof off-chain
+  compressed_data = compress(txs)
+  l1.submit_blob(compressed_data)      // Data availability
+  l1.submit_root(new_state_root)       // New state
+  l1.submit_proof(proof)               // Validity proof
+
+function verifyBatch(batch_id):
+  // On-chain verifier проверяет proof
+  valid = verifier.verify(proof, old_root, new_root, batch_hash)
+  if valid:
+    finalize(batch_id)  // МГНОВЕННАЯ финализация
+  else:
+    reject(batch_id)
+```
+
+**Сравните с optimistic rollup:**
+```
+function verifyBatch_optimistic(batch_id):
+  // Ждем 7 дней
+  wait(7 days)
+  if no_fraud_proof_submitted:
+    finalize(batch_id)
+  else:
+    // Кто-то подал fraud proof -- проверяем
+    execute_fraud_proof()
+```
+
+## Математический уровень
+
+Validity proof неформально: prover убеждает verifier, что "я знаю witness W такой, что F(public_inputs, W) = true" без раскрытия W.
+
+Для ZK rollups:
+- **public_inputs** = (old_state_root, new_state_root, batch_data)
+- **W** = execution traces (все промежуточные значения вычислений)
+- **F** = "все транзакции в батче валидны и корректно преобразуют old_state в new_state"
+
+**Ключевые свойства:**
+- **Proof size:** O(1) или O(poly(log N)) -- не зависит от размера батча
+- **Verification time:** O(1) или O(log N) -- очень быстро
+- **Prover time:** O(N * poly(log N)) -- пропорционально размеру вычисления
+
+Phase 9 формализует F, proof systems и гарантии soundness.
+
+## Ключевые выводы
+
+1. **ZK rollups** используют validity proofs вместо fraud proofs -- криптографическая уверенность, а не экономическое допущение
+2. **Prover** генерирует proof off-chain (дорого), **verifier** проверяет on-chain (дешево)
+3. **SNARKs:** маленький proof, но trusted setup. **STARKs:** transparent, quantum resistant, но больший proof
+4. **zkEVM Type 1-4:** спектр от полной совместимости с EVM (медленный proving) до custom VM (быстрый proving)
+5. **Финализация:** часы вместо 7 дней -- главное преимущество для пользователей
+6. **Phase 9** объяснит математику proof generation (Groth16, circuits, trusted setup ceremony)
