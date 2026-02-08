@@ -1,0 +1,301 @@
+---
+title: "Модель аккаунтов Ethereum"
+description: "EOA vs Contract Account, четыре поля состояния, переходы состояния и вычисление адресов"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Ethereum", "Account Model", "EOA", "Contract", "State Transitions", "Nonce"]
+prerequisites: []
+---
+
+import { EOAvsContractDiagram, AccountFieldsDiagram, AccountStateTransitionDiagram } from '../../../components/diagrams/module3/AccountModelDiagrams';
+
+# Модель аккаунтов Ethereum
+
+## Зачем это блокчейну?
+
+В Bitcoin нет понятия "аккаунт" -- есть только неизрасходованные выходы (UTXO). Чтобы узнать свой "баланс", кошелек суммирует все UTXO, которые может потратить. Ethereum отказался от этого подхода в пользу **модели аккаунтов**: каждый адрес имеет явное состояние с балансом, nonce и (для контрактов) кодом.
+
+Эта архитектурная разница -- не просто вопрос удобства. Она определяет, как работают смарт-контракты, как предотвращаются replay-атаки и как хранится глобальное состояние сети из 280+ миллионов аккаунтов.
+
+```python
+# Bitcoin: "баланс" = сумма UTXO
+# Кошелек должен перебрать весь UTXO set и найти "свои" выходы
+alice_utxos = [utxo for utxo in utxo_set if utxo.can_spend(alice_key)]
+alice_balance = sum(utxo.amount for utxo in alice_utxos)
+
+# Ethereum: баланс -- это поле в структуре аккаунта
+# state[address] -> { nonce, balance, storageRoot, codeHash }
+alice_balance = state[alice_address].balance  # Прямой доступ за O(log N)
+```
+
+## Два типа аккаунтов: EOA и Contract
+
+Ethereum различает два типа аккаунтов. Оба имеют одинаковые 4 поля состояния, но принципиально различаются по управлению.
+
+<EOAvsContractDiagram client:load />
+
+### EOA (Externally Owned Account)
+
+EOA контролируется **приватным ключом** (ECDSA secp256k1, см. CRYPTO-11). Только владелец ключа может создавать транзакции от имени EOA.
+
+```python
+from eth_account import Account
+
+# Создание EOA = генерация ключевой пары
+private_key = "0x" + os.urandom(32).hex()
+account = Account.from_key(private_key)
+
+# Адрес = последние 20 байт keccak256(publicKey)
+# address = keccak256(uncompressed_public_key[1:])[12:]
+print(f"Address: {account.address}")  # 0x742d35Cc6634C0532925a3b844Bc9e7595f2bD38
+```
+
+Свойства EOA:
+- Может **инициировать** транзакции (единственный тип, который может это делать)
+- Не содержит кода (`codeHash = keccak256("")`)
+- `storageRoot` = хеш пустого trie
+- `nonce` = количество отправленных транзакций
+
+### Contract Account
+
+Contract Account контролируется **байткодом** (EVM bytecode). Контракт не может инициировать транзакцию самостоятельно -- он активируется только транзакцией или вызовом от другого контракта.
+
+```python
+# Создание контракта: Alice отправляет транзакцию с to=None и data=bytecode
+tx = {
+    "from": alice_address,
+    "to": None,          # <-- признак создания контракта
+    "data": bytecode,     # EVM bytecode (результат компиляции Solidity)
+    "gas": 3_000_000,
+    "nonce": 0,           # nonce Alice в момент деплоя
+}
+```
+
+Свойства Contract Account:
+- **Не может** инициировать транзакции самостоятельно
+- Содержит неизменяемый код (`codeHash = keccak256(bytecode)`)
+- `storageRoot` = корень storage trie с переменными контракта
+- `nonce` = количество контрактов, созданных этим контрактом (через `CREATE`)
+
+## Четыре поля состояния аккаунта
+
+Каждый аккаунт Ethereum (EOA или Contract) описывается ровно **четырьмя полями**. Нажмите на поле ниже, чтобы увидеть подробности.
+
+<AccountFieldsDiagram client:load />
+
+### RLP-кодирование аккаунта
+
+Состояние аккаунта кодируется в формате **RLP** (Recursive Length Prefix) -- стандартная сериализация Ethereum:
+
+```python
+import rlp
+
+# Аккаунт = RLP-кодированный кортеж из 4 полей
+account_data = rlp.encode([
+    nonce,          # uint64: количество транзакций / созданных контрактов
+    balance,        # uint256: баланс в wei
+    storage_root,   # bytes32: корень storage trie
+    code_hash,      # bytes32: keccak256(bytecode)
+])
+
+# Этот байтовый массив хранится как value в State Trie
+# Ключ в State Trie = keccak256(address)
+```
+
+### Особые значения
+
+| Поле | EOA значение | Комментарий |
+|------|-------------|-------------|
+| `storageRoot` | `0x56e81f17...` | keccak256 корня пустого trie |
+| `codeHash` | `0xc5d24601...` | keccak256 пустого байткода ("") |
+
+Если `codeHash == keccak256("")`, то аккаунт является EOA. Это единственный способ определить тип аккаунта -- явного поля "type" не существует.
+
+## Переходы состояния
+
+Каждая транзакция в Ethereum -- это **state transition function**: она берет текущее состояние, применяет транзакцию и вычисляет новое состояние.
+
+<AccountStateTransitionDiagram client:load />
+
+### Формальная модель
+
+Ethereum определяет **функцию перехода состояния**:
+
+```
+sigma' = Upsilon(sigma, T)
+```
+
+где:
+- `sigma` -- текущее мировое состояние (state root)
+- `T` -- транзакция
+- `sigma'` -- новое состояние
+- `Upsilon` -- функция перехода (State Transition Function)
+
+```python
+# Упрощённая state transition function:
+def state_transition(state: WorldState, tx: Transaction) -> WorldState:
+    sender = ecrecover(tx.signature)  # Восстановить отправителя из подписи
+
+    # Проверки:
+    assert state[sender].nonce == tx.nonce  # Nonce должен совпадать
+    assert state[sender].balance >= tx.value + tx.gas * tx.gasPrice  # Достаточно средств
+
+    # Применить изменения:
+    state[sender].nonce += 1
+    state[sender].balance -= tx.value + gas_used * tx.gasPrice
+    state[tx.to].balance += tx.value
+
+    # Если tx.to -- контракт, исполнить EVM:
+    if state[tx.to].codeHash != EMPTY_CODE_HASH:
+        evm_result = execute_evm(state, tx)
+        state = apply_evm_changes(state, evm_result)
+
+    return state
+```
+
+### Что изменяется при транзакции
+
+| Действие | Поля отправителя | Поля получателя | State root |
+|----------|------------------|-----------------|------------|
+| Перевод ETH | nonce +1, balance -X-gas | balance +X | Меняется |
+| Деплой контракта | nonce +1, balance -gas | Новый аккаунт (codeHash, storageRoot) | Меняется |
+| Вызов контракта | nonce +1, balance -gas | storageRoot (если state changed) | Меняется |
+
+## Адреса Ethereum
+
+### Вычисление адреса EOA
+
+```python
+from eth_keys import keys
+
+# 1. Приватный ключ: 32 случайных байта
+private_key = keys.PrivateKey(os.urandom(32))
+
+# 2. Публичный ключ: uncompressed (64 байта, без 0x04 префикса)
+public_key = private_key.public_key
+
+# 3. Адрес: последние 20 байт keccak256(public_key)
+address = keccak256(public_key.to_bytes())[12:]  # отбросить первые 12 байт
+# Результат: 20 байт = 40 hex символов
+# Отображение: 0x + 40 hex chars
+```
+
+### EIP-55: Checksum адреса
+
+В отличие от Bitcoin (Base58Check с встроенной контрольной суммой), Ethereum адрес -- это просто hex. **EIP-55** добавляет checksum через регистр букв:
+
+```python
+from eth_utils import to_checksum_address
+
+# Без checksum: 0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed
+# С checksum:   0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed
+
+# Алгоритм: keccak256(lowercase_address) определяет регистр каждой hex-буквы
+# Если nibble hash >= 8, буква uppercase; иначе lowercase
+address_hash = keccak256(address_hex_lowercase)
+for i, char in enumerate(address_hex):
+    if char in 'abcdef':
+        if int(address_hash[i], 16) >= 8:
+            result += char.upper()
+        else:
+            result += char.lower()
+```
+
+### Адрес контракта (CREATE)
+
+Адрес нового контракта **детерминистически** вычисляется из адреса отправителя и его nonce:
+
+```python
+# CREATE: address = keccak256(rlp([sender, nonce]))[12:]
+
+import rlp
+from eth_utils import keccak
+
+sender = bytes.fromhex("d8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+nonce = 1
+
+# RLP-кодируем [sender, nonce]
+encoded = rlp.encode([sender, nonce])
+contract_address = keccak(encoded)[12:]
+
+# Зная sender и nonce, можно предсказать адрес контракта
+# ДО его деплоя!
+print(f"Contract will be at: 0x{contract_address.hex()}")
+```
+
+### CREATE2: Детерминистический адрес
+
+**CREATE2** (EIP-1014) позволяет вычислить адрес контракта по коду и salt, **без зависимости от nonce**:
+
+```python
+# CREATE2: address = keccak256(0xff ++ sender ++ salt ++ keccak256(bytecode))[12:]
+
+prefix = b'\xff'
+sender = bytes.fromhex("...")
+salt = (42).to_bytes(32, 'big')  # произвольный 32-байтный salt
+init_code_hash = keccak256(bytecode)
+
+contract_address = keccak256(prefix + sender + salt + init_code_hash)[12:]
+
+# Преимущества CREATE2:
+# 1. Адрес не зависит от nonce (предсказуем даже если sender отправит другие tx)
+# 2. Используется в counterfactual instantiation (Account Abstraction)
+# 3. Можно "зарезервировать" адрес до деплоя контракта
+```
+
+## Математическое определение
+
+Формально, мировое состояние Ethereum -- это отображение:
+
+```
+sigma: Address -> AccountState
+sigma: B_160 -> { nonce: N_256, balance: N_256, storageRoot: B_256, codeHash: B_256 }
+```
+
+где:
+- `B_160` -- 160-битный адрес (20 байт)
+- `N_256` -- неотрицательное целое до 2^256 - 1
+- `B_256` -- 256-битный хеш (32 байта)
+
+Функция перехода:
+
+```
+sigma[t+1] = Upsilon(sigma[t], T)
+```
+
+Блок -- это последовательность транзакций `B = (T_0, T_1, ..., T_n)`, применяемых последовательно:
+
+```
+sigma_final = Upsilon(...Upsilon(Upsilon(sigma_0, T_0), T_1)..., T_n)
+```
+
+## Практика
+
+```python
+# Проверка типа аккаунта (EOA или Contract):
+from web3 import Web3
+w3 = Web3(Web3.HTTPProvider("http://localhost:8545"))
+
+address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"  # WETH
+code = w3.eth.get_code(address)
+
+if code == b'' or code == b'\x00':
+    print("EOA")
+else:
+    print(f"Contract (code size: {len(code)} bytes)")
+
+# Получение полного состояния аккаунта:
+balance = w3.eth.get_balance(address)
+nonce = w3.eth.get_transaction_count(address)
+print(f"nonce={nonce}, balance={balance} wei ({balance / 10**18:.4f} ETH)")
+
+# eth_getProof -- получение Merkle proof для аккаунта:
+proof = w3.eth.get_proof(address, [], "latest")
+print(f"storageHash: {proof.storageHash.hex()}")
+print(f"codeHash: {proof.codeHash.hex()}")
+```
+
+## Что дальше?
+
+В следующем уроке мы разберём **State Trie** -- Modified Merkle Patricia Trie, которое хранит состояние всех 280+ миллионов аккаунтов Ethereum. Вы увидите, как Merkle-деревья из модуля криптографии (CRYPTO-13/14) применяются для обеспечения целостности глобального состояния.

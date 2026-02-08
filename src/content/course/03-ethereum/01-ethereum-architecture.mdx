@@ -1,0 +1,196 @@
+---
+title: "Архитектура Ethereum"
+description: "От Bitcoin к Ethereum: модель аккаунтов, виртуальная машина и двухуровневая архитектура узла"
+order: 1
+difficulty: "beginner"
+estimatedTime: 25
+topics: ["Ethereum", "Архитектура", "EL", "CL", "Account Model"]
+prerequisites: []
+---
+
+import { EthVsBitcoinDiagram, NodeArchitectureDiagram } from '../../../components/diagrams/module3/EthereumArchitectureDiagrams';
+
+# Архитектура Ethereum
+
+## Зачем это блокчейну?
+
+Bitcoin доказал, что можно передавать ценность без посредников. Ethereum пошел дальше -- это платформа для **произвольных вычислений** на блокчейне. Если Bitcoin -- это калькулятор, то Ethereum -- это компьютер. В этом модуле мы разберем, как устроен этот "мировой компьютер" изнутри.
+
+В предыдущем модуле мы изучили, как Bitcoin использует модель UTXO, ограниченный Script и Proof-of-Work. Ethereum сохраняет идею децентрализованного консенсуса, но заменяет практически всё остальное: UTXO уступает место **аккаунтам с балансами**, Script -- **Тьюринг-полной виртуальной машине** (EVM), а Proof-of-Work -- **Proof-of-Stake** (с сентября 2022, The Merge).
+
+```python
+# Ethereum в нескольких строках:
+# 1. Глобальное состояние: 280+ миллионов аккаунтов
+# 2. Каждый блок -- набор state transitions (переходов состояния)
+# 3. EVM исполняет байткод смарт-контрактов
+# 4. Результат: новое состояние (state root в заголовке блока)
+
+from eth_account import Account
+
+# В отличие от Bitcoin, Ethereum использует те же ключи (secp256k1),
+# но адрес вычисляется иначе:
+# address = keccak256(publicKey)[-20:]  (последние 20 байт)
+# Без RIPEMD-160, без Base58 -- просто Keccak-256 и hex с 0x-префиксом
+
+private_key = "0x" + "42" * 32  # 32 байта
+account = Account.from_key(private_key)
+print(f"Address: {account.address}")
+# Address: 0x... (20 байт = 40 hex символов + 0x)
+```
+
+## Bitcoin vs Ethereum: модели данных
+
+Ключевое архитектурное различие между Bitcoin и Ethereum -- это модель хранения состояния. Bitcoin хранит **набор UTXO** (неизрасходованных выходов), а Ethereum -- **глобальное дерево состояния** всех аккаунтов.
+
+<EthVsBitcoinDiagram client:load />
+
+### Почему аккаунты вместо UTXO?
+
+Модель UTXO отлично работает для простых переводов: каждый выход тратится ровно один раз, что упрощает параллельную валидацию. Но для смарт-контрактов нужно **общее изменяемое состояние** -- контракт должен читать и записывать переменные, которые сохраняются между вызовами.
+
+```python
+# В Bitcoin: "баланс" = сумма UTXO
+# alice_balance = utxo_1.amount + utxo_2.amount + ...
+
+# В Ethereum: баланс -- это поле аккаунта
+# alice_balance = state[alice_address].balance
+
+# Плюс, контракт может хранить произвольные данные:
+# state[contract_address].storage[slot_0] = total_supply
+# state[contract_address].storage[slot_1] = owner
+# state[contract_address].storage[keccak256(alice, 2)] = alice_token_balance
+```
+
+| Аспект | UTXO (Bitcoin) | Account (Ethereum) |
+|--------|----------------|--------------------|
+| Параллелизм | Высокий (UTXO независимы) | Ограничен (общее состояние) |
+| Приватность | Лучше (новый адрес на каждый выход) | Хуже (один адрес, видна вся история) |
+| Смарт-контракты | Ограничены (нет состояния) | Полноценные (storage trie) |
+| Простота | Сложнее для кошельков | Проще для разработчиков |
+
+## Двухуровневая архитектура узла
+
+После The Merge (сентябрь 2022) узел Ethereum состоит из двух независимых клиентов, связанных через **Engine API**.
+
+<NodeArchitectureDiagram client:load />
+
+### Execution Layer (EL)
+
+Execution Layer отвечает за **исполнение транзакций** и **управление состоянием**:
+
+- **EVM** -- виртуальная машина, исполняющая байткод контрактов. Стековая архитектура с 1024 элементами, линейная memory и persistent storage.
+- **State Trie** -- Modified Merkle Patricia Trie, хранящее состояние всех аккаунтов. Обновляется при каждом блоке.
+- **Transaction Pool** -- пул ожидающих транзакций. Транзакции упорядочиваются по gas price и nonce.
+- **JSON-RPC API** -- интерфейс для взаимодействия: `eth_call`, `eth_sendTransaction`, `eth_getBalance`, `eth_getProof`.
+
+```python
+# Популярные EL-клиенты:
+# - Geth (Go) -- ~36% сети
+# - Nethermind (C#) -- ~34%
+# - Besu (Java) -- ~18%
+# - Erigon (Go) -- ~10%
+
+# Client diversity важен: если один клиент содержит баг,
+# остальные продолжают работать корректно
+```
+
+### Consensus Layer (CL)
+
+Consensus Layer отвечает за **консенсус** и **безопасность сети**:
+
+- **Beacon Chain** -- управляет реестром валидаторов, эпохами (32 слота = ~6.4 мин), финализацией.
+- **Validator Client** -- подписывает attestation-ы и предлагает блоки. Требует 32 ETH stake.
+- **Fork Choice** -- алгоритм LMD-GHOST + Casper FFG определяет каноническую цепочку.
+- **P2P / libp2p** -- gossipsub для блоков и attestation-ов, discv5 для обнаружения узлов.
+
+```python
+# Популярные CL-клиенты:
+# - Prysm (Go) -- ~36%
+# - Lighthouse (Rust) -- ~33%
+# - Teku (Java) -- ~15%
+# - Nimbus (Nim) -- ~9%
+# - Lodestar (TypeScript) -- ~7%
+
+# Engine API связывает EL и CL:
+# CL -> EL: "Вот payload нового блока, исполни транзакции"
+# EL -> CL: "Результат: новый stateRoot, receiptsRoot"
+```
+
+### Engine API
+
+Engine API -- это JSON-RPC интерфейс между EL и CL. Три ключевых метода:
+
+| Метод | Направление | Назначение |
+|-------|-------------|------------|
+| `engine_newPayloadV3` | CL -> EL | Передать блок для исполнения |
+| `engine_forkchoiceUpdatedV3` | CL -> EL | Обновить head/safe/finalized блоки |
+| `engine_getPayloadV3` | CL -> EL | Запросить payload для нового блока |
+
+## Ключевые концепции модуля
+
+В этом модуле мы последовательно разберем:
+
+| Урок | Тема | Что вы узнаете |
+|------|------|----------------|
+| ETH-02 | Модель аккаунтов | EOA vs Contract, 4 поля состояния, state transitions |
+| ETH-03 | State Trie и MPT | Modified Merkle Patricia Trie, 4 дерева Ethereum |
+| ETH-04 | EVM: стек, память, хранилище | Стековая машина, opcodes, memory vs storage |
+| ETH-05 | Gas и исполнение | EIP-1559, baseFee, gas estimation |
+| ETH-06 | Solidity: основы | Типы данных, функции, модификаторы |
+| ETH-07 | Solidity: паттерны и тестирование | ReentrancyGuard, Hardhat + Foundry |
+| ETH-08 | ERC-20 | Стандарт токенов, OpenZeppelin |
+| ETH-09 | ERC-721 и ERC-1155 | NFT стандарты, metadata |
+| ETH-10 | Proof of Stake | Валидаторы, эпохи, финализация |
+| ETH-11 | Валидаторы и слэшинг | Attestation, proposer, slashing conditions |
+| ETH-12 | Account Abstraction | ERC-4337, UserOperation, Paymaster |
+
+## Связь с криптографией
+
+Всё, что мы изучили в модуле "Криптографические основы", напрямую применяется в Ethereum:
+
+| Криптографическая основа | Применение в Ethereum | Уроки |
+|--------------------------|----------------------|-------|
+| Keccak-256 (SHA-3) | Хеширование аккаунтов, state root, storage keys | CRYPTO-05, CRYPTO-06 |
+| ECDSA (secp256k1) | Подписание транзакций, восстановление адреса из подписи | CRYPTO-11 |
+| Merkle Patricia Trie | State trie, storage trie, transaction/receipt tries | CRYPTO-13, CRYPTO-14 |
+| RLP кодирование | Сериализация аккаунтов, транзакций, receipts | -- |
+
+Обратите внимание: Ethereum использует **Keccak-256** (NOT SHA-3 NIST), а Bitcoin использует **SHA-256d** (double SHA-256). Это разные хеш-функции.
+
+```python
+# Ethereum: Keccak-256 (до стандартизации NIST SHA-3)
+from eth_hash.auto import keccak
+
+address_bytes = keccak(public_key_bytes)[-20:]
+# Для справки: Keccak-256 и SHA3-256 дают РАЗНЫЕ результаты
+# для одного и того же входа из-за различий в padding
+
+# Bitcoin: SHA-256d (double SHA-256)
+import hashlib
+result = hashlib.sha256(hashlib.sha256(data).digest()).digest()
+```
+
+## Практика
+
+В этом модуле мы будем работать с локальным Ethereum-узлом через Hardhat и Anvil:
+
+```bash
+# Запуск локального Ethereum-узла (Anvil):
+docker compose -f labs/ethereum/docker-compose.yml up -d
+
+# Hardhat + ethers.js (TypeScript):
+cd labs/ethereum
+npx hardhat test
+
+# Foundry + Forge (Solidity tests):
+forge test
+
+# Взаимодействие через cast:
+cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --rpc-url http://localhost:8545
+```
+
+Вы будете писать смарт-контракты на Solidity, тестировать их с помощью Hardhat (ethers.js/viem) и Foundry (Forge), и деплоить на локальную ноду Anvil.
+
+## Что дальше?
+
+В следующем уроке мы подробно разберем **модель аккаунтов Ethereum**: два типа аккаунтов (EOA и Contract), четыре поля состояния (nonce, balance, storageRoot, codeHash) и как состояние изменяется при каждой транзакции.

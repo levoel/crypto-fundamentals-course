@@ -1,0 +1,391 @@
+---
+title: "State Trie и Modified Merkle Patricia Trie"
+description: "MPT -- дерево состояния Ethereum: типы узлов, вставка аккаунтов, четыре дерева и light client proofs"
+order: 3
+difficulty: "advanced"
+estimatedTime: 35
+topics: ["MPT", "State Trie", "Patricia Trie", "Merkle Proof", "Light Clients"]
+prerequisites: []
+---
+
+import { MPTVisualizationDiagram, FourTriesDiagram } from '../../../components/diagrams/module3/StateTrieDiagrams';
+
+# State Trie и Modified Merkle Patricia Trie
+
+## Зачем это блокчейну?
+
+Ethereum хранит состояние 280+ миллионов аккаунтов. Каждый блок (~12 секунд) может изменить сотни аккаунтов. При этом нужно:
+
+1. **Быстро искать** аккаунт по адресу: O(log N)
+2. **Быстро обновлять** состояние при каждом блоке
+3. **Доказывать** состояние любого аккаунта **без скачивания всего дерева** (light clients)
+4. **Вычислять state root** -- 32-байтный хеш, однозначно определяющий состояние всей сети
+
+Обычное Merkle-дерево (см. CRYPTO-13/14) не подходит: оно оптимизировано для неизменяемых списков (транзакции в блоке), а не для key-value хранилища с частыми обновлениями. Ethereum использует **Modified Merkle Patricia Trie (MPT)** -- гибрид Patricia trie (для эффективного поиска по ключу) и Merkle tree (для криптографической целостности).
+
+```python
+# Проблема: 280M аккаунтов, каждый блок обновляет сотни
+# Требования:
+# - lookup: O(log N) по keccak256(address)
+# - update: O(log N) для изменения одного аккаунта
+# - proof:  O(log N) размер доказательства для light client
+# - root:   32 байта, однозначно определяющие всё состояние
+
+# Решение: Modified Merkle Patricia Trie
+# - Patricia = prefix tree (trie) с path compression
+# - Merkle = каждый узел содержит хеш своих потомков
+# - Modified = оптимизации Ethereum (3 типа узлов вместо одного)
+```
+
+## От обычного Merkle к Patricia Trie
+
+В уроках CRYPTO-13 и CRYPTO-14 мы изучили Merkle-деревья: бинарные деревья, где каждый внутренний узел = хеш дочерних узлов. Они отлично работают для **фиксированного списка** данных (транзакции в блоке), но не для key-value store с динамическими ключами.
+
+**Patricia Trie** (Practical Algorithm To Retrieve Information Coded in Alphanumeric) -- это prefix tree с **path compression**. Вместо того чтобы создавать отдельный узел для каждого символа ключа, Patricia trie сжимает цепочки узлов с единственным потомком в один узел.
+
+```python
+# Обычный trie (без сжатия): каждый символ = отдельный узел
+# Для ключей "abc" и "abd":
+#   root -> a -> b -> c (leaf)
+#                  -> d (leaf)
+# 5 узлов для 2 ключей
+
+# Patricia trie (со сжатием): общий префикс = один узел
+# Для ключей "abc" и "abd":
+#   root -> "ab" (extension) -> c (leaf)
+#                             -> d (leaf)
+# 4 узла -- extension "ab" заменяет цепочку a -> b
+```
+
+## Три типа узлов MPT
+
+MPT использует три типа узлов, каждый RLP-кодированный:
+
+### 1. Branch Node (узел ветвления)
+
+**Структура:** массив из 17 элементов: `[v0, v1, ..., v15, value]`
+
+- 16 слотов для nibble (полубайт, 0-f) -- по одному для каждого возможного следующего символа hex-адреса
+- 1 слот для значения (если ключ заканчивается на этом узле)
+
+```python
+# Branch node: 16 nibble slots + value
+branch = [
+    child_0,    # nibble 0 -> указатель на дочерний узел
+    child_1,    # nibble 1
+    ...,
+    child_f,    # nibble f
+    value       # значение, если ключ заканчивается здесь (обычно пустое)
+]
+# Пустые слоты = b'' (пустой байтовый массив)
+# Если дочерний узел < 32 байт, он встраивается inline; иначе -- хеш
+```
+
+### 2. Extension Node (узел расширения)
+
+**Структура:** пара `[encodedPath, child]`
+
+- `encodedPath` -- общий префикс для всех потомков (hex-encoded с флагом)
+- `child` -- указатель на дочерний узел (хеш или inline)
+
+```python
+# Extension node: сжатый общий префикс
+extension = [
+    encode_path(shared_prefix, is_leaf=False),  # hex-prefix encoding
+    child_hash_or_inline
+]
+
+# Пример: все адреса в поддереве начинаются с "a3b7"
+# Вместо 4 отдельных узлов (a -> 3 -> b -> 7)
+# создаем один extension с path "a3b7"
+```
+
+### 3. Leaf Node (листовой узел)
+
+**Структура:** пара `[encodedPath, value]`
+
+- `encodedPath` -- оставшаяся часть ключа (hex-encoded с флагом)
+- `value` -- RLP-кодированные данные аккаунта
+
+```python
+# Leaf node: конечная часть пути + значение аккаунта
+leaf = [
+    encode_path(remaining_key, is_leaf=True),  # hex-prefix encoding
+    rlp_encoded_account  # rlp([nonce, balance, storageRoot, codeHash])
+]
+
+# Пример: для адреса с keccak256 = 0xa3b7f1...
+# Если extension уже покрывает "a3b7",
+# leaf содержит оставшийся путь "f1..." и значение аккаунта
+```
+
+### Hex-Prefix Encoding
+
+Для различения leaf и extension узлов используется **hex-prefix encoding**:
+
+```python
+def encode_path(nibbles: list[int], is_leaf: bool) -> bytes:
+    """
+    Prefix nibble:
+    - 0: extension, even length
+    - 1: extension, odd length
+    - 2: leaf, even length
+    - 3: leaf, odd length
+    """
+    flag = 2 if is_leaf else 0
+    if len(nibbles) % 2 == 1:  # odd length
+        flag += 1
+        nibbles = [flag] + nibbles
+    else:
+        nibbles = [flag, 0] + nibbles  # pad with 0
+
+    # Pack nibbles into bytes
+    return bytes([nibbles[i] * 16 + nibbles[i+1] for i in range(0, len(nibbles), 2)])
+```
+
+## Визуализация MPT
+
+Ниже -- упрощённый MPT с 4 аккаунтами. Пройдите пошагово: поиск аккаунта, вставка нового, изменение state root.
+
+<MPTVisualizationDiagram client:load />
+
+### Ключевые наблюдения
+
+1. **Путь = nibble-последовательность keccak256(address)**. Адреса хешируются перед использованием как ключи, что обеспечивает равномерное распределение по дереву.
+
+2. **Extension сжимает общие префиксы**. Если несколько аккаунтов начинаются с одинаковых nibble, они группируются через extension node.
+
+3. **Любое изменение -> новый state root**. Изменение одного аккаунта перехешивает цепочку от leaf до root -- аналогично свойству Merkle-дерева.
+
+## Четыре дерева Ethereum
+
+Ethereum использует **четыре различных trie** -- не только state trie. Каждый заголовок блока содержит корни трех из них.
+
+<FourTriesDiagram client:load />
+
+### State Trie (глобальный)
+
+```python
+# Один на всю сеть. Обновляется каждым блоком.
+# Key: keccak256(address) -- 32 байта
+# Value: rlp([nonce, balance, storageRoot, codeHash])
+
+# State root включается в заголовок каждого блока
+block_header.stateRoot = state_trie.root()  # bytes32
+```
+
+### Storage Trie (per-contract)
+
+```python
+# У каждого контракта свой storage trie
+# Key: keccak256(slot_number) -- 32 байта
+# Value: rlp(slot_value) -- значение переменной
+
+# Корень storage trie хранится в поле storageRoot аккаунта контракта
+# state[contract_address].storageRoot = storage_trie.root()
+
+# Пример: mapping(address => uint256) balances в ERC-20
+# slot = keccak256(abi.encode(holder_address, mapping_slot_index))
+# value = balance
+```
+
+### Transaction Trie (per-block)
+
+```python
+# Один на блок. Создается при формировании блока, никогда не изменяется.
+# Key: rlp(transaction_index) -- 0, 1, 2, ...
+# Value: rlp(signed_transaction)
+
+block_header.transactionsRoot = tx_trie.root()  # bytes32
+```
+
+### Receipt Trie (per-block)
+
+```python
+# Один на блок. Создается при исполнении блока, никогда не изменяется.
+# Key: rlp(transaction_index)
+# Value: rlp(receipt) -- включает status, gasUsed, logs (events)
+
+block_header.receiptsRoot = receipt_trie.root()  # bytes32
+
+# Receipt содержит:
+# - status: 1 (success) или 0 (revert)
+# - cumulativeGasUsed: суммарный gas всех tx до этой включительно
+# - logs: массив событий (address, topics[], data)
+```
+
+## Алгоритм поиска в MPT
+
+```python
+def trie_lookup(root_hash: bytes32, key: bytes) -> Optional[bytes]:
+    """
+    Поиск значения по ключу в MPT.
+    key -- nibble-последовательность keccak256(address).
+    """
+    node = db.get(root_hash)  # Загрузить корневой узел из базы данных
+    nibbles = to_nibbles(key)  # Преобразовать ключ в nibble-массив
+    pos = 0  # Текущая позиция в nibble-массиве
+
+    while True:
+        if node is None:
+            return None  # Ключ не найден
+
+        decoded = rlp.decode(node)
+
+        if len(decoded) == 17:  # Branch node
+            if pos == len(nibbles):
+                return decoded[16]  # Значение в branch (если есть)
+            child = decoded[nibbles[pos]]
+            if len(child) == 0:
+                return None  # Пустой слот -- ключ не найден
+            pos += 1
+            node = resolve(child)  # Загрузить дочерний узел
+
+        elif len(decoded) == 2:  # Extension или Leaf
+            path, value_or_child = decoded
+            decoded_path, is_leaf = decode_path(path)
+
+            # Сравнить путь узла с оставшимися nibbles ключа
+            if nibbles[pos:pos+len(decoded_path)] != decoded_path:
+                return None  # Путь не совпадает
+
+            pos += len(decoded_path)
+
+            if is_leaf:
+                if pos == len(nibbles):
+                    return value_or_child  # Найдено!
+                return None  # Ключ длиннее -- не найден
+
+            else:  # Extension
+                node = resolve(value_or_child)  # Следовать за extension
+```
+
+## Математическое определение
+
+MPT определяется рекурсивно. Пусть `TRIE(J)` -- функция, которая по набору пар (key, value) `J` возвращает хеш корня дерева:
+
+```
+TRIE({}) = keccak256(rlp(""))                     -- пустое дерево
+TRIE({(k, v)}) = keccak256(rlp(leaf(k, v)))       -- одна запись
+TRIE(J) = keccak256(rlp(branch_or_extension(J)))  -- множество записей
+```
+
+**Свойство целостности** (аналогично Merkle-дереву из CRYPTO-13):
+
+```
+Для любых двух состояний S1 != S2:
+  TRIE(S1) != TRIE(S2) (с вероятностью 1 - 2^{-256})
+
+Изменение одного бита в одном аккаунте -> другой state root
+```
+
+**Сложность операций:**
+
+| Операция | Сложность | Комментарий |
+|----------|-----------|-------------|
+| Lookup | O(k) | k = длина ключа в nibbles (64 для keccak256) |
+| Insert | O(k) | + пересчет хешей до корня |
+| Update | O(k) | аналогично insert |
+| Delete | O(k) | + possible node merging |
+| Proof size | O(k * 32) | ~64 * 32 = 2 KB на один proof |
+
+## Light Clients и eth_getProof
+
+MPT -- это не только хранилище. Её главная ценность -- **Merkle proofs** для light clients.
+
+### Что такое Light Client?
+
+Light client хранит только **заголовки блоков** (~500 байт каждый), а не полное состояние (~1 TB). Чтобы узнать баланс аккаунта, light client запрашивает **Merkle proof** у полного узла.
+
+```python
+# Light client: "Какой баланс у Alice в блоке #19000000?"
+# Full node возвращает proof -- набор узлов MPT от leaf до root
+
+from web3 import Web3
+w3 = Web3(Web3.HTTPProvider("http://localhost:8545"))
+
+# eth_getProof -- стандартный RPC метод (EIP-1186)
+proof = w3.eth.get_proof(
+    "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",  # vitalik.eth
+    [0, 1],  # Storage slots to prove (optional)
+    "latest"
+)
+
+# proof содержит:
+# - accountProof: массив RLP-кодированных узлов MPT от root до account leaf
+# - balance, nonce, codeHash, storageHash: значения полей аккаунта
+# - storageProof: доказательства для запрошенных storage slots
+```
+
+### Верификация proof
+
+```python
+def verify_account_proof(
+    state_root: bytes32,
+    address: bytes20,
+    proof: list[bytes],  # Узлы MPT от корня до leaf
+    expected_value: bytes
+) -> bool:
+    """
+    Light client проверяет proof:
+    1. Вычислить ключ: keccak256(address)
+    2. Пройти по proof от корня, следуя nibbles ключа
+    3. Проверить, что хеш каждого узла совпадает с ссылкой из родителя
+    4. Проверить, что leaf содержит expected_value
+    5. Проверить, что хеш корня == state_root из заголовка блока
+    """
+    key = keccak256(address)
+    computed_root = verify_trie_proof(key, proof, expected_value)
+    return computed_root == state_root
+
+# Размер proof: ~2-3 KB (64 nibbles * ~32-64 байт на узел)
+# Light client хранит: ~500 байт * кол-во блоков
+# Полный узел хранит: ~1 TB state data
+```
+
+## Производительность и оптимизации
+
+### Проблема state bloat
+
+С ростом количества аккаунтов (280M+) и storage slots, размер state trie растет, замедляя синхронизацию:
+
+```python
+# Текущий размер state:
+# - ~280M аккаунтов (state trie leaves)
+# - ~1B+ storage slots (across all contract storage tries)
+# - Полная БД на диске: ~1TB (LevelDB/PebbleDB)
+
+# Оптимизации:
+# 1. Snap sync: скачать плоский state snapshot, верифицировать по stateRoot
+# 2. State pruning: удалить старые версии state (хранить только последний)
+# 3. Verkle trees (будущее): заменить MPT на Verkle trie (меньше proof size)
+```
+
+### Verkle Trees (будущее)
+
+EIP-6800 предлагает замену MPT на **Verkle trees** -- деревья с polynomial/vector commitments:
+
+| Свойство | MPT | Verkle Trie |
+|----------|-----|-------------|
+| Proof size (1 аккаунт) | ~2-3 KB | ~100-200 байт |
+| Branching factor | 16 | 256 |
+| Глубина дерева | ~64 | ~32 |
+| Stateless clients | Нет (proof слишком большой) | Да |
+
+## Практика
+
+```bash
+# Получить Merkle proof через cast (Foundry):
+cast proof 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 \
+  --rpc-url http://localhost:8545
+
+# Получить storage proof для ERC-20 баланса:
+# slot = keccak256(abi.encode(holder, mapping_index))
+HOLDER="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+SLOT=$(cast index address $HOLDER 0)
+cast proof $TOKEN_ADDRESS $SLOT --rpc-url http://localhost:8545
+```
+
+## Что дальше?
+
+В следующем уроке мы перейдем к **EVM** -- виртуальной машине Ethereum. Вы увидите, как работает стековая машина, как opcodes модифицируют state, и почему gas необходим для предотвращения бесконечных циклов.
