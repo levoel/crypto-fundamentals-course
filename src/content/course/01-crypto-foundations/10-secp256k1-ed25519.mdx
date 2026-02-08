@@ -1,0 +1,201 @@
+---
+title: "Кривые secp256k1 и Ed25519"
+description: "Конкретные эллиптические кривые, используемые в Bitcoin, Ethereum и Solana"
+order: 10
+difficulty: "intermediate"
+estimatedTime: 20
+topics: ["secp256k1", "Ed25519", "Curve25519", "Bitcoin", "Ethereum", "Solana"]
+prerequisites: ["09-elliptic-curves"]
+---
+
+import { CurveComparisonDiagram, BlockchainCurveUsage } from '../../../components/diagrams/module1/Secp256k1Ed25519Diagrams';
+
+# Кривые secp256k1 и Ed25519
+
+## Зачем это нужно в блокчейне
+
+Каждая транзакция Bitcoin подписана с secp256k1. Каждая транзакция Solana — с Ed25519. **Почему разные блокчейны выбирают разные кривые?**
+
+В предыдущем уроке мы изучили общую математику эллиптических кривых. Теперь разберемся с двумя конкретными кривыми, которые используются в реальных блокчейнах, и поймем их различия.
+
+## secp256k1: кривая Bitcoin
+
+### Параметры
+
+Кривая secp256k1 определяется уравнением:
+
+**y^2 = x^3 + 7** (a = 0, b = 7)
+
+```
+p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+  = 2^256 - 2^32 - 977
+
+n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+  (порядок группы)
+
+G = (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+     0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8)
+  (точка-генератор)
+```
+
+### Почему именно secp256k1?
+
+1. **a = 0** — упрощает формулы, делает вычисления быстрее
+2. **Кривая Коблица** — специальная структура позволяет оптимизацию (GLV endomorphism)
+3. **Нет известного бэкдора** — параметры выбраны прозрачно (не как NIST P-256, где выбор коэффициентов до конца не объяснен)
+4. **Проверена временем** — используется в Bitcoin с 2009 года
+
+### Генерация ключей
+
+```python
+from ecdsa import SigningKey, SECP256k1
+
+# Генерация приватного ключа (случайное 256-бит число)
+private_key = SigningKey.generate(curve=SECP256k1)
+print(f"Приватный ключ: {private_key.to_string().hex()}")
+
+# Публичный ключ = d * G (скалярное умножение)
+public_key = private_key.get_verifying_key()
+print(f"Публичный ключ: {public_key.to_string().hex()}")
+print(f"Длина приватного ключа: {len(private_key.to_string())} байт")
+print(f"Длина публичного ключа: {len(public_key.to_string())} байт")
+```
+
+## Ed25519: кривая Solana
+
+### Другой тип кривой
+
+Ed25519 — это **кривая Эдвардса** (twisted Edwards curve):
+
+**-x^2 + y^2 = 1 + d * x^2 * y^2**
+
+где d = -121665/121666 над полем GF(2^255 - 19).
+
+### Почему Ed25519 отличается
+
+| Свойство | secp256k1 (Weierstrass) | Ed25519 (Edwards) |
+|----------|-------------------------|-------------------|
+| Формулы сложения | Разные для P+Q и P+P | Единая формула |
+| Особые случаи | Нужна обработка O, P=-Q | Нет особых случаев |
+| Детерминированные подписи | Нужен отдельный k (опасно) | Встроены в алгоритм |
+| Side-channel защита | Требует дополнительных мер | Встроена в дизайн |
+
+### Детерминированные подписи
+
+В ECDSA (secp256k1) для каждой подписи нужен случайный параметр k. Если k повторится или будет предсказуем — **приватный ключ раскрывается**. Именно это произошло с PlayStation 3 (Sony использовала фиксированный k).
+
+EdDSA (Ed25519) вычисляет k детерминированно из хеша сообщения и приватного ключа. Нет случайности — нет риска утечки.
+
+### Генерация ключей
+
+```python
+from ecdsa import SigningKey, Ed25519
+
+# Генерация ключевой пары Ed25519
+private_key = SigningKey.generate(curve=Ed25519)
+print(f"Приватный ключ: {private_key.to_string().hex()}")
+
+public_key = private_key.get_verifying_key()
+print(f"Публичный ключ: {public_key.to_string().hex()}")
+print(f"Длина приватного ключа: {len(private_key.to_string())} байт")
+print(f"Длина публичного ключа: {len(public_key.to_string())} байт")
+```
+
+## Сравнение параметров
+
+<CurveComparisonDiagram client:load />
+
+### Что важно для блокчейна
+
+- **Скорость верификации** — каждый узел проверяет тысячи подписей. Ed25519 быстрее.
+- **Размер подписи** — хранится в каждой транзакции. Обе кривые: 64 байта.
+- **Детерминизм** — Ed25519 безопаснее в реализации (нет risk повторного k).
+- **Экосистема** — secp256k1 имеет 15+ лет проверки в Bitcoin.
+
+## Код на Python: генерация ключей для обеих кривых
+
+```python
+from ecdsa import SigningKey, SECP256k1, Ed25519
+
+# secp256k1 (Bitcoin, Ethereum)
+sk_secp = SigningKey.generate(curve=SECP256k1)
+vk_secp = sk_secp.get_verifying_key()
+
+# Ed25519 (Solana, Polkadot)
+sk_ed = SigningKey.generate(curve=Ed25519)
+vk_ed = sk_ed.get_verifying_key()
+
+print("=== secp256k1 (Bitcoin/Ethereum) ===")
+print(f"Приватный ключ: {sk_secp.to_string().hex()}")
+print(f"Публичный ключ: {vk_secp.to_string().hex()}")
+print(f"Размер приватного: {len(sk_secp.to_string())} байт")
+print(f"Размер публичного: {len(vk_secp.to_string())} байт")
+
+print(f"\n=== Ed25519 (Solana/Polkadot) ===")
+print(f"Приватный ключ: {sk_ed.to_string().hex()}")
+print(f"Публичный ключ: {vk_ed.to_string().hex()}")
+print(f"Размер приватного: {len(sk_ed.to_string())} байт")
+print(f"Размер публичного: {len(vk_ed.to_string())} байт")
+
+# Подпись сообщения
+message = b"Transfer 1 BTC to Alice"
+
+sig_secp = sk_secp.sign(message)
+sig_ed = sk_ed.sign(message)
+
+print(f"\nПодпись secp256k1: {sig_secp.hex()[:32]}... ({len(sig_secp)} байт)")
+print(f"Подпись Ed25519:   {sig_ed.hex()[:32]}... ({len(sig_ed)} байт)")
+
+# Верификация
+assert vk_secp.verify(sig_secp, message)
+assert vk_ed.verify(sig_ed, message)
+print("\nОбе подписи верифицированы!")
+```
+
+## Где используется каждая кривая
+
+<BlockchainCurveUsage client:load />
+
+### Тренд индустрии
+
+- **2009-2015**: Bitcoin, Ethereum выбрали secp256k1 (доступная, хорошо изученная)
+- **2015-2020**: Stellar, Cardano начали использовать Ed25519
+- **2020+**: Solana, Polkadot, NEAR — Ed25519 стал стандартом для новых блокчейнов
+
+Причины перехода к Ed25519:
+1. Быстрее в 2-3 раза
+2. Детерминированные подписи (нет risk утечки k)
+3. Проще реализовать безопасно (единая формула сложения)
+4. Лучшая защита от side-channel атак
+
+## Математический уровень
+
+### Изоморфизм Монтгомери-Эдвардса
+
+Curve25519 (кривая Монтгомери) и Ed25519 (кривая Эдвардса) — **одна и та же кривая** в разных представлениях:
+
+```
+Curve25519: By^2 = x^3 + Ax^2 + x  (Монтгомери)
+Ed25519:    -x^2 + y^2 = 1 + dx^2y^2  (Эдвардс)
+```
+
+Существует биективное отображение между точками. Curve25519 используется для Diffie-Hellman (X25519), а Ed25519 — для подписей (EdDSA).
+
+### Кофактор
+
+- secp256k1: кофактор h = 1 (порядок кривой = порядок группы)
+- Ed25519: кофактор h = 8 (порядок кривой = 8 * порядок подгруппы)
+
+Кофактор > 1 требует дополнительных проверок при верификации подписей (small subgroup attack).
+
+## Практика
+
+Откройте Jupyter notebook `06-elliptic-curves.ipynb` (раздел о secp256k1 и Ed25519) для практики:
+- Генерация ключевых пар с ecdsa library
+- Подпись и верификация сообщений
+- Сравнение производительности обеих кривых
+- Ручное вычисление публичного ключа из приватного
+
+## Что дальше
+
+Теперь мы знаем, как работают эллиптические кривые, используемые в блокчейнах. В следующих уроках применим эти знания для понимания **цифровых подписей** (ECDSA, EdDSA) — механизма, который позволяет доказать владение средствами без раскрытия приватного ключа.
