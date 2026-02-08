@@ -1,0 +1,339 @@
+---
+title: "Account Abstraction (ERC-4337)"
+description: "Архитектура ERC-4337 -- UserOperation, Bundler, EntryPoint, Smart Account и Paymaster. Сравнение с EIP-7702."
+order: 12
+difficulty: "advanced"
+estimatedTime: 25
+topics: ["Account Abstraction", "ERC-4337", "EIP-7702", "UserOperation", "Bundler", "EntryPoint", "Paymaster"]
+prerequisites: ["02-account-model"]
+---
+
+import { UserOperationFlowDiagram } from '../../../components/diagrams/module3/AccountAbstractionDiagrams';
+
+# Account Abstraction (ERC-4337)
+
+## Зачем нужна абстракция аккаунтов?
+
+Ethereum имеет два типа аккаунтов: EOA (Externally Owned Account) и Contract Account. Каждая транзакция в Ethereum **должна быть инициирована EOA** -- аккаунтом с приватным ключом ECDSA. Это создает фундаментальные проблемы UX:
+
+```
+Проблемы EOA:
+
+1. Единственная схема подписи: только ECDSA secp256k1
+   - Нельзя использовать passkeys (WebAuthn), multisig, social recovery
+   - Потерял ключ = потерял все средства НАВСЕГДА
+
+2. Газ оплачивается только ETH:
+   - Новый пользователь должен сначала получить ETH
+   - Нельзя оплатить газ USDC, DAI или другими токенами
+   - Холодный старт: "скачай кошелек, купи ETH на бирже, переведи..."
+
+3. Одна подпись = одна транзакция:
+   - Approve + swap = 2 транзакции, 2 подписи
+   - Нельзя выполнить batch операций атомарно
+
+4. Нет программируемой безопасности:
+   - Нет daily limits, session keys, 2FA
+   - Нет social recovery (друзья не могут помочь восстановить доступ)
+```
+
+**Account Abstraction** решает все эти проблемы, позволяя **любому контракту** быть аккаунтом пользователя с произвольной логикой аутентификации.
+
+## Интуитивное объяснение: банковский счет вместо сейфа
+
+**EOA -- это сейф с одним ключом.** Потерял ключ -- потерял содержимое. Чтобы что-то сделать, нужно лично прийти (ETH для газа) и открыть ключом (ECDSA подпись).
+
+**Smart Account -- это банковский счет.** Можно настроить:
+- Несколько подписантов (multisig) для крупных операций
+- Лимиты на ежедневные переводы
+- Возможность восстановления через доверенных лиц
+- Автоматические платежи (подписки)
+- Делегирование определенных операций (session keys)
+
+## Архитектура ERC-4337
+
+ERC-4337 -- это стандарт Account Abstraction без изменения протокола Ethereum. Вся логика реализована через смарт-контракты и off-chain инфраструктуру.
+
+Пройдите по всем компонентам архитектуры:
+
+<UserOperationFlowDiagram client:load />
+
+### Компонент 1: UserOperation
+
+UserOperation -- это не транзакция, а **описание желаемого действия**. Пользователь подписывает UserOp произвольной подписью (не обязательно ECDSA):
+
+```
+UserOperation {
+    sender:              address   // Адрес smart account
+    nonce:               uint256   // Nonce аккаунта (не EOA nonce!)
+    initCode:            bytes     // Для создания нового аккаунта
+    callData:            bytes     // Что выполнить (transfer, swap, batch...)
+    callGasLimit:        uint128   // Gas для execute()
+    verificationGasLimit: uint128  // Gas для validateUserOp()
+    preVerificationGas:  uint256   // Gas для bundler overhead
+    maxFeePerGas:        uint128   // Как в обычной транзакции (EIP-1559)
+    maxPriorityFeePerGas: uint128
+    paymasterAndData:    bytes     // Paymaster адрес + данные (опционально)
+    signature:           bytes     // Произвольная подпись
+}
+```
+
+### Компонент 2: Bundler
+
+Bundler -- off-chain сервис, работающий как прокси между пользователями и блокчейном:
+
+```
+Работа Bundler:
+
+1. Принимает UserOps через JSON-RPC (eth_sendUserOperation)
+2. Симулирует каждый UserOp локально (валидация + execution)
+3. Отклоняет невалидные (экономит gas)
+4. Упаковывает валидные UserOps в bundle
+5. Отправляет обычную транзакцию: EntryPoint.handleOps(userOps)
+6. Получает прибыль: gas refund > gas spent (+ MEV)
+
+Bundler -- это валидатор мемпула UserOperations.
+Аналог майнера/валидатора, но для AA транзакций.
+```
+
+### Компонент 3: EntryPoint (синглтон)
+
+EntryPoint -- единственный контракт на всю сеть, через который проходят все ERC-4337 операции:
+
+```
+Адрес: 0x0000000071727De22E5E9d8BAf0edAc6f37da032 (v0.7)
+
+function handleOps(
+    PackedUserOperation[] calldata ops,
+    address payable beneficiary
+) external {
+
+    // Phase 1: Validation Loop
+    for (uint i = 0; i < ops.length; i++) {
+        _validateUserOp(ops[i]);
+        // -> account.validateUserOp(userOp, userOpHash, missingFunds)
+        // -> paymaster.validatePaymasterUserOp() (если есть)
+    }
+
+    // Phase 2: Execution Loop
+    for (uint i = 0; i < ops.length; i++) {
+        _executeUserOp(ops[i]);
+        // -> account.execute(dest, value, callData)
+        // -> paymaster.postOp() (если есть)
+    }
+}
+```
+
+Двухфазная архитектура (сначала все валидации, потом все исполнения) предотвращает атаки, где один UserOp делает другой невалидным.
+
+### Компонент 4: Smart Account
+
+Smart Account -- контракт, реализующий интерфейс IAccount:
+
+```solidity
+// Минимальный интерфейс Smart Account (ERC-4337):
+interface IAccount {
+    function validateUserOp(
+        PackedUserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    ) external returns (uint256 validationData);
+}
+
+// Примеры логики validateUserOp():
+
+// 1. ECDSA (как обычный EOA):
+function validateUserOp(...) {
+    address signer = ECDSA.recover(userOpHash, userOp.signature);
+    return signer == owner ? 0 : 1;
+}
+
+// 2. Multisig (2 из 3):
+function validateUserOp(...) {
+    (bytes[] sigs) = abi.decode(userOp.signature, (bytes[]));
+    uint validCount = 0;
+    for (uint i = 0; i < sigs.length; i++) {
+        if (isOwner(ECDSA.recover(userOpHash, sigs[i]))) validCount++;
+    }
+    return validCount >= 2 ? 0 : 1;
+}
+
+// 3. Passkey (WebAuthn):
+function validateUserOp(...) {
+    return WebAuthn.verify(userOp.signature, userOpHash, storedPubKey) ? 0 : 1;
+}
+```
+
+### Компонент 5: Paymaster
+
+Paymaster -- самый инновационный компонент AA, решающий проблему "cold start":
+
+```
+Сценарии использования Paymaster:
+
+1. Спонсирование газа (dApp платит):
+   - Пользователь скачивает dApp
+   - dApp оплачивает все транзакции пользователя
+   - Пользователю НЕ НУЖЕН ETH для начала работы
+
+2. Оплата газа ERC-20 токенами:
+   - Paymaster принимает USDC вместо ETH
+   - Конвертирует по oracle price
+   - Пользователь платит стейблкоинами
+
+3. Подписочная модель:
+   - Пользователь платит фиксированную сумму / месяц
+   - Paymaster спонсирует все транзакции в рамках подписки
+
+4. Условное спонсирование:
+   - Бесплатный mint NFT (Paymaster платит gas)
+   - Бесплатная первая swap на DEX
+```
+
+## EIP-7702: легковесная альтернатива
+
+EIP-7702 (Pectra, май 2025) -- дополнение к ERC-4337, а не замена:
+
+```
+EIP-7702: новый тип транзакции (type 0x04)
+
+Позволяет EOA ВРЕМЕННО делегировать свой код смарт-контракту:
+
+1. Alice (EOA) отправляет type 0x04 транзакцию
+2. В транзакции: authorization = sign(chain_id, contract, nonce)
+3. На время транзакции код Alice = код contract
+4. Alice может выполнять batch, use paymaster, etc.
+5. После транзакции Alice снова обычный EOA
+
+Ключевое отличие от ERC-4337:
+- ERC-4337: ПОСТОЯННЫЙ smart account (новый адрес, миграция)
+- EIP-7702: ВРЕМЕННАЯ суперсила для существующего EOA
+```
+
+### Когда что использовать
+
+| Критерий | ERC-4337 | EIP-7702 |
+|----------|----------|----------|
+| Адрес | Новый (smart account) | Существующий EOA |
+| Длительность | Постоянно | На одну транзакцию |
+| Кастомная подпись | Любая (passkeys, multisig) | Только ECDSA |
+| Social recovery | Да | Нет |
+| Batch transactions | Да | Да |
+| Gas sponsorship | Да (Paymaster) | Да (через delegation) |
+| Миграция | Нужна (новый адрес) | Не нужна |
+| Сложность | Высокая (deploy контракта) | Низкая (одна транзакция) |
+
+**Рекомендация:** EIP-7702 для быстрого улучшения UX существующих EOA. ERC-4337 для полнофункциональных smart accounts с максимальной гибкостью.
+
+## Код: создание UserOperation (концептуально)
+
+```python
+# Создание UserOperation (упрощенный Python):
+
+user_op = {
+    "sender": "0xSmartAccountAddress",
+    "nonce": 5,
+    "callData": encode_function_call("transfer", [recipient, amount]),
+    "callGasLimit": 100_000,
+    "verificationGasLimit": 50_000,
+    "preVerificationGas": 21_000,
+    "maxFeePerGas": 20 * 10**9,    # 20 gwei
+    "maxPriorityFeePerGas": 2 * 10**9,  # 2 gwei
+    "signature": sign_with_passkey(user_op_hash),  # Любая подпись!
+    "paymasterAndData": "0x"  # Пустой = пользователь платит сам
+}
+
+# Отправка через bundler JSON-RPC:
+bundler.send("eth_sendUserOperation", [user_op, ENTRYPOINT_ADDRESS])
+```
+
+```python
+# Расчет gas для UserOperation:
+
+total_gas = preVerificationGas + verificationGasLimit + callGasLimit
+
+# preVerificationGas: покрывает calldata и bundler overhead (~21000)
+# verificationGasLimit: validateUserOp + validatePaymasterUserOp
+# callGasLimit: execute() -- основная логика
+
+total_cost = total_gas * effectiveGasPrice
+# effectiveGasPrice = min(maxFeePerGas, baseFee + maxPriorityFeePerGas)
+```
+
+## Математический уровень
+
+### Экономика Bundler
+
+```
+Bundler прибыль = сумма gas refunds - стоимость bundle транзакции
+
+Для bundle из N UserOps:
+- Фиксированная стоимость: 21000 gas (base transaction cost)
+- На каждый UserOp: verificationGas + callGas
+- Refund: пользователи (или paymasters) компенсируют gas
+
+Profit = sum(preVerificationGas[i] * gasPrice) - 21000 * gasPrice
+       ≈ 21000 * N * gasPrice - 21000 * gasPrice
+       = 21000 * (N-1) * gasPrice
+
+При N=10, gasPrice=20 gwei:
+Profit ≈ 21000 * 9 * 20e-9 ETH ≈ 0.00378 ETH ≈ $11
+```
+
+### Безопасность EntryPoint
+
+```
+Validation phase запрещает:
+- Storage access за пределами sender account (предотвращает DoS)
+- Opcodes: TIMESTAMP, BLOCKHASH, GASPRICE и др. (детерминизм симуляции)
+- CREATE / CREATE2 (предотвращает неожиданное поведение)
+
+Это гарантирует: если симуляция прошла -- execution на on-chain тоже пройдет.
+Bundler не тратит газ на невалидные UserOps.
+```
+
+## Экосистема Account Abstraction
+
+```
+OpenZeppelin Contracts 5.x:
+- AccountCore:    базовый smart account (IAccount + IAccountExecute)
+- AccountERC7579: модульный smart account (ERC-7579 стандарт)
+- ERC7702Utils:   утилиты для EIP-7702 делегации
+
+Другие реализации:
+- Safe (бывший Gnosis Safe): модульный smart account, >$100B TVL
+- ZeroDev: Kernel -- модульный ERC-4337 account
+- Alchemy: Modular Account -- Light Account + plugins
+- Coinbase: Smart Wallet -- passkey-based smart account
+```
+
+## Связь с предыдущими темами
+
+- **EOA и Account Model** (ETH-02): ERC-4337 расширяет модель аккаунтов, добавляя программируемую аутентификацию к Contract Accounts
+- **EVM** (ETH-04): EntryPoint -- обычный smart contract, исполняемый EVM. UserOp validation использует те же opcodes
+- **ECDSA** (CRYPTO-11): Smart Account может использовать ECDSA, но не обязан -- это и есть "абстракция"
+- **BLS** (ETH-11): Теоретически smart account может использовать BLS signature aggregation для batch attestations
+- **Gas** (ETH-05): EIP-1559 механика полностью применима к UserOps (maxFeePerGas, maxPriorityFeePerGas)
+
+---
+
+## Итоги модуля: Ethereum Development
+
+Мы прошли путь от архитектуры Ethereum до Account Abstraction:
+
+| Урок | Тема | Ключевой концепт |
+|------|------|------------------|
+| ETH-01 | Архитектура Ethereum | Execution Layer + Consensus Layer |
+| ETH-02 | Модель аккаунтов | EOA vs Contract, nonce/balance/storage/code |
+| ETH-03 | State Trie и MPT | Modified Merkle Patricia Trie, 4 дерева |
+| ETH-04 | EVM | Stack machine, opcodes, storage layout |
+| ETH-05 | Gas и EIP-1559 | baseFee + priority, сожжение, целевой размер блока |
+| ETH-06 | Solidity основы | Типы, storage layout, visibility |
+| ETH-07 | Patterns и тестирование | CEI, Hardhat, Foundry |
+| ETH-08 | ERC-20 | Fungible tokens, approve/transferFrom |
+| ETH-09 | ERC-721/1155 | NFTs, multi-token, batch operations |
+| ETH-10 | Proof of Stake | Casper FFG + LMD GHOST = Gasper |
+| ETH-11 | Валидаторы | Lifecycle, rewards, 4 slashing conditions |
+| ETH-12 | Account Abstraction | ERC-4337, EIP-7702, smart accounts |
+
+**Следующий модуль:** Solana Development -- другой подход к блокчейну: параллельное выполнение, account model Solana, программы вместо смарт-контрактов, Rust + Anchor framework.
