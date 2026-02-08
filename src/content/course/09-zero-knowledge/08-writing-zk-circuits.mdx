@@ -1,0 +1,444 @@
+---
+title: "Пишем ZK circuits: от Multiplier до Age Check"
+description: "Полный Circom/snarkjs workflow (compile -> setup -> prove -> verify), 4 circuit от простого к сложному, Solidity verifier, 'use ZK vs build ZK', и Module 9 recap"
+order: 8
+difficulty: "advanced"
+estimatedTime: 50
+topics: ["Circom Workflow", "snarkjs", "Groth16 Pipeline", "Poseidon Hash", "Range Proof", "Age Verification", "Solidity Verifier", "Module Recap"]
+prerequisites: ["07-circom-basics"]
+---
+
+import { ProofPipelineDiagram, CircuitComplexityDiagram } from '../../../components/diagrams/module9/CircuitWritingDiagrams';
+
+# Пишем ZK circuits: от Multiplier до Age Check
+
+## Зачем это блокчейну?
+
+Предыдущий урок дал основы Circom: signals, templates, operators. Теперь мы проходим **полный end-to-end workflow** -- от написания .circom файла до верификации proof on-chain через Solidity verifier contract.
+
+Этот урок -- **capstone** Module 9. Мы построим 4 circuits увеличивающейся сложности, каждый демонстрируя новый pattern:
+
+1. **Multiplier2** -- hello world (1 constraint)
+2. **Hash Preimage** -- circomlib Poseidon (~240 constraints)
+3. **Range Proof** -- comparators (~200 constraints)
+4. **Age Check** -- capstone, реальный use case (~200 constraints)
+
+> **Аналогия:** Это как финальный проект в курсе программирования: мы берем все изученные концепции (ZK свойства, R1CS, Groth16, Circom) и собираем в работающее приложение. От "Hello World" до production-ready age verification.
+
+## Полный Circom/snarkjs Pipeline
+
+<ProofPipelineDiagram client:load />
+
+### 8 шагов от .circom до verified proof
+
+Подробный walkthrough каждого шага:
+
+**Шаг 1: Write circuit (.circom)**
+
+```circom
+pragma circom 2.0.0;
+
+template Multiplier2() {
+    signal input a;
+    signal input b;
+    signal output c;
+    c <== a * b;
+}
+
+component main = Multiplier2();
+```
+
+**Шаг 2: Compile (circom -> R1CS + WASM)**
+
+```bash
+circom circuit.circom --r1cs --wasm --sym -o build/
+
+# Outputs:
+#   build/circuit.r1cs           -- Constraints (R1CS format)
+#   build/circuit_js/circuit.wasm -- Witness calculator (WASM)
+#   build/circuit.sym             -- Debug symbols
+
+# Circuit info:
+snarkjs r1cs info build/circuit.r1cs
+# Constraints: 1
+# Private inputs: 2 (a, b)
+# Public outputs: 1 (c)
+```
+
+**Шаг 3: Download Powers of Tau**
+
+```bash
+# Phase 1 trusted setup (universal, reusable)
+# powersOfTau28_hez_final_14.ptau (~54 MB)
+# Supports circuits up to 2^14 = 16,384 constraints
+wget https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_14.ptau
+```
+
+**Шаг 4: Groth16 Setup (Phase 2)**
+
+```bash
+# Circuit-specific setup: specializes ptau for this circuit
+snarkjs groth16 setup build/circuit.r1cs ptau14.ptau build/circuit_0.zkey
+```
+
+**Шаг 5: Contribute Randomness**
+
+```bash
+# Add entropy to zkey (MPC contribution)
+snarkjs zkey contribute build/circuit_0.zkey build/circuit.zkey \
+    --name="contributor-1" -v -e="random-entropy"
+```
+
+**Шаг 6: Export Verification Key**
+
+```bash
+# Extract vkey from zkey (for verifier)
+snarkjs zkey export verificationkey build/circuit.zkey build/vkey.json
+```
+
+**Шаг 7: Generate Proof**
+
+```bash
+# Calculate witness from input
+echo '{"a": "3", "b": "11"}' > input.json
+node build/circuit_js/generate_witness.js \
+    build/circuit_js/circuit.wasm input.json build/witness.wtns
+
+# Generate Groth16 proof
+snarkjs groth16 prove build/circuit.zkey build/witness.wtns \
+    build/proof.json build/public.json
+```
+
+**Шаг 8: Verify**
+
+```bash
+snarkjs groth16 verify build/vkey.json build/public.json build/proof.json
+# [INFO] OK!
+```
+
+### Автоматизация: Docker lab scripts
+
+В Docker lab (`labs/circom/`) эти 8 шагов автоматизированы тремя скриптами:
+
+```bash
+# Setup (шаги 1-6): compile + trusted setup
+./scripts/setup.sh circuits/multiplier.circom
+
+# Prove (шаг 7): witness + proof
+./scripts/prove.sh circuits/multiplier.circom inputs/multiplier_input.json
+
+# Verify (шаг 8)
+./scripts/verify.sh circuits/multiplier.circom
+```
+
+## Прогрессия circuits: от простого к сложному
+
+<CircuitComplexityDiagram client:load />
+
+## Circuit 1: Multiplier2 (Hello World)
+
+**Цель:** доказать "я знаю a и b такие, что a * b = c" без раскрытия a и b.
+
+```circom
+pragma circom 2.0.0;
+
+template Multiplier2() {
+    signal input a;    // Private
+    signal input b;    // Private
+    signal output c;   // Public
+
+    c <== a * b;       // 1 constraint
+}
+
+component main = Multiplier2();
+```
+
+**Input:** `{"a": "3", "b": "11"}`
+
+**Public output:** `c = 33`
+
+**Verifier знает:** c = 33. **Verifier НЕ знает:** a = 3, b = 11.
+
+**Constraints:** 1 (c === a * b)
+
+## Circuit 2: Hash Preimage (~240 constraints)
+
+**Цель:** доказать "я знаю preimage x такой, что Poseidon(x) = h" без раскрытия x.
+
+**Use case:** доказать членство в множестве (Merkle tree), ownership токена, identity.
+
+```circom
+pragma circom 2.0.0;
+include "node_modules/circomlib/circuits/poseidon.circom";
+
+template HashPreimage() {
+    signal input preimage;    // Private: secret value
+    signal input hash;        // Public: known hash
+
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== preimage;
+
+    hash === hasher.out;      // Constraint: hash must match
+}
+
+component main { public [hash] } = HashPreimage();
+```
+
+**Ключевые паттерны:**
+
+1. **`include`** -- импорт circomlib template (Poseidon)
+2. **`component hasher = Poseidon(1)`** -- instantiation с параметром (1 input)
+3. **`public [hash]`** -- явное объявление public input
+4. **Poseidon** -- ZK-friendly hash (оптимизирован для circuits, ~240 constraints vs ~25000 для SHA-256)
+
+**Почему Poseidon, а не SHA-256?**
+
+| Hash | Constraints в Circom | Скорость в circuit |
+|------|---------------------|--------------------|
+| SHA-256 | ~25,000 | Медленно (bit operations) |
+| Poseidon | ~240 | Быстро (field operations) |
+| MiMC | ~320 | Быстро |
+
+Poseidon специально разработан для arithmetic circuits: работает с field elements напрямую, без bit decomposition.
+
+## Circuit 3: Range Proof (~200 constraints)
+
+**Цель:** доказать "min <= value <= max" без раскрытия value.
+
+**Use case:** compliance (доход > порог), voting (stake в диапазоне), trading (позиция в лимитах).
+
+```circom
+pragma circom 2.0.0;
+include "node_modules/circomlib/circuits/comparators.circom";
+
+template RangeProof(n) {
+    signal input value;     // Private
+    signal input min;       // Public
+    signal input max;       // Public
+
+    // Check: value >= min
+    component geq = GreaterEqThan(n);
+    geq.in[0] <== value;
+    geq.in[1] <== min;
+    geq.out === 1;
+
+    // Check: value <= max
+    component leq = LessEqThan(n);
+    leq.in[0] <== value;
+    leq.in[1] <== max;
+    leq.out === 1;
+}
+
+component main { public [min, max] } = RangeProof(64);
+```
+
+**Ключевые паттерны:**
+
+1. **Два comparator components** -- каждый проверяет одну границу
+2. **`geq.out === 1`** -- constraint: comparator MUST return true
+3. **Bit width parameter (64)** -- определяет максимальное значение (2^64 - 1)
+4. **`public [min, max]`** -- verifier видит границы, но НЕ value
+
+**Input:** `{"value": "42", "min": "18", "max": "100"}`
+
+**Verifier знает:** value in [18, 100]. **Verifier НЕ знает:** value = 42.
+
+## Circuit 4: Age Check (Capstone, ~200 constraints)
+
+**Цель:** доказать "мой возраст >= threshold" без раскрытия точного возраста.
+
+**Use case:** KYC, age verification для venues/services, regulatory compliance.
+
+```circom
+pragma circom 2.0.0;
+include "node_modules/circomlib/circuits/comparators.circom";
+
+template AgeCheck(n) {
+    signal input age;          // Private: actual age
+    signal input threshold;    // Public: minimum age
+
+    signal output isOldEnough;
+
+    component geq = GreaterEqThan(n);
+    geq.in[0] <== age;
+    geq.in[1] <== threshold;
+
+    isOldEnough <== geq.out;
+    isOldEnough === 1;        // Must be old enough
+}
+
+// 8-bit: ages 0-255
+component main { public [threshold] } = AgeCheck(8);
+```
+
+**Input:** `{"age": "25", "threshold": "18"}`
+
+**Verifier знает:** age >= 18 (threshold). **Verifier НЕ знает:** age = 25.
+
+**Реальный сценарий:**
+1. User загружает документ (паспорт) в ZK-enabled приложение
+2. Приложение извлекает возраст и генерирует proof: "age >= 18"
+3. Venue/service получает proof и verification key
+4. Верификация: "Да, этот человек старше 18" -- без раскрытия точного возраста, даты рождения, или имени
+
+### Все 4 circuits в Docker lab
+
+```bash
+# В Docker контейнере (labs/circom/):
+
+# Multiplier (1 constraint)
+./scripts/setup.sh circuits/multiplier.circom
+./scripts/prove.sh circuits/multiplier.circom inputs/multiplier_input.json
+./scripts/verify.sh circuits/multiplier.circom
+
+# Age Check (~200 constraints)
+./scripts/setup.sh circuits/age_check.circom
+./scripts/prove.sh circuits/age_check.circom inputs/age_check_input.json
+./scripts/verify.sh circuits/age_check.circom
+```
+
+## Solidity Verifier: on-chain verification
+
+snarkjs может экспортировать **Solidity verifier contract** -- smart contract, который верифицирует Groth16 proofs on-chain:
+
+```bash
+# Generate Solidity verifier
+snarkjs zkey export solidityverifier build/circuit.zkey verifier.sol
+```
+
+Результат -- контракт с функцией `verifyProof(uint[2] a, uint[2][2] b, uint[2] c, uint[] input)`:
+
+```solidity
+// Generated by snarkjs (simplified)
+contract Groth16Verifier {
+    // Verification key (embedded in contract)
+    uint256 constant IC0x = 0x...;
+    uint256 constant IC0y = 0x...;
+
+    function verifyProof(
+        uint[2] calldata _pA,
+        uint[2][2] calldata _pB,
+        uint[2] calldata _pC,
+        uint[1] calldata _pubSignals
+    ) public view returns (bool) {
+        // Pairing check: e(A, B) == e(C, D) * e(E, F)
+        // ~200-300K gas
+        return Pairing.pairingProd4(...);
+    }
+}
+```
+
+**Стоимость on-chain верификации:** ~200-300K gas (~$5-15 при 50 gwei).
+
+### Calldata для Solidity verifier
+
+```bash
+# Generate calldata for verifyProof()
+snarkjs zkey export soliditycalldata \
+    build/public.json build/proof.json
+# Output: ["0x...", "0x..."], [["0x...", "0x..."], ...], ...
+```
+
+## "Use ZK" vs "Build ZK"
+
+Финальная перспектива для разработчиков:
+
+### Use ZK (90% разработчиков)
+
+**Не пишут circuits.** Используют ZK инфраструктуру:
+
+| Задача | Инструмент | Пример |
+|--------|-----------|--------|
+| Deploy on ZK rollup | zkSync/StarkNet SDK | Как обычный Solidity/Cairo деплой |
+| ZK identity | Semaphore, Worldcoin SDK | Интеграция через API |
+| Private transactions | Tornado Cash pattern | Готовые circuit + verifier |
+| Merkle proofs | circomlib Merkle tree | Standard circuit template |
+
+### Build ZK (10% разработчиков)
+
+**Пишут custom circuits** для уникальных use cases:
+
+| Задача | Инструмент | Сложность |
+|--------|-----------|-----------|
+| Custom privacy | Circom + snarkjs | Intermediate |
+| ZK compliance | Noir (Aztec) | Intermediate |
+| ZK compute | Cairo (StarkWare) | Advanced |
+| ZK VM programs | RISC Zero (Rust) | Advanced |
+
+**Этот курс:** научил **Build ZK basics** (Circom, 4 circuits, полный workflow), чтобы вы стали информированным **Use ZK** разработчиком.
+
+## Альтернативы Circom
+
+Circom -- первый и самый распространенный ZK DSL, но экосистема развивается:
+
+### Noir (Aztec)
+
+- **Rust-like синтаксис** -- привычнее для разработчиков
+- **Backend-agnostic** -- может использовать разные proof systems
+- **Aztec Network** -- privacy-focused L2 на Ethereum
+- **Преимущество:** нет ручного constraint management (compiler оптимизирует)
+
+### Cairo (StarkWare)
+
+- **STARK-based** -- для StarkNet ecosystem
+- **General-purpose** -- не только ZK, но и provable compute
+- **Cairo VM** -- собственная виртуальная машина
+- **Преимущество:** scalable proofs, no trusted setup
+
+### Halo2 (Zcash/Scroll)
+
+- **Rust library** -- PLONKish arithmetization
+- **Lookup tables** -- эффективные lookups для сложных операций
+- **Используется:** Zcash Orchard, Scroll zkEVM
+- **Преимущество:** flexible constraint system, recursive proofs без trusted setup
+
+### Сравнение
+
+| Параметр | Circom | Noir | Cairo | Halo2 |
+|----------|--------|------|-------|-------|
+| Язык | Custom DSL | Rust-like | Python-like | Rust |
+| Proof system | Groth16/PLONK | Barretenberg | STARK | PLONKish |
+| Trusted setup | Yes (Groth16) | Yes | No | No (IPA) |
+| Ecosystem | Largest | Growing | StarkNet | Zcash/Scroll |
+| Learning curve | Medium | Lower | Medium | Higher |
+
+**Рекомендация:** начинайте с Circom (больше ресурсов, tutorials). Следите за Noir (самый developer-friendly) и Cairo (STARK ecosystem).
+
+## Module 9 Recap: Zero-Knowledge Proofs
+
+| Урок | Ключевая концепция | Практический навык |
+|------|--------------------|--------------------|
+| ZK-01: ZK Concepts | Zero-knowledge property, completeness, soundness, Ali Baba cave | Объяснить ZK на "пещерном" примере |
+| ZK-02: Commitment Schemes | Pedersen commitment, hash commitment, hiding + binding | Реализовать commitment scheme в Python |
+| ZK-03: Interactive Proofs | Sigma protocols, Schnorr, Fiat-Shamir transform | Преобразовать interactive proof в non-interactive |
+| ZK-04: zk-SNARKs | Arithmetic circuits, R1CS, QAP, polynomial IOPs | Flatten computation в R1CS constraints |
+| ZK-05: Groth16 | Bilinear pairings, trusted setup, MPC ceremony, toxic waste | Объяснить trusted setup ceremony и PLONK |
+| ZK-06: zk-STARKs | FRI protocol, transparency, quantum resistance, hash-based proofs | Сравнить SNARK vs STARK по 8 параметрам |
+| ZK-07: Circom Basics | Signals, templates, constraint operators, circomlib | Написать basic circuit, отличить safe/dangerous operators |
+| ZK-08: Writing Circuits | Full pipeline, 4 circuits, Solidity verifier, use vs build ZK | Пройти полный compile -> setup -> prove -> verify workflow |
+
+## Поздравляем!
+
+Module 9 -- последний модуль курса. Вы прошли путь от **базовой криптографии** (Module 2: хеши, ECC, цифровые подписи) через **блокчейн протоколы** (Modules 3-5: Bitcoin, Ethereum, Solana) и **DeFi/Security** (Modules 6-7) до **масштабирования и ZK** (Modules 8-9).
+
+**Что вы теперь умеете:**
+
+- Объяснить cryptographic primitives от hash functions до bilinear pairings
+- Разрабатывать smart contracts на Solidity (Hardhat + Foundry) и Anchor
+- Понимать DeFi протоколы (AMM, lending, flash loans) и их security
+- Оценивать scaling solutions (rollups, data availability, bridges)
+- Писать ZK circuits и понимать proof systems изнутри
+
+**Следующие шаги:**
+- **Use ZK:** деплойте на zkSync/StarkNet, интегрируйте ZK identity
+- **Build ZK:** изучите Noir (Aztec) для production ZK приложений
+- **Research:** следите за FHE (Fully Homomorphic Encryption), MPC, и recursive proofs
+
+## Ключевые выводы
+
+1. **Полный pipeline** Circom/snarkjs: write -> compile -> ptau -> setup -> contribute -> export vkey -> prove -> verify. В Docker lab автоматизирован 3 скриптами.
+2. **4 circuits** от простого к сложному: Multiplier (1 constraint), Hash Preimage (~240, Poseidon), Range Proof (~200, comparators), Age Check (~200, capstone).
+3. **Solidity verifier** -- snarkjs экспортирует контракт для on-chain верификации (~200-300K gas).
+4. **"Use ZK" vs "Build ZK":** 90% разработчиков используют ZK инфраструктуру, 10% пишут circuits. Курс учит Build basics для информированного Use.
+5. **Альтернативы Circom:** Noir (Aztec, Rust-like), Cairo (StarkWare, STARKs), Halo2 (Zcash/Scroll, PLONKish). Следите за Noir.
+6. **Module 9 complete:** 8 уроков покрыли ZK от Ali Baba cave до production circuits.

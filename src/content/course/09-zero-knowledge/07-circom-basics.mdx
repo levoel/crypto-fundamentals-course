@@ -1,0 +1,386 @@
+---
+title: "Circom: язык ZK circuits"
+description: "Circom -- DSL для arithmetic circuits: signals (input/output/intermediate), templates, constraint operators (<== safe vs <-- dangerous), circomlib, и первый circuit Multiplier2"
+order: 7
+difficulty: "advanced"
+estimatedTime: 40
+topics: ["Circom", "Signals", "Templates", "Constraints", "R1CS", "circomlib", "Multiplier2"]
+prerequisites: ["06-zk-starks"]
+---
+
+import { CircomAnatomyDiagram, ConstraintOperatorsDiagram } from '../../../components/diagrams/module9/CircomBasicsDiagrams';
+
+# Circom: язык ZK circuits
+
+## Зачем это блокчейну?
+
+Мы прошли теорию: ZK concepts -> commitment schemes -> interactive proofs -> SNARKs (R1CS, QAP, Groth16) -> STARKs (FRI). Теперь переходим к **практике**: как ПИСАТЬ ZK circuits?
+
+**Circom** -- domain-specific language (DSL) для описания arithmetic circuits. Circom компилирует в R1CS (constraint system), который затем используется для генерации proofs через snarkjs (Groth16/PLONK).
+
+> **Аналогия:** Circom -- это "Solidity для ZK". Как Solidity описывает логику smart contract, Circom описывает логику ZK доказательства. Как Solidity компилируется в EVM bytecode, Circom компилируется в R1CS constraints. Как Hardhat/Foundry тестирует контракты, snarkjs генерирует и верифицирует proofs.
+
+### "Use ZK" vs "Build ZK"
+
+Важное различие для разработчиков:
+
+- **Use ZK (90%):** деплоить приложения на ZK rollups (zkSync, StarkNet), интегрировать ZK identity (Worldcoin, Semaphore), использовать ZK-powered protocols. **Не нужно писать circuits.**
+- **Build ZK (10%):** писать custom ZK circuits для специализированных доказательств (privacy, compliance, identity). **Нужно знать Circom/Noir/Cairo.**
+
+Этот курс учит **Build ZK basics**, чтобы вы стали информированными **Use ZK** разработчиками. Понимание circuit design помогает оценить ограничения и возможности ZK протоколов.
+
+## Установка: Docker Lab
+
+Для работы с Circom используем Docker lab (`labs/circom/`):
+
+```bash
+# Запуск Circom lab
+cd labs/circom
+docker compose up -d circom-lab
+docker compose exec circom-lab bash
+
+# Внутри контейнера:
+circom --version    # Circom 2.2.3
+snarkjs --version   # snarkjs latest
+```
+
+Docker image включает:
+- **Circom 2.2.3** -- компилятор (собран из Rust source)
+- **snarkjs** -- proof generation/verification (Node.js)
+- **circomlib 2.0.5** -- стандартная библиотека circuit templates
+
+## Анатомия Circom программы
+
+<CircomAnatomyDiagram client:load />
+
+### Signals: входы и выходы circuit
+
+Signals -- основной тип данных в Circom. Каждый signal -- элемент конечного поля (большое число mod p).
+
+**Три типа signals:**
+
+```circom
+signal input a;          // Private input (prover знает, verifier нет)
+signal input b;          // Private input
+
+signal output c;         // Public output (verifier видит)
+
+signal intermediate;     // Intermediate signal (внутри circuit)
+```
+
+**Критическое свойство:** signals **immutable** -- после присвоения значение нельзя изменить. Нет `a = a + 1`. Это не переменная, это ПРОВОД в электрической схеме.
+
+```circom
+signal input x;
+signal y;
+
+y <== x * x;    // OK: первое (и единственное) присвоение
+// y <== x + 1; // ERROR: signal already assigned
+```
+
+### Templates: параметризуемые blueprints
+
+Templates -- основная единица организации кода в Circom. Аналог class/struct.
+
+```circom
+// Template с параметром N
+template MultiplierN(N) {
+    signal input in[N];     // Массив из N input signals
+    signal output out;
+
+    signal inter[N - 1];   // Промежуточные signals
+
+    // Каскадное умножение: in[0] * in[1] * ... * in[N-1]
+    inter[0] <== in[0] * in[1];
+    for (var i = 1; i < N - 1; i++) {
+        inter[i] <== inter[i - 1] * in[i + 1];
+    }
+    out <== inter[N - 2];
+}
+
+// Instantiation
+component main = MultiplierN(4);  // 4-input multiplier
+```
+
+**Ключевые особенности templates:**
+- Параметры (N) -- compile-time constants, не signals
+- `var` -- обычная переменная для loops/conditions (не signal!)
+- `for` loops разворачиваются в compile time (нет runtime loops)
+- `component` -- instance другого template
+
+### Sub-components
+
+Templates могут использовать другие templates:
+
+```circom
+template Square() {
+    signal input in;
+    signal output out;
+    out <== in * in;
+}
+
+template SumOfSquares() {
+    signal input a;
+    signal input b;
+    signal output result;
+
+    component sq1 = Square();  // Sub-component
+    component sq2 = Square();
+
+    sq1.in <== a;
+    sq2.in <== b;
+
+    result <== sq1.out + sq2.out;  // a^2 + b^2
+}
+```
+
+## Constraint operators: <== vs <-- vs ===
+
+Это **самая важная тема** в Circom. Неправильное использование операторов -- причина #1 уязвимостей в ZK circuits.
+
+<ConstraintOperatorsDiagram client:load />
+
+### Три оператора
+
+| Оператор | Действие | Безопасность |
+|----------|----------|-------------|
+| `<==` | Assignment + Constraint | SAFE -- всегда используйте |
+| `<--` | Assignment only | DANGEROUS -- без constraint prover может обмануть |
+| `===` | Constraint only | AUXILIARY -- используется в паре с `<--` |
+
+### `<==` : золотой стандарт
+
+```circom
+c <== a * b;
+
+// Эквивалентно:
+c <-- a * b;    // Присвоить значение
+c === a * b;    // Добавить constraint
+```
+
+`<==` делает ОБА действия. Verifier проверяет constraint. Prover не может обмануть.
+
+### `<--` : опасный оператор
+
+`<--` **ТОЛЬКО присваивает** значение signal, БЕЗ создания constraint. Verifier НЕ ПРОВЕРЯЕТ корректность.
+
+```circom
+// ОПАСНО: нет constraint!
+c <-- a * b;
+// Prover может подставить c = 999 вместо a * b
+// Verifier примет proof, потому что нет constraint для проверки
+```
+
+### Когда `<--` необходим?
+
+`<==` работает только для **quadratic expressions** (a * b, a + b, constants). Для non-quadratic operations (division, sqrt, comparison) нужен `<--` с последующим `===`:
+
+```circom
+// Division: out = a / b
+// <== НЕ работает: a / b -- не quadratic expression
+signal input a;
+signal input b;
+signal output out;
+
+out <-- a / b;       // Assignment: compute value
+out * b === a;       // Constraint: verify correctness
+// Verifier проверяет: out * b == a (то есть out == a/b)
+```
+
+### EXPLOIT: circuit без constraint
+
+```circom
+// VULNERABLE: accepts false proofs!
+template UnsafeMultiplier() {
+    signal input a;
+    signal input b;
+    signal output c;
+
+    c <-- a * b;     // NO CONSTRAINT!
+    // Prover sets: a=3, b=11, c=999
+    // No constraint checks c === a * b
+    // Verifier accepts! Proof is "valid" for wrong output
+}
+
+// FIXED: safe version
+template SafeMultiplier() {
+    signal input a;
+    signal input b;
+    signal output c;
+
+    c <== a * b;     // Assignment + Constraint
+    // Prover sets: a=3, b=11, c=999
+    // Constraint: 999 !== 3 * 11 = 33
+    // Verifier REJECTS! Proof generation fails
+}
+```
+
+**Правило:** КАЖДЫЙ `<--` ДОЛЖЕН сопровождаться `===`. Если вы видите `<--` без `===` -- это потенциальная уязвимость.
+
+## Первый circuit: Multiplier2
+
+Полный "Hello World" circuit с аннотациями. Этот же circuit находится в `labs/circom/circuits/multiplier.circom`.
+
+```circom
+pragma circom 2.0.0;           // Версия Circom
+
+template Multiplier2() {        // Template definition
+    signal input a;              // Private: prover знает
+    signal input b;              // Private: prover знает
+    signal output c;             // Public: verifier видит
+
+    c <== a * b;                 // 1 constraint: c === a * b
+}
+
+component main = Multiplier2(); // Entry point
+```
+
+**Что происходит при компиляции:**
+1. Circom генерирует R1CS с 1 constraint: `c = a * b`
+2. В матричной форме: A * s . B * s = C * s (где s = [1, a, b, c])
+3. snarkjs использует R1CS для Groth16 setup и proof generation
+
+### Запуск в Docker lab
+
+```bash
+# Внутри Docker контейнера:
+
+# 1. Setup (compile + trusted setup)
+./scripts/setup.sh circuits/multiplier.circom
+
+# 2. Prove (witness + proof)
+./scripts/prove.sh circuits/multiplier.circom inputs/multiplier_input.json
+
+# 3. Verify
+./scripts/verify.sh circuits/multiplier.circom
+```
+
+Input (`inputs/multiplier_input.json`):
+```json
+{
+  "a": "3",
+  "b": "11"
+}
+```
+
+Результат: proof доказывает "я знаю a и b такие, что a * b = 33" без раскрытия a=3, b=11. Verifier видит только c=33.
+
+## Non-quadratic constraint error
+
+Частая ошибка при начале работы с Circom:
+
+```circom
+// ERROR: non-quadratic constraint
+template Cubic() {
+    signal input x;
+    signal output y;
+
+    y <== x * x * x;    // ERROR! Three variables in multiplication
+}
+```
+
+Circom допускает constraints только вида `a * b` (quadratic -- две переменные). `x * x * x` -- три переменные (cubic).
+
+**Решение: flattening** (как мы видели в ZK-04):
+
+```circom
+template Cubic() {
+    signal input x;
+    signal output y;
+
+    signal x_sq;
+    x_sq <== x * x;     // Constraint 1: x_sq === x * x
+    y <== x_sq * x;     // Constraint 2: y === x_sq * x
+}
+```
+
+Теперь каждый constraint quadratic. Итого: 2 constraints вместо 1.
+
+## circomlib: стандартная библиотека
+
+**circomlib** -- официальная библиотека circuit templates от iden3. Включает:
+
+| Template | Назначение | Constraints |
+|----------|-----------|------------|
+| `Poseidon(n)` | ZK-friendly hash function | ~240 |
+| `MiMC7(n)` | Alternative ZK hash | ~91 per round |
+| `GreaterThan(n)` | a > b comparison | ~n (bit decomposition) |
+| `GreaterEqThan(n)` | a >= b comparison | ~n |
+| `LessEqThan(n)` | a <= b comparison | ~n |
+| `IsZero()` | a == 0 check | 2 |
+| `IsEqual()` | a == b check | 3 |
+| `Num2Bits(n)` | Number to binary | n |
+| `EdDSAVerifier()` | Signature verification | ~3700 |
+
+### Использование circomlib
+
+```circom
+pragma circom 2.0.0;
+include "node_modules/circomlib/circuits/comparators.circom";
+
+template AgeCheck(n) {
+    signal input age;         // Private
+    signal input threshold;   // Public
+
+    component geq = GreaterEqThan(n);
+    geq.in[0] <== age;
+    geq.in[1] <== threshold;
+
+    geq.out === 1;  // Constraint: age >= threshold
+}
+
+component main { public [threshold] } = AgeCheck(8);
+```
+
+**Ключевое:** `public [threshold]` -- указывает, что `threshold` -- публичный input (verifier видит). По умолчанию все inputs приватные.
+
+## Важные ограничения Circom
+
+### 1. Нет runtime conditionals
+
+```circom
+// НЕЛЬЗЯ: runtime if
+if (a > b) {
+    c <== a;
+} else {
+    c <== b;
+}
+```
+
+Signal assignment решается в compile time. Для conditional logic используйте **multiplexer pattern**:
+
+```circom
+// Multiplexer: out = selector ? a : b
+signal selector;  // 0 or 1
+c <== selector * a + (1 - selector) * b;
+```
+
+### 2. Все сигналы -- field elements
+
+Signals -- это числа mod p (BN128 prime: ~254 bits). Нет strings, нет floats, нет negative numbers (они wrap around модуль).
+
+### 3. Массивы фиксированного размера
+
+```circom
+signal input arr[10];  // OK: size known at compile time
+// signal input arr[n]; // ERROR if n is a signal (not known at compile time)
+```
+
+### 4. Division is not integer division
+
+`a / b` в Circom -- это **field inverse**: a * b^{-1} mod p. Это НЕ целочисленное деление.
+
+```
+// В Circom: 7 / 2 = 7 * 2^(-1) mod p
+// Это НЕ 3 (как в Python)!
+```
+
+## Ключевые выводы
+
+1. **Circom** -- DSL для arithmetic circuits. Компилирует в R1CS для Groth16/PLONK.
+2. **Signals** -- immutable провода: `input` (private), `output` (public), intermediate. Все -- field elements.
+3. **Templates** -- параметризуемые blueprints. `component` -- instance. Loops раскрываются compile-time.
+4. **`<==` (SAFE):** assignment + constraint. **`<--` (DANGEROUS):** assignment only. **`===`:** constraint only. Каждый `<--` ОБЯЗАН иметь парный `===`.
+5. **Non-quadratic error:** constraints только `a * b`. Для `x^3` -- flattening через промежуточные signals.
+6. **circomlib** -- стандартная библиотека: Poseidon, comparators, EdDSA, bit operations.
+7. **Docker lab** (`labs/circom/`): полный Circom/snarkjs environment.

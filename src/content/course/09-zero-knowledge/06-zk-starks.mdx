@@ -1,0 +1,214 @@
+---
+title: "zk-STARKs и FRI Protocol"
+description: "STARKs: transparent setup, hash-based cryptography, quantum resistance. FRI protocol: polynomial proximity testing через Merkle commitments и folding. Глубокое сравнение SNARK vs STARK (8 параметров)"
+order: 6
+difficulty: "advanced"
+estimatedTime: 40
+topics: ["zk-STARK", "FRI Protocol", "Transparency", "Quantum Resistance", "Hash-based Proofs", "Reed-Solomon", "SNARK vs STARK"]
+prerequisites: ["05-groth16-trusted-setup"]
+---
+
+import { FRIProtocolDiagram, SNARKvsSTARKDeepDiagram } from '../../../components/diagrams/module9/STARKDiagrams';
+
+# zk-STARKs и FRI Protocol
+
+## Зачем это блокчейну?
+
+В предыдущих уроках мы изучили SNARKs: R1CS -> QAP -> Groth16 proof. Groth16 дает **маленький proof (~128 bytes)** и **быструю верификацию (~3 pairing ops)**. Но у SNARKs есть два фундаментальных ограничения:
+
+1. **Trusted setup** -- если toxic waste не уничтожен, можно подделать proofs
+2. **Quantum vulnerability** -- базируется на elliptic curves, уязвим для алгоритма Шора
+
+**STARKs** (Scalable Transparent ARguments of Knowledge) решают ОБЕ проблемы:
+- **Transparent** -- никакого trusted setup, все параметры публичные
+- **Quantum resistant** -- использует ТОЛЬКО hash functions (collision resistance)
+
+Цена: proof больше (~45-200 KB vs ~128 bytes).
+
+> **Аналогия:** SNARK -- как цифровая подпись на основе закрытого ключа. Нужно создать ключ (ceremony) и хранить его в секрете. STARK -- как fingerprint: уникальный, публичный, не требует "церемонии создания". Fingerprint больше по размеру, зато невозможно подделать даже с квантовым компьютером.
+
+Module 8 (SCALE-07) рассказал **ЧТО** отличает SNARKs и STARKs: trusted setup, proof size, quantum resistance. Теперь мы понимаем **ПОЧЕМУ** -- через FRI protocol, hash-based commitments, и polynomial proximity testing.
+
+## STARK: ключевые свойства
+
+### Интуитивный уровень
+
+**S**calable **T**ransparent **AR**gument of **K**nowledge:
+
+- **Scalable** -- prover time O(N * poly(log N)), quasi-linear. Для больших вычислений STARK prover быстрее SNARK prover.
+- **Transparent** -- все параметры генерируются из public randomness (Fiat-Shamir heuristic). Никакой MPC ceremony, никакого toxic waste.
+- **ARgument of Knowledge** -- как и SNARK: computational soundness + knowledge extraction.
+
+### Почему transparency важна?
+
+Вспомним Groth16 trusted setup:
+- Zcash Sprout ceremony (2016): 6 участников
+- Zcash Sapling (2018): 87 участников
+- Ethereum KZG (2023): 141,416 участников
+
+Каждая ceremony -- сложное мероприятие. Если ХОТЯ БЫ ОДИН участник нечестен И смог получить toxic waste всех остальных -- система compromised.
+
+**STARK не нужна ceremony ВООБЩЕ.** Все параметры -- публичные hash values. Любой может проверить корректность setup.
+
+### Hash-based vs EC-based
+
+| Свойство | SNARK (EC-based) | STARK (Hash-based) |
+|----------|-------------------|---------------------|
+| Commitment | Elliptic curve point (KZG) | Merkle root (hash tree) |
+| Открытие | EC scalar multiplication | Merkle proof (log N hashes) |
+| Безопасность основана на | Discrete log problem | Collision resistance |
+| Quantum resistance | Нет (Shor's algorithm) | Да (Grover: удвоить hash size) |
+| Proof size | O(1) -- constant | O(poly(log N)) -- polylogarithmic |
+
+**Ключевой insight:** SNARK "сжимает" polynomial check в 3 group elements через pairing trick. STARK не может так сжать -- Merkle proofs имеют длину O(log N). Но зато STARK не полагается на hardness assumptions, которые ломает квантовый компьютер.
+
+## FRI Protocol: сердце STARKs
+
+FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity) -- ключевой примитив STARKs. Он доказывает, что функция f "близка" к полиному степени <= d.
+
+### Зачем proximity testing?
+
+В SNARK (Groth16) мы проверяли polynomial identity через pairing: "f(s) = 0 в зашифрованной точке s". В STARK мы НЕ можем использовать pairings (нет elliptic curves). Вместо этого:
+
+1. Prover коммитит значения полинома через Merkle tree
+2. FRI доказывает, что эти значения действительно "близки" к полиному нужной степени
+3. Если prover обманывает (подставляет не-полиномную функцию), FRI обнаружит это с высокой вероятностью
+
+> **Аналогия:** Представьте, что prover нарисовал кривую на бумаге и утверждает, что это парабола (степень 2). Verifier не видит всю кривую, но может "проткнуть" бумагу в случайных точках и проверить: лежат ли эти точки на какой-нибудь параболе? Если да -- prover, вероятно, честен. FRI -- формализация этой идеи.
+
+<FRIProtocolDiagram client:load />
+
+### Алгоритмический уровень
+
+FRI protocol в упрощенном виде:
+
+```
+function FRI_prove(f, d, domain):
+  // Шаг 1: Evaluate and commit
+  evaluations = [f(x) for x in domain]      // N evaluations
+  root_0 = merkle_commit(evaluations)        // Merkle root
+
+  // Шаг 2-k: Folding rounds (log(d) iterations)
+  for round in 1..log(d):
+    r = random_challenge()                   // Fiat-Shamir
+    f = fold(f, r)                           // degree halves: d -> d/2
+    evaluations = [f(x) for x in domain]
+    root_i = merkle_commit(evaluations)      // New commitment
+
+  // Final: f is now constant (degree 0)
+  return constant_value
+
+function FRI_verify(roots, queries, constant):
+  for each query point x:
+    // Check consistency across folding levels
+    for round in 0..log(d)-1:
+      val_i = query(root_i, x)              // Get value + Merkle proof
+      val_next = query(root_{i+1}, fold(x))
+      assert val_next == fold_check(val_i, r_i)
+  // Check final constant
+  assert final_value == constant
+```
+
+### Folding: ключевая операция
+
+Folding -- это "сжатие" полинома. Полином f(x) степени d можно разложить:
+
+```
+f(x) = f_even(x^2) + x * f_odd(x^2)
+```
+
+где f_even и f_odd -- полиномы степени d/2.
+
+При получении challenge r:
+```
+f_folded(x) = f_even(x) + r * f_odd(x)
+```
+
+Степень уменьшается вдвое. После log(d) rounds получаем константу.
+
+### Математический уровень
+
+FRI формально доказывает **proximity** к Reed-Solomon codeword:
+
+**Reed-Solomon код:** множество всех evaluations полиномов степени <= d на домене D размера N (где N >> d). Rate ρ = (d+1)/N.
+
+**FRI proximity theorem:** если FRI verifier принимает, то с высокой вероятностью исходная функция f отличается от какого-то полинома степени <= d не более чем в δ * N точках (где δ зависит от rate ρ и числа queries).
+
+**Soundness error:** ε ≈ (1/|F|)^q + ρ^q, где q -- число queries, |F| -- размер поля.
+
+Для практических параметров (128-bit security): ~40-80 queries достаточно.
+
+## SNARK vs STARK: глубокое сравнение
+
+Module 8 (SCALE-07) дал поверхностное сравнение. Теперь, понимая FRI и Groth16 изнутри, мы видим **ПОЧЕМУ** у них такие характеристики.
+
+<SNARKvsSTARKDeepDiagram client:load />
+
+### Почему SNARK proof маленький?
+
+Groth16 proof = [A, B, C] -- три элемента эллиптической кривой (~128 bytes). Это возможно благодаря **bilinear pairings**: одно уравнение e(A, B) = e(C, D) * e(E, F) проверяет ВСЕ constraints одновременно. Pairing "сжимает" проверку миллионов constraints в одну операцию.
+
+**STARK не может так сжать.** Без pairings нужно передавать Merkle paths для каждого query point. Каждый Merkle path = O(log N) hashes. При 40-80 queries: proof = 40-80 * log(N) * hash_size.
+
+### Почему STARK quantum-resistant?
+
+SNARK полагается на **discrete logarithm problem** (DLP) на эллиптических кривых: "дано g^a, найти a". Алгоритм Шора решает DLP за полиномиальное время на квантовом компьютере.
+
+STARK полагается на **collision resistance** хеш-функций: "найти x != y такие, что H(x) = H(y)". Алгоритм Гровера ускоряет поиск в sqrt раз, но это решается удвоением размера hash (256 -> 512 bit).
+
+### Почему STARK prover быстрее для больших вычислений?
+
+SNARK prover выполняет **EC scalar multiplications** -- каждая O(log |F|) field operations с модулярной арифметикой на 256-bit числах.
+
+STARK prover выполняет **field operations + hashing** -- арифметика в конечном поле + SHA-256/Poseidon. Для больших вычислений field ops дешевле EC ops.
+
+На практике: для circuits > ~2^20 constraints, STARK prover обгоняет SNARK prover.
+
+## Production STARKs
+
+### StarkNet (StarkWare)
+
+- **Cairo** -- собственный язык для STARK circuits (не Circom!)
+- **STARK-based ZK rollup** на Ethereum
+- **StarkEx** -- application-specific rollup (dYdX v3, Immutable X, Sorare)
+- **Recursive STARKs** -- proof of proofs: верифицировать STARK внутри STARK
+
+### RISC Zero
+
+- **General-purpose STARK VM** -- доказывает выполнение произвольных RISC-V программ
+- Пишете обычный Rust код, RISC Zero генерирует STARK proof
+- Не нужен DSL (Circom, Cairo) -- обычные программы
+
+### Polygon Miden
+
+- **STARK-based VM** от Polygon
+- Оптимизирован для account-based модели
+- Использует Miden VM (stack-based, STARK-friendly)
+
+## Гибридные подходы
+
+Современные системы часто комбинируют SNARK и STARK:
+
+**STARK proof -> SNARK wrapper:**
+1. Генерируем STARK proof (fast prover, no trusted setup)
+2. Генерируем SNARK proof, верифицирующий STARK proof (маленький proof для on-chain)
+
+Это дает: fast prover (STARK) + маленький on-chain proof (SNARK). Используется в zkSync Era (Boojum), Polygon zkEVM, и других системах.
+
+```
+// Гибридный pipeline
+STARK_proof = STARK.prove(computation)    // Fast, transparent
+SNARK_proof = SNARK.prove(                 // Small proof
+  "I verified STARK_proof correctly"
+)
+L1.verify(SNARK_proof)                     // Cheap on-chain (~200K gas)
+```
+
+## Ключевые выводы
+
+1. **STARKs** -- transparent (no trusted setup), quantum-resistant, hash-based proof system
+2. **FRI protocol** -- core primitive: доказательство proximity к low-degree polynomial через Merkle commitments и polynomial folding
+3. **Folding** -- ключевая операция: случайно комбинирует чётные и нечётные коэффициенты, уменьшая степень вдвое за каждый round
+4. **SNARK vs STARK tradeoff:** SNARK = маленький proof (pairings сжимают), STARK = transparent + quantum-resistant (hash-based commitments не сжимаются)
+5. **Production:** StarkNet/StarkEx (Cairo), RISC Zero (Rust -> STARK), гибридные STARK+SNARK системы
+6. **Module 8 рассказал ЧТО** отличает SNARKs и STARKs. **Теперь мы понимаем ПОЧЕМУ:** EC pairings vs hash commitments, DLP vs collision resistance, constant proof vs polylog proof
