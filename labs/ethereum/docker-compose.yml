@@ -37,3 +37,25 @@ services:
       timeout: 10s
       retries: 10
       start_period: 15s
+
+  # Security analysis tools (LAB-06)
+  # WARNING: Security tool images are large (2-3 GB each)
+  # First run will download images. Ensure sufficient disk space.
+  slither:
+    image: trailofbits/eth-security-toolbox
+    container_name: ethereum-slither
+    working_dir: /share
+    volumes:
+      - .:/share
+    entrypoint: ["slither"]
+    profiles: ["security"]
+    # Usage: docker compose --profile security run slither contracts/security/VulnerableVault.sol --solc-remaps '@openzeppelin/=node_modules/@openzeppelin/'
+
+  mythril:
+    image: mythril/myth
+    container_name: ethereum-mythril
+    volumes:
+      - .:/tmp
+    entrypoint: ["myth"]
+    profiles: ["security"]
+    # Usage: docker compose --profile security run mythril analyze /tmp/contracts/security/VulnerableVault.sol --solv 0.8.28
