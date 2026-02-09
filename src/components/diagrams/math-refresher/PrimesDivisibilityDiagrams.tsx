@@ -254,6 +254,21 @@ function layoutTree(node: TreeNode, x: number, y: number, spread: number): TreeN
   return node;
 }
 
+function getTreeBounds(node: TreeNode): { minX: number; maxX: number; maxY: number } {
+  let minX = node.x ?? 0;
+  let maxX = node.x ?? 0;
+  let maxY = node.y ?? 0;
+  if (node.children) {
+    for (const child of node.children) {
+      const cb = getTreeBounds(child);
+      minX = Math.min(minX, cb.minX);
+      maxX = Math.max(maxX, cb.maxX);
+      maxY = Math.max(maxY, cb.maxY);
+    }
+  }
+  return { minX, maxX, maxY };
+}
+
 function getFactorization(n: number): Map<number, number> {
   const factors = new Map<number, number>();
   let remaining = n;
@@ -347,8 +362,11 @@ export function FactorizationTreeDiagram() {
   }, [value]);
 
   const factors = useMemo(() => getFactorization(value), [value]);
-  const depth = getTreeDepth(tree);
-  const svgHeight = Math.max(120, (depth + 1) * 50 + 30);
+  const bounds = useMemo(() => getTreeBounds(tree), [tree]);
+  const svgPad = 30;
+  const svgMinX = bounds.minX - svgPad;
+  const svgWidth = bounds.maxX - bounds.minX + svgPad * 2;
+  const svgHeight = bounds.maxY + svgPad + 14;
 
   const factorizationStr = Array.from(factors.entries())
     .map(([p, e]) => e === 1 ? String(p) : `${p}${superscript(e)}`)
@@ -359,7 +377,7 @@ export function FactorizationTreeDiagram() {
       <InteractiveValue value={value} onChange={setValue} min={2} max={1000} label="Число" />
 
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12, overflowX: 'auto' }}>
-        <svg width={400} height={svgHeight} viewBox={`0 0 400 ${svgHeight}`}>
+        <svg width="100%" height={svgHeight} viewBox={`${svgMinX} 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMin meet">
           {renderTreeNodes(tree)}
         </svg>
       </div>
