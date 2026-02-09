@@ -35,7 +35,7 @@ export function RefresherCallout({ topic, lessonId, lessonTitle }: RefresherCall
       <span>
         {"Нужно вспомнить " + topic + "? "}
         <a
-          href={`/course/00-math-refresher/${lessonId}`}
+          href={`/course/01-math-refresher/${lessonId}`}
           style={{
             color: '#fbbf24',
             textDecoration: 'underline',
