@@ -472,7 +472,7 @@ export function GCDVisualization() {
   const handleChangeA = useCallback((v: number) => { setA(v); setStep(0); }, []);
   const handleChangeB = useCallback((v: number) => { setB(v); setStep(0); }, []);
 
-  const gcd = steps.length > 0 ? steps[steps.length - 1].a : Math.max(a, b);
+  const gcd = steps.length > 0 ? steps[steps.length - 1].b : Math.max(a, b);
   const visibleSteps = steps.slice(0, step + 1);
 
   // Rectangle subdivision for current step
