@@ -1,0 +1,524 @@
+---
+title: "Subsquid: ERC-20 Transfer индексатор"
+description: "Первый hands-on: индексация Transfer событий, написание процессора, запрос данных через GraphQL"
+order: 4
+difficulty: "intermediate"
+estimatedTime: 45
+topics: ["Subsquid", "ERC-20", "Transfer Events", "GraphQL Queries", "Docker", "Hands-on"]
+prerequisites: ["03-subsquid-architecture"]
+---
+
+import { SubsquidProcessorFlowDiagram } from '../../../components/diagrams/module11/SubsquidDiagrams';
+
+# Subsquid: ERC-20 Transfer индексатор
+
+## Время строить
+
+Теория позади. В этом уроке мы создадим **полный индексатор** ERC-20 Transfer событий: от запуска Docker до GraphQL запросов. Вы увидите реальные данные из Anvil в реальном времени.
+
+Мы будем работать с LAB-07 -- инфраструктурой, которая была подготовлена в начале модуля. Все файлы уже на месте: `docker-compose.yml`, `SimpleToken.sol`, `processor.ts`, `main.ts`, `schema.graphql`. Наша задача -- **запустить, понять, и расширить**.
+
+<SubsquidProcessorFlowDiagram client:load />
+
+## Шаг 1: Запуск инфраструктуры
+
+### Запуск Docker Compose
+
+```bash
+# Перейти в LAB-07
+cd content/courses/crypto-fundamentals/labs/LAB-07
+
+# Запустить Subsquid профиль
+# (Anvil + PostgreSQL + Processor + GraphQL Server)
+docker compose --profile subsquid up -d
+```
+
+Docker Compose запустит 4 сервиса:
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| `anvil` | 8545 | Локальная Ethereum сеть |
+| `subsquid-db` | 5433 | PostgreSQL база данных |
+| `subsquid-processor` | -- | EvmBatchProcessor (фоновый) |
+| `subsquid-graphql` | 4350 | GraphQL API + Playground |
+
+### Проверка
+
+```bash
+# Убедиться, что все сервисы работают
+docker compose --profile subsquid ps
+
+# Ожидаемый результат:
+# NAME                 STATUS
+# lab-07-anvil-1              running
+# lab-07-subsquid-db-1        running
+# lab-07-subsquid-processor-1 running
+# lab-07-subsquid-graphql-1   running
+```
+
+> **Troubleshooting:** Если `anvil` не стартует -- проверьте, что порт 8545 свободен (`lsof -i :8545`). Если `subsquid-db` не стартует -- проверьте порт 5433. Если `subsquid-processor` крашится -- посмотрите логи: `docker compose logs subsquid-processor`.
+
+## Шаг 2: Деплой SimpleToken контракта
+
+SimpleToken -- это самостоятельный ERC-20 контракт (~65 строк, без OpenZeppelin). При деплое он создаёт Transfer события, которые наш индексатор должен обнаружить.
+
+```bash
+# Из корня LAB-07 (нужен установленный Foundry)
+chmod +x contracts/deploy.sh
+./contracts/deploy.sh
+```
+
+### Ожидаемый вывод
+
+```
+Compiling and deploying SimpleToken...
+SimpleToken deployed at: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+Transferred 100,000 STK to 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+Transferred 100,000 STK to 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+Transferred 100,000 STK to 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+Done! Update CONTRACT_ADDRESS in .env if needed: 0x5FbDB...
+```
+
+Скрипт выполняет 4 транзакции:
+1. **Деплой** контракта (constructor mint: 1,000,000 STK deployer'у) -- **1 Transfer** (from: 0x0 -> deployer)
+2. **Transfer** 100,000 STK -> Account #2
+3. **Transfer** 100,000 STK -> Account #3
+4. **Transfer** 100,000 STK -> Account #4
+
+Итого: **4 Transfer события** в блокчейне. Наш индексатор должен найти и сохранить все 4.
+
+## Шаг 3: Изучим schema.graphql
+
+Откройте `subsquid/schema.graphql` -- единственный source of truth для data model:
+
+```graphql
+# Каждый Transfer -- одно событие из блокчейна
+type Transfer @entity {
+  id: ID!                 # Уникальный ID (blockNumber-logIndex)
+  from: String! @index    # Отправитель (@index для быстрого поиска)
+  to: String! @index      # Получатель
+  value: BigInt!          # Количество токенов (в wei, 18 decimals)
+  timestamp: DateTime!    # Время блока
+  blockNumber: Int!       # Номер блока
+  txHash: String! @index  # Хеш транзакции
+}
+
+# Агрегация: баланс каждого аккаунта
+type Account @entity {
+  id: ID!                 # Адрес аккаунта (lowercase hex)
+  balance: BigInt!        # Текущий баланс (обновляется при каждом Transfer)
+}
+```
+
+Из этого файла codegen генерирует:
+- TypeORM классы `Transfer` и `Account` в `src/model/`
+- PostgreSQL таблицы `transfer` и `account` через миграции
+- GraphQL API с queries, filtering, ordering, pagination
+
+> **Обратите внимание** на `@index`: три поля (`from`, `to`, `txHash`) имеют B-tree индексы. Это ускоряет `WHERE from = '0x...'` с O(N) до O(log N).
+
+## Шаг 4: Изучим processor.ts
+
+`subsquid/src/processor.ts` -- конфигурация EvmBatchProcessor:
+
+```typescript
+import { EvmBatchProcessor } from '@subsquid/evm-processor'
+
+// ERC-20 Transfer event topic0
+// keccak256('Transfer(address,address,uint256)')
+export const TRANSFER_TOPIC =
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+// Default contract address (первый деплой на Anvil всегда даёт этот адрес)
+export const CONTRACT_ADDRESS = (
+  process.env.CONTRACT_ADDRESS ||
+  '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+).toLowerCase()
+
+export const processor = new EvmBatchProcessor()
+  // Docker service name: внутри Docker Network, anvil доступен как 'anvil'
+  .setRpcEndpoint(process.env.RPC_ENDPOINT || 'http://anvil:8545')
+  // Локальный Anvil: 1 блок подтверждения достаточно (нет реоргов)
+  .setFinalityConfirmation(1)
+  // Фильтр: только Transfer события от нашего контракта
+  .addLog({
+    address: [CONTRACT_ADDRESS],
+    topic0: [TRANSFER_TOPIC],
+  })
+  // Какие поля включить в каждый лог
+  .setFields({
+    log: {
+      transactionHash: true,
+      topics: true,
+      data: true,
+    },
+  })
+```
+
+### Важные детали
+
+**`http://anvil:8545`** -- Docker service name. Внутри Docker Compose Network сервис `anvil` доступен по имени, а не по `localhost`. Снаружи Docker (из вашего терминала) используйте `http://localhost:8545`.
+
+**`CONTRACT_ADDRESS.toLowerCase()`** -- Subsquid сравнивает адреса в lowercase. EIP-55 mixed-case address (`0x5FbDB2315...`) не совпадёт с lowercase из логов.
+
+**`addLog({ address: [...], topic0: [...] })`** -- фильтр-массивы. Можно добавить несколько адресов или несколько topic0 для мульти-контрактной/мульти-событийной индексации (INDEX-05).
+
+## Шаг 5: Изучим main.ts
+
+`subsquid/src/main.ts` -- batch handler, который обрабатывает каждый батч блоков:
+
+```typescript
+import { TypeormDatabase } from '@subsquid/typeorm-store'
+import { processor, CONTRACT_ADDRESS, TRANSFER_TOPIC } from './processor'
+import { Transfer, Account } from './model'
+
+// supportHotBlocks: корректная обработка реоргов цепочки
+const db = new TypeormDatabase({ supportHotBlocks: true })
+
+processor.run(db, async (ctx) => {
+  const transfers: Transfer[] = []
+
+  for (const block of ctx.blocks) {
+    for (const log of block.logs) {
+      if (
+        log.address === CONTRACT_ADDRESS &&
+        log.topics[0] === TRANSFER_TOPIC
+      ) {
+        // Декодирование: topic1=from, topic2=to, data=value
+        const from = '0x' + log.topics[1].slice(26).toLowerCase()
+        const to = '0x' + log.topics[2].slice(26).toLowerCase()
+        const value = BigInt(log.data)
+
+        transfers.push(
+          new Transfer({
+            id: log.id,
+            from,
+            to,
+            value,
+            timestamp: new Date(block.header.timestamp),
+            blockNumber: block.header.height,
+            txHash: log.transactionHash,
+          })
+        )
+
+        // Обновляем балансы аккаунтов
+        let fromAccount = await ctx.store.get(Account, from)
+        if (!fromAccount) {
+          fromAccount = new Account({ id: from, balance: 0n })
+        }
+        fromAccount.balance -= value
+        await ctx.store.upsert(fromAccount)
+
+        let toAccount = await ctx.store.get(Account, to)
+        if (!toAccount) {
+          toAccount = new Account({ id: to, balance: 0n })
+        }
+        toAccount.balance += value
+        await ctx.store.upsert(toAccount)
+      }
+    }
+  }
+
+  // Batch INSERT: все Transfer'ы одним SQL запросом
+  await ctx.store.insert(transfers)
+})
+```
+
+### Декодирование адреса из topic
+
+```
+log.topics[1]:
+  0x000000000000000000000000f39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+  ^                        ^                                        ^
+  |<--- 26 символов ------>|<------- 40 символов: адрес ----------->|
+
+.slice(26) = 'f39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+'0x' + ... + .toLowerCase() = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
+```
+
+Topics содержат 32 байта (64 hex + `0x` = 66 символов). Адрес Ethereum -- 20 байт (40 hex). `.slice(26)` отбрасывает prefix и zero-padding.
+
+### Batch INSERT vs UPSERT
+
+Обратите внимание на два паттерна:
+
+```typescript
+// Transfers: batch INSERT (создаём новые, никогда не обновляем)
+await ctx.store.insert(transfers)
+
+// Accounts: individual UPSERT (обновляем баланс существующего)
+await ctx.store.upsert(fromAccount)
+await ctx.store.upsert(toAccount)
+```
+
+Transfer -- immutable event (факт, который не меняется). Account -- mutable state (баланс обновляется при каждом трансфере). Разные паттерны persistence для разных типов данных.
+
+## Шаг 6: Запрос данных через GraphQL
+
+Откройте браузер: **http://localhost:4350/graphql**
+
+Это GraphQL Playground -- интерактивная среда для выполнения запросов. Вставьте запросы ниже и нажмите "Play".
+
+### Запрос 1: Все трансферы
+
+```graphql
+query {
+  transfers(orderBy: blockNumber_ASC) {
+    from
+    to
+    value
+    blockNumber
+    txHash
+  }
+}
+```
+
+**Ожидаемый результат** (4 записи):
+
+```json
+{
+  "data": {
+    "transfers": [
+      {
+        "from": "0x0000000000000000000000000000000000000000",
+        "to": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "value": "1000000000000000000000000",
+        "blockNumber": 1,
+        "txHash": "0x..."
+      },
+      {
+        "from": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+        "value": "100000000000000000000000",
+        "blockNumber": 2,
+        "txHash": "0x..."
+      }
+    ]
+  }
+}
+```
+
+Первый трансфер -- mint (from: `0x000...000`). Следующие три -- transfer от deployer к другим аккаунтам.
+
+### Запрос 2: Балансы аккаунтов
+
+```graphql
+query {
+  accounts(orderBy: balance_DESC) {
+    id
+    balance
+  }
+}
+```
+
+**Ожидаемый результат** (5 аккаунтов):
+
+| id | balance | Кто |
+|----|---------|-----|
+| `0xf39f...` | 700,000 STK (в wei) | Deployer (1M - 3*100K) |
+| `0x7099...` | 100,000 STK | Account #2 |
+| `0x3c44...` | 100,000 STK | Account #3 |
+| `0x90f7...` | 100,000 STK | Account #4 |
+| `0x0000...` | -1,000,000 STK | Zero address (mint source) |
+
+> Zero address (`0x000...000`) имеет отрицательный баланс -- это нормально. При mint, from=0x0, и мы вычитаем `value` из баланса `from`. В production-коде обычно исключают zero address из Account tracking.
+
+### Запрос 3: Фильтрация по отправителю
+
+```graphql
+query {
+  transfers(
+    where: { from_contains: "f39fd6e51" }
+    orderBy: blockNumber_ASC
+  ) {
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+**Ожидаемый результат:** 3 трансфера (deployer отправил 100K каждому из трёх аккаунтов).
+
+### Запрос 4: Пагинация
+
+```graphql
+query {
+  transfers(
+    limit: 2
+    offset: 0
+    orderBy: blockNumber_ASC
+  ) {
+    from
+    to
+    value
+  }
+}
+```
+
+Первая страница (2 записи). Измените `offset: 2` для следующей страницы.
+
+## Шаг 7: Генерация новых Transfer событий
+
+Проверим live-индексацию -- отправим новые токены и увидим, как индексатор подхватывает их:
+
+```bash
+# Из терминала (не из Docker!)
+# Отправить 500 STK на burn address
+cast send 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+  "transfer(address,uint256)" \
+  0xdead000000000000000000000000000000000000 \
+  $(cast to-wei 500) \
+  --rpc-url http://localhost:8545 \
+  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+```
+
+Подождите **2-3 секунды** (Anvil `--block-time 2`), затем повторите запрос в GraphQL Playground:
+
+```graphql
+query {
+  transfers(orderBy: blockNumber_DESC, limit: 1) {
+    from
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+**Ожидаемый результат:** новый 5-й трансфер с `to: "0xdead..."` и `value: "500000000000000000"`.
+
+> **Live-индексация работает!** Processor непрерывно опрашивает Anvil (каждые 2 секунды), находит новые Transfer события и сохраняет их в PostgreSQL. GraphQL Server мгновенно отдаёт обновлённые данные.
+
+## Шаг 8: Frontend dashboard
+
+LAB-07 включает готовый React + urql dashboard с тремя видами данных:
+
+```bash
+cd frontend
+npm install
+npm run dev
+# Открыть http://localhost:5173
+```
+
+### Три вида данных
+
+**Transfer History** -- таблица всех трансферов с пагинацией (20 на страницу). Truncated addresses, форматированные суммы, номера блоков.
+
+**Holder Rankings** -- топ-20 держателей по балансу. Цветная подсветка топ-3 (зелёный), ранговые номера, форматированные балансы.
+
+**Live Events** -- real-time feed через WebSocket подписки. При каждом новом Transfer -- зелёная flash-анимация, pulsing dot индикатор. Используйте `cast send` из шага 7, чтобы увидеть live обновления.
+
+> Dashboard получает **все данные из вашего Subsquid индексатора** через GraphQL API на `localhost:4350`. urql клиент с `fetchExchange` для queries и `subscriptionExchange` (graphql-ws) для подписок.
+
+## Упражнения
+
+### Упражнение 1: Добавьте поле в schema
+
+Добавьте поле `contractAddress: String!` в `Transfer` entity в `schema.graphql`:
+
+```graphql
+type Transfer @entity {
+  id: ID!
+  from: String! @index
+  to: String! @index
+  value: BigInt!
+  contractAddress: String!  # НОВОЕ ПОЛЕ
+  timestamp: DateTime!
+  blockNumber: Int!
+  txHash: String! @index
+}
+```
+
+Затем перезапустите codegen:
+
+```bash
+# 1. Пересгенерировать entities
+npx squid-typeorm-codegen
+
+# 2. Обновить main.ts -- добавить contractAddress: log.address
+
+# 3. Пересобрать
+npm run build
+
+# 4. Пересоздать миграции
+npx squid-typeorm-migration generate
+
+# 5. Перезапустить (из LAB-07/)
+docker compose --profile subsquid down
+docker compose --profile subsquid up -d --build
+```
+
+Что изменилось в `src/model/`? Какой новый столбец появился в PostgreSQL?
+
+### Упражнение 2: Фильтр по сумме
+
+Измените `main.ts` -- индексируйте только трансферы на сумму > 10,000 STK:
+
+```typescript
+// Добавьте условие после декодирования value:
+const MIN_VALUE = BigInt('10000000000000000000000') // 10,000 * 10^18
+
+if (value < MIN_VALUE) continue  // Пропустить мелкие трансферы
+```
+
+Перезапустите Docker и проверьте: мелкий трансфер (500 STK из шага 7) не должен попасть в базу.
+
+### Упражнение 3: Подписки в GraphQL Playground
+
+Откройте **http://localhost:4350/graphql** и выполните подписку:
+
+```graphql
+subscription {
+  transfers(orderBy: blockNumber_DESC, limit: 5) {
+    from
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+Теперь в другом терминале отправьте несколько транзакций:
+
+```bash
+for i in 1 2 3; do
+  cast send 0x5FbDB2315678afecb367f032d93F642f64180aa3 \
+    "transfer(address,uint256)" \
+    0xdead000000000000000000000000000000000000 \
+    $(cast to-wei $(( i * 100 ))) \
+    --rpc-url http://localhost:8545 \
+    --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+  sleep 3
+done
+```
+
+Наблюдайте обновления в GraphQL Playground -- данные обновляются автоматически через WebSocket.
+
+## Остановка
+
+```bash
+# Остановить все сервисы Subsquid профиля
+docker compose --profile subsquid down
+
+# Данные PostgreSQL сохраняются в Docker volume (subsquid-db-data)
+# При следующем запуске индексатор продолжит с последнего обработанного блока
+
+# Для ПОЛНОЙ очистки (удалить volume с данными):
+docker compose --profile subsquid down -v
+```
+
+## Итоги
+
+| Шаг | Действие | Результат |
+|-----|----------|-----------|
+| **1** | `docker compose --profile subsquid up -d` | 4 сервиса запущены |
+| **2** | `./contracts/deploy.sh` | 4 Transfer события в блокчейне |
+| **3** | Изучили `schema.graphql` | 2 entities: Transfer, Account |
+| **4** | Изучили `processor.ts` | Фильтр: topic0 + contract address |
+| **5** | Изучили `main.ts` | Декодирование + batch INSERT |
+| **6** | GraphQL запросы | 4 трансфера, 5 аккаунтов с балансами |
+| **7** | `cast send` + повторный запрос | Live-индексация работает |
+| **8** | Frontend dashboard | 3 вида данных в браузере |
+
+**Что дальше:** В INDEX-05 мы расширим наш индексатор для обработки **нескольких событий** одновременно (Transfer + Approval + Swap). Вы научитесь конфигурировать мульти-событийный EvmBatchProcessor и писать handler для разных типов событий.

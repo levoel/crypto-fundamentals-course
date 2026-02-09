@@ -1,0 +1,413 @@
+---
+title: "Subsquid: архитектура и настройка"
+description: "EvmBatchProcessor, TypeORM Store, GraphQL Server, конвейер кодогенерации и структура проекта"
+order: 3
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["Subsquid", "EvmBatchProcessor", "TypeORM", "GraphQL Server", "Code Generation"]
+prerequisites: ["02-graphql-blockchain"]
+---
+
+import { SubsquidArchitectureDiagram, SubsquidProcessorFlowDiagram, SubsquidCodegenPipelineDiagram } from '../../../components/diagrams/module11/SubsquidDiagrams';
+
+# Subsquid: архитектура и настройка
+
+## От конвейера к реализации
+
+В INDEX-01 мы увидели, что индексатор -- это конвейер: блокчейн -> процессор -> база данных -> GraphQL API. Теперь мы разберём **КАК именно** Subsquid реализует каждый этап этого конвейера.
+
+Subsquid -- наш primary инструмент, потому что он работает на чистом **TypeScript** (в отличие от AssemblyScript в The Graph), обрабатывает блоки в **50-300 раз быстрее** благодаря batch processing, и поддерживает **hot blocks** (незавершённые блоки для real-time данных).
+
+## Обзор архитектуры
+
+<SubsquidArchitectureDiagram client:load />
+
+### Уровень 1: Интуитивный (аналогия)
+
+Subsquid squid -- это **конвейер на заводе**:
+
+- **EvmBatchProcessor** -- конвейерная лента, которая доставляет сырьё (блоки) из склада (блокчейн)
+- **Batch Handler** -- рабочие на конвейере, которые сортируют и обрабатывают детали (события)
+- **TypeORM Store** -- упаковочный цех, который складывает готовую продукцию (entities) в коробки (PostgreSQL)
+- **GraphQL Server** -- витрина магазина, где покупатели (dApps) получают товар (данные)
+
+### Компоненты
+
+**EvmBatchProcessor** -- "сердце" squid'а. Подключается к EVM-узлу через RPC, фильтрует события по `topic0` и адресу контракта, группирует логи в батчи для эффективной обработки. Один батч может содержать сотни блоков.
+
+**TypeORM Store** -- persistence layer. Маппит TypeORM entities на PostgreSQL таблицы. Поддерживает hot blocks через `supportHotBlocks: true` -- когда происходит реорг цепочки, Store автоматически откатывает данные до финализированного блока.
+
+**GraphQL Server** -- `@subsquid/graphql-server`. Автоматически генерирует GraphQL API из `schema.graphql`. Поддерживает подписки (WebSocket) с флагом `--subscriptions`. Никаких ручных resolvers -- всё автоматически.
+
+**PostgreSQL** -- хранилище. Таблицы генерируются из `schema.graphql` через миграции. В LAB-07 используется порт 5433 (чтобы не конфликтовать с локальным PostgreSQL на 5432).
+
+## Структура проекта Subsquid
+
+Рассмотрим структуру `LAB-07/subsquid/` -- нашего рабочего проекта:
+
+```
+subsquid/
+├── src/
+│   ├── processor.ts      # Конфигурация EvmBatchProcessor
+│   ├── main.ts           # Batch handler (обработка событий)
+│   ├── abi/              # Сгенерированные ABI TypeScript типы
+│   └── model/            # Сгенерированные TypeORM entities
+├── schema.graphql        # Определение сущностей (ЕДИНСТВЕННЫЙ SOURCE OF TRUTH)
+├── squid.yaml            # Манифест деплоймента (SQD Cloud)
+├── commands.json         # Команды sqd CLI
+├── package.json          # Зависимости
+├── tsconfig.json         # TypeScript конфигурация
+├── Dockerfile            # Сборка Docker образа
+└── entrypoint.sh         # Скрипт запуска (миграции + процессор)
+```
+
+| Файл | Роль | Кто редактирует |
+|------|------|----------------|
+| `schema.graphql` | Определение entities | **ВЫ** (единственный файл для data model) |
+| `processor.ts` | Настройка: RPC endpoint, фильтры, поля | **ВЫ** |
+| `main.ts` | Логика обработки событий | **ВЫ** |
+| `src/model/` | TypeORM entity классы | **CODEGEN** (squid-typeorm-codegen) |
+| `src/abi/` | Typed ABI decoders | **CODEGEN** (squid-evm-typegen) |
+| `Dockerfile` | Сборка образа | Редко (при изменении зависимостей) |
+
+> **Правило:** Никогда не редактируйте файлы в `src/model/` и `src/abi/` вручную. Они перезаписываются при каждом запуске codegen.
+
+## EvmBatchProcessor в деталях
+
+<SubsquidProcessorFlowDiagram client:load />
+
+### Конфигурация processor.ts
+
+```typescript
+import { EvmBatchProcessor } from '@subsquid/evm-processor'
+
+// ERC-20 Transfer event topic0
+export const TRANSFER_TOPIC =
+  '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+// Default contract address (first Anvil deploy)
+export const CONTRACT_ADDRESS = (
+  process.env.CONTRACT_ADDRESS ||
+  '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+).toLowerCase()
+
+export const processor = new EvmBatchProcessor()
+  // Подключение к RPC (Docker service name для Anvil)
+  .setRpcEndpoint(process.env.RPC_ENDPOINT || 'http://anvil:8545')
+
+  // Финализация: 1 блок для локального Anvil
+  // Для mainnet: 75 блоков (~12 минут)
+  .setFinalityConfirmation(1)
+
+  // Фильтр: только Transfer события от нашего контракта
+  .addLog({
+    address: [CONTRACT_ADDRESS],   // Фильтр по адресу контракта
+    topic0: [TRANSFER_TOPIC],      // Фильтр по типу события
+  })
+
+  // Какие поля включить в каждый лог
+  .setFields({
+    log: {
+      transactionHash: true,
+      topics: true,
+      data: true,
+    },
+  })
+```
+
+### Уровень 2: Алгоритмический -- 6-шаговый цикл
+
+```
+while True:
+  # 1. POLL: запросить новые блоки у RPC
+  newBlocks = rpc.getBlocks(lastBlock + 1, latest)
+
+  # 2. FILTER: оставить только логи, matching наши фильтры
+  filteredLogs = [log for log in newBlocks.logs
+                  if log.address == CONTRACT_ADDRESS
+                  and log.topic0 == TRANSFER_TOPIC]
+
+  # 3. BATCH: группировать в батч (сотни событий за раз)
+  batch = { blocks: newBlocks, logs: filteredLogs }
+
+  # 4. HANDLER: вызвать batch handler (main.ts)
+  handler(ctx={ blocks: batch.blocks, store: typeormStore })
+
+  # 5. PERSIST: batch INSERT/UPSERT в PostgreSQL
+  store.flush()
+
+  # 6. NEXT: обновить lastBlock, перейти к следующему батчу
+  lastBlock = newBlocks[-1].number
+```
+
+Ключевая оптимизация: **batch processing**. Вместо обработки одного события за раз (как в The Graph), Subsquid обрабатывает **сотни событий** в одном батче. Один SQL `INSERT` вместо сотен -- это разница в 10-100x по скорости.
+
+### setFinalityConfirmation
+
+```typescript
+.setFinalityConfirmation(1)  // Anvil: 1 блок
+```
+
+Этот параметр определяет, сколько подтверждений ждать перед обработкой блока как "финализированного":
+
+| Среда | Значение | Причина |
+|-------|----------|---------|
+| Anvil (локально) | 1 | Мгновенная финализация, нет реоргов |
+| Ethereum mainnet | 75 | ~12 минут, гарантия от реоргов |
+| Polygon | 256 | Более длинная цепочка реоргов |
+
+Блоки до финализации -- **hot blocks**. Они могут быть "откачены" при реорге. `supportHotBlocks: true` в TypeORM Store обеспечивает корректную обработку реоргов.
+
+## Конвейер кодогенерации
+
+<SubsquidCodegenPipelineDiagram client:load />
+
+### Шаг за шагом
+
+Codegen -- это 5 команд, которые превращают `schema.graphql` и ABI в рабочий код:
+
+**1. TypeORM entity codegen:**
+```bash
+npx squid-typeorm-codegen
+```
+Вход: `schema.graphql`
+Выход: `src/model/generated/*.ts` -- TypeORM entity классы (`Transfer`, `Account`)
+
+**2. ABI typegen:**
+```bash
+npx squid-evm-typegen src/abi ./abi/*.json
+```
+Вход: `abi/erc20.json` (ABI контракта)
+Выход: `src/abi/erc20.ts` -- typed decoders с полной TypeScript типизацией
+
+**3. TypeScript компиляция:**
+```bash
+npm run build  # tsc
+```
+Вход: `src/**/*.ts`
+Выход: `lib/**/*.js` -- скомпилированный JavaScript
+
+**4. Генерация миграций:**
+```bash
+npx squid-typeorm-migration generate
+```
+Вход: TypeORM entities
+Выход: `db/migrations/*.js` -- SQL миграции (CREATE TABLE, ALTER TABLE)
+
+**5. Применение миграций:**
+```bash
+npx squid-typeorm-migration apply
+```
+Вход: migration files
+Выход: PostgreSQL таблицы с индексами
+
+### Уровень 3: Математический -- от schema к SQL
+
+```
+schema.graphql                    PostgreSQL
+─────────────                     ──────────
+type Transfer @entity {     →     CREATE TABLE transfer (
+  id: ID!                  →       id VARCHAR PRIMARY KEY,
+  from: String! @index     →       "from" VARCHAR NOT NULL,
+  to: String! @index       →       "to" VARCHAR NOT NULL,
+  value: BigInt!           →       value NUMERIC NOT NULL,
+  timestamp: DateTime!     →       timestamp TIMESTAMP NOT NULL,
+  blockNumber: Int!        →       block_number INTEGER NOT NULL,
+  txHash: String! @index   →       tx_hash VARCHAR NOT NULL
+}                          →     );
+                           →     CREATE INDEX idx_from ON transfer("from");
+                           →     CREATE INDEX idx_to ON transfer("to");
+                           →     CREATE INDEX idx_txhash ON transfer(tx_hash);
+```
+
+> **НИКОГДА** не пишите TypeORM entities вручную. `schema.graphql` -- единственный файл, который вы редактируете для data model. Вся остальная цепочка -- автоматическая.
+
+## Batch Handler (main.ts)
+
+Batch handler -- это функция, которая обрабатывает каждый батч блоков:
+
+```typescript
+import { TypeormDatabase } from '@subsquid/typeorm-store'
+import { processor, CONTRACT_ADDRESS, TRANSFER_TOPIC } from './processor'
+import { Transfer, Account } from './model'
+
+const db = new TypeormDatabase({ supportHotBlocks: true })
+
+processor.run(db, async (ctx) => {
+  const transfers: Transfer[] = []
+
+  for (const block of ctx.blocks) {
+    for (const log of block.logs) {
+      if (
+        log.address === CONTRACT_ADDRESS &&
+        log.topics[0] === TRANSFER_TOPIC
+      ) {
+        // Декодирование Transfer(address indexed from, address indexed to, uint256 value)
+        const from = '0x' + log.topics[1].slice(26).toLowerCase()
+        const to = '0x' + log.topics[2].slice(26).toLowerCase()
+        const value = BigInt(log.data)
+
+        transfers.push(
+          new Transfer({
+            id: log.id,
+            from,
+            to,
+            value,
+            timestamp: new Date(block.header.timestamp),
+            blockNumber: block.header.height,
+            txHash: log.transactionHash,
+          })
+        )
+
+        // Обновляем балансы аккаунтов
+        let fromAccount = await ctx.store.get(Account, from)
+        if (!fromAccount) {
+          fromAccount = new Account({ id: from, balance: 0n })
+        }
+        fromAccount.balance -= value
+        await ctx.store.upsert(fromAccount)
+
+        let toAccount = await ctx.store.get(Account, to)
+        if (!toAccount) {
+          toAccount = new Account({ id: to, balance: 0n })
+        }
+        toAccount.balance += value
+        await ctx.store.upsert(toAccount)
+      }
+    }
+  }
+
+  // Batch INSERT: все трансферы за один SQL-запрос
+  await ctx.store.insert(transfers)
+})
+```
+
+### Разбор ключевых моментов
+
+**Декодирование адреса из topic:**
+```
+topics[1] = 0x000000000000000000000000f39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                        .slice(26) -> 40 символов = адрес
+```
+
+`topics[1]` содержит 32 байта (64 hex символа + `0x` prefix = 66 символов). Адрес Ethereum -- 20 байт (40 hex символов). Поэтому `.slice(26)` отбрасывает `0x` (2 символа) + 24 символа zero-padding, оставляя 40 символов адреса.
+
+**Batch INSERT vs Individual INSERT:**
+```
+// Плохо: N SQL INSERT запросов (один на каждый Transfer)
+for (const t of transfers) {
+  await ctx.store.save(t)  // O(N) SQL queries
+}
+
+// Хорошо: 1 SQL INSERT запрос (batch)
+await ctx.store.insert(transfers)  // O(1) SQL query
+```
+
+При 1,000 событий в батче: 1 запрос вместо 1,000. При 50 блоках/сек и 10 событий/блок -- это 30,000 INSERT/мин vs 30/мин.
+
+## GraphQL Server
+
+### Запуск и конфигурация
+
+```bash
+npx squid-graphql-server --subscriptions
+```
+
+Флаг `--subscriptions` включает WebSocket подписки (по умолчанию выключены). В LAB-07 это настроено в `docker-compose.yml`:
+
+```yaml
+subsquid-graphql:
+  image: node:20-slim
+  command: npx squid-graphql-server --subscriptions
+  environment:
+    - DB_HOST=subsquid-db
+    - DB_PORT=5432
+    - DB_NAME=squid
+  ports:
+    - "4350:4000"  # Доступ: http://localhost:4350/graphql
+```
+
+### Auto-generated API
+
+GraphQL Server автоматически создаёт API из `schema.graphql`:
+
+| Операция | Пример | Генерируется из |
+|----------|--------|----------------|
+| Query (list) | `transfers(limit: 20)` | `type Transfer @entity` |
+| Query (by ID) | `transferById(id: "...")` | `id: ID!` |
+| Filtering | `transfers(where: { from_eq: "0x..." })` | Каждое поле |
+| Ordering | `transfers(orderBy: blockNumber_DESC)` | Каждое поле |
+| Pagination | `transfers(limit: 20, offset: 40)` | Автоматически |
+| Connection | `transfersConnection(first: 20)` | Автоматически |
+| Subscription | `subscription { transfers(...) }` | `--subscriptions` |
+
+Никаких ручных resolvers. Никакого boilerplate. `schema.graphql` определяет всё.
+
+## Типичные ошибки
+
+### Pitfall 1: Anvil без --block-time
+
+```yaml
+# Неправильно:
+anvil:
+  command: anvil --host 0.0.0.0
+  # Процессор не получает новых блоков!
+
+# Правильно:
+anvil:
+  command: anvil --host 0.0.0.0 --block-time 2
+  # Новый блок каждые 2 секунды
+```
+
+Без `--block-time` Anvil создаёт блоки только при получении транзакции. Процессор "зависает" в ожидании новых блоков.
+
+### Pitfall 2: Hot blocks без supportHotBlocks
+
+```typescript
+// Неправильно:
+const db = new TypeormDatabase()
+// При реорге: дублирование или потеря данных!
+
+// Правильно:
+const db = new TypeormDatabase({ supportHotBlocks: true })
+// При реорге: автоматический откат до финализированного блока
+```
+
+### Pitfall 3: Порт PostgreSQL конфликт
+
+В LAB-07 Subsquid PostgreSQL работает на порту **5433** (не стандартный 5432):
+
+```yaml
+subsquid-db:
+  ports:
+    - "5433:5432"  # Внешний:Внутренний
+```
+
+Если у вас локально работает PostgreSQL на 5432 -- конфликт портов. LAB-07 уже использует 5433.
+
+## Preview: INDEX-04
+
+В следующем уроке мы построим **полный ERC-20 Transfer индексатор**:
+
+1. Запустим Docker (`docker compose --profile subsquid up -d`)
+2. Задеплоим SimpleToken контракт (4 Transfer события)
+3. Изучим processor.ts и main.ts в контексте работающего кода
+4. Запустим codegen и увидим сгенерированные entities
+5. Откроем GraphQL playground и выполним реальные запросы
+6. Сгенерируем новые события и увидим live-индексацию
+7. Запустим React dashboard и увидим данные в UI
+
+Теория усвоена -- время **СТРОИТЬ**.
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **EvmBatchProcessor** | Подключение к RPC, фильтрация, batch delivery | Сердце squid'а |
+| **Batch Handler** | Обработка событий в батчах | 10-100x быстрее single-event |
+| **TypeORM Store** | Persistence + hot blocks support | Корректная обработка реоргов |
+| **GraphQL Server** | Auto-generated API из schema | Нет ручных resolvers |
+| **Codegen pipeline** | schema.graphql -> entities -> migrations | Single source of truth |
+
+**Что дальше:** В INDEX-04 мы переходим от теории к практике. Вы запустите свой первый Subsquid индексатор, задеплоите ERC-20 контракт, и увидите реальные данные в GraphQL playground.
