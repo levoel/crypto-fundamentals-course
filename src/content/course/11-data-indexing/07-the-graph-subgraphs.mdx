@@ -1,0 +1,283 @@
+---
+title: "The Graph: subgraphs и AssemblyScript"
+description: "Subgraph манифест, AssemblyScript маппинги, локальный Graph Node -- от Subsquid к The Graph"
+order: 7
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["The Graph", "Subgraph", "AssemblyScript", "Graph Node", "IPFS", "WASM"]
+prerequisites: ["04-subsquid-erc20-indexer"]
+---
+
+import { GraphNodeArchitectureDiagram, SubgraphManifestDiagram, AssemblyScriptComparisonDiagram } from '../../../components/diagrams/module11/TheGraphDiagrams';
+
+# The Graph: subgraphs и AssemblyScript
+
+## Второй инструмент экосистемы
+
+Мы провели 4 урока с Subsquid -- теперь знаем, как работает индексация. **The Graph** -- ВТОРОЙ крупнейший инструмент в экосистеме. Он отличается от Subsquid в трёх ключевых аспектах:
+
+1. **AssemblyScript** вместо TypeScript
+2. **Децентрализованная сеть** (GRT token, 500+ indexers)
+3. **Monolithic Graph Node** вместо модульных компонентов
+
+Давайте разберёмся.
+
+## Архитектура Graph Node
+
+<GraphNodeArchitectureDiagram client:load />
+
+Graph Node -- это **монолитный Rust binary**. Он делает ВСЁ: читает блокчейн, исполняет WASM маппинги, хранит данные в PostgreSQL, отдаёт GraphQL. Мощный, но ресурсоёмкий.
+
+### Сравнение с Subsquid
+
+| Компонент | Subsquid | The Graph |
+|-----------|----------|-----------|
+| Процессор | EvmBatchProcessor (Node.js) | Graph Node (Rust binary) |
+| Маппинги | TypeScript | AssemblyScript -> WASM |
+| База данных | PostgreSQL (отдельный контейнер) | PostgreSQL (отдельный, управляется Graph Node) |
+| GraphQL | Отдельный сервер (`squid-graphql-server`) | Встроенный в Graph Node |
+| Дополнительно | -- | IPFS (обязателен для хранения артефактов) |
+| RAM (всё вместе) | ~740MB | ~1.1-1.8GB |
+
+Graph Node требует **IPFS** (Kubo v0.17.0) для хранения subgraph артефактов (schema, WASM, manifest). Subsquid хранит всё в файловой системе.
+
+## Subgraph: три файла
+
+<SubgraphManifestDiagram client:load />
+
+Каждый subgraph состоит из **трёх файлов**:
+
+| Файл | Назначение | Аналогия с Subsquid |
+|------|------------|---------------------|
+| `subgraph.yaml` | Манифест: **ЧТО** индексировать | `processor.ts` (setRpcEndpoint, addLog) |
+| `schema.graphql` | Схема: **КАК** хранить | `schema.graphql` (идентично!) |
+| `src/mapping.ts` | Маппинги: **КАК** обрабатывать | `main.ts` (handler) |
+
+### subgraph.yaml из LAB-07
+
+Разберём манифест нашего SimpleToken subgraph:
+
+```yaml
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: SimpleToken
+    network: localhost          # ДОЛЖНО совпадать с Graph Node ethereum env!
+    source:
+      address: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+      abi: SimpleToken
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript  # НЕ TypeScript!
+      entities:
+        - Transfer
+      abis:
+        - name: SimpleToken
+          file: ./abis/SimpleToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping.ts
+```
+
+> **КРИТИЧНО: `network: localhost`** ДОЛЖНО совпадать с именем в Graph Node env: `ethereum: 'localhost:http://anvil:8545'`. Если написать `network: mainnet`, получите ошибку **"Ethereum network not supported by registrar: mainnet"**. Имя до двоеточия в env == значение network в manifest.
+
+Обратите внимание на `language: wasm/assemblyscript`. Файл `src/mapping.ts` имеет расширение `.ts`, но это **НЕ TypeScript**. Graph Node компилирует его в WebAssembly.
+
+## AssemblyScript: НЕ TypeScript!
+
+<AssemblyScriptComparisonDiagram client:load />
+
+Это **самый важный раздел** урока. AssemblyScript ВЫГЛЯДИТ как TypeScript. Файлы имеют расширение `.ts`. Но это **ДРУГОЙ ЯЗЫК**, который компилируется в WebAssembly. Многие привычные TypeScript-паттерны НЕ РАБОТАЮТ.
+
+### Что НЕ работает в AssemblyScript
+
+| Фича TypeScript | AssemblyScript | Альтернатива |
+|-----------------|----------------|--------------|
+| `async / await` | **Нет** | Все операции синхронные. `entity.save()` -- синхронный |
+| `Array.filter()` | **Нет** | Используйте `for` loop с `if` |
+| `Array.map()` | **Нет** | Используйте `for` loop с `push` |
+| `Array.reduce()` | **Нет** | Используйте `for` loop с аккумулятором |
+| Closures (замыкания) | **Ограничено** | Избегайте захвата переменных в arrow functions |
+| `JSON.parse()` | **Нет** | Нет встроенного JSON парсинга |
+| `console.log()` | **Нет** | `log.info()` из `@graphprotocol/graph-ts` |
+| `try / catch` | **Ограничено** | Ошибки часто вызывают `abort()` всего WASM модуля |
+| Template literals | **Ограничено** | Используйте string concatenation (`+`) |
+| Object spread (`...`) | **Нет** | Присваивайте поля по одному |
+| Destructuring | **Ограничено** | Используйте `event.params.from` напрямую |
+
+### Маппинг код из LAB-07
+
+```typescript
+// src/mapping.ts -- это AssemblyScript, НЕ TypeScript!
+import { Transfer as TransferEvent } from '../generated/SimpleToken/SimpleToken'
+import { Transfer } from '../generated/schema'
+
+export function handleTransfer(event: TransferEvent): void {
+  // Создание entity с уникальным ID
+  let entity = new Transfer(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+
+  // Присвоение полей (НЕ object spread, НЕ destructuring)
+  entity.from = event.params.from
+  entity.to = event.params.to
+  entity.value = event.params.value
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  // Синхронное сохранение (НЕ await)
+  entity.save()
+}
+```
+
+### Сравнение с Subsquid эквивалентом
+
+```typescript
+// Subsquid: обычный TypeScript
+const transfers = logs
+  .filter(l => l.topics[0] === TRANSFER_TOPIC)  // .filter() работает!
+  .map(l => new Transfer({                        // .map() работает!
+    id: l.id,
+    from: '0x' + l.topics[1].slice(26),
+    to: '0x' + l.topics[2].slice(26),
+    value: BigInt(l.data),
+    timestamp: new Date(block.header.timestamp),
+    blockNumber: block.header.height,
+    txHash: l.transactionHash,
+  }))
+await ctx.store.insert(transfers)  // await работает! Batch insert!
+```
+
+**Subsquid:** 5 строк с `.filter().map()` и batch insert.
+**The Graph:** 10+ строк с manual field assignment и `.save()` per entity.
+
+Для простых случаев разница невелика. Для сложных с десятками entities -- Subsquid значительно удобнее благодаря полному TypeScript.
+
+## Code generation в The Graph
+
+Аналогично Subsquid, The Graph генерирует типы из ABI и schema:
+
+```bash
+# Генерация типов из ABI и schema
+npx graph codegen
+# Генерирует:
+# - generated/SimpleToken/SimpleToken.ts (event types из ABI)
+# - generated/schema.ts (entity types из schema.graphql)
+
+# Сборка WASM
+npx graph build
+# Компилирует AssemblyScript -> WebAssembly (.wasm файл)
+```
+
+В The Graph `codegen` объединяет ABI и schema типы в **одну команду**. В Subsquid -- две отдельные команды (`squid-typeorm-codegen` + `squid-evm-typegen`).
+
+> **generated/** директория содержит AssemblyScript-типы. Файлы выглядят как TypeScript, но используют типы из `@graphprotocol/graph-ts` (Bytes, BigInt, Address -- все специфичные для WASM).
+
+## Graph Node: запуск через Docker
+
+LAB-07 включает Graph Node стек в профиле `graph`:
+
+```bash
+# Запуск Graph Node стека (4 сервиса)
+cd labs/LAB-07
+docker compose --profile graph up -d
+
+# Проверка: anvil + graph-db + ipfs + graph-node
+docker compose --profile graph ps
+```
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| `anvil` | 8545 | Локальная Ethereum сеть |
+| `graph-db` | 5434 | PostgreSQL для Graph Node |
+| `ipfs` | 5001 | IPFS Kubo для subgraph артефактов |
+| `graph-node` | 8000 (HTTP), 8001 (WS), 8020 (Admin) | Graph Node |
+
+### Ожидание готовности
+
+Graph Node может стартовать **30-60 секунд** (должен подключиться к PostgreSQL, IPFS и Ethereum node):
+
+```bash
+# Проверить логи Graph Node
+docker logs graph-node --tail 20
+
+# Искать строку:
+# "Starting JSON-RPC server at: http://localhost:8020"
+# Это значит -- Graph Node готов принимать subgraph deployments
+```
+
+> **IPFS:** Graph Node требует IPFS (Kubo v0.17.0) для хранения subgraph artifacts. При `graph deploy` манифест, schema и WASM загружаются в IPFS, а Graph Node скачивает их оттуда. Для локальной разработки IPFS -- просто локальное хранилище, без подключения к публичной сети.
+
+## Deployment subgraph
+
+Полный процесс deployment описан в INDEX-08. Краткий обзор:
+
+```bash
+cd subgraph
+
+# 1. Установить зависимости
+npm install
+
+# 2. Генерация типов
+npx graph codegen
+
+# 3. Сборка WASM
+npx graph build
+
+# 4. Создание subgraph в Graph Node
+npx graph create --node http://localhost:8020 simple-token
+
+# 5. Deploy
+npx graph deploy --node http://localhost:8020 \
+  --ipfs http://localhost:5001 simple-token
+# Version label: v0.0.1
+```
+
+После deploy Graph Node начинает индексировать блоки с `startBlock: 0` и обрабатывать Transfer события.
+
+## Алгоритмический уровень
+
+Модель обработки в Graph Node:
+
+```
+GraphNode:
+  on new block:
+    for each registered subgraph:
+      for each event matching subgraph eventHandlers:
+        wasm_instance.call(handler_name, event)
+        // Handler runs in WASM sandbox
+        // entity.save() -> SQL INSERT/UPDATE
+    // One event at a time (NOT batched like Subsquid)
+
+ProcessingModel:
+  Subsquid: BATCH
+    Receive 100 blocks -> process ALL events -> batch INSERT
+    Throughput: 1,000-50,000 blocks/sec
+
+  The Graph: SEQUENTIAL
+    Receive 1 event -> process -> save -> next event
+    Throughput: 100-150 blocks/sec
+```
+
+**Ключевое отличие:** The Graph обрабатывает события **ПОСЛЕДОВАТЕЛЬНО** (одно за другим). Subsquid -- **БАТЧАМИ** (сотни за раз). Это главная причина разницы в скорости (50-300x).
+
+Для локальной разработки с десятками блоков разница незаметна. Для mainnet с миллионами блоков -- принципиальна.
+
+## Итоги
+
+| Концепция | Описание |
+|-----------|----------|
+| **Graph Node** | Монолитный Rust binary (blockchain + WASM + PostgreSQL + GraphQL) |
+| **Subgraph** | Три файла: subgraph.yaml (manifest), schema.graphql, mapping.ts |
+| **AssemblyScript** | НЕ TypeScript: нет async/await, filter, map, closures |
+| **IPFS** | Обязателен для хранения subgraph артефактов |
+| **network name** | ДОЛЖНО совпадать между manifest и Graph Node env |
+| **Sequential processing** | Одно событие за раз (vs batch в Subsquid) |
+
+**Что дальше:** В INDEX-08 мы **задеплоим** subgraph на локальный Graph Node, увидим данные через GraphQL, а затем сравним **три инструмента** (Subsquid, The Graph, SubQuery) по всем ключевым параметрам.

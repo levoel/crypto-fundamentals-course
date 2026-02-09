@@ -1,0 +1,341 @@
+---
+title: "Deploy и сравнение инструментов"
+description: "Деплой subgraph на локальный Graph Node, сравнение Subsquid, The Graph и SubQuery, итоги модуля"
+order: 8
+difficulty: "intermediate"
+estimatedTime: 40
+topics: ["The Graph Deploy", "SubQuery", "Tool Comparison", "Decision Matrix", "Module Recap"]
+prerequisites: ["07-the-graph-subgraphs"]
+---
+
+import { ToolComparisonTableDiagram, IndexingSpeedDiagram, DecisionTreeDiagram } from '../../../components/diagrams/module11/ComparisonDiagrams';
+
+# Deploy и сравнение инструментов
+
+## Финальный урок модуля
+
+Пришло время задеплоить subgraph на локальный Graph Node и увидеть данные через GraphQL. Затем -- сравним **все три инструмента** (Subsquid, The Graph, SubQuery) и определим, когда какой использовать.
+
+## Деплой subgraph на локальный Graph Node
+
+### Шаг 1: Запуск Graph Node стека
+
+```bash
+# Перейти в LAB-07
+cd labs/LAB-07
+
+# Запустить Graph Node профиль
+docker compose --profile graph up -d
+
+# Проверить: 4 сервиса (anvil, graph-db, ipfs, graph-node)
+docker compose --profile graph ps
+```
+
+### Шаг 2: Деплой SimpleToken контракта
+
+```bash
+# Если контракт ещё не задеплоен:
+chmod +x contracts/deploy.sh
+./contracts/deploy.sh
+```
+
+Скрипт создаёт 4 Transfer события (mint + 3 transfers), которые subgraph должен проиндексировать.
+
+### Шаг 3: Build и deploy subgraph
+
+```bash
+# Перейти в subgraph директорию
+cd subgraph
+
+# Установить зависимости
+npm install
+
+# Генерация AssemblyScript типов из ABI и schema
+npx graph codegen
+
+# Компиляция AssemblyScript в WebAssembly
+npx graph build
+
+# Создание subgraph в Graph Node (регистрация имени)
+npx graph create --node http://localhost:8020 simple-token
+
+# Деплой subgraph (загрузка WASM в IPFS + регистрация в Graph Node)
+npx graph deploy --node http://localhost:8020 \
+  --ipfs http://localhost:5001 \
+  simple-token
+# При запросе version label: ввести "v0.0.1"
+```
+
+**Ожидаемый вывод:**
+
+```
+  Build completed: ...
+  Deployed to http://localhost:8000/subgraphs/name/simple-token
+
+Subgraph endpoints:
+  Queries (HTTP):     http://localhost:8000/subgraphs/name/simple-token
+  Subscriptions (WS): ws://localhost:8001/subgraphs/name/simple-token
+```
+
+### Шаг 4: Проверка статуса индексации
+
+```bash
+# Проверить логи Graph Node
+docker logs graph-node --tail 30
+
+# Искать строки:
+# "Scanning blocks [0, ...]"
+# "Applying ... entity operation(s)"
+# Это значит -- subgraph индексирует блоки
+```
+
+## Запрос данных через Graph Node GraphQL
+
+Откройте в браузере: **http://localhost:8000/subgraphs/name/simple-token**
+
+### Все Transfer события
+
+```graphql
+{
+  transfers(first: 10, orderBy: blockNumber, orderDirection: desc) {
+    from
+    to
+    value
+    blockNumber
+    transactionHash
+  }
+}
+```
+
+### Фильтрация
+
+```graphql
+{
+  transfers(
+    where: { from: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" }
+    orderBy: blockNumber
+    orderDirection: asc
+  ) {
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+### Различия в синтаксисе запросов
+
+Синтаксис The Graph **ОТЛИЧАЕТСЯ** от Subsquid:
+
+| Аспект | Subsquid | The Graph |
+|--------|----------|-----------|
+| Лимит | `limit: 10` | `first: 10` |
+| Пропуск | `offset: 20` | `skip: 20` |
+| Сортировка | `orderBy: blockNumber_DESC` | `orderBy: blockNumber, orderDirection: desc` |
+| Фильтр equal | `where: { from_eq: "0x..." }` | `where: { from: "0x..." }` |
+| Фильтр greater | `where: { value_gt: "1000" }` | `where: { value_gt: "1000" }` |
+| ID по значению | `transferById(id: "...")` | `transfer(id: "...")` |
+
+Но суть одна: фильтрация, сортировка, пагинация через GraphQL. Данные те же -- синтаксис разный.
+
+## SubQuery: третий инструмент
+
+SubQuery -- третий крупный инструмент индексации. Для курса -- **концептуальное сравнение** с одним code snippet.
+
+### Ключевые характеристики SubQuery
+
+- **TypeScript маппинги** (как Subsquid, НЕ AssemblyScript)
+- **project.ts manifest** (TypeScript, не YAML)
+- `@subql/node-ethereum` для EVM chains
+- **SubQuery Network** (SQT token) для децентрализованного хостинга
+- **Multi-chain поддержка** из коробки (один manifest, несколько сетей)
+
+### Side-by-side: три инструмента, один Transfer event
+
+```typescript
+// ═══════════════════════════════════════════════════
+// SUBSQUID -- TypeScript, batch processing
+// ═══════════════════════════════════════════════════
+
+// processor.ts
+processor.addLog({ topic0: [TRANSFER_TOPIC] })
+
+// main.ts
+processor.run(db, async (ctx) => {
+  for (const block of ctx.blocks)
+    for (const log of block.logs)
+      transfers.push(new Transfer({ ...decode(log) }))
+  await ctx.store.insert(transfers) // Batch INSERT!
+})
+```
+
+```typescript
+// ═══════════════════════════════════════════════════
+// THE GRAPH -- AssemblyScript, sequential processing
+// ═══════════════════════════════════════════════════
+
+// mapping.ts (AssemblyScript, НЕ TypeScript!)
+export function handleTransfer(event: TransferEvent): void {
+  let entity = new Transfer(
+    event.transaction.hash.concatI32(event.logIndex.toI32())
+  )
+  entity.from = event.params.from
+  entity.to = event.params.to
+  entity.value = event.params.value
+  entity.save() // Один за раз, синхронно
+}
+```
+
+```typescript
+// ═══════════════════════════════════════════════════
+// SUBQUERY -- TypeScript, sequential processing
+// ═══════════════════════════════════════════════════
+
+// mappingHandlers.ts (TypeScript!)
+export async function handleTransfer(log: TransferLog): Promise<void> {
+  const transfer = Transfer.create({
+    id: log.transactionHash + '-' + log.logIndex.toString(),
+    from: log.args.from,
+    to: log.args.to,
+    value: log.args.value.toBigInt(),
+    blockNumber: BigInt(log.blockNumber),
+  })
+  await transfer.save() // async, но один за раз
+}
+```
+
+**Subsquid:** batch processing + TypeScript.
+**The Graph:** sequential + AssemblyScript.
+**SubQuery:** sequential + TypeScript.
+
+Все три начинаются с `schema.graphql` -- единый source of truth для data model.
+
+## Полное сравнение инструментов
+
+<ToolComparisonTableDiagram client:load />
+
+### Ключевые различия
+
+**Язык маппингов:**
+- Subsquid и SubQuery: **TypeScript** (полный язык, все фичи)
+- The Graph: **AssemblyScript** (подмножество, компилируется в WASM)
+
+**Скорость:**
+- Subsquid: **50-300x быстрее** The Graph (batch vs sequential processing)
+- SubQuery: примерно **2-3x быстрее** The Graph
+
+**Децентрализация:**
+- The Graph: **зрелая** сеть (GRT token, 500+ indexers, production dApps)
+- SubQuery: **растущая** сеть (SQT token, запуск 2024)
+- Subsquid: **новая** сеть (SQD token, 2024-2025)
+
+**Multi-chain:**
+- SubQuery: **нативная** поддержка (один manifest, несколько сетей)
+- Subsquid: несколько processors + shared schema
+- The Graph: **отдельные subgraphs** per chain
+
+## Скорость индексации
+
+<IndexingSpeedDiagram client:load />
+
+Subsquid: **1,000-50,000 блоков/сек** благодаря batch processing и SQD Network.
+The Graph: **100-150 блоков/сек** из-за sequential WASM execution.
+SubQuery: **~300 блоков/сек** (TypeScript, но sequential).
+
+Для **локальной разработки** (десятки блоков) разница почти незаметна. Для **mainnet** с миллионами блоков -- принципиальна.
+
+> **Пример:** Индексация 10 миллионов блоков Ethereum. Subsquid: ~3-170 минут. The Graph: ~18-28 часов. SubQuery: ~9 часов. Batch processing -- не оптимизация, а фундаментальное архитектурное преимущество.
+
+## Когда какой инструмент?
+
+<DecisionTreeDiagram client:load />
+
+### Матрица решений
+
+| Критерий | Рекомендация |
+|----------|-------------|
+| Нужна **максимальная скорость** индексации? | Subsquid |
+| Нужна **децентрализованная инфраструктура** (GRT staking, 500+ indexers)? | The Graph |
+| Нужен **TypeScript** + мульти-сеть из коробки? | SubQuery или Subsquid |
+| **Простой проект**, быстрый старт? | Subsquid (npx sqd init) |
+| **Зрелая экосистема**, много примеров и документации? | The Graph |
+| **Production dApp** с GRT токен-экономикой? | The Graph |
+| **Аналитика** (большие объёмы данных, агрегации)? | Subsquid |
+| **Off-chain данные** (IPFS metadata, API calls)? | Subsquid |
+
+### Реальные сценарии
+
+**Startup, строящий DEX dashboard:** Subsquid. Нужна скорость индексации для миллионов swap событий. TypeScript удобнее для команды. Можно захостить самостоятельно.
+
+**Крупный DeFi протокол:** The Graph. Нужна децентрализованная инфраструктура, чтобы subgraph работал, даже если команда уходит. GRT стимулирует indexers.
+
+**Multi-chain мост:** SubQuery или Subsquid. Нужна индексация с нескольких сетей одновременно. SubQuery имеет нативную multi-chain поддержку.
+
+## Переключение frontend между Subsquid и Graph Node
+
+LAB-07 dashboard можно переключить с Subsquid на Graph Node, изменив endpoint:
+
+```typescript
+// urql-client.ts -- переключение endpoint
+
+// Subsquid (по умолчанию):
+const GRAPHQL_HTTP = 'http://localhost:4350/graphql'
+const GRAPHQL_WS   = 'ws://localhost:4350/graphql'
+
+// The Graph (раскомментировать для Graph Node):
+// const GRAPHQL_HTTP = 'http://localhost:8000/subgraphs/name/simple-token'
+// const GRAPHQL_WS   = 'ws://localhost:8001/subgraphs/name/simple-token'
+```
+
+> **Внимание:** Синтаксис запросов Subsquid и The Graph различается (`limit` vs `first`, `orderBy_DESC` vs `orderDirection: desc`). Готовый dashboard настроен для Subsquid. Для полного переключения на The Graph нужно адаптировать GraphQL queries.
+
+## Остановка всего
+
+```bash
+# Остановить Subsquid стек
+docker compose --profile subsquid down
+
+# Остановить Graph Node стек
+docker compose --profile graph down
+
+# Остановить ОБА стека
+docker compose --profile subsquid --profile graph down
+
+# Полная очистка (удалить volumes с данными):
+docker compose --profile subsquid --profile graph down -v
+```
+
+## Итоги модуля
+
+### Таблица уроков
+
+| Урок | Тема | Ключевые концепции |
+|------|------|-------------------|
+| **INDEX-01** | Зачем индексировать | RPC limitations, indexing pipeline, EVM events, hardware requirements |
+| **INDEX-02** | GraphQL | Schema design, queries, filtering, subscriptions, urql vs Apollo |
+| **INDEX-03** | Subsquid архитектура | EvmBatchProcessor, TypeORM, codegen pipeline, batch processing |
+| **INDEX-04** | ERC-20 индексатор | Первый hands-on: Transfer events, Docker, GraphQL queries, frontend |
+| **INDEX-05** | Мульти-события | Uniswap V2 Swap + Sync, multiple entities, aggregations, topic0 routing |
+| **INDEX-06** | Продвинутые паттерны | Governance indexing, stateful entities, multi-chain, WebSocket subscriptions |
+| **INDEX-07** | The Graph | Subgraph manifest, AssemblyScript vs TypeScript, Graph Node, IPFS |
+| **INDEX-08** | Deploy и сравнение | Subgraph deploy, SubQuery code snippet, 3-way comparison, decision matrix |
+
+### Что мы освоили
+
+1. **Зачем нужна индексация** -- RPC ограничения, event-driven data pipeline
+2. **GraphQL** -- единый query language для всех трёх инструментов
+3. **Subsquid** -- batch processing, TypeScript, production-паттерны, governance и multi-event
+4. **The Graph** -- subgraphs, AssemblyScript, Graph Node, deployment
+5. **SubQuery** -- концептуальное понимание третьего инструмента
+6. **Выбор инструмента** -- decision matrix для реальных проектов
+
+## Что дальше
+
+Мы освоили индексацию блокчейн-данных -- от теории до production-паттернов. С Subsquid и The Graph вы можете построить GraphQL API для **ЛЮБОГО EVM-контракта**: DEX, lending, NFT, governance. Данные -- это фундамент любого dApp.
+
+В LAB-07 у вас есть полная инфраструктура для экспериментов:
+- Subsquid processor с ERC-20 индексатором
+- Graph Node с SimpleToken subgraph
+- React + urql dashboard с live-данными
+
+Попробуйте добавить индексацию новых событий, создать кастомные агрегации, или подключить subgraph к контрактам из предыдущих модулей (DeFi, Governance, NFT).
