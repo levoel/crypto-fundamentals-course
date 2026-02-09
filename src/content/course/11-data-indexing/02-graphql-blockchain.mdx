@@ -1,0 +1,333 @@
+---
+title: "GraphQL для блокчейн-данных"
+description: "Основы GraphQL, проектирование схемы для блокчейна, запросы, фильтры, пагинация и подписки"
+order: 2
+difficulty: "intermediate"
+estimatedTime: 30
+topics: ["GraphQL", "Schema Design", "Queries", "Subscriptions", "Filtering", "Pagination"]
+prerequisites: ["01-why-indexing"]
+---
+
+import { GraphQLSchemaDesignDiagram, GraphQLQueryBuilderDiagram } from '../../../components/diagrams/module11/GraphQLDiagrams';
+
+# GraphQL для блокчейн-данных
+
+## Единый язык запросов для всех индексаторов
+
+Все три индексатора (Subsquid, The Graph, SubQuery) выставляют данные через **GraphQL API**. GraphQL -- это язык запросов к API, разработанный Facebook в 2012 году и опубликованный как open-source в 2015.
+
+В отличие от REST (фиксированные endpoints с предопределённой формой ответа), GraphQL позволяет клиенту **ТОЧНО указать** какие данные нужны. Для блокчейн-данных это идеально: "Дай мне последние 20 Transfer событий с полями `from`, `to`, `value`, отсортированные по `blockNumber`."
+
+Прежде чем строить индексаторы, нужно понять язык, на котором мы будем с ними разговаривать.
+
+## GraphQL vs REST
+
+### REST подход (Module 4)
+
+В REST вы работаете с фиксированными endpoints:
+
+```
+GET /api/transfers?limit=20&sort=blockNumber
+GET /api/accounts/0xf39F...
+GET /api/stats/volume
+```
+
+**Три запроса** к серверу. Каждый возвращает фиксированную форму данных -- включая поля, которые вам не нужны (over-fetching). Или не включая поля, которые нужны (under-fetching -- нужен ещё один запрос).
+
+### GraphQL подход
+
+```graphql
+# Одним запросом: трансферы И аккаунты
+query {
+  transfers(limit: 5, orderBy: blockNumber_DESC) {
+    from
+    to
+    value
+  }
+  accounts(limit: 3, orderBy: balance_DESC) {
+    id
+    balance
+  }
+}
+```
+
+**Один запрос** -- получаете **ровно** те поля, которые указали. Не больше, не меньше. Два ресурса (transfers и accounts) в одном HTTP POST.
+
+### Ключевые различия
+
+| Характеристика | REST | GraphQL |
+|---------------|------|---------|
+| Endpoints | Множество (`/transfers`, `/accounts`) | Один (`/graphql`) |
+| Форма ответа | Фиксирована сервером | Определяется клиентом |
+| Over-fetching | Частый (лишние поля) | Нет (выбираете поля) |
+| Множественные ресурсы | N запросов | 1 запрос |
+| Типизация | Зависит от реализации | Встроенная (schema) |
+
+> В REST вы получаете то, что **сервер** решил отдать. В GraphQL -- то, что **ВАМ** нужно.
+
+## Проектирование схемы
+
+<GraphQLSchemaDesignDiagram client:load />
+
+### Уровень 1: Интуитивный (аналогия)
+
+`schema.graphql` -- это **чертёж базы данных**. Как архитектор рисует план здания до начала строительства, вы описываете структуру данных до написания кода. Entities = таблицы. Fields = столбцы. Relations = foreign keys.
+
+### Entities и директивы
+
+В экосистеме блокчейн-индексаторов `schema.graphql` -- это **SINGLE SOURCE OF TRUTH**. И Subsquid, и The Graph генерируют код из этого файла:
+
+```graphql
+# Каждый Transfer -- одно событие из блокчейна
+type Transfer @entity {
+  id: ID!                 # Уникальный ID (обязательное поле)
+  from: String! @index    # Отправитель (@index для быстрого поиска)
+  to: String! @index      # Получатель
+  value: BigInt!          # Количество токенов (uint256)
+  timestamp: DateTime!    # Время блока (ISO 8601)
+  blockNumber: Int!       # Номер блока
+  txHash: String! @index  # Хеш транзакции
+}
+
+# Агрегация: баланс каждого аккаунта
+type Account @entity {
+  id: ID!                 # Адрес аккаунта
+  balance: BigInt!        # Текущий баланс
+}
+```
+
+Ключевые директивы:
+
+| Директива | Назначение | Аналог в SQL |
+|-----------|------------|-------------|
+| `@entity` | Этот тип = таблица в PostgreSQL | `CREATE TABLE` |
+| `@index` | Создать B-tree индекс на поле | `CREATE INDEX` |
+| `@derivedFrom` | Обратная связь (не хранится в БД) | `JOIN` |
+| `!` | Non-nullable (обязательное поле) | `NOT NULL` |
+
+## Типы данных для блокчейна
+
+Стандартные скалярные типы GraphQL (`String`, `Int`, `Float`, `Boolean`, `ID`) недостаточны для блокчейн-данных. Индексаторы добавляют специальные типы:
+
+| Тип | Назначение | Пример |
+|-----|-----------|--------|
+| `BigInt` | Token amounts (uint256) | `1000000000000000000` (1 ETH) |
+| `Bytes` | Адреса и хеши (hex strings) | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` |
+| `DateTime` | Временные метки (ISO 8601) | `2024-01-15T12:30:00.000Z` |
+| `ID!` | Уникальный идентификатор | `0001234567-000042-abcde` |
+
+> **Важно:** Стандартный JavaScript `Number` -- 64-bit float. Максимум: 2^53 (~9 * 10^15). Token supply может быть 10^18 и больше. Поэтому **BigInt ОБЯЗАТЕЛЕН** для любых token amounts.
+
+## Запросы (Queries)
+
+<GraphQLQueryBuilderDiagram client:load />
+
+### Базовый запрос
+
+```graphql
+query {
+  transfers {
+    from
+    to
+    value
+  }
+}
+```
+
+Возвращает все трансферы с тремя полями. Просто и предсказуемо.
+
+### Фильтрация (where)
+
+```graphql
+query {
+  transfers(where: { from_eq: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" }) {
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+Доступные операторы фильтрации:
+
+| Оператор | Значение | Пример |
+|----------|---------|--------|
+| `_eq` | Равно | `from_eq: "0x..."` |
+| `_gt` | Больше | `blockNumber_gt: 100` |
+| `_gte` | Больше или равно | `value_gte: 1000` |
+| `_lt` | Меньше | `blockNumber_lt: 500` |
+| `_lte` | Меньше или равно | `value_lte: 99999` |
+| `_in` | В списке | `from_in: ["0x...", "0x..."]` |
+| `_contains` | Содержит подстроку | `from_contains: "f39fd"` |
+| `_startsWith` | Начинается с | `txHash_startsWith: "0xab"` |
+
+### Сортировка (orderBy)
+
+```graphql
+query {
+  transfers(orderBy: blockNumber_DESC) {
+    from
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+Суффиксы: `_ASC` (по возрастанию), `_DESC` (по убыванию).
+
+### Пагинация (limit + offset)
+
+```graphql
+# Страница 3 (элементы 41-60)
+query {
+  transfers(limit: 20, offset: 40, orderBy: blockNumber_DESC) {
+    from
+    to
+    value
+  }
+}
+```
+
+Для cursor-based пагинации (более эффективно на больших наборах данных):
+
+```graphql
+query {
+  transfersConnection(first: 20, after: "cursor_value", orderBy: blockNumber_DESC) {
+    edges {
+      node {
+        from
+        to
+        value
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+### Вложенные запросы
+
+```graphql
+query {
+  accounts(limit: 5, orderBy: balance_DESC) {
+    id
+    balance
+    # Если бы Transfer имел связь @derivedFrom с Account:
+    # transfersFrom { to value }
+  }
+}
+```
+
+## Подписки (Subscriptions)
+
+WebSocket-based real-time обновления -- одна из killer-features GraphQL для блокчейн-данных:
+
+```graphql
+subscription {
+  transfers(orderBy: blockNumber_DESC, limit: 5) {
+    from
+    to
+    value
+    blockNumber
+  }
+}
+```
+
+Подписка -- это запрос, который **АВТОМАТИЧЕСКИ обновляется** при появлении новых данных. Вместо polling (повторных запросов каждые N секунд), сервер **PUSH-ит** обновления через WebSocket.
+
+### Как это работает
+
+```
+Клиент                   Сервер (GraphQL)
+  |                           |
+  |--- subscription {...} --->|   (WebSocket handshake)
+  |                           |
+  |<-- { data: [...] } -------|   (начальные данные)
+  |                           |
+  |   ... новый блок ...      |
+  |                           |
+  |<-- { data: [...] } -------|   (обновление)
+  |                           |
+  |   ... ещё блок ...        |
+  |                           |
+  |<-- { data: [...] } -------|   (обновление)
+```
+
+В LAB-07 наш фронтенд использует подписки для **Live Event Feed** -- каждый новый Transfer появляется на dashboard мгновенно, без перезагрузки страницы.
+
+## GraphQL клиенты
+
+Для подключения фронтенда к GraphQL API используются специализированные клиенты:
+
+| Клиент | Размер (gzip) | WebSocket | Кэширование | Наш выбор |
+|--------|:------------:|:---------:|:-----------:|:---------:|
+| **urql** | 17KB | graphql-ws | Document cache | Да |
+| Apollo Client | 258KB | subscriptions-transport-ws | Normalized cache | Нет |
+| graphql-request | 5KB | Нет | Нет | Нет |
+
+В LAB-07 фронтенд уже настроен с **urql** (17KB gzipped). urql предоставляет `useQuery` и `useSubscription` хуки для React, встроенную поддержку `graphql-ws` для подписок, и document cache для автоматического кэширования. Для учебного dashboard из 3-х views -- идеальный выбор.
+
+## Алгоритмический уровень
+
+### Как GraphQL сервер обрабатывает запрос
+
+```
+function executeQuery(query, schema, data):
+  parsedQuery = parse(query)              # Parse GraphQL string -> AST
+  validatedQuery = validate(parsedQuery, schema)  # Check against schema
+  result = resolve(validatedQuery, data)  # Fetch from PostgreSQL
+  return { data: result }
+```
+
+На стороне сервера (Subsquid GraphQL Server / Graph Node), GraphQL запрос **транслируется в SQL SELECT**:
+
+```
+GraphQL:
+  transfers(where: { from_eq: "0x..." }, orderBy: blockNumber_DESC, limit: 20)
+
+SQL:
+  SELECT from, to, value, block_number, tx_hash
+  FROM transfer
+  WHERE "from" = '0x...'
+  ORDER BY block_number DESC
+  LIMIT 20
+```
+
+Именно поэтому `@index` в schema.graphql так важен -- он создаёт **B-tree индекс** в PostgreSQL, ускоряя `WHERE` и `ORDER BY` с O(N) до O(log N).
+
+### Математический уровень (сложность запросов)
+
+| Операция | Без индекса | С B-tree индексом |
+|----------|:-----------:|:-----------------:|
+| `where: { from_eq }` | O(N) full scan | O(log N) seek |
+| `orderBy: blockNumber_DESC` | O(N log N) sort | O(1) already sorted |
+| `limit: 20` | O(N) + truncate | O(20) early stop |
+| Комбинация | O(N log N) | O(log N + 20) |
+
+Где N -- количество записей в таблице. При 1M Transfer записей: без индекса -- сканирование миллиона строк; с индексом -- 20 шагов по B-tree.
+
+## Практика
+
+> **Попробуйте сами:** После завершения INDEX-04 (Subsquid ERC-20 индексатор), запустите LAB-07 и откройте GraphQL playground по адресу `http://localhost:4350/graphql`.
+>
+> Попробуйте запросы из этого урока:
+> 1. Получите все трансферы с сортировкой по блоку
+> 2. Отфильтруйте трансферы по отправителю
+> 3. Используйте пагинацию (limit + offset)
+> 4. Запустите подписку и отправьте новую транзакцию -- наблюдайте обновление в реальном времени
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **GraphQL vs REST** | Клиент выбирает поля, один endpoint | Точные запросы, нет over-fetching |
+| **schema.graphql** | Single source of truth для данных | Генерация кода и API |
+| **BigInt** | Для token amounts (uint256) | JS Number недостаточен (2^53 max) |
+| **Фильтрация** | `_eq`, `_gt`, `_lt`, `_in`, `_contains` | Точный поиск по любому полю |
+| **Подписки** | WebSocket real-time обновления | Live data без polling |
+
+**Что дальше:** В INDEX-03 мы разберём **архитектуру Subsquid** -- как именно устроен наш primary индексатор: EvmBatchProcessor, TypeORM Store, GraphQL Server и конвейер кодогенерации. Это подготовит вас к первому hands-on упражнению в INDEX-04.

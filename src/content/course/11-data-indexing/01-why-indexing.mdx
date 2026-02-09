@@ -1,0 +1,211 @@
+---
+title: "Зачем индексировать блокчейн?"
+description: "Ограничения прямых RPC-запросов, концепция индексации, ландшафт инструментов и требования к железу"
+order: 1
+difficulty: "intermediate"
+estimatedTime: 25
+topics: ["Blockchain Indexing", "RPC Limitations", "The Graph", "Subsquid", "SubQuery", "GraphQL"]
+prerequisites: []
+---
+
+import { RPCvsIndexerDiagram, IndexingPipelineDiagram, EventTopicsDiagram } from '../../../components/diagrams/module11/IndexingConceptDiagrams';
+
+# Зачем индексировать блокчейн?
+
+## От ethers.js к dashboards: проблема масштаба
+
+В Module 4 мы создавали ERC-20 токены (CourseToken, CourseNFT), писали Solidity контракты, и взаимодействовали с ними через ethers.js и Hardhat. Мы вызывали `token.balanceOf(address)` для одного адреса, `token.transfer()` для одной транзакции. Всё работало: один запрос -- один ответ.
+
+Но представьте: вы строите **DASHBOARD** для вашего токена. Нужно показать:
+- Все 10,000+ Transfer событий за последний месяц
+- Топ-50 держателей по балансу
+- График объёма торгов по дням
+- Live-обновления при каждом новом трансфере
+
+Как получить эти данные? Прямые RPC-вызовы? Давайте разберёмся, почему это **не работает** на реальных масштабах -- и какое решение придумало сообщество.
+
+## Проблема: прямые RPC-запросы
+
+<RPCvsIndexerDiagram client:load />
+
+Попробуем наивный подход -- получить ВСЕ Transfer события нашего токена через `eth_getLogs`:
+
+```javascript
+// Наивный подход: получить ВСЕ Transfer события
+const logs = await provider.getLogs({
+  address: tokenAddress,
+  topics: [ethers.id('Transfer(address,address,uint256)')],
+  fromBlock: 0,
+  toBlock: 'latest', // На mainnet: 20+ миллионов блоков!
+});
+// Результат: TIMEOUT или ошибка "block range too large"
+```
+
+Почему это не работает:
+
+1. **Timeout на больших диапазонах.** `eth_getLogs` сканирует блок за блоком. На mainnet Ethereum -- более 20 миллионов блоков. Даже Alchemy/Infura ограничивают диапазон до 2,000-10,000 блоков за запрос.
+
+2. **Нет агрегаций.** JSON-RPC не поддерживает `SUM`, `GROUP BY`, `ORDER BY`. Хотите топ-50 по балансу? Получите ВСЕ события, сами посчитайте балансы в JS, сами отсортируйте.
+
+3. **Повторные вычисления.** Каждый пользователь вашего dashboard вызывает те же запросы. 1,000 пользователей = 1,000 раз тот же `eth_getLogs`. Нет кэширования, нет shared state.
+
+4. **Raw hex данные.** RPC возвращает `topics` и `data` в hex-формате. Нужно вручную декодировать ABI: `log.topics[1]` -- это 32-byte padded address, `log.data` -- uint256 в hex.
+
+## Решение: индексация
+
+<IndexingPipelineDiagram client:load />
+
+### Уровень 1: Интуитивный (аналогия)
+
+Индексатор -- как **библиотечный каталог**. Вместо того, чтобы перебирать ВСЕ книги в библиотеке каждый раз, когда нужна конкретная тема, библиотекарь (индексатор) ОДИН РАЗ прочитал все книги и создал каталог (база данных). Теперь поиск -- мгновенный.
+
+Или точнее: индексатор -- это **Google для блокчейна**. Google не читает весь интернет при каждом вашем запросе. Он заранее проиндексировал все страницы. Вы спрашиваете -- он отвечает за миллисекунды.
+
+### Уровень 2: Алгоритмический (ETL конвейер)
+
+Индексация -- это классический **ETL pipeline** (Extract-Transform-Load):
+
+```
+while True:
+  # Extract: получить новые блоки
+  blocks = rpc.getBlocks(fromBlock=lastProcessed+1, toBlock=latest)
+
+  # Transform: найти нужные события и декодировать
+  for block in blocks:
+    for log in block.logs:
+      if log.topic0 in WATCHED_TOPICS:
+        entity = decode_and_transform(log)
+
+        # Load: записать в базу данных
+        database.insert(entity)
+
+  lastProcessed = blocks[-1].number
+```
+
+Пять стадий конвейера:
+
+| Стадия | Компонент | Действие |
+|--------|-----------|----------|
+| **1. Source** | Blockchain (Anvil/Mainnet) | Генерирует блоки с транзакциями и событиями |
+| **2. Extract** | Processor | Подключается к RPC, фильтрует нужные события |
+| **3. Transform** | Handler | Декодирует hex данные, создаёт entities |
+| **4. Load** | Database (PostgreSQL) | Хранит структурированные данные с индексами |
+| **5. Serve** | GraphQL API | Предоставляет быстрый доступ к данным |
+
+### Уровень 3: Математический (сложность)
+
+- **Без индексации:** O(N) на каждый запрос, где N -- количество блоков. Для mainnet: O(20M).
+- **С индексацией:** O(1) начальная индексация (один проход), затем O(log N) или O(1) на каждый запрос (PostgreSQL B-tree index).
+- **Amortized cost:** Если K пользователей делают Q запросов, без индексации: O(K * Q * N). С индексацией: O(N) + O(K * Q * log N).
+
+## Анатомия EVM события
+
+<EventTopicsDiagram client:load />
+
+Чтобы понять, КАК индексатор находит нужные данные, нужно вспомнить, как EVM хранит события (Module 4, ETH-04/05):
+
+- События хранятся в **transaction receipts** (logs)
+- **topic0** = `keccak256` сигнатуры события
+- **Indexed параметры** = `topics[1..3]` (максимум 3)
+- **Non-indexed параметры** = `data` field (ABI-encoded)
+
+Для `Transfer(address indexed from, address indexed to, uint256 value)`:
+
+| Поле | Значение | Содержимое |
+|------|----------|------------|
+| `topic0` | Сигнатура | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| `topic1` | `from` (indexed) | `0x000000000000000000000000f39Fd6e51aad88F6F4ce6aB8827279cffFb92266` |
+| `topic2` | `to` (indexed) | `0x00000000000000000000000070997970C51812dc3A010C7d01b50e0d17dc79C8` |
+| `data` | `value` (non-indexed) | `0x00000000000000000000000000000000000000000000d3c21bcecceda1000000` |
+
+Именно так индексаторы **НАХОДЯТ** нужные события: фильтрация по `topic0`. Один `topic0` = один тип события. `topic0` Transfer -- всегда один и тот же для всех ERC-20 токенов.
+
+## Ландшафт инструментов
+
+Три основных инструмента для индексации блокчейн-данных:
+
+### Subsquid (наш PRIMARY инструмент)
+
+**Язык:** TypeScript (чистый, знакомый)
+**Скорость:** 1,000 - 50,000 блоков/сек (через SQD Network)
+**Хранилище:** PostgreSQL + автогенерированный GraphQL API
+**Особенности:** Hot blocks, batch processing, Type-safe codegen
+
+В этом модуле мы глубоко изучим Subsquid -- 4 урока + полная лаб-работа:
+- INDEX-03: Архитектура Subsquid
+- INDEX-04: ERC-20 Transfer индексатор (hands-on)
+- INDEX-05: Мульти-событийная индексация
+- INDEX-06: Продвинутые паттерны
+
+### The Graph (SECONDARY инструмент)
+
+**Язык:** AssemblyScript (не TypeScript! Похож, но с ограничениями)
+**Скорость:** ~100 блоков/сек (single-threaded)
+**Хранилище:** PostgreSQL + GraphQL через Graph Node
+**Особенности:** Децентрализованная сеть (GRT token), IPFS для манифестов, зрелая экосистема
+
+2 урока + лаб-упражнение:
+- INDEX-07: Subgraphs и AssemblyScript
+- INDEX-08: Deploy и сравнение инструментов
+
+### SubQuery
+
+**Язык:** TypeScript
+**Скорость:** ~500-2,000 блоков/сек
+**Хранилище:** PostgreSQL + GraphQL
+**Особенности:** Мультисетевой (50+ сетей), Node.js runtime
+
+Концептуальное сравнение в INDEX-08 (финальный урок модуля).
+
+### Краткое сравнение
+
+| Характеристика | Subsquid | The Graph | SubQuery |
+|---------------|----------|-----------|----------|
+| Язык | TypeScript | AssemblyScript | TypeScript |
+| Скорость | 1K-50K бл/сек | ~100 бл/сек | ~500-2K бл/сек |
+| Децентрализация | SQD Network | GRT Network | SubQuery Network |
+| Hot blocks | Да | Нет | Нет |
+| Порог входа | Средний | Выше (AS) | Средний |
+
+> Детальное сравнение всех трёх инструментов -- в INDEX-08, с интерактивной таблицей и деревом принятия решений.
+
+## Системные требования
+
+> **Требования к оборудованию для Module 11:**
+>
+> | Профиль | RAM | Диск | Сервисы |
+> |---------|-----|------|---------|
+> | Subsquid | ~740MB | ~150MB | Anvil + Processor + PostgreSQL + GraphQL |
+> | The Graph | ~1.1-1.8GB | ~400MB+ | Anvil + Graph Node + PostgreSQL + IPFS |
+> | Оба одновременно | ~2-2.5GB | ~500MB+ | Не рекомендуется |
+>
+> **Минимум:** 4GB RAM, Docker Desktop.
+> **Рекомендуется:** 8GB RAM для комфортной работы с обоими профилями.
+> **Docker Compose profiles** позволяют запускать только один стек одновременно: `--profile subsquid` или `--profile graph`.
+
+Все лабораторные работы используют LAB-07: локальная сеть Anvil (без необходимости в тестнет-faucets), Docker Compose для оркестрации, готовый SimpleToken ERC-20 контракт для индексации.
+
+## Структура модуля
+
+| Урок | Тема | Тип |
+|------|------|-----|
+| **INDEX-01** | Зачем индексировать (этот урок) | Теория |
+| **INDEX-02** | GraphQL для блокчейн-данных | Теория |
+| **INDEX-03** | Subsquid: архитектура и настройка | Теория |
+| **INDEX-04** | Subsquid: ERC-20 Transfer индексатор | Hands-on |
+| **INDEX-05** | Subsquid: мульти-событийная индексация | Hands-on |
+| **INDEX-06** | Subsquid: продвинутые паттерны | Hands-on |
+| **INDEX-07** | The Graph: subgraphs и AssemblyScript | Hands-on |
+| **INDEX-08** | The Graph: deploy и сравнение инструментов | Hands-on + Итог |
+
+## Итоги
+
+| Концепция | Суть | Значение |
+|-----------|------|----------|
+| **RPC ограничения** | Timeout, нет агрегаций, повторные вычисления | Прямые запросы не масштабируются |
+| **Индексация** | ETL: blockchain -> processor -> DB -> GraphQL | Один проход, мгновенные запросы |
+| **EVM события** | topic0 + indexed params + data | Стандартный механизм фильтрации |
+| **Subsquid** | TypeScript, batch processing, hot blocks | Наш primary инструмент |
+| **The Graph** | AssemblyScript, децентрализованная сеть | Secondary, зрелая экосистема |
+
+**Что дальше:** В INDEX-02 мы изучим **GraphQL** -- язык запросов, который используют все три индексатора для предоставления данных. Вы научитесь писать запросы с фильтрацией, сортировкой, пагинацией и подписками.
