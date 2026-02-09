@@ -1,0 +1,14 @@
+# Hardhat build artifacts
+artifacts/
+cache/
+
+# Foundry build artifacts
+artifacts-forge/
+out/
+cache_forge/
+
+# Foundry dependencies (fetched via forge install or git clone)
+lib/
+
+# Bun lockfile (differs per platform)
+bun.lock

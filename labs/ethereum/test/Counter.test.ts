@@ -7,7 +7,8 @@ import hre from "hardhat";
 
 describe("Counter", () => {
   async function deployCounter() {
-    return hre.viem.deployContract("Counter");
+    const connection = await hre.network.connect();
+    return connection.viem.deployContract("Counter");
   }
 
   it("should start at 0", async () => {
@@ -69,8 +70,9 @@ describe("Counter", () => {
   });
 
   it("should emit CountChanged event on increment", async () => {
-    const counter = await deployCounter();
-    const publicClient = await hre.viem.getPublicClient();
+    const connection = await hre.network.connect();
+    const counter = await connection.viem.deployContract("Counter");
+    const publicClient = await connection.viem.getPublicClient();
 
     const hash = await counter.write.increment();
     const receipt = await publicClient.waitForTransactionReceipt({ hash });

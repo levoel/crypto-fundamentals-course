@@ -7,13 +7,15 @@ import hre from "hardhat";
 
 describe("SimpleStorage", () => {
   it("should start with value 0", async () => {
-    const contract = await hre.viem.deployContract("SimpleStorage");
+    const connection = await hre.network.connect();
+    const contract = await connection.viem.deployContract("SimpleStorage");
     const value = await contract.read.retrieve();
     assert.equal(value, 0n);
   });
 
   it("should store and retrieve a value", async () => {
-    const contract = await hre.viem.deployContract("SimpleStorage");
+    const connection = await hre.network.connect();
+    const contract = await connection.viem.deployContract("SimpleStorage");
 
     await contract.write.store([42n]);
     const value = await contract.read.retrieve();
@@ -21,7 +23,8 @@ describe("SimpleStorage", () => {
   });
 
   it("should overwrite the previous value", async () => {
-    const contract = await hre.viem.deployContract("SimpleStorage");
+    const connection = await hre.network.connect();
+    const contract = await connection.viem.deployContract("SimpleStorage");
 
     await contract.write.store([1n]);
     await contract.write.store([2n]);
@@ -30,8 +33,9 @@ describe("SimpleStorage", () => {
   });
 
   it("should emit ValueChanged event", async () => {
-    const contract = await hre.viem.deployContract("SimpleStorage");
-    const publicClient = await hre.viem.getPublicClient();
+    const connection = await hre.network.connect();
+    const contract = await connection.viem.deployContract("SimpleStorage");
+    const publicClient = await connection.viem.getPublicClient();
 
     const hash = await contract.write.store([42n]);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });

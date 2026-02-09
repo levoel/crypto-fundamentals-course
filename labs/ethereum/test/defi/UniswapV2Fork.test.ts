@@ -62,8 +62,9 @@ const DAI = getAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F");
 
 describe("Uniswap V2 Fork", () => {
   it("should swap ETH for DAI on mainnet fork", async () => {
-    const publicClient = await hre.viem.getPublicClient();
-    const [walletClient] = await hre.viem.getWalletClients();
+    const connection = await hre.network.connect();
+    const publicClient = await connection.viem.getPublicClient();
+    const [walletClient] = await connection.viem.getWalletClients();
     const trader = walletClient.account.address;
 
     // Get expected output for 1 ETH
@@ -105,7 +106,8 @@ describe("Uniswap V2 Fork", () => {
   });
 
   it("should show price impact for large trades", async () => {
-    const publicClient = await hre.viem.getPublicClient();
+    const connection = await hre.network.connect();
+    const publicClient = await connection.viem.getPublicClient();
 
     // Small trade: 0.01 ETH
     const smallAmounts = await publicClient.readContract({

@@ -8,12 +8,13 @@ import { parseEther, getAddress } from "viem";
 
 describe("CourseToken", () => {
   async function deployToken() {
-    const token = await hre.viem.deployContract("CourseToken", [
+    const connection = await hre.network.connect();
+    const token = await connection.viem.deployContract("CourseToken", [
       parseEther("1000000"),
     ]);
-    const publicClient = await hre.viem.getPublicClient();
-    const [deployer, alice, bob] = await hre.viem.getWalletClients();
-    return { token, publicClient, deployer, alice, bob };
+    const publicClient = await connection.viem.getPublicClient();
+    const [deployer, alice, bob] = await connection.viem.getWalletClients();
+    return { connection, token, publicClient, deployer, alice, bob };
   }
 
   it("should have correct name and symbol", async () => {
@@ -53,7 +54,7 @@ describe("CourseToken", () => {
   });
 
   it("should approve and transferFrom", async () => {
-    const { token, deployer, alice, bob } = await deployToken();
+    const { connection, token, deployer, alice, bob } = await deployToken();
 
     // Deployer transfers 100 to alice
     await token.write.transfer([
@@ -62,7 +63,7 @@ describe("CourseToken", () => {
     ]);
 
     // Alice approves bob to spend 50
-    const aliceToken = await hre.viem.getContractAt(
+    const aliceToken = await connection.viem.getContractAt(
       "CourseToken",
       token.address,
       { client: { wallet: alice } }
@@ -73,7 +74,7 @@ describe("CourseToken", () => {
     ]);
 
     // Bob calls transferFrom
-    const bobToken = await hre.viem.getContractAt(
+    const bobToken = await connection.viem.getContractAt(
       "CourseToken",
       token.address,
       { client: { wallet: bob } }
@@ -95,9 +96,9 @@ describe("CourseToken", () => {
   });
 
   it("should revert on transfer exceeding balance", async () => {
-    const { token, alice, bob } = await deployToken();
+    const { connection, token, alice, bob } = await deployToken();
 
-    const aliceToken = await hre.viem.getContractAt(
+    const aliceToken = await connection.viem.getContractAt(
       "CourseToken",
       token.address,
       { client: { wallet: alice } }

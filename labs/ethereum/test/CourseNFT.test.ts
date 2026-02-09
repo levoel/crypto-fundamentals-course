@@ -8,10 +8,11 @@ import { getAddress } from "viem";
 
 describe("CourseNFT", () => {
   async function deployNFT() {
-    const nft = await hre.viem.deployContract("CourseNFT");
-    const publicClient = await hre.viem.getPublicClient();
-    const [deployer, alice, bob] = await hre.viem.getWalletClients();
-    return { nft, publicClient, deployer, alice, bob };
+    const connection = await hre.network.connect();
+    const nft = await connection.viem.deployContract("CourseNFT");
+    const publicClient = await connection.viem.getPublicClient();
+    const [deployer, alice, bob] = await connection.viem.getWalletClients();
+    return { connection, nft, publicClient, deployer, alice, bob };
   }
 
   it("should mint an NFT with URI", async () => {
@@ -42,9 +43,9 @@ describe("CourseNFT", () => {
   });
 
   it("should revert when non-owner mints", async () => {
-    const { nft, alice } = await deployNFT();
+    const { connection, nft, alice } = await deployNFT();
 
-    const aliceNFT = await hre.viem.getContractAt("CourseNFT", nft.address, {
+    const aliceNFT = await connection.viem.getContractAt("CourseNFT", nft.address, {
       client: { wallet: alice },
     });
 

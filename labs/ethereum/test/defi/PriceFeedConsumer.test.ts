@@ -12,7 +12,8 @@ const ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 
 describe("PriceFeedConsumer (mainnet fork)", () => {
   async function deployPriceFeedConsumer() {
-    return hre.viem.deployContract("PriceFeedConsumer", [ETH_USD_FEED]);
+    const connection = await hre.network.connect();
+    return connection.viem.deployContract("PriceFeedConsumer", [ETH_USD_FEED]);
   }
 
   it("should read ETH/USD price from Chainlink", async () => {

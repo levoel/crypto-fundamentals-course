@@ -23,7 +23,7 @@ contract PriceFeedConsumer {
     ///      In production, add staleness check:
     ///      require(block.timestamp - updatedAt < MAX_STALENESS, "Stale price");
     function getEthUsdPrice() external view returns (int256 price) {
-        (, price,, uint256 updatedAt,) = ethUsdFeed.latestRoundData();
+        (, price,,,) = ethUsdFeed.latestRoundData();
         require(price > 0, "Invalid price");
         // Note: On mainnet fork, updatedAt is from fork block time
     }
