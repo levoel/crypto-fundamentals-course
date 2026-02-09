@@ -1,0 +1,14 @@
+{
+  "name": "lab07-subgraph",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "create-local": "graph create --node http://localhost:8020 simple-token",
+    "deploy-local": "graph deploy --node http://localhost:8020 --ipfs http://localhost:5001 simple-token"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.98.0",
+    "@graphprotocol/graph-ts": "^0.38.0"
+  }
+}

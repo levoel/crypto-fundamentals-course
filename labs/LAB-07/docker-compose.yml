@@ -1,0 +1,139 @@
+# LAB-07: Web3 Data Indexing
+# Docker Compose with profiles: subsquid, graph
+# Usage:
+#   docker compose --profile subsquid up -d   (Anvil + Subsquid stack)
+#   docker compose --profile graph up -d       (Anvil + Graph Node stack)
+
+services:
+  # ── Shared Anvil node ────────────────────────────────────────
+  # Included in BOTH profiles so either works standalone.
+  # --block-time 2 is required for indexer polling (without it, processors get stuck).
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION:-latest}
+    container_name: indexing-anvil
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--block-time", "2"]
+    ports:
+      - "${ANVIL_PORT:-8545}:8545"
+    profiles: ["subsquid", "graph"]
+    healthcheck:
+      test: ["CMD-SHELL", "cast chain-id --rpc-url http://localhost:8545 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ── Subsquid profile ─────────────────────────────────────────
+
+  subsquid-db:
+    image: postgres:16
+    container_name: subsquid-postgres
+    environment:
+      POSTGRES_DB: squid
+      POSTGRES_USER: squid
+      POSTGRES_PASSWORD: squid
+    ports:
+      - "5433:5432"
+    profiles: ["subsquid"]
+    volumes:
+      - subsquid-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U squid"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  subsquid-processor:
+    build:
+      context: ./subsquid
+      dockerfile: Dockerfile
+    container_name: subsquid-processor
+    depends_on:
+      subsquid-db:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+    environment:
+      DB_HOST: subsquid-db
+      DB_PORT: "5432"
+      DB_NAME: squid
+      DB_USER: squid
+      DB_PASS: squid
+      RPC_ENDPOINT: http://anvil:8545
+    volumes:
+      - ./subsquid/src:/app/src
+      - ./subsquid/schema.graphql:/app/schema.graphql
+    profiles: ["subsquid"]
+
+  subsquid-graphql:
+    image: node:20-slim
+    container_name: subsquid-graphql
+    working_dir: /app
+    command: ["npx", "squid-graphql-server", "--subscriptions"]
+    depends_on:
+      subsquid-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: subsquid-db
+      DB_PORT: "5432"
+      DB_NAME: squid
+      DB_USER: squid
+      DB_PASS: squid
+    ports:
+      - "4350:4350"
+    volumes:
+      - ./subsquid:/app
+    profiles: ["subsquid"]
+
+  # ── The Graph profile ────────────────────────────────────────
+
+  graph-db:
+    image: postgres:16
+    container_name: graph-postgres
+    environment:
+      POSTGRES_DB: graph-node
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5434:5432"
+    command: ["postgres", "-cshared_preload_libraries=pg_stat_statements", "-cmax_connections=200"]
+    profiles: ["graph"]
+    volumes:
+      - graph-db-data:/var/lib/postgresql/data
+
+  ipfs:
+    image: ipfs/kubo:v0.17.0
+    container_name: graph-ipfs
+    ports:
+      - "5001:5001"
+    profiles: ["graph"]
+    volumes:
+      - ipfs-data:/data/ipfs
+
+  graph-node:
+    image: graphprotocol/graph-node
+    container_name: graph-node
+    depends_on:
+      - graph-db
+      - ipfs
+      - anvil
+    ports:
+      - "8000:8000"   # GraphQL HTTP
+      - "8001:8001"   # GraphQL WS
+      - "8020:8020"   # Admin
+      - "8030:8030"   # Index status
+    environment:
+      postgres_host: graph-db
+      postgres_port: "5432"
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: "ipfs:5001"
+      ethereum: "localhost:http://anvil:8545"
+      GRAPH_LOG: info
+    profiles: ["graph"]
+
+volumes:
+  subsquid-db-data:
+  graph-db-data:
+  ipfs-data:

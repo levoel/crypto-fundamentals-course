@@ -1,0 +1,11 @@
+{
+  "$schema": "https://cdn.subsquid.io/schemas/commands.json",
+  "commands": {
+    "build": { "cmd": ["npx", "tsc"] },
+    "codegen": { "cmd": ["npx", "squid-typeorm-codegen"] },
+    "typegen": { "cmd": ["npx", "squid-evm-typegen", "src/abi", "./abi/*.json"] },
+    "migration:generate": { "cmd": ["npx", "squid-typeorm-migration", "generate"] },
+    "migration:apply": { "cmd": ["npx", "squid-typeorm-migration", "apply"] },
+    "serve": { "cmd": ["npx", "squid-graphql-server", "--subscriptions"] }
+  }
+}

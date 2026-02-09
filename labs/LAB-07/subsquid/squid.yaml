@@ -1,0 +1,14 @@
+manifest_version: subsquid.io/v0.1
+name: lab07-erc20-indexer
+version: 1
+description: ERC-20 Transfer indexer for LAB-07
+
+build:
+
+deploy:
+  addons:
+    postgres:
+  processor:
+    cmd: ["node", "lib/main.js"]
+  api:
+    cmd: ["npx", "squid-graphql-server", "--subscriptions"]
