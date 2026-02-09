@@ -9,6 +9,7 @@ prerequisites: ["09-elliptic-curves", "10-secp256k1-ed25519"]
 ---
 
 import { ECDSASigningAnimation, ECDSAVerificationDiagram, NonceReuseAttackDiagram } from '../../../components/diagrams/module1/ECDSADiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # ECDSA: цифровая подпись с визуализацией
 
@@ -19,6 +20,8 @@ import { ECDSASigningAnimation, ECDSAVerificationDiagram, NonceReuseAttackDiagra
 **Цифровая подпись -- это математическое доказательство того, что именно вы авторизовали транзакцию.** Без ECDSA блокчейн невозможен: не было бы способа доказать, что именно владелец средств инициировал перевод.
 
 > В Bitcoin каждая транзакция содержит поле `scriptSig` с ECDSA-подписью. В Ethereum подпись (v, r, s) включена в каждую транзакцию и используется для восстановления адреса отправителя через `ecrecover`.
+
+<RefresherCallout topic="модулярную арифметику и обратные элементы" lessonId="01-numbers-notation" lessonTitle="MATH-01: Числа и нотация" />
 
 ## Что такое цифровая подпись
 

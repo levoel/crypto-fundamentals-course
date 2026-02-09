@@ -9,6 +9,7 @@ prerequisites: ["03-hash-functions"]
 ---
 
 import { SHA256PaddingDiagram, SHA256MessageSchedule, SHA256RoundAnimation, SHA256CompressionOverview } from '../../../components/diagrams/module1/SHA256AnimationDiagram';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Пошаговая визуализация SHA-256
 
@@ -17,6 +18,8 @@ import { SHA256PaddingDiagram, SHA256MessageSchedule, SHA256RoundAnimation, SHA2
 Майнинг Bitcoin — это вычисление SHA-256 миллиарды раз в секунду. ASIC-майнеры стоимостью тысячи долларов заточены под один-единственный алгоритм. Но что именно происходит внутри SHA-256? Давайте разберем каждый шаг.
 
 > **Цель урока:** Вы сможете объяснить каждый этап SHA-256, от дополнения сообщения до финального хеша. И реализуете его на Python с нуля.
+
+<RefresherCallout topic="двоичную систему и битовые операции (AND, OR, XOR, сдвиги)" lessonId="04-binary-bitwise" lessonTitle="MATH-04: Двоичная система и битовые операции" />
 
 ## Обзор алгоритма
 

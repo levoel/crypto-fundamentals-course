@@ -9,6 +9,7 @@ prerequisites: ["03-hash-functions"]
 ---
 
 import { MerkleTreeBuildAnimation, MerkleTreeStructureDiagram, MerkleRootCommitmentDiagram } from '../../../components/diagrams/module1/MerkleTreeDiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Деревья Меркла
 
@@ -17,6 +18,8 @@ import { MerkleTreeBuildAnimation, MerkleTreeStructureDiagram, MerkleRootCommitm
 Каждый заголовок блока Bitcoin содержит **Merkle Root** -- единственный 32-байтный хеш, фиксирующий **ВСЕ** транзакции блока. Как 2000 транзакций превратить в один хеш? Дерево Меркла.
 
 Этот хеш подобен печати нотариуса: если кто-то попытается изменить хотя бы одну транзакцию, Merkle Root изменится и подделка будет обнаружена. При этом проверка отдельной транзакции требует всего ~11 хешей вместо полной загрузки блока.
+
+<RefresherCallout topic="хеш-функции как отображения" lessonId="05-functions-coordinates" lessonTitle="MATH-05: Функции и координатная плоскость" />
 
 ## Интуитивное объяснение
 

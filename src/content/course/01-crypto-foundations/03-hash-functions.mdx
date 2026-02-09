@@ -9,6 +9,7 @@ prerequisites: []
 ---
 
 import { HashFunctionOverview, AvalancheEffectDemo, HashPropertyComparison } from '../../../components/diagrams/module1/HashFunctionDiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Хеш-функции: свойства и применение
 
@@ -17,6 +18,8 @@ import { HashFunctionOverview, AvalancheEffectDemo, HashPropertyComparison } fro
 Каждый заголовок блока Bitcoin содержит SHA-256 хеш. Майнинг — это поиск такого `nonce`, что хеш блока меньше заданной цели. Ethereum использует Keccak-256 для вычисления адресов из публичных ключей. Без хеш-функций не было бы ни Bitcoin, ни Ethereum, ни любого другого блокчейна.
 
 Но что такое хеш-функция и почему она так надежна?
+
+<RefresherCallout topic="функции как отображения (инъекция, сюръекция)" lessonId="05-functions-coordinates" lessonTitle="MATH-05: Функции и координатная плоскость" />
 
 ## Интуитивное объяснение
 

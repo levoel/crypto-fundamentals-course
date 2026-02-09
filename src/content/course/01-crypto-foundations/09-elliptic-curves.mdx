@@ -9,6 +9,7 @@ prerequisites: ["02-groups-finite-fields"]
 ---
 
 import { EllipticCurveRealDiagram, PointAdditionAnimation, ScalarMultiplicationDiagram, FiniteFieldCurveDiagram } from '../../../components/diagrams/module1/EllipticCurveDiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Эллиптические кривые: математика
 
@@ -19,6 +20,8 @@ Bitcoin и Ethereum используют эллиптическую кривую
 Каждая транзакция, которую вы отправляете, подписана вашим приватным ключом через операции на эллиптической кривой. Каждый узел сети проверяет эту подпись с помощью вашего публичного ключа. Это фундамент безопасности блокчейна.
 
 > Эллиптические кривые — не эллипсы! Название исторически связано с вычислением длины дуги эллипса, где эти кривые впервые возникли.
+
+<RefresherCallout topic="координатную плоскость и наклон прямой" lessonId="05-functions-coordinates" lessonTitle="MATH-05: Функции и координатная плоскость" />
 
 ## Кривая над вещественными числами
 

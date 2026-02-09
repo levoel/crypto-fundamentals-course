@@ -9,6 +9,7 @@ prerequisites: ["01-modular-arithmetic"]
 ---
 
 import { CyclicGroupVisualization, FiniteFieldGrid, GroupPropertyDiagram } from '../../../components/diagrams/module1/FiniteFieldDiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Группы и конечные поля
 
@@ -31,6 +32,8 @@ Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
 ```
 
 Чтобы понять **почему** приватный ключ невозможно вычислить из публичного, нужно понять структуру конечных полей и циклических групп.
+
+<RefresherCallout topic="множества, операции и свойства (замкнутость, ассоциативность)" lessonId="03-sets-operations" lessonTitle="MATH-03: Множества и операции" />
 
 ## Интуитивное объяснение: «клуб с правилами»
 

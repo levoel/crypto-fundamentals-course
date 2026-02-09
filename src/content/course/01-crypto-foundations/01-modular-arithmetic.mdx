@@ -9,6 +9,7 @@ prerequisites: []
 ---
 
 import { ClockDiagram, ModularCalculator, ModularExponentiationSteps } from '../../../components/diagrams/module1/ModularArithmeticDiagrams';
+import { RefresherCallout } from '../../../components/diagrams/shared/RefresherCallout';
 
 # Модулярная арифметика
 
@@ -28,6 +29,8 @@ k = 123456789     # случайное число для подписи
 k_inv = pow(k, -1, p)
 print(f"k^(-1) mod p = {k_inv}")
 ```
+
+<RefresherCallout topic="простые числа и НОД" lessonId="02-primes-divisibility" lessonTitle="MATH-02: Простые числа и делимость" />
 
 ## Интуитивное объяснение: аналогия с часами
 
@@ -119,6 +122,8 @@ print(pow(3, 13, 17))          # 12 — встроенная функция де
 3. На каждом шаге: квадрат, и если бит = 1, дополнительное умножение
 
 ## Математический уровень
+
+<RefresherCallout topic="математическую нотацию (≡, ∀, ∃)" lessonId="01-numbers-notation" lessonTitle="MATH-01: Числа и нотация" />
 
 ### Конгруэнция
 
