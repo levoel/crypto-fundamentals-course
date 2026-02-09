@@ -16,7 +16,8 @@
     { "id": "07-security", "title": "Security & Audit" },
     { "id": "08-governance", "title": "Governance" },
     { "id": "09-scalability", "title": "Scalability" },
-    { "id": "10-zero-knowledge", "title": "Zero-Knowledge Proofs" }
+    { "id": "10-zero-knowledge", "title": "Zero-Knowledge Proofs" },
+    { "id": "11-data-indexing", "title": "Web3 Data Indexing" }
   ],
   "tags": ["cryptography", "blockchain", "bitcoin", "ethereum", "solana", "defi", "smart-contracts", "zero-knowledge"],
   "estimatedHours": 90
