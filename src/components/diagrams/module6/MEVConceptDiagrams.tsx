@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -80,6 +81,14 @@ const SUPPLY_CHAIN_HISTORY: SupplyChainStep[] = [
   },
 ];
 
+const CHAIN_TOOLTIPS: Record<string, string> = {
+  'users': 'Пользователи — источник MEV. Каждая транзакция в mempool содержит информацию о намерении (swap, borrow, repay), которую searchers используют для извлечения прибыли.',
+  'searchers': 'Searchers — боты, сканирующие mempool и блокчейн для MEV-возможностей (арбитраж, ликвидации, sandwich). Конкурируют за включение через аукцион.',
+  'builders': 'Block Builders собирают транзакции и bundles в оптимальные блоки. PBS (Proposer-Builder Separation) отделяет построение блока от его предложения.',
+  'relays': 'Relays обеспечивают честность между builders и validators через commit-reveal. Validator подписывает блок не зная его содержимого.',
+  'validators': 'Валидаторы (proposers) выбирают блок с наибольшей выплатой из предложений builders через MEV-Boost relay.',
+};
+
 /**
  * MEVSupplyChainDiagram
  *
@@ -93,6 +102,7 @@ export function MEVSupplyChainDiagram() {
 
   const actors = ['Users', 'Searchers', 'Builders', 'Relays', 'Validators'];
   const actorColors = [colors.textMuted, colors.accent, colors.primary, '#eab308', colors.success];
+  const actorKeys = ['users', 'searchers', 'builders', 'relays', 'validators'];
 
   return (
     <DiagramContainer title="MEV Supply Chain: 5 участников" color="purple">
@@ -100,23 +110,25 @@ export function MEVSupplyChainDiagram() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
         {actors.map((actor, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div
-              onClick={() => setStepIndex(i)}
-              style={{
-                padding: '6px 10px',
-                borderRadius: 6,
-                background: i === stepIndex ? `${actorColors[i]}20` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${i === stepIndex ? actorColors[i] : 'rgba(255,255,255,0.08)'}`,
-                cursor: 'pointer',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: i <= stepIndex ? actorColors[i] : colors.textMuted,
-                fontWeight: i === stepIndex ? 600 : 400,
-                transition: 'all 0.2s',
-              }}
-            >
-              {actor}
-            </div>
+            <DiagramTooltip content={CHAIN_TOOLTIPS[actorKeys[i]]}>
+              <div
+                onClick={() => setStepIndex(i)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  background: i === stepIndex ? `${actorColors[i]}20` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i === stepIndex ? actorColors[i] : 'rgba(255,255,255,0.08)'}`,
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: i <= stepIndex ? actorColors[i] : colors.textMuted,
+                  fontWeight: i === stepIndex ? 600 : 400,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {actor}
+              </div>
+            </DiagramTooltip>
             {i < actors.length - 1 && (
               <span style={{ color: i < stepIndex ? colors.success : 'rgba(255,255,255,0.15)', fontSize: 14 }}>
                 {'\u2192'}
@@ -145,15 +157,17 @@ export function MEVSupplyChainDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={CHAIN_TOOLTIPS[step.highlight] || step.description.slice(0, 120)}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -189,55 +203,63 @@ export function MEVSupplyChainDiagram() {
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(SUPPLY_CHAIN_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? colors.textMuted : colors.success,
-            fontSize: 13,
-            opacity: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <div>
+          <button
+            onClick={() => setStepIndex(0)}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontSize: 13,
+            }}
+          >
+            Сброс
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+            disabled={stepIndex === 0}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              color: stepIndex === 0 ? colors.textMuted : colors.text,
+              fontSize: 13,
+              opacity: stepIndex === 0 ? 0.5 : 1,
+            }}
+          >
+            Назад
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.min(SUPPLY_CHAIN_HISTORY.length - 1, s + 1))}
+            disabled={stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+              color: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? colors.textMuted : colors.success,
+              fontSize: 13,
+              opacity: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 0.5 : 1,
+            }}
+          >
+            Далее
+          </button>
+        </div>
       </div>
 
       {stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Ключевой вывод"
-            value="MEV supply chain разделяет роли: searchers ищут возможности, builders собирают блоки, relays обеспечивают честность, validators подписывают. Это PBS (Proposer-Builder Separation)."
-            variant="highlight"
-          />
+          <DiagramTooltip content="PBS (Proposer-Builder Separation) — архитектурное решение Ethereum для разделения ролей. Validators не строят блоки сами, а выбирают лучший блок из предложенных builders.">
+            <DataBox
+              label="Ключевой вывод"
+              value="MEV supply chain разделяет роли: searchers ищут возможности, builders собирают блоки, relays обеспечивают честность, validators подписывают. Это PBS (Proposer-Builder Separation)."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
@@ -300,6 +322,14 @@ const MEV_TYPES: MEVType[] = [
   },
 ];
 
+const MEV_TYPE_TOOLTIPS: Record<string, string> = {
+  'Sandwich Attack': 'Sandwich attack — frontrun + backrun вокруг жертвы. Бот покупает актив до жертвы (поднимая цену) и продаёт после (по завышенной цене). Защита: private mempool (Flashbots Protect), high slippage tolerance awareness.',
+  'Frontrunning (displacement)': 'Frontrunning — выполнение транзакции ДО жертвы с целью извлечения прибыли из ценового движения. Бот копирует выгодную TX с более высоким gas.',
+  'Arbitrage': 'DEX-арбитраж — покупка токена на DEX с низкой ценой и продажа на DEX с высокой. Выравнивает цены между площадками. Наименее вредный тип MEV.',
+  'Liquidation': 'MEV-ликвидация — поиск undercollateralized позиций в lending протоколах. Ликвидатор получает дисконт (~5-15%) на залог. Необходимо для здоровья протокола.',
+  'JIT Liquidity': 'JIT Liquidity — добавление ликвидности на 1 блок для захвата комиссий от крупного свопа. Серая зона: трейдер получает лучшую цену, но пассивные LP теряют доход.',
+};
+
 /**
  * MEVTypesTableDiagram
  *
@@ -307,11 +337,9 @@ const MEV_TYPES: MEVType[] = [
  * - Harmful (sandwich, displacement) in red
  * - Beneficial (arbitrage, liquidation) in green
  * - Neutral (JIT) in gray
- * Hover for full details.
+ * DiagramTooltip with expanded detail.
  */
 export function MEVTypesTableDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   const categoryColor = (cat: string) => {
     switch (cat) {
       case 'harmful': return '#f43f5e';
@@ -360,17 +388,12 @@ export function MEVTypesTableDiagram() {
           </thead>
           <tbody>
             {MEV_TYPES.map((mev, i) => {
-              const isHovered = hoveredIdx === i;
               const catColor = categoryColor(mev.category);
 
               return (
                 <tr
                   key={i}
-                  onMouseEnter={() => setHoveredIdx(i)}
-                  onMouseLeave={() => setHoveredIdx(null)}
                   style={{
-                    cursor: 'pointer',
-                    background: isHovered ? `${catColor}08` : 'transparent',
                     transition: 'all 0.2s',
                   }}
                 >
@@ -380,7 +403,9 @@ export function MEVTypesTableDiagram() {
                     color: colors.text,
                     fontWeight: 600,
                   }}>
-                    {mev.name}
+                    <DiagramTooltip content={MEV_TYPE_TOOLTIPS[mev.name] || `${mev.description} Пример: ${mev.example}`}>
+                      {mev.name}
+                    </DiagramTooltip>
                   </td>
                   <td style={{
                     padding: '10px 8px',
@@ -421,45 +446,13 @@ export function MEVTypesTableDiagram() {
         </table>
       </div>
 
-      {/* Hover detail */}
-      {hoveredIdx !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          background: `${categoryColor(MEV_TYPES[hoveredIdx].category)}08`,
-          border: `1px solid ${categoryColor(MEV_TYPES[hoveredIdx].category)}30`,
-          marginBottom: 12,
-          transition: 'all 0.2s',
-        }}>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: categoryColor(MEV_TYPES[hoveredIdx].category),
-            fontFamily: 'monospace',
-            marginBottom: 8,
-          }}>
-            {MEV_TYPES[hoveredIdx].name}
-          </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-            {MEV_TYPES[hoveredIdx].description}
-          </div>
-          <div style={{
-            ...glassStyle,
-            padding: 8,
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: colors.accent,
-          }}>
-            {MEV_TYPES[hoveredIdx].example}
-          </div>
-        </div>
-      )}
-
-      <DataBox
-        label="MEV -- это спектр"
-        value="Sandwich и frontrunning вредят пользователям. Арбитраж и ликвидации необходимы для здоровья рынка. JIT -- серая зона: хорошо для трейдера, плохо для пассивных LP."
-        variant="info"
-      />
+      <DiagramTooltip content="MEV — неизбежное свойство публичных блокчейнов с mempool. Задача — минимизировать вредный MEV (sandwich, frontrun) и поощрять полезный (arbitrage, liquidation).">
+        <DataBox
+          label="MEV -- это спектр"
+          value="Sandwich и frontrunning вредят пользователям. Арбитраж и ликвидации необходимы для здоровья рынка. JIT -- серая зона: хорошо для трейдера, плохо для пассивных LP."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

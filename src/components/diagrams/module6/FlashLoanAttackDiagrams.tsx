@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -113,6 +114,17 @@ const ATTACK_HISTORY: AttackStep[] = [
   },
 ];
 
+const STEP_TOOLTIPS: Record<string, string> = {
+  'context': 'Spot price oracle (getReserves) — главная уязвимость. Цена в AMM пуле зависит от соотношения резервов, которое можно изменить за одну транзакцию.',
+  'borrow': 'Flash loan: заимствование без залога внутри одной транзакции. Если к концу транзакции займ не возвращён — вся транзакция revert.',
+  'dump': 'Атакующий использует заёмные средства для манипуляции ценой на DEX (например, swap огромного объёма на Uniswap сдвигает цену).',
+  'oracle-read': 'Пока цена искажена, зависимый протокол читает неверную цену и принимает решения на основе манипулированных данных.',
+  'exploit': 'Пока цена искажена, атакующий эксплуатирует зависимый протокол — получает активы по завышенной/заниженной цене.',
+  'swapback': 'Возврат цены в норму: атакующий покупает обратно проданные активы. Slippage — единственная потеря на этом этапе.',
+  'repay': 'Возвращает flash loan + комиссию (~0.09%). Весь profit = выручка от exploit - стоимость flash loan - gas.',
+  'profit': 'Чистая прибыль без начального капитала. ROOT CAUSE — не flash loan, а spot price oracle.',
+};
+
 /**
  * FlashLoanAttackStepsDiagram
  *
@@ -127,32 +139,35 @@ export function FlashLoanAttackStepsDiagram() {
     <DiagramContainer title="Flash Loan Attack: пошаговый PoC" color="red">
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-        {ATTACK_HISTORY.map((_, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIndex(i)}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? '#f43f5e' : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
-            }}
-          />
+        {ATTACK_HISTORY.map((s, i) => (
+          <DiagramTooltip key={i} content={STEP_TOOLTIPS[s.highlight] || s.description.slice(0, 120)}>
+            <div
+              onClick={() => setStepIndex(i)}
+              style={{
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                cursor: 'pointer',
+                background: i <= stepIndex ? '#f43f5e' : 'rgba(255,255,255,0.1)',
+                transition: 'all 0.2s',
+              }}
+            />
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={STEP_TOOLTIPS[step.highlight] || step.description.slice(0, 120)}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -188,55 +203,63 @@ export function FlashLoanAttackStepsDiagram() {
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(ATTACK_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= ATTACK_HISTORY.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= ATTACK_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= ATTACK_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
-            fontSize: 13,
-            opacity: stepIndex >= ATTACK_HISTORY.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <div>
+          <button
+            onClick={() => setStepIndex(0)}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontSize: 13,
+            }}
+          >
+            Сброс
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+            disabled={stepIndex === 0}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              color: stepIndex === 0 ? colors.textMuted : colors.text,
+              fontSize: 13,
+              opacity: stepIndex === 0 ? 0.5 : 1,
+            }}
+          >
+            Назад
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.min(ATTACK_HISTORY.length - 1, s + 1))}
+            disabled={stepIndex >= ATTACK_HISTORY.length - 1}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex >= ATTACK_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+              color: stepIndex >= ATTACK_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
+              fontSize: 13,
+              opacity: stepIndex >= ATTACK_HISTORY.length - 1 ? 0.5 : 1,
+            }}
+          >
+            Далее
+          </button>
+        </div>
       </div>
 
       {stepIndex >= ATTACK_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="ROOT CAUSE: spot price oracle"
-            value="Flash loan -- это инструмент, НЕ уязвимость. Уязвимость = использование spot price (getReserves) как oracle. Защита: Chainlink price feeds, TWAP, timelock."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Защита от oracle manipulation: 1) Chainlink price feeds (off-chain aggregation), 2) TWAP (time-weighted average price), 3) circuit breakers при резких изменениях цены.">
+            <DataBox
+              label="ROOT CAUSE: spot price oracle"
+              value="Flash loan -- это инструмент, НЕ уязвимость. Уязвимость = использование spot price (getReserves) как oracle. Защита: Chainlink price feeds, TWAP, timelock."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
@@ -306,32 +329,32 @@ const MAX_LOSS = Math.max(...MAJOR_ATTACKS.map((a) => a.lossNum));
  * DeFiAttacksTimelineDiagram
  *
  * Static timeline with 5 major flash loan attacks.
- * $500M+ total losses callout. Hover for details.
+ * $500M+ total losses callout. DiagramTooltip with expanded detail.
  */
 export function DeFiAttacksTimelineDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Flash Loan атаки: timeline крупнейших инцидентов" color="purple">
       {/* Total callout */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        marginBottom: 16,
-        textAlign: 'center',
-        background: 'rgba(244,63,94,0.06)',
-        border: '1px solid rgba(244,63,94,0.2)',
-      }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-          Суммарные потери (только эти 5 атак)
+      <DiagramTooltip content="Суммарные потери от flash loan атак значительно превышают эту цифру. Здесь показаны только 5 крупнейших. Общий ущерб от DeFi эксплойтов превышает $10B.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          marginBottom: 16,
+          textAlign: 'center',
+          background: 'rgba(244,63,94,0.06)',
+          border: '1px solid rgba(244,63,94,0.2)',
+        }}>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            Суммарные потери (только эти 5 атак)
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#f43f5e', fontFamily: 'monospace' }}>
+            ${TOTAL_LOSSES.toFixed(1)}M+
+          </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
+            Все атаки эксплуатировали oracle или price manipulation
+          </div>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#f43f5e', fontFamily: 'monospace' }}>
-          ${TOTAL_LOSSES.toFixed(1)}M+
-        </div>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
-          Все атаки эксплуатировали oracle или price manipulation
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Bar chart timeline */}
       <div style={{
@@ -344,99 +367,66 @@ export function DeFiAttacksTimelineDiagram() {
         padding: '0 8px',
       }}>
         {MAJOR_ATTACKS.map((attack, i) => {
-          const isHovered = hoveredIdx === i;
           const heightPercent = 20 + (attack.lossNum / MAX_LOSS) * 70;
 
           return (
-            <div
+            <DiagramTooltip
               key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                height: '100%',
-                justifyContent: 'flex-end',
-                cursor: 'pointer',
-              }}
+              content={`${attack.protocol} (${attack.date}): ${attack.vector}. Потери: ${attack.loss}. ${attack.description}`}
             >
-              <div style={{
-                fontSize: 9,
-                color: isHovered ? '#f43f5e' : colors.textMuted,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-                fontWeight: isHovered ? 600 : 400,
-                textAlign: 'center',
-              }}>
-                {attack.loss}
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  height: '100%',
+                  justifyContent: 'flex-end',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  fontSize: 9,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                  textAlign: 'center',
+                }}>
+                  {attack.loss}
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: `${heightPercent}%`,
+                  minHeight: 20,
+                  borderRadius: '4px 4px 0 0',
+                  background: '#f43f5e60',
+                  transition: 'all 0.3s',
+                }} />
+                <div style={{
+                  fontSize: 8,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  marginTop: 4,
+                  textAlign: 'center',
+                  lineHeight: 1.3,
+                }}>
+                  {attack.protocol}
+                  <br />
+                  {attack.date}
+                </div>
               </div>
-              <div style={{
-                width: '100%',
-                height: `${heightPercent}%`,
-                minHeight: 20,
-                borderRadius: '4px 4px 0 0',
-                background: isHovered ? '#f43f5e' : '#f43f5e60',
-                transition: 'all 0.3s',
-              }} />
-              <div style={{
-                fontSize: 8,
-                color: isHovered ? colors.text : colors.textMuted,
-                fontFamily: 'monospace',
-                marginTop: 4,
-                textAlign: 'center',
-                lineHeight: 1.3,
-              }}>
-                {attack.protocol}
-                <br />
-                {attack.date}
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
 
-      {/* Hover detail */}
-      {hoveredIdx !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          background: 'rgba(244,63,94,0.06)',
-          border: '1px solid rgba(244,63,94,0.2)',
-          marginBottom: 12,
-          transition: 'all 0.2s',
-        }}>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#f43f5e',
-            fontFamily: 'monospace',
-            marginBottom: 6,
-          }}>
-            {MAJOR_ATTACKS[hoveredIdx].protocol} ({MAJOR_ATTACKS[hoveredIdx].date})
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Потери</div>
-              <div style={{ fontSize: 12, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>{MAJOR_ATTACKS[hoveredIdx].loss}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Вектор</div>
-              <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>{MAJOR_ATTACKS[hoveredIdx].vector}</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-            {MAJOR_ATTACKS[hoveredIdx].description}
-          </div>
-        </div>
-      )}
-
-      <DataBox
-        label="Общий паттерн"
-        value="Все крупнейшие flash loan атаки эксплуатируют одну и ту же уязвимость: spot price как oracle. Решение: Chainlink / TWAP / time-delayed oracles."
-        variant="info"
-      />
+      <DiagramTooltip content="Все крупнейшие flash loan атаки эксплуатируют spot price как oracle. Chainlink, TWAP и time-delayed oracles устойчивы к манипуляции внутри одной транзакции.">
+        <DataBox
+          label="Общий паттерн"
+          value="Все крупнейшие flash loan атаки эксплуатируют одну и ту же уязвимость: spot price как oracle. Решение: Chainlink / TWAP / time-delayed oracles."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
