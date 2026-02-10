@@ -3,13 +3,14 @@
  *
  * Exports:
  * - RollupArchitectureDiagram: 6-step step-through showing optimistic rollup flow (history array)
- * - FraudProofComparisonDiagram: Static two-column comparison of single-round vs multi-round fraud proofs
+ * - FraudProofComparisonDiagram: Two-column comparison of single-round vs multi-round fraud proofs
  * - L1L2MessageDiagram: 6-step step-through showing L1<->L2 deposit and withdrawal flows (history array)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -106,6 +107,15 @@ const ROLLUP_STEPS: RollupStep[] = [
   },
 ];
 
+const ROLLUP_STEP_TOOLTIPS = [
+  'Sequencer принимает транзакции от пользователей и обеспечивает мгновенный ответ (soft confirmation). Централизация sequencer -- компромисс: скорость за счет доверия, но sequencer не может подделать state (fraud proofs защищают).',
+  'Batching -- ключ к экономии. Вместо публикации каждой транзакции на L1, сотни группируются в один batch. Amortизация L1 gas cost: $0.01 per TX вместо $5.',
+  'Data Availability на L1 -- критическое отличие rollup от sidechain. Любой может загрузить данные и верифицировать state. Blobs (EIP-4844) снизили стоимость DA в 10-100x.',
+  'Challenge window -- 7 дней. Достаточно времени для любого верификатора обнаружить и оспорить мошенничество. Один честный верификатор защищает всю систему (1-of-N trust assumption).',
+  'Оптимистичное принятие: в 99.99% случаев транзакции валидны, поэтому проверка каждой не нужна. Fraud proofs работают как страховка -- используются только при мошенничестве.',
+  'Hard finality через 7 дней. Soft finality от sequencer за секунды, но с trust assumption. Для вывода средств на L1 необходимо ждать полную финализацию (или использовать liquidity providers).',
+];
+
 /**
  * RollupArchitectureDiagram
  *
@@ -126,28 +136,29 @@ export function RollupArchitectureDiagram() {
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
         {ROLLUP_STEPS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIdx(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              fontWeight: i === stepIdx ? 700 : 400,
-              cursor: 'pointer',
-              background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-              color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-              border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.2s',
-            }}
-          >
-            {i + 1}
-          </div>
+          <DiagramTooltip key={i} content={ROLLUP_STEP_TOOLTIPS[i]}>
+            <div
+              onClick={() => setStepIdx(i)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: i === stepIdx ? 700 : 400,
+                cursor: 'pointer',
+                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              {i + 1}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -244,6 +255,7 @@ interface FraudProofType {
   cons: string[];
   gasNote: string;
   stageNote: string;
+  tooltipRu: string;
 }
 
 const FRAUD_PROOF_TYPES: FraudProofType[] = [
@@ -262,6 +274,7 @@ const FRAUD_PROOF_TYPES: FraudProofType[] = [
     cons: ['Высокий gas cost на L1 (re-execution)', 'Ограничен размером одной транзакции'],
     gasNote: 'O(N) gas -- полное повторное исполнение',
     stageNote: 'Stage 1 с 2024 (permissionless Cannon)',
+    tooltipRu: 'Optimism Single-Round: вся спорная транзакция повторно исполняется на L1 через Cannon FPVM. Проще, но дороже по gas. O(N) gas за полное re-execution. Stage 1 с 2024 года.',
   },
   {
     name: 'Multi-Round Interactive',
@@ -278,6 +291,7 @@ const FRAUD_PROOF_TYPES: FraudProofType[] = [
     cons: ['Сложная логика -- множество взаимодействий', 'Дольше разрешение спора (дни)'],
     gasNote: 'O(log N) gas -- только 1 инструкция on-chain',
     stageNote: 'Stage 1 с 2024 (permissionless bisection)',
+    tooltipRu: 'Arbitrum Multi-Round: bisection protocol сужает спор до одной инструкции за ~log2(N) раундов. O(log N) gas -- значительно дешевле. Но процесс длится дни из-за множества раундов.',
   },
 ];
 
@@ -285,27 +299,19 @@ const FRAUD_PROOF_TYPES: FraudProofType[] = [
  * FraudProofComparisonDiagram
  *
  * Two-column comparison of single-round vs multi-round fraud proofs.
- * Hover on sections reveals detailed tradeoffs.
+ * DiagramTooltip on type cards. Gas/stage info always visible.
  */
 export function FraudProofComparisonDiagram() {
-  const [hoveredType, setHoveredType] = useState<number | null>(null);
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
-
   return (
     <DiagramContainer title="Fraud Proofs: однораундовые vs интерактивные" color="orange">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 14 }}>
-        {FRAUD_PROOF_TYPES.map((type, idx) => {
-          const isHovered = hoveredType === idx;
-
-          return (
+        {FRAUD_PROOF_TYPES.map((type, idx) => (
+          <DiagramTooltip key={idx} content={type.tooltipRu}>
             <div
-              key={idx}
-              onMouseEnter={() => setHoveredType(idx)}
-              onMouseLeave={() => { setHoveredType(null); setHoveredSection(null); }}
               style={{
                 ...glassStyle,
                 padding: 14,
-                border: `1px solid ${isHovered ? type.color + '50' : 'rgba(255,255,255,0.08)'}`,
+                border: `1px solid rgba(255,255,255,0.08)`,
                 borderRadius: 8,
                 transition: 'all 0.2s',
               }}
@@ -319,11 +325,7 @@ export function FraudProofComparisonDiagram() {
               </div>
 
               {/* Steps */}
-              <div
-                onMouseEnter={() => setHoveredSection(`steps-${idx}`)}
-                onMouseLeave={() => setHoveredSection(null)}
-                style={{ marginBottom: 12 }}
-              >
+              <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: type.color, fontFamily: 'monospace', marginBottom: 6 }}>
                   Процесс:
                 </div>
@@ -335,10 +337,7 @@ export function FraudProofComparisonDiagram() {
               </div>
 
               {/* Pros/Cons */}
-              <div
-                onMouseEnter={() => setHoveredSection(`tradeoffs-${idx}`)}
-                onMouseLeave={() => setHoveredSection(null)}
-              >
+              <div>
                 <div style={{ marginBottom: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
                     Pros:
@@ -361,25 +360,23 @@ export function FraudProofComparisonDiagram() {
                 </div>
               </div>
 
-              {/* Gas note */}
-              {hoveredSection === `tradeoffs-${idx}` && (
-                <div style={{
-                  ...glassStyle,
-                  padding: 8,
-                  marginTop: 6,
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  color: type.color,
-                  border: `1px solid ${type.color}30`,
-                  borderRadius: 6,
-                }}>
-                  <div>Gas: {type.gasNote}</div>
-                  <div style={{ marginTop: 4, color: colors.textMuted }}>{type.stageNote}</div>
-                </div>
-              )}
+              {/* Gas + stage note -- always visible */}
+              <div style={{
+                ...glassStyle,
+                padding: 8,
+                marginTop: 6,
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: type.color,
+                border: `1px solid ${type.color}30`,
+                borderRadius: 6,
+              }}>
+                <div>Gas: {type.gasNote}</div>
+                <div style={{ marginTop: 4, color: colors.textMuted }}>{type.stageNote}</div>
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       <DataBox
@@ -469,6 +466,15 @@ const MESSAGE_STEPS: MessageStep[] = [
   },
 ];
 
+const MESSAGE_STEP_TOOLTIPS = [
+  'Депозит L1->L2: пользователь блокирует активы в bridge contract. Bridge контракт верифицирован и аудирован. Процесс безопасен если контракт корректен.',
+  'Минтинг на L2 происходит автоматически после подтверждения на L1. Задержка 1-5 минут зависит от скорости sequencer и L1 finality.',
+  'На L2 комиссии в 10-100x ниже L1. Тот же EVM, те же инструменты (Hardhat, Foundry, ethers.js). Для разработчика -- почти прозрачная миграция.',
+  'Инициация withdrawal -- точка невозврата. Challenge period начинается, и его нельзя ускорить. Это фундаментальное свойство optimistic rollups.',
+  'Challenge period 7 дней -- не баг, а security feature. Любой честный верификатор может оспорить некорректный state transition. Без этого окна optimistic rollups небезопасны.',
+  'Финализация withdrawal после 7 дней. Liquidity providers (Across, Hop, Stargate) предлагают мгновенные withdrawals за ~0.1-0.5% комиссии -- они берут 7-дневный риск на себя.',
+];
+
 /**
  * L1L2MessageDiagram
  *
@@ -491,28 +497,29 @@ export function L1L2MessageDiagram() {
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
         {MESSAGE_STEPS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIdx(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              fontWeight: i === stepIdx ? 700 : 400,
-              cursor: 'pointer',
-              background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-              color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-              border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.2s',
-            }}
-          >
-            {i + 1}
-          </div>
+          <DiagramTooltip key={i} content={MESSAGE_STEP_TOOLTIPS[i]}>
+            <div
+              onClick={() => setStepIdx(i)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: i === stepIdx ? 700 : 400,
+                cursor: 'pointer',
+                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              {i + 1}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -565,32 +572,36 @@ export function L1L2MessageDiagram() {
 
         {/* Two-lane status */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div style={{
-            ...glassStyle,
-            padding: 10,
-            borderRadius: 6,
-            border: '1px solid #6366f130',
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', fontFamily: 'monospace', marginBottom: 4 }}>
-              L1 (Ethereum)
+          <DiagramTooltip content="Ethereum L1 -- settlement layer. Все активы в конечном итоге защищены консенсусом Ethereum.">
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+              borderRadius: 6,
+              border: '1px solid #6366f130',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', fontFamily: 'monospace', marginBottom: 4 }}>
+                L1 (Ethereum)
+              </div>
+              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
+                {step.l1Status}
+              </div>
             </div>
-            <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
-              {step.l1Status}
+          </DiagramTooltip>
+          <DiagramTooltip content="L2 Rollup -- execution layer. Транзакции выполняются здесь с низкими комиссиями, а безопасность наследуется от L1.">
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+              borderRadius: 6,
+              border: '1px solid #10b98130',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
+                L2 (Rollup)
+              </div>
+              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
+                {step.l2Status}
+              </div>
             </div>
-          </div>
-          <div style={{
-            ...glassStyle,
-            padding: 10,
-            borderRadius: 6,
-            border: '1px solid #10b98130',
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
-              L2 (Rollup)
-            </div>
-            <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
-              {step.l2Status}
-            </div>
-          </div>
+          </DiagramTooltip>
         </div>
       </div>
 
