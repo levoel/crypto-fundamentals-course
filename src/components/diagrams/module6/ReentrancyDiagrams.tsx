@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -91,79 +92,95 @@ function StepNavigation({
         marginBottom: 12,
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-              {v.label}
+          <DiagramTooltip key={i} content={`${v.label}: ${v.value}. Отслеживайте как меняется это значение на каждом шаге атаки reentrancy.`}>
+            <div style={{ ...glassStyle, padding: 10 }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                {v.label}
+              </div>
+              <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+                {v.value}
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
-              {v.value}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Call stack visualization */}
       {step.callStack.length > 0 && (
-        <div style={{ ...glassStyle, padding: 12, marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-            Call Stack (depth: {step.callStack.length})
-          </div>
-          {step.callStack.map((frame, i) => (
-            <div key={i} style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: i === step.callStack.length - 1 ? accentColor : colors.text,
-              paddingLeft: i * 12,
-              marginBottom: 2,
-            }}>
-              {i > 0 ? '-> ' : ''}{frame}
+        <DiagramTooltip content={`Call stack глубина ${step.callStack.length}. Каждый уровень вложенности -- это рекурсивный вызов. Чем глубже стек, тем больше ETH украдено до обновления состояния.`}>
+          <div style={{ ...glassStyle, padding: 12, marginBottom: 14 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+              Call Stack (depth: {step.callStack.length})
             </div>
-          ))}
-        </div>
+            {step.callStack.map((frame, i) => (
+              <div key={i} style={{
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: i === step.callStack.length - 1 ? accentColor : colors.text,
+                paddingLeft: i * 12,
+                marginBottom: 2,
+              }}>
+                {i > 0 ? '-> ' : ''}{frame}
+              </div>
+            ))}
+          </div>
+        </DiagramTooltip>
       )}
 
       {/* Navigation buttons */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(() => 0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(steps.length - 1, s + 1))}
-          disabled={stepIndex >= steps.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= steps.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= steps.length - 1 ? colors.textMuted : accentColor,
-            fontSize: 13,
-            opacity: stepIndex >= steps.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Сбросить демонстрацию к начальному состоянию контракта.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex(() => 0)}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                color: colors.text,
+                fontSize: 13,
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу атаки reentrancy.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+              disabled={stepIndex === 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 20px',
+                cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+                color: stepIndex === 0 ? colors.textMuted : colors.text,
+                fontSize: 13,
+                opacity: stepIndex === 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу -- от начального состояния через рекурсивные вызовы до защиты.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex((s) => Math.min(steps.length - 1, s + 1))}
+              disabled={stepIndex >= steps.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 20px',
+                cursor: stepIndex >= steps.length - 1 ? 'not-allowed' : 'pointer',
+                color: stepIndex >= steps.length - 1 ? colors.textMuted : accentColor,
+                fontSize: 13,
+                opacity: stepIndex >= steps.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </>
   );
@@ -261,11 +278,13 @@ export function SingleReentrancyDiagram() {
       />
       {stepIndex >= SINGLE_REENTRANCY_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Защита"
-            value="1) CEI pattern: обновляй состояние ДО внешнего вызова. 2) ReentrancyGuard: mutex-блокировка. 3) ReentrancyGuardTransient (EIP-1153): ~200 gas vs ~7100."
-            variant="highlight"
-          />
+          <DiagramTooltip content="CEI (Check-Effects-Interactions) -- главный паттерн защиты. Обновляйте состояние ДО внешних вызовов. ReentrancyGuard добавляет mutex. EIP-1153 (transient storage) снижает стоимость guard с ~7100 до ~200 gas.">
+            <DataBox
+              label="Защита"
+              value="1) CEI pattern: обновляй состояние ДО внешнего вызова. 2) ReentrancyGuard: mutex-блокировка. 3) ReentrancyGuardTransient (EIP-1153): ~200 gas vs ~7100."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
@@ -353,11 +372,13 @@ export function CrossFunctionReentrancyDiagram() {
       />
       {stepIndex >= CROSS_FUNCTION_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Ключевой вывод"
-            value="Cross-function reentrancy использует общий state между разными функциями. CEI в одной функции недостаточно -- нужен ReentrancyGuard на всех функциях, работающих с общим state."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Cross-function reentrancy -- более сложный вариант: атакующий вызывает ДРУГУЮ функцию (transfer) из fallback вместо повторного withdraw. CEI в одной функции не помогает, нужен общий ReentrancyGuard.">
+            <DataBox
+              label="Ключевой вывод"
+              value="Cross-function reentrancy использует общий state между разными функциями. CEI в одной функции недостаточно -- нужен ReentrancyGuard на всех функциях, работающих с общим state."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
@@ -445,11 +466,13 @@ export function ReadOnlyReentrancyDiagram() {
       />
       {stepIndex >= READ_ONLY_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Ключевой вывод"
-            value="Read-only reentrancy -- самый коварный вариант: nonReentrant на view-функциях не работает. Решение: проверка lock-флага в view-функциях или использование TWAP вместо spot price."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Read-only reentrancy эксплуатирует view-функции, которые читают временно неконсистентное состояние во время external call. nonReentrant на view не работает -- нужен явный lock check или TWAP оракул.">
+            <DataBox
+              label="Ключевой вывод"
+              value="Read-only reentrancy -- самый коварный вариант: nonReentrant на view-функциях не работает. Решение: проверка lock-флага в view-функциях или использование TWAP вместо spot price."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
