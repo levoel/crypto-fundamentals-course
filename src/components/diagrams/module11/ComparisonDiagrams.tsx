@@ -9,6 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -62,26 +63,28 @@ export function ToolComparisonTableDiagram() {
   return (
     <DiagramContainer title="Subsquid vs The Graph vs SubQuery: полное сравнение" color="green">
       {/* Toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {([false, true] as const).map((detailed) => (
-          <button
-            key={String(detailed)}
-            onClick={() => setShowDetailed(detailed)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 6,
-              border: `1px solid ${showDetailed === detailed ? '#22c55e50' : 'rgba(255,255,255,0.1)'}`,
-              background: showDetailed === detailed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-              color: showDetailed === detailed ? '#22c55e' : colors.textMuted,
-              fontSize: 10,
-              fontFamily: 'monospace',
-              cursor: 'pointer',
-            }}
-          >
-            {detailed ? 'Подробное сравнение' : 'Краткий обзор'}
-          </button>
-        ))}
-      </div>
+      <DiagramTooltip content="Краткий обзор показывает 8 ключевых параметров. Подробное сравнение добавляет off-chain данные, deployment, стоимость, сообщество и документацию -- всего 13 параметров.">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {([false, true] as const).map((detailed) => (
+            <button
+              key={String(detailed)}
+              onClick={() => setShowDetailed(detailed)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 6,
+                border: `1px solid ${showDetailed === detailed ? '#22c55e50' : 'rgba(255,255,255,0.1)'}`,
+                background: showDetailed === detailed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+                color: showDetailed === detailed ? '#22c55e' : colors.textMuted,
+                fontSize: 10,
+                fontFamily: 'monospace',
+                cursor: 'pointer',
+              }}
+            >
+              {detailed ? 'Подробное сравнение' : 'Краткий обзор'}
+            </button>
+          ))}
+        </div>
+      </DiagramTooltip>
 
       {/* Comparison table */}
       <div style={{ overflowX: 'auto', marginBottom: 16 }}>
@@ -92,13 +95,19 @@ export function ToolComparisonTableDiagram() {
                 Аспект
               </th>
               <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', fontWeight: 600 }}>
-                Subsquid
+                <DiagramTooltip content="Subsquid -- самый быстрый индексатор. TypeScript, батч-обработка, SQD Network для ускорения. Бесплатный self-hosted, опциональный SQD Cloud.">
+                  <span>Subsquid</span>
+                </DiagramTooltip>
               </th>
               <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(167,139,250,0.2)', color: '#a78bfa', fontWeight: 600 }}>
-                The Graph
+                <DiagramTooltip content="The Graph -- децентрализованная сеть индексирования. AssemblyScript маппинги, GRT стейкинг, крупнейшее сообщество. Стандарт индустрии.">
+                  <span>The Graph</span>
+                </DiagramTooltip>
               </th>
               <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(34,197,94,0.2)', color: '#22c55e', fontWeight: 600 }}>
-                SubQuery
+                <DiagramTooltip content="SubQuery -- мультисетевой индексатор. TypeScript маппинги, нативная поддержка мультичейн-манифестов. Изначально создан для Polkadot, расширен на EVM.">
+                  <span>SubQuery</span>
+                </DiagramTooltip>
               </th>
             </tr>
           </thead>
@@ -123,11 +132,13 @@ export function ToolComparisonTableDiagram() {
         </table>
       </div>
 
-      <DataBox
-        label="Резюме"
-        value="Subsquid -- быстрый и удобный (TypeScript). The Graph -- децентрализованный и зрелый (крупнейшая экосистема). SubQuery -- мультисетевой и TypeScript. Выбор зависит от приоритетов: скорость разработки, децентрализация, или мультисетевая поддержка."
-        variant="info"
-      />
+      <DiagramTooltip content="Нет однозначно лучшего инструмента. Subsquid выигрывает по скорости и DX. The Graph -- по децентрализации и экосистеме. SubQuery -- по мультичейн. Выбирайте по приоритетам проекта.">
+        <DataBox
+          label="Резюме"
+          value="Subsquid -- быстрый и удобный (TypeScript). The Graph -- децентрализованный и зрелый (крупнейшая экосистема). SubQuery -- мультисетевой и TypeScript. Выбор зависит от приоритетов: скорость разработки, децентрализация, или мультисетевая поддержка."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -144,10 +155,10 @@ interface SpeedEntry {
   color: string;
 }
 
-const SPEED_DATA: SpeedEntry[] = [
-  { label: 'Subsquid', minSpeed: 1000, maxSpeed: 50000, note: 'Батч-обработка + SQD Network', color: '#22c55e' },
-  { label: 'SubQuery', minSpeed: 250, maxSpeed: 350, note: 'Последовательная обработка', color: '#eab308' },
-  { label: 'The Graph', minSpeed: 100, maxSpeed: 150, note: 'WASM sandbox overhead', color: '#f59e0b' },
+const SPEED_DATA: (SpeedEntry & { tooltip: string })[] = [
+  { label: 'Subsquid', minSpeed: 1000, maxSpeed: 50000, note: 'Батч-обработка + SQD Network', color: '#22c55e', tooltip: 'Subsquid достигает 50K блоков/сек благодаря батч-обработке: читает тысячи блоков за раз и обрабатывает все события в одном проходе. SQD Network ускоряет доступ к данным.' },
+  { label: 'SubQuery', minSpeed: 250, maxSpeed: 350, note: 'Последовательная обработка', color: '#eab308', tooltip: 'SubQuery обрабатывает блоки последовательно, но быстрее The Graph за счёт TypeScript runtime (нет WASM overhead). Стабильные ~300 блоков/сек.' },
+  { label: 'The Graph', minSpeed: 100, maxSpeed: 150, note: 'WASM sandbox overhead', color: '#f59e0b', tooltip: 'The Graph медленнее из-за WASM sandbox: каждый event handler компилируется в WebAssembly и исполняется изолированно. Безопасно, но дорого по производительности.' },
 ];
 
 interface LatencyEntry {
@@ -157,10 +168,10 @@ interface LatencyEntry {
   color: string;
 }
 
-const LATENCY_DATA: LatencyEntry[] = [
-  { label: 'Subsquid', latency: '~1-2 сек', barWidth: 15, color: '#22c55e' },
-  { label: 'SubQuery', latency: '~1-2 сек', barWidth: 15, color: '#eab308' },
-  { label: 'The Graph', latency: '~10-30 сек', barWidth: 80, color: '#f59e0b' },
+const LATENCY_DATA: (LatencyEntry & { tooltip: string })[] = [
+  { label: 'Subsquid', latency: '~1-2 сек', barWidth: 15, color: '#22c55e', tooltip: 'Subsquid поддерживает hot blocks -- незавершённые блоки отображаются сразу, обновляются при финализации. Данные доступны через 1-2 секунды после события.' },
+  { label: 'SubQuery', latency: '~1-2 сек', barWidth: 15, color: '#eab308', tooltip: 'SubQuery также поддерживает hot blocks для минимальной задержки. Сравнимая с Subsquid скорость отображения свежих данных.' },
+  { label: 'The Graph', latency: '~10-30 сек', barWidth: 80, color: '#f59e0b', tooltip: 'The Graph не поддерживает hot blocks. Данные доступны только после finality confirmation, что добавляет 10-30 секунд задержки на mainnet.' },
 ];
 
 export function IndexingSpeedDiagram() {
@@ -179,48 +190,50 @@ export function IndexingSpeedDiagram() {
             const minWidth = (Math.log10(entry.minSpeed) / maxLog) * 100;
             const maxWidth = (Math.log10(entry.maxSpeed) / maxLog) * 100;
             return (
-              <div key={entry.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: entry.color, fontFamily: 'monospace' }}>
-                    {entry.label}
-                  </span>
-                  <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
-                    {entry.minSpeed.toLocaleString()}-{entry.maxSpeed.toLocaleString()} бл/сек
-                  </span>
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: 16,
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 4,
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}>
-                  {/* Min bar */}
+              <DiagramTooltip key={entry.label} content={entry.tooltip}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: entry.color, fontFamily: 'monospace' }}>
+                      {entry.label}
+                    </span>
+                    <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                      {entry.minSpeed.toLocaleString()}-{entry.maxSpeed.toLocaleString()} бл/сек
+                    </span>
+                  </div>
                   <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    height: '100%',
-                    width: `${minWidth}%`,
-                    background: `${entry.color}30`,
+                    width: '100%',
+                    height: 16,
+                    background: 'rgba(255,255,255,0.03)',
                     borderRadius: 4,
-                  }} />
-                  {/* Max bar */}
-                  <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    height: '100%',
-                    width: `${maxWidth}%`,
-                    background: `${entry.color}50`,
-                    borderRadius: 4,
-                  }} />
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Min bar */}
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      height: '100%',
+                      width: `${minWidth}%`,
+                      background: `${entry.color}30`,
+                      borderRadius: 4,
+                    }} />
+                    {/* Max bar */}
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      height: '100%',
+                      width: `${maxWidth}%`,
+                      background: `${entry.color}50`,
+                      borderRadius: 4,
+                    }} />
+                  </div>
+                  <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                    {entry.note}
+                  </div>
                 </div>
-                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-                  {entry.note}
-                </div>
-              </div>
+              </DiagramTooltip>
             );
           })}
         </div>
@@ -233,30 +246,34 @@ export function IndexingSpeedDiagram() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {LATENCY_DATA.map((entry) => (
-            <div key={entry.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 9, fontWeight: 600, color: entry.color, fontFamily: 'monospace', minWidth: 70 }}>
-                {entry.label}
-              </span>
-              <div style={{
-                height: 12,
-                width: `${entry.barWidth}%`,
-                background: `${entry.color}50`,
-                borderRadius: 4,
-                minWidth: 4,
-              }} />
-              <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
-                {entry.latency}
-              </span>
-            </div>
+            <DiagramTooltip key={entry.label} content={entry.tooltip}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 9, fontWeight: 600, color: entry.color, fontFamily: 'monospace', minWidth: 70 }}>
+                  {entry.label}
+                </span>
+                <div style={{
+                  height: 12,
+                  width: `${entry.barWidth}%`,
+                  background: `${entry.color}50`,
+                  borderRadius: 4,
+                  minWidth: 4,
+                }} />
+                <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  {entry.latency}
+                </span>
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
       </div>
 
-      <DataBox
-        label="Почему такая разница?"
-        value="Subsquid до 50x быстрее The Graph благодаря батч-обработке и прямому доступу к данным через SQD Network. Для локальной разработки с Anvil разница менее заметна (десятки блоков), но на mainnet/testnet -- принципиальна."
-        variant="info"
-      />
+      <DiagramTooltip content="На mainnet с миллионами блоков разница критична: Subsquid индексирует историю за минуты, The Graph -- за часы. Для локальной разработки (десятки блоков) разница незаметна.">
+        <DataBox
+          label="Почему такая разница?"
+          value="Subsquid до 50x быстрее The Graph благодаря батч-обработке и прямому доступу к данным через SQD Network. Для локальной разработки с Anvil разница менее заметна (десятки блоков), но на mainnet/testnet -- принципиальна."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -279,13 +296,14 @@ interface TreeOption {
   nextId: string;
 }
 
-const TREE_NODES: TreeNode[] = [
+const TREE_NODES: (TreeNode & { tooltip?: string })[] = [
   {
     id: 'root',
     question: 'Какой индексатор выбрать?',
     options: [
       { label: 'Начать', nextId: 'decentralized' },
     ],
+    tooltip: 'Дерево решений помогает выбрать индексатор для вашего проекта. Ответьте на 3-4 вопроса о требованиях и получите рекомендацию.',
   },
   {
     id: 'decentralized',
@@ -294,6 +312,7 @@ const TREE_NODES: TreeNode[] = [
       { label: 'Да', nextId: 'the-graph-result' },
       { label: 'Нет', nextId: 'language' },
     ],
+    tooltip: 'Децентрализация означает, что индексатор работает в распределённой сети без единой точки отказа. Только The Graph предоставляет полноценную децентрализованную сеть (Graph Network).',
   },
   {
     id: 'the-graph-result',
@@ -302,6 +321,7 @@ const TREE_NODES: TreeNode[] = [
     isEnd: true,
     result: 'The Graph (GRT staking, децентрализованная сеть)',
     resultColor: '#a78bfa',
+    tooltip: 'The Graph -- единственный индексатор с полноценной децентрализованной сетью. Indexers стейкают GRT и получают вознаграждение за обработку запросов. Гарантия доступности данных.',
   },
   {
     id: 'language',
@@ -310,6 +330,7 @@ const TREE_NODES: TreeNode[] = [
       { label: 'TypeScript', nextId: 'multichain' },
       { label: 'AssemblyScript OK', nextId: 'the-graph-result-2' },
     ],
+    tooltip: 'Язык маппингов определяет developer experience. TypeScript -- полноценный язык с npm-экосистемой. AssemblyScript -- подмножество TypeScript с ограничениями (нет async/await, Array.filter).',
   },
   {
     id: 'the-graph-result-2',
@@ -318,6 +339,7 @@ const TREE_NODES: TreeNode[] = [
     isEnd: true,
     result: 'The Graph (зрелая экосистема, широкое сообщество)',
     resultColor: '#a78bfa',
+    tooltip: 'The Graph имеет крупнейшую экосистему: тысячи subgraphs на Subgraph Studio, активное сообщество, отличная документация. AssemblyScript ограничивает, но экосистема компенсирует.',
   },
   {
     id: 'multichain',
@@ -326,6 +348,7 @@ const TREE_NODES: TreeNode[] = [
       { label: 'Да', nextId: 'subquery-result' },
       { label: 'Нет', nextId: 'speed' },
     ],
+    tooltip: 'Мультисеть -- индексация нескольких блокчейнов одним проектом. SubQuery поддерживает это нативно через multi-chain manifest. Subsquid требует отдельные процессоры.',
   },
   {
     id: 'subquery-result',
@@ -334,6 +357,7 @@ const TREE_NODES: TreeNode[] = [
     isEnd: true,
     result: 'SubQuery (multi-chain manifest, TypeScript)',
     resultColor: '#22c55e',
+    tooltip: 'SubQuery -- лучший выбор для мультисетевых проектов. Один manifest индексирует Ethereum, Polkadot, Cosmos и другие сети. TypeScript маппинги без ограничений.',
   },
   {
     id: 'speed',
@@ -342,6 +366,7 @@ const TREE_NODES: TreeNode[] = [
       { label: 'Да', nextId: 'subsquid-result' },
       { label: 'Не приоритет', nextId: 'subsquid-result-2' },
     ],
+    tooltip: 'Скорость критична для mainnet: Subsquid индексирует историю Ethereum за минуты (50K бл/сек), The Graph -- за часы (150 бл/сек). Для новых проектов с малой историей -- менее важно.',
   },
   {
     id: 'subsquid-result',
@@ -350,6 +375,7 @@ const TREE_NODES: TreeNode[] = [
     isEnd: true,
     result: 'Subsquid (SQD Network, 50K блоков/сек)',
     resultColor: '#3b82f6',
+    tooltip: 'Subsquid с SQD Network -- самый быстрый вариант. Батч-обработка + прямой доступ к данным через SQD Network вместо RPC. Идеален для аналитики и DeFi-дашбордов.',
   },
   {
     id: 'subsquid-result-2',
@@ -358,6 +384,7 @@ const TREE_NODES: TreeNode[] = [
     isEnd: true,
     result: 'Subsquid (TypeScript, удобный, хорошая документация)',
     resultColor: '#3b82f6',
+    tooltip: 'Subsquid -- оптимальный выбор по умолчанию: TypeScript без ограничений, хорошая документация, бесплатный self-hosted. Подходит для большинства проектов.',
   },
 ];
 
@@ -409,50 +436,52 @@ export function DecisionTreeDiagram() {
 
       {/* Current node */}
       {currentNode && (
-        <div style={{
-          ...glassStyle,
-          padding: 16,
-          marginBottom: 12,
-          border: `1px solid ${currentNode.isEnd ? `${currentNode.resultColor}30` : 'rgba(245,158,11,0.2)'}`,
-          background: currentNode.isEnd ? `${currentNode.resultColor}06` : 'rgba(255,255,255,0.02)',
-        }}>
-          {currentNode.isEnd ? (
-            <>
-              <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-                Рекомендация:
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: currentNode.resultColor, fontFamily: 'monospace' }}>
-                {currentNode.result}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 12 }}>
-                {currentNode.question}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {currentNode.options.map((opt) => (
-                  <button
-                    key={opt.nextId}
-                    onClick={() => handleChoice(opt.nextId)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(245,158,11,0.3)',
-                      background: 'rgba(245,158,11,0.1)',
-                      color: '#f59e0b',
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <DiagramTooltip content={currentNode.tooltip || ''}>
+          <div style={{
+            ...glassStyle,
+            padding: 16,
+            marginBottom: 12,
+            border: `1px solid ${currentNode.isEnd ? `${currentNode.resultColor}30` : 'rgba(245,158,11,0.2)'}`,
+            background: currentNode.isEnd ? `${currentNode.resultColor}06` : 'rgba(255,255,255,0.02)',
+          }}>
+            {currentNode.isEnd ? (
+              <>
+                <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                  Рекомендация:
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentNode.resultColor, fontFamily: 'monospace' }}>
+                  {currentNode.result}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 12 }}>
+                  {currentNode.question}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {currentNode.options.map((opt) => (
+                    <button
+                      key={opt.nextId}
+                      onClick={() => handleChoice(opt.nextId)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(245,158,11,0.3)',
+                        background: 'rgba(245,158,11,0.1)',
+                        color: '#f59e0b',
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </DiagramTooltip>
       )}
 
       {/* Navigation */}
@@ -483,11 +512,13 @@ export function DecisionTreeDiagram() {
         </button>
       </div>
 
-      <DataBox
-        label="Для этого курса"
-        value="Subsquid как primary tool (TypeScript, быстрый, удобный). The Graph как secondary (зрелая экосистема, важен для индустрии). SubQuery -- концептуальное сравнение."
-        variant="info"
-      />
+      <DiagramTooltip content="В этом курсе вы практикуете Subsquid (LAB-05, LAB-06) и The Graph (LAB-07). SubQuery изучается концептуально для понимания альтернатив на рынке.">
+        <DataBox
+          label="Для этого курса"
+          value="Subsquid как primary tool (TypeScript, быстрый, удобный). The Graph как secondary (зрелая экосистема, важен для индустрии). SubQuery -- концептуальное сравнение."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

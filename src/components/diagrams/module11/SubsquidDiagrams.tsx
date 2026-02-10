@@ -10,6 +10,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -39,34 +40,28 @@ const CODEGEN_STEPS = [
 ];
 
 export function SubsquidArchitectureDiagram() {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
-  const hoveredComponent = hoveredId ? ARCH_COMPONENTS.find((c) => c.id === hoveredId) : null;
-
   return (
     <DiagramContainer title="Архитектура Subsquid SDK" color="blue">
       {/* Architecture components */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 16, overflowX: 'auto', paddingBottom: 8 }}>
         {ARCH_COMPONENTS.map((comp, i) => (
           <div key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <div
-              onMouseEnter={() => setHoveredId(comp.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              style={{
-                ...glassStyle,
-                padding: '10px 12px',
-                border: `1px solid ${hoveredId === comp.id ? `${comp.color}50` : `${comp.color}20`}`,
-                background: hoveredId === comp.id ? `${comp.color}10` : 'rgba(255,255,255,0.02)',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                minWidth: 90,
-              }}
-            >
-              <div style={{ fontSize: 9, fontWeight: 600, color: comp.color, fontFamily: 'monospace' }}>
-                {comp.label}
+            <DiagramTooltip content={comp.tooltip}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '10px 12px',
+                  border: `1px solid ${comp.color}20`,
+                  background: 'rgba(255,255,255,0.02)',
+                  textAlign: 'center',
+                  minWidth: 90,
+                }}
+              >
+                <div style={{ fontSize: 9, fontWeight: 600, color: comp.color, fontFamily: 'monospace' }}>
+                  {comp.label}
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
             {i < ARCH_COMPONENTS.length - 1 && (
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>&rarr;</div>
             )}
@@ -74,53 +69,39 @@ export function SubsquidArchitectureDiagram() {
         ))}
       </div>
 
-      {/* Hover tooltip */}
-      {hoveredComponent && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: `1px solid ${hoveredComponent.color}30`,
-          background: `${hoveredComponent.color}06`,
-        }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: hoveredComponent.color, fontFamily: 'monospace', marginBottom: 4 }}>
-            {hoveredComponent.label}
-          </div>
-          <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.6 }}>
-            {hoveredComponent.tooltip}
-          </div>
-        </div>
-      )}
-
       {/* Codegen pipeline */}
-      <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-          Кодогенерация:
-        </div>
-        {CODEGEN_STEPS.map((step) => (
-          <div key={step.command} style={{
-            display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap',
-          }}>
-            <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
-              {step.input}
-            </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-            <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
-              {step.command}
-            </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-            <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
-              {step.output}
-            </div>
+      <DiagramTooltip content="Кодогенерация Subsquid: schema.graphql генерирует TypeORM entities, а ABI JSON генерирует типизированные декодеры. Вы никогда не пишете boilerplate вручную.">
+        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+            Кодогенерация:
           </div>
-        ))}
-      </div>
+          {CODEGEN_STEPS.map((step) => (
+            <div key={step.command} style={{
+              display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap',
+            }}>
+              <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
+                {step.input}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+              <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
+                {step.command}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+              <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
+                {step.output}
+              </div>
+            </div>
+          ))}
+        </div>
+      </DiagramTooltip>
 
-      <DataBox
-        label="Ключевое преимущество"
-        value="Subsquid: ВСЁ на TypeScript. Процессор, модели, сервер -- единый язык. Скорость обработки: 1000-50000 блоков/сек."
-        variant="info"
-      />
+      <DiagramTooltip content="TypeScript everywhere -- главное преимущество Subsquid над The Graph. Нет AssemblyScript, нет ограничений. Скорость 50K блоков/сек благодаря батч-обработке через SQD Network.">
+        <DataBox
+          label="Ключевое преимущество"
+          value="Subsquid: ВСЁ на TypeScript. Процессор, модели, сервер -- единый язык. Скорость обработки: 1000-50000 блоков/сек."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -220,57 +201,61 @@ export function SubsquidProcessorFlowDiagram() {
       </div>
 
       {/* Step detail */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 12,
-        border: `1px solid ${current.color}30`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
-            {step + 1}. {current.title}: {current.subtitle}
+      <DiagramTooltip content="Batch processing -- ключевое отличие Subsquid от The Graph. Вместо обработки по одному событию, процессор получает БАТЧ блоков и обрабатывает все события за один проход. Это даёт 100-300x ускорение.">
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 12,
+          border: `1px solid ${current.color}30`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+              {step + 1}. {current.title}: {current.subtitle}
+            </div>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: `${current.color}15`,
+              color: current.color,
+              border: `1px solid ${current.color}30`,
+            }}>
+              Шаг {step + 1}/{PROCESSOR_STEPS.length}
+            </span>
           </div>
-          <span style={{
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+            {current.description}
+          </div>
+          <div style={{
             fontSize: 9,
             fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${current.color}15`,
             color: current.color,
-            border: `1px solid ${current.color}30`,
+            padding: '6px 10px',
+            background: `${current.color}08`,
+            borderRadius: 4,
+            borderLeft: `2px solid ${current.color}40`,
           }}>
-            Шаг {step + 1}/{PROCESSOR_STEPS.length}
-          </span>
+            {current.codeHint}
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-          {current.description}
-        </div>
-        <div style={{
-          fontSize: 9,
-          fontFamily: 'monospace',
-          color: current.color,
-          padding: '6px 10px',
-          background: `${current.color}08`,
-          borderRadius: 4,
-          borderLeft: `2px solid ${current.color}40`,
-        }}>
-          {current.codeHint}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Loop indicator at last step */}
       {step === 5 && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginBottom: 12,
-          border: '1px solid rgba(6,182,212,0.2)',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 10, color: '#06b6d4', fontFamily: 'monospace' }}>
-            &#x21bb; Непрерывный цикл: POLL &rarr; FILTER &rarr; DECODE &rarr; TRANSFORM &rarr; PERSIST &rarr; POLL
+        <DiagramTooltip content="Процессор работает бесконечно: после обработки батча он запрашивает следующий. При отключении -- запоминает последний блок и продолжает с него при перезапуске.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            marginBottom: 12,
+            border: '1px solid rgba(6,182,212,0.2)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 10, color: '#06b6d4', fontFamily: 'monospace' }}>
+              &#x21bb; Непрерывный цикл: POLL &rarr; FILTER &rarr; DECODE &rarr; TRANSFORM &rarr; PERSIST &rarr; POLL
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
       )}
 
       {/* Navigation */}
@@ -329,7 +314,7 @@ interface CodegenStep {
   color: string;
 }
 
-const CODEGEN_PIPELINE: CodegenStep[] = [
+const CODEGEN_PIPELINE: (CodegenStep & { tooltip: string })[] = [
   {
     step: 1,
     input: 'schema.graphql',
@@ -337,6 +322,7 @@ const CODEGEN_PIPELINE: CodegenStep[] = [
     output: 'src/model/*.ts (TypeORM entity classes)',
     example: 'Transfer @entity -> class Transfer { @Entity(), @Column(), @PrimaryColumn(), @Index() }',
     color: '#22c55e',
+    tooltip: 'squid-typeorm-codegen читает schema.graphql и создаёт TypeORM entity classes. @entity -> @Entity(), каждое поле -> @Column(). Поддерживает @index, @derivedFrom, BigInt.',
   },
   {
     step: 2,
@@ -345,6 +331,7 @@ const CODEGEN_PIPELINE: CodegenStep[] = [
     output: 'src/abi/erc20.ts (типизированные декодеры)',
     example: 'Transfer ABI -> events.Transfer.topic + events.Transfer.decode(log)',
     color: '#3b82f6',
+    tooltip: 'squid-evm-typegen генерирует типизированные декодеры из ABI JSON. events.Transfer.topic -- для фильтрации, events.Transfer.decode(log) -- для декодирования raw hex в typed object.',
   },
   {
     step: 3,
@@ -353,6 +340,7 @@ const CODEGEN_PIPELINE: CodegenStep[] = [
     output: 'lib/ (JavaScript)',
     example: 'TypeScript -> JavaScript компиляция',
     color: '#a78bfa',
+    tooltip: 'Стандартная TypeScript компиляция. В отличие от The Graph (AssemblyScript -> WASM), Subsquid использует обычный TypeScript -> JavaScript. Полная совместимость с npm-экосистемой.',
   },
   {
     step: 4,
@@ -361,6 +349,7 @@ const CODEGEN_PIPELINE: CodegenStep[] = [
     output: 'db/migrations/XXXX-Data.js',
     example: 'Entity classes -> SQL миграция (CREATE TABLE, ALTER TABLE)',
     color: '#f59e0b',
+    tooltip: 'Генерация SQL-миграций из TypeORM entities. Сравнивает текущее состояние модели с базой данных и создаёт CREATE TABLE / ALTER TABLE для синхронизации.',
   },
   {
     step: 5,
@@ -369,6 +358,7 @@ const CODEGEN_PIPELINE: CodegenStep[] = [
     output: 'PostgreSQL schema updated',
     example: 'Миграция применена к базе данных',
     color: '#ef4444',
+    tooltip: 'Применение миграций к PostgreSQL. Создаёт таблицы и индексы. При изменении схемы -- добавляет новые колонки или таблицы через ALTER TABLE.',
   },
 ];
 
@@ -377,56 +367,60 @@ export function SubsquidCodegenPipelineDiagram() {
     <DiagramContainer title="Конвейер кодогенерации Subsquid: от схемы до базы" color="orange">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
         {CODEGEN_PIPELINE.map((cg) => (
-          <div key={cg.step} style={{
-            ...glassStyle,
-            padding: 10,
-            border: `1px solid ${cg.color}20`,
-          }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: 9,
-                fontWeight: 700,
-                color: cg.color,
-                fontFamily: 'monospace',
-                padding: '2px 6px',
-                background: `${cg.color}15`,
-                borderRadius: 4,
-                border: `1px solid ${cg.color}30`,
-              }}>
-                Шаг {cg.step}
-              </span>
-              <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
-                {cg.input}
-              </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-              <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
-                {cg.command}
-              </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-              <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
-                {cg.output}
-              </div>
-            </div>
+          <DiagramTooltip key={cg.step} content={cg.tooltip}>
             <div style={{
-              fontSize: 8,
-              fontFamily: 'monospace',
-              color: colors.textMuted,
-              padding: '4px 8px',
-              background: `${cg.color}06`,
-              borderRadius: 4,
-              borderLeft: `2px solid ${cg.color}30`,
+              ...glassStyle,
+              padding: 10,
+              border: `1px solid ${cg.color}20`,
             }}>
-              {cg.example}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: cg.color,
+                  fontFamily: 'monospace',
+                  padding: '2px 6px',
+                  background: `${cg.color}15`,
+                  borderRadius: 4,
+                  border: `1px solid ${cg.color}30`,
+                }}>
+                  Шаг {cg.step}
+                </span>
+                <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
+                  {cg.input}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+                <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
+                  {cg.command}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+                <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
+                  {cg.output}
+                </div>
+              </div>
+              <div style={{
+                fontSize: 8,
+                fontFamily: 'monospace',
+                color: colors.textMuted,
+                padding: '4px 8px',
+                background: `${cg.color}06`,
+                borderRadius: 4,
+                borderLeft: `2px solid ${cg.color}30`,
+              }}>
+                {cg.example}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
-      <DataBox
-        label="Важное правило"
-        value="Никогда НЕ пишите TypeORM entities и ABI-декодеры вручную. schema.graphql -- единственный файл, который вы редактируете. Всё остальное генерируется."
-        variant="info"
-      />
+      <DiagramTooltip content="Принцип единственного источника: schema.graphql определяет модель данных, из которой генерируются TypeORM entities, SQL-миграции и GraphQL API. Ручное редактирование сгенерированных файлов запрещено.">
+        <DataBox
+          label="Важное правило"
+          value="Никогда НЕ пишите TypeORM entities и ABI-декодеры вручную. schema.graphql -- единственный файл, который вы редактируете. Всё остальное генерируется."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -443,10 +437,10 @@ interface EventType {
   color: string;
 }
 
-const EVENT_TYPES: EventType[] = [
-  { name: 'Transfer', topic0: '0xddf252ad...', entity: 'Transfer', fields: 'from, to, value', color: '#3b82f6' },
-  { name: 'Swap', topic0: '0xd78ad95f...', entity: 'Swap', fields: 'amount0In, amount1In, amount0Out, amount1Out', color: '#22c55e' },
-  { name: 'Sync', topic0: '0x1c411e9a...', entity: 'Pool', fields: 'reserve0, reserve1', color: '#f59e0b' },
+const EVENT_TYPES: (EventType & { tooltip: string; entityTooltip: string })[] = [
+  { name: 'Transfer', topic0: '0xddf252ad...', entity: 'Transfer', fields: 'from, to, value', color: '#3b82f6', tooltip: 'ERC-20 Transfer -- событие перевода токенов. topic0 -- хеш сигнатуры Transfer(address,address,uint256). Самое частое событие на Ethereum.', entityTooltip: 'Transfer entity хранит историю переводов: отправитель, получатель, сумма, блок. Используется для отображения истории транзакций в dApp.' },
+  { name: 'Swap', topic0: '0xd78ad95f...', entity: 'Swap', fields: 'amount0In, amount1In, amount0Out, amount1Out', color: '#22c55e', tooltip: 'Uniswap V2 Swap -- событие обмена токенов. Содержит входные и выходные суммы обоих токенов пары. Основа для аналитики торговых объёмов.', entityTooltip: 'Swap entity хранит данные об обменах: входные/выходные суммы по обоим токенам пары. Позволяет рассчитать объёмы торгов, средние цены.' },
+  { name: 'Sync', topic0: '0x1c411e9a...', entity: 'Pool', fields: 'reserve0, reserve1', color: '#f59e0b', tooltip: 'Uniswap V2 Sync -- событие обновления резервов пула. Происходит после каждого Swap. Содержит текущие резервы обоих токенов.', entityTooltip: 'Pool entity хранит состояние ликвидного пула: текущие резервы, TVL. Sync-событие обновляет reserve0 и reserve1 после каждого обмена.' },
 ];
 
 export function SubsquidMultiEventDiagram() {
@@ -457,18 +451,20 @@ export function SubsquidMultiEventDiagram() {
         {/* Events column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {EVENT_TYPES.map((evt) => (
-            <div key={evt.name} style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              border: `1px solid ${evt.color}25`,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
-                {evt.name}
+            <DiagramTooltip key={evt.name} content={evt.tooltip}>
+              <div style={{
+                ...glassStyle,
+                padding: '8px 10px',
+                border: `1px solid ${evt.color}25`,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
+                  {evt.name}
+                </div>
+                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                  topic0: {evt.topic0}
+                </div>
               </div>
-              <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-                topic0: {evt.topic0}
-              </div>
-            </div>
+            </DiagramTooltip>
           ))}
         </div>
 
@@ -480,30 +476,32 @@ export function SubsquidMultiEventDiagram() {
         </div>
 
         {/* Processor */}
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          border: '1px solid rgba(167,139,250,0.3)',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 8 }}>
-            EvmBatchProcessor
-          </div>
+        <DiagramTooltip content="EvmBatchProcessor принимает несколько addLog() вызовов для подписки на разные типы событий. Все события обрабатываются в одном батче -- один проход по блокам вместо трёх отдельных.">
           <div style={{
-            fontSize: 7,
-            fontFamily: 'monospace',
-            color: colors.textMuted,
-            textAlign: 'left',
-            padding: '6px 8px',
-            background: 'rgba(167,139,250,0.06)',
-            borderRadius: 4,
-            lineHeight: 1.6,
+            ...glassStyle,
+            padding: 14,
+            border: '1px solid rgba(167,139,250,0.3)',
+            textAlign: 'center',
           }}>
-            .addLog({'{'} topic0: [TRANSFER] {'}'})<br />
-            .addLog({'{'} topic0: [SWAP] {'}'})<br />
-            .addLog({'{'} topic0: [SYNC] {'}'})
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 8 }}>
+              EvmBatchProcessor
+            </div>
+            <div style={{
+              fontSize: 7,
+              fontFamily: 'monospace',
+              color: colors.textMuted,
+              textAlign: 'left',
+              padding: '6px 8px',
+              background: 'rgba(167,139,250,0.06)',
+              borderRadius: 4,
+              lineHeight: 1.6,
+            }}>
+              .addLog({'{'} topic0: [TRANSFER] {'}'})<br />
+              .addLog({'{'} topic0: [SWAP] {'}'})<br />
+              .addLog({'{'} topic0: [SYNC] {'}'})
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Arrows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
@@ -515,34 +513,40 @@ export function SubsquidMultiEventDiagram() {
         {/* Entity tables */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {EVENT_TYPES.map((evt) => (
-            <div key={evt.name} style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              border: `1px solid ${evt.color}25`,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
-                {evt.entity} entity
+            <DiagramTooltip key={evt.name} content={evt.entityTooltip}>
+              <div style={{
+                ...glassStyle,
+                padding: '8px 10px',
+                border: `1px solid ${evt.color}25`,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
+                  {evt.entity} entity
+                </div>
+                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                  {evt.fields}
+                </div>
               </div>
-              <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-                {evt.fields}
-              </div>
-            </div>
+            </DiagramTooltip>
           ))}
         </div>
       </div>
 
-      <DataBox
-        label="Один процессор -- несколько событий"
-        value="Один процессор может индексировать НЕСКОЛЬКО типов событий. Для Uniswap V2: Transfer (токены), Swap (обмены), Sync (резервы). Каждый тип -> своя entity + свой handler в main.ts."
-        variant="info"
-      />
-
-      <div style={{ marginTop: 8 }}>
+      <DiagramTooltip content="Мульти-событийная индексация -- паттерн для сложных протоколов. Один процессор подписывается на все нужные события и обрабатывает их в одном handler, создавая связанные entities.">
         <DataBox
-          label="Governance паттерн"
-          value="Governance: ProposalCreated, VoteCast, ProposalExecuted -> Proposal entity со статусом (Pending -> Active -> Succeeded -> Executed)."
+          label="Один процессор -- несколько событий"
+          value="Один процессор может индексировать НЕСКОЛЬКО типов событий. Для Uniswap V2: Transfer (токены), Swap (обмены), Sync (резервы). Каждый тип -> своя entity + свой handler в main.ts."
           variant="info"
         />
+      </DiagramTooltip>
+
+      <div style={{ marginTop: 8 }}>
+        <DiagramTooltip content="Governance -- ещё один типичный мульти-событийный паттерн. ProposalCreated, VoteCast и ProposalExecuted отслеживаются одним процессором и обновляют единую Proposal entity.">
+          <DataBox
+            label="Governance паттерн"
+            value="Governance: ProposalCreated, VoteCast, ProposalExecuted -> Proposal entity со статусом (Pending -> Active -> Succeeded -> Executed)."
+            variant="info"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
