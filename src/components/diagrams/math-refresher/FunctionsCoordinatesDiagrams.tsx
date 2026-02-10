@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
@@ -82,22 +83,34 @@ export function FunctionMachineDiagram() {
       {/* Function selector */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {FUNC_KEYS.map((key) => (
-          <button
+          <DiagramTooltip
             key={key}
-            onClick={() => setFuncKey(key)}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              background: funcKey === key ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${funcKey === key ? colors.success : 'rgba(255,255,255,0.1)'}`,
-              color: funcKey === key ? colors.success : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
-            }}
+            content={
+              key === 'linear'
+                ? 'Линейная функция f(x) = 2x + 1. Инъективна (разные входы -> разные выходы), но не сюръективна (не все целые числа -- выходы). Линейные функции используются в линейной алгебре, лежащей в основе решёток (lattice-based crypto).'
+                : key === 'quadratic'
+                  ? 'Квадратичная функция f(x) = x^2. Не инъективна: f(-2) = f(2) = 4. Квадратичные вычеты -- основа ряда криптосистем (Rabin, Goldwasser-Micali). Вычисление квадратного корня по модулю -- сложная задача.'
+                  : 'Модулярная функция f(x) = x mod 7. Не инъективна, но сюръективна на Z_7. Модулярная арифметика -- фундамент RSA, Diffie-Hellman, ECC. Хеш-функции по сути являются модулярными отображениями.'
+            }
           >
-            {FUNCTIONS[key].name}
-          </button>
+            <div>
+              <button
+                onClick={() => setFuncKey(key)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  background: funcKey === key ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${funcKey === key ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                  color: funcKey === key ? colors.success : colors.text,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {FUNCTIONS[key].name}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -139,17 +152,19 @@ export function FunctionMachineDiagram() {
       </div>
 
       {/* Developer analogy */}
-      <div style={{
-        ...glassStyle,
-        padding: '8px 12px',
-        marginTop: 8,
-        fontSize: 12,
-        color: colors.info,
-        background: `${colors.info}10`,
-        border: `1px solid ${colors.info}25`,
-      }}>
-        Аналогия: чистая функция в программировании -- один и тот же вход всегда дает один и тот же выход, без побочных эффектов.
-      </div>
+      <DiagramTooltip content="Детерминизм -- ключевое свойство: одинаковый вход всегда даёт одинаковый выход. SHA-256('hello') всегда одинаков. Это критично для верификации: любой может проверить хеш, подпись или proof без доверия к вычислителю.">
+        <div style={{
+          ...glassStyle,
+          padding: '8px 12px',
+          marginTop: 8,
+          fontSize: 12,
+          color: colors.info,
+          background: `${colors.info}10`,
+          border: `1px solid ${colors.info}25`,
+        }}>
+          Аналогия: чистая функция в программировании -- один и тот же вход всегда дает один и тот же выход, без побочных эффектов.
+        </div>
+      </DiagramTooltip>
 
       {/* Input-output table */}
       <div style={{ overflowX: 'auto', marginTop: 12 }}>
@@ -192,44 +207,50 @@ export function FunctionMachineDiagram() {
 
       {/* Properties */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
-        <div style={{
-          ...glassStyle,
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          background: func.injective ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${func.injective ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
-        }}>
-          <span style={{ fontSize: 16, color: func.injective ? colors.success : colors.danger, flexShrink: 0 }}>
-            {func.injective ? '\u2713' : '\u2717'}
-          </span>
-          <div>
-            <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>Инъективность (one-to-one)</span>
-            <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{func.injectiveWhy}</span>
+        <DiagramTooltip content="Инъективность (one-to-one): разные входы всегда дают разные выходы. Шифрование должно быть инъективным -- два разных открытых текста не могут зашифроваться в один шифротекст, иначе расшифрование невозможно.">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: func.injective ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${func.injective ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
+          }}>
+            <span style={{ fontSize: 16, color: func.injective ? colors.success : colors.danger, flexShrink: 0 }}>
+              {func.injective ? '\u2713' : '\u2717'}
+            </span>
+            <div>
+              <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>Инъективность (one-to-one)</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{func.injectiveWhy}</span>
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
 
-        <div style={{
-          ...glassStyle,
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          background: func.surjective ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${func.surjective ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
-        }}>
-          <span style={{ fontSize: 16, color: func.surjective ? colors.success : colors.danger, flexShrink: 0 }}>
-            {func.surjective ? '\u2713' : '\u2717'}
-          </span>
-          <div>
-            <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>Сюръективность (onto)</span>
-            <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{func.surjectiveWhy}</span>
+        <DiagramTooltip content="Сюръективность (onto): каждый элемент кодомена является выходом хотя бы для одного входа. Хеш-функции теоретически сюръективны на своём выходном пространстве -- каждый 256-битный хеш достижим (хотя найти прообраз вычислительно невозможно).">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            background: func.surjective ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${func.surjective ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
+          }}>
+            <span style={{ fontSize: 16, color: func.surjective ? colors.success : colors.danger, flexShrink: 0 }}>
+              {func.surjective ? '\u2713' : '\u2717'}
+            </span>
+            <div>
+              <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>Сюръективность (onto)</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{func.surjectiveWhy}</span>
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
 
         {func.injective && func.surjective && (
-          <DataBox label="Вывод" value="Биекция! Идеальное отображение -- как шифрование с расшифрованием." variant="highlight" />
+          <DiagramTooltip content="Биекция = инъекция + сюръекция. Идеальное обратимое отображение. Шифрование -- биекция: каждому открытому тексту соответствует ровно один шифротекст и наоборот. Без биективности расшифрование было бы неоднозначным.">
+            <DataBox label="Вывод" value="Биекция! Идеальное отображение -- как шифрование с расшифрованием." variant="highlight" />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>
@@ -324,22 +345,36 @@ export function CoordinatePlaneDiagram() {
       {/* Mode selector */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
         {PLOT_MODES.map((m) => (
-          <button
+          <DiagramTooltip
             key={m.key}
-            onClick={() => { setMode(m.key); setHoveredPoint(null); }}
-            style={{
-              ...glassStyle,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              background: mode === m.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${mode === m.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: mode === m.key ? colors.primary : colors.text,
-              fontSize: 12,
-              fontFamily: 'monospace',
-            }}
+            content={
+              m.key === 'points'
+                ? 'Отдельные точки на плоскости. Каждая точка -- пара координат (x, y). В ECC точки на кривой над конечным полем выглядят как разбросанные точки -- не гладкая кривая.'
+                : m.key === 'line'
+                  ? 'Линейная функция y = 2x + 1. Наклон (slope) = rise/run = 2. Касательные к эллиптической кривой -- линейные приближения, используемые при сложении точек в ECC.'
+                  : m.key === 'parabola'
+                    ? 'Парабола y = x^2. Не инъективна: для y > 0 существуют два прообраза (+/-sqrt(y)). Квадратичные вычеты по модулю p -- основа ряда криптосистем.'
+                    : 'Эллиптическая кривая secp256k1: y^2 = x^3 + 7. Используется в Bitcoin и Ethereum для ECDSA. Над вещественными числами -- гладкая кривая; над GF(p) -- точки в конечном поле.'
+            }
           >
-            {m.label}
-          </button>
+            <div>
+              <button
+                onClick={() => { setMode(m.key); setHoveredPoint(null); }}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  background: mode === m.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${mode === m.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  color: mode === m.key ? colors.primary : colors.text,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {m.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -498,36 +533,42 @@ export function CoordinatePlaneDiagram() {
 
       {/* Info panels */}
       {mode === 'line' && slopeInfo && (
-        <DataBox
-          label="Наклон (slope)"
-          value={`rise / run = ${slopeInfo.rise} / ${slopeInfo.run} = ${slopeInfo.slope}`}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Наклон (slope) -- скорость изменения функции. slope = delta_y / delta_x. В ECC наклон касательной к кривой используется для вычисления удвоения точки (point doubling) -- ключевая операция в scalar multiplication.">
+          <DataBox
+            label="Наклон (slope)"
+            value={`rise / run = ${slopeInfo.rise} / ${slopeInfo.run} = ${slopeInfo.slope}`}
+            variant="highlight"
+          />
+        </DiagramTooltip>
       )}
 
       {mode === 'elliptic' && (
-        <div style={{
-          ...glassStyle,
-          padding: '10px 14px',
-          marginTop: 8,
-          fontSize: 12,
-          color: colors.accent,
-          background: `${colors.accent}10`,
-          border: `1px solid ${colors.accent}25`,
-        }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>secp256k1: y{'\u00B2'} = x{'\u00B3'} + 7 (над R)</div>
-          <div style={{ color: colors.textMuted }}>
-            Кривая симметрична относительно оси x: для каждой точки (x, y) существует точка (x, -y).
-            В CRYPTO-09 эта же кривая будет определена над конечным полем GF(p), где она выглядит как
-            разбросанные точки, а не гладкая кривая.
+        <DiagramTooltip content="secp256k1 -- конкретная эллиптическая кривая, выбранная Сатоши для Bitcoin. Параметры: a=0, b=7, определена над полем GF(p) где p = 2^256 - 2^32 - 977. Порядок группы -- число точек на кривой, ~2^256.">
+          <div style={{
+            ...glassStyle,
+            padding: '10px 14px',
+            marginTop: 8,
+            fontSize: 12,
+            color: colors.accent,
+            background: `${colors.accent}10`,
+            border: `1px solid ${colors.accent}25`,
+          }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>secp256k1: y{'\u00B2'} = x{'\u00B3'} + 7 (над R)</div>
+            <div style={{ color: colors.textMuted }}>
+              Кривая симметрична относительно оси x: для каждой точки (x, y) существует точка (x, -y).
+              В CRYPTO-09 эта же кривая будет определена над конечным полем GF(p), где она выглядит как
+              разбросанные точки, а не гладкая кривая.
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
       )}
 
       {mode === 'points' && (
-        <div style={{ ...glassStyle, padding: '8px 12px', marginTop: 8, fontSize: 12, color: colors.textMuted }}>
-          Наведите на точку, чтобы увидеть координаты. Каждая точка задается парой (x, y).
-        </div>
+        <DiagramTooltip content="Координатная плоскость -- визуальное представление пар (x, y). В ECC каждая точка кривой -- пара координат из конечного поля. Публичный ключ в ECDSA -- это точка на кривой (x, y), а приватный ключ -- скаляр.">
+          <div style={{ ...glassStyle, padding: '8px 12px', marginTop: 8, fontSize: 12, color: colors.textMuted }}>
+            Наведите на точку, чтобы увидеть координаты. Каждая точка задается парой (x, y).
+          </div>
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );

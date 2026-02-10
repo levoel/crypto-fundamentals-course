@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -43,11 +44,11 @@ function computeSetOp(op: SetOp): { result: number[]; notation: string; python: 
   }
 }
 
-const opButtons: { key: SetOp; label: string; symbol: string }[] = [
-  { key: 'union', label: 'Объединение', symbol: '\u222A' },
-  { key: 'intersection', label: 'Пересечение', symbol: '\u2229' },
-  { key: 'difference', label: 'Разность', symbol: 'A\u2216B' },
-  { key: 'symmetric', label: 'Симм. разность', symbol: '\u25B3' },
+const opButtons: { key: SetOp; label: string; symbol: string; tooltip: string }[] = [
+  { key: 'union', label: 'Объединение', symbol: '\u222A', tooltip: 'Объединение множеств -- все элементы из A и B. В системах контроля доступа: объединение прав разных ролей даёт итоговый набор разрешений пользователя.' },
+  { key: 'intersection', label: 'Пересечение', symbol: '\u2229', tooltip: 'Пересечение -- элементы, общие для A и B. Private Set Intersection (PSI) -- криптографический протокол, позволяющий найти пересечение без раскрытия остальных данных.' },
+  { key: 'difference', label: 'Разность', symbol: 'A\u2216B', tooltip: 'Разность -- элементы A, которых нет в B. В access control: что может пользователь A, чего не может B? Полезно для аудита разрешений в DAO.' },
+  { key: 'symmetric', label: 'Симм. разность', symbol: '\u25B3', tooltip: 'Симметрическая разность -- элементы, принадлежащие ровно одному множеству. Аналог XOR для множеств: (A\\B) U (B\\A). В Python записывается как A ^ B.' },
 ];
 
 /**
@@ -80,21 +81,24 @@ export function SetOperationsDiagram() {
       {/* Operation buttons */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {opButtons.map((b) => (
-          <button
-            key={b.key}
-            onClick={() => setOp(b.key)}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              background: op === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${op === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: op === b.key ? colors.primary : colors.text,
-              fontSize: 13,
-            }}
-          >
-            <span style={{ marginRight: 4 }}>{b.symbol}</span> {b.label}
-          </button>
+          <DiagramTooltip key={b.key} content={b.tooltip}>
+            <div>
+              <button
+                onClick={() => setOp(b.key)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  background: op === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${op === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  color: op === b.key ? colors.primary : colors.text,
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ marginRight: 4 }}>{b.symbol}</span> {b.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -192,10 +196,14 @@ export function SetOperationsDiagram() {
 
       {/* Results */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-        <DataBox label="Результат" value={notation} variant="highlight" />
-        <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
-          Python: A = {'{'}1, 2, 3, 4, 5{'}'}; B = {'{'}3, 4, 5, 6, 7{'}'}; {python} = {'{' + result.join(', ') + '}'}
-        </div>
+        <DiagramTooltip content="Результат операции над множествами в математической нотации. Теория множеств -- фундамент определения алгебраических структур (группы, кольца, поля), на которых строится вся криптография эллиптических кривых.">
+          <DataBox label="Результат" value={notation} variant="highlight" />
+        </DiagramTooltip>
+        <DiagramTooltip content="Python имеет встроенный тип set с поддержкой всех операций: | (объединение), & (пересечение), - (разность), ^ (симм. разность). Операторы совпадают с побитовыми, но работают на уровне множеств.">
+          <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
+            Python: A = {'{'}1, 2, 3, 4, 5{'}'}; B = {'{'}3, 4, 5, 6, 7{'}'}; {python} = {'{' + result.join(', ') + '}'}
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -326,16 +334,17 @@ export function BinaryOperationTableDiagram() {
   };
 
   const properties = [
-    { name: 'Замкнутость', value: struct.isClosed, desc: `Результат ${struct.opSymbol} всегда в множестве` },
-    { name: 'Коммутативность', value: struct.isCommutative, desc: `a ${struct.opSymbol} b = b ${struct.opSymbol} a` },
-    { name: 'Ассоциативность', value: struct.isAssociative, desc: `(a ${struct.opSymbol} b) ${struct.opSymbol} c = a ${struct.opSymbol} (b ${struct.opSymbol} c)` },
-    { name: 'Нейтральный элемент', value: struct.identity !== null, desc: struct.identity !== null ? `e = ${struct.identity}` : 'не найден' },
+    { name: 'Замкнутость', value: struct.isClosed, desc: `Результат ${struct.opSymbol} всегда в множестве`, tooltip: 'Замкнутость: результат операции над любыми двумя элементами множества остаётся в том же множестве. Без замкнутости нельзя гарантировать, что криптографические вычисления останутся в допустимом диапазоне.' },
+    { name: 'Коммутативность', value: struct.isCommutative, desc: `a ${struct.opSymbol} b = b ${struct.opSymbol} a`, tooltip: 'Коммутативность: порядок операндов не важен. В Diffie-Hellman это критично: g^(ab) = g^(ba), что позволяет двум сторонам вычислить общий секрет независимо.' },
+    { name: 'Ассоциативность', value: struct.isAssociative, desc: `(a ${struct.opSymbol} b) ${struct.opSymbol} c = a ${struct.opSymbol} (b ${struct.opSymbol} c)`, tooltip: 'Ассоциативность: группировка не влияет на результат. Это обязательное свойство группы. Позволяет корректно определить возведение в степень: g^n = g*g*...*g (n раз) -- основа дискретного логарифма.' },
+    { name: 'Нейтральный элемент', value: struct.identity !== null, desc: struct.identity !== null ? `e = ${struct.identity}` : 'не найден', tooltip: 'Нейтральный элемент (identity): a * e = e * a = a. Для сложения mod n это 0, для умножения -- 1. В ECC это "точка на бесконечности" (point at infinity).' },
     {
       name: 'Обратные элементы',
       value: struct.identity !== null && Array.from(struct.inverses.values()).every((v) => v !== null),
       desc: struct.identity !== null
         ? Array.from(struct.inverses.entries()).map(([el, inv]) => inv !== null ? `${el}\u207B\u00B9=${inv}` : `${el}: нет`).join(', ')
         : 'нет нейтрального',
+      tooltip: 'Обратный элемент: для каждого a существует a^(-1), что a * a^(-1) = e. В RSA: d = e^(-1) mod phi(n) -- приватный ключ является обратным к публичному. В ECC: -P является обратной точкой.',
     },
   ];
 
@@ -344,22 +353,34 @@ export function BinaryOperationTableDiagram() {
       {/* Structure selector */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {STRUCTURES.map((s, i) => (
-          <button
+          <DiagramTooltip
             key={i}
-            onClick={() => { setStructIdx(i); setHighlightInverses(false); }}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              background: structIdx === i ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${structIdx === i ? colors.success : 'rgba(255,255,255,0.1)'}`,
-              color: structIdx === i ? colors.success : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
-            }}
+            content={
+              i === 0
+                ? 'Z_5 с сложением по модулю 5. Элементы {0,1,2,3,4} образуют циклическую группу порядка 5. Аддитивные группы используются в криптографии эллиптических кривых (сложение точек).'
+                : i === 1
+                  ? 'Z_5 с умножением по модулю 5. Ноль не имеет обратного -- не все свойства группы выполняются. Это показывает, почему в криптографии работают с Z*_p (без нуля).'
+                  : 'Z*_7 -- мультипликативная группа по модулю 7. Все ненулевые элементы {1,...,6} имеют обратные. Именно такие группы используются в Diffie-Hellman и RSA.'
+            }
           >
-            {s.name}
-          </button>
+            <div>
+              <button
+                onClick={() => { setStructIdx(i); setHighlightInverses(false); }}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  background: structIdx === i ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${structIdx === i ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                  color: structIdx === i ? colors.success : colors.text,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {s.name}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -374,7 +395,9 @@ export function BinaryOperationTableDiagram() {
                 borderBottom: `1px solid ${colors.border}`,
                 borderRight: `1px solid ${colors.border}`,
               }}>
-                {struct.opSymbol}
+                <DiagramTooltip content="Таблица Кэли (Cayley table) -- полное описание бинарной операции на множестве. Строка * столбец = результат. Если таблица симметрична относительно диагонали, операция коммутативна.">
+                  <span>{struct.opSymbol}</span>
+                </DiagramTooltip>
               </th>
               {struct.elements.map((col) => (
                 <th
@@ -455,41 +478,44 @@ export function BinaryOperationTableDiagram() {
       {/* Properties checklist */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
         {properties.map((prop) => (
-          <div
-            key={prop.name}
-            style={{
-              ...glassStyle,
-              padding: '8px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              background: prop.value ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-              border: `1px solid ${prop.value ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
-            }}
-          >
-            <span style={{
-              fontSize: 16,
-              color: prop.value ? colors.success : colors.danger,
-              flexShrink: 0,
-            }}>
-              {prop.value ? '\u2713' : '\u2717'}
-            </span>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>{prop.name}</span>
-              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{prop.desc}</span>
+          <DiagramTooltip key={prop.name} content={prop.tooltip}>
+            <div
+              style={{
+                ...glassStyle,
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                background: prop.value ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${prop.value ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
+              }}
+            >
+              <span style={{
+                fontSize: 16,
+                color: prop.value ? colors.success : colors.danger,
+                flexShrink: 0,
+              }}>
+                {prop.value ? '\u2713' : '\u2717'}
+              </span>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>{prop.name}</span>
+                <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{prop.desc}</span>
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Summary */}
       {struct.isClosed && struct.isAssociative && struct.identity !== null &&
         Array.from(struct.inverses.values()).every((v) => v !== null) && (
-          <DataBox
-            label="Вывод"
-            value={`(${struct.name}) образует группу!${struct.isCommutative ? ' (абелева группа)' : ''}`}
-            variant="highlight"
-          />
+          <DiagramTooltip content="Группа -- множество с операцией, удовлетворяющей четырём аксиомам: замкнутость, ассоциативность, нейтральный элемент, обратные элементы. Абелева группа дополнительно коммутативна. ECC работает на группе точек эллиптической кривой -- абелевой группе.">
+            <DataBox
+              label="Вывод"
+              value={`(${struct.name}) образует группу!${struct.isCommutative ? ' (абелева группа)' : ''}`}
+              variant="highlight"
+            />
+          </DiagramTooltip>
         )}
     </DiagramContainer>
   );

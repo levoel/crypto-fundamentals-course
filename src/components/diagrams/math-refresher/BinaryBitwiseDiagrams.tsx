@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
@@ -67,13 +68,13 @@ function getBitResult(aBit: number, bBit: number, op: BitwiseOp): number {
   }
 }
 
-const OP_BUTTONS: { key: BitwiseOp; label: string; symbol: string }[] = [
-  { key: 'AND', label: 'AND', symbol: '&' },
-  { key: 'OR', label: 'OR', symbol: '|' },
-  { key: 'XOR', label: 'XOR', symbol: '^' },
-  { key: 'NOT', label: 'NOT', symbol: '~' },
-  { key: 'SHL', label: 'Left Shift', symbol: '<<' },
-  { key: 'SHR', label: 'Right Shift', symbol: '>>' },
+const OP_BUTTONS: { key: BitwiseOp; label: string; symbol: string; tooltip: string }[] = [
+  { key: 'AND', label: 'AND', symbol: '&', tooltip: 'Побитовое И: результат = 1, только если оба бита = 1. Используется для маскирования (извлечения определённых бит). Например, n & 0xFF извлекает последний байт.' },
+  { key: 'OR', label: 'OR', symbol: '|', tooltip: 'Побитовое ИЛИ: результат = 1, если хотя бы один бит = 1. Используется для установки флагов и комбинирования битовых масок в правах доступа смарт-контрактов.' },
+  { key: 'XOR', label: 'XOR', symbol: '^', tooltip: 'Исключающее ИЛИ: результат = 1, если биты различны. Главная операция криптографии: a ^ b ^ b = a (обратимость). Основа OTP, потоковых шифров, Feistel-сетей в AES.' },
+  { key: 'NOT', label: 'NOT', symbol: '~', tooltip: 'Побитовая инверсия: все биты меняются на противоположные. Используется в дополнительном коде для представления отрицательных чисел и в хеш-функциях.' },
+  { key: 'SHL', label: 'Left Shift', symbol: '<<', tooltip: 'Сдвиг влево: все биты сдвигаются на одну позицию влево (эквивалент умножения на 2). В SHA-256 активно используются сдвиги и вращения для диффузии битов.' },
+  { key: 'SHR', label: 'Right Shift', symbol: '>>', tooltip: 'Сдвиг вправо: все биты сдвигаются на одну позицию вправо (эквивалент целочисленного деления на 2). Применяется в алгоритмах быстрого возведения в степень (square-and-multiply) для RSA.' },
 ];
 
 /**
@@ -106,22 +107,25 @@ export function BitwiseOperationsDiagram() {
       {/* Operation selector */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
         {OP_BUTTONS.map((btn) => (
-          <button
-            key={btn.key}
-            onClick={() => setOp(btn.key)}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              background: op === btn.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${op === btn.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: op === btn.key ? colors.primary : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
-            }}
-          >
-            {btn.symbol} {btn.label}
-          </button>
+          <DiagramTooltip key={btn.key} content={btn.tooltip}>
+            <div>
+              <button
+                onClick={() => setOp(btn.key)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  background: op === btn.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${op === btn.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  color: op === btn.key ? colors.primary : colors.text,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {btn.symbol} {btn.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -220,40 +224,48 @@ export function BitwiseOperationsDiagram() {
 
       {/* Three representations */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
-        <DataBox
-          label="Двоичная"
-          value={isUnary
-            ? `${getOpSymbol(op)}${aBits} = ${resultBits}`
-            : `${aBits} ${getOpSymbol(op)} ${bBits} = ${resultBits}`}
-          variant="default"
-        />
-        <DataBox
-          label="Десятичная"
-          value={isUnary
-            ? `${getOpSymbol(op)}${a} = ${result}`
-            : `${a} ${getOpSymbol(op)} ${b} = ${result}`}
-          variant="default"
-        />
-        <DataBox
-          label="Python"
-          value={getPythonExpr(a, b, op) + ` = ${result}`}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Двоичное представление результата операции. Побитовые операции наиболее наглядны именно в двоичной форме -- виден результат для каждого бита.">
+          <DataBox
+            label="Двоичная"
+            value={isUnary
+              ? `${getOpSymbol(op)}${aBits} = ${resultBits}`
+              : `${aBits} ${getOpSymbol(op)} ${bBits} = ${resultBits}`}
+            variant="default"
+          />
+        </DiagramTooltip>
+        <DiagramTooltip content="Десятичное представление того же результата. Побитовые операции в десятичной форме менее интуитивны -- одно число может сильно отличаться от исходных.">
+          <DataBox
+            label="Десятичная"
+            value={isUnary
+              ? `${getOpSymbol(op)}${a} = ${result}`
+              : `${a} ${getOpSymbol(op)} ${b} = ${result}`}
+            variant="default"
+          />
+        </DiagramTooltip>
+        <DiagramTooltip content="Синтаксис Python для побитовых операций совпадает с математической нотацией: &, |, ^, ~, <<, >>. Все операции работают на уровне отдельных бит целого числа.">
+          <DataBox
+            label="Python"
+            value={getPythonExpr(a, b, op) + ` = ${result}`}
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
 
       {/* XOR special note */}
       {op === 'XOR' && (
-        <div style={{
-          ...glassStyle,
-          padding: '8px 12px',
-          marginTop: 8,
-          fontSize: 12,
-          color: colors.info,
-          background: `${colors.info}10`,
-          border: `1px solid ${colors.info}25`,
-        }}>
-          XOR -- король криптографии: обратим! a ^ b ^ b = a. Именно поэтому XOR используется повсюду в шифровании.
-        </div>
+        <DiagramTooltip content="Свойство самообратимости XOR: a XOR key XOR key = a. One-Time Pad (OTP) -- теоретически невзломаемый шифр, основанный исключительно на XOR. AES, ChaCha20, Salsa20 -- все используют XOR как ключевую операцию шифрования.">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            marginTop: 8,
+            fontSize: 12,
+            color: colors.info,
+            background: `${colors.info}10`,
+            border: `1px solid ${colors.info}25`,
+          }}>
+            XOR -- король криптографии: обратим! a ^ b ^ b = a. Именно поэтому XOR используется повсюду в шифровании.
+          </div>
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
@@ -298,16 +310,24 @@ export function HexConverterDiagram() {
 
       {/* Three representations */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
-        <DataBox label="Десятичная" value={String(value)} variant="default" />
-        <DataBox label="Двоичная" value={'0b' + binStr} variant="default" />
-        <DataBox label="Шестнадцатеричная" value={'0x' + hexStr} variant="highlight" />
+        <DiagramTooltip content="Десятичное значение (основание 10). Диапазон 0-65535 -- это одно 16-битное слово. В Ethereum gas-лимиты и wei-значения хранятся как uint256 (32 байта).">
+          <DataBox label="Десятичная" value={String(value)} variant="default" />
+        </DiagramTooltip>
+        <DiagramTooltip content="Двоичное представление с префиксом 0b. 16 бит показаны полностью, включая ведущие нули. Криптографические ключи -- последовательности бит (256 для ECDSA, 128/256 для AES).">
+          <DataBox label="Двоичная" value={'0b' + binStr} variant="default" />
+        </DiagramTooltip>
+        <DiagramTooltip content="Hex с префиксом 0x -- стандарт записи в блокчейне. Ethereum-адрес: 0x + 40 hex-символов = 20 байт. Keccak256-хеш: 0x + 64 hex-символа = 32 байта.">
+          <DataBox label="Шестнадцатеричная" value={'0x' + hexStr} variant="highlight" />
+        </DiagramTooltip>
       </div>
 
       {/* Nibble grouping visualization */}
       <div style={{ ...glassStyle, padding: 16, marginTop: 12 }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, textAlign: 'center' }}>
-          Каждый hex-символ = 4 бита (нибл)
-        </div>
+        <DiagramTooltip content="Нибл (nibble) = 4 бита = один hex-символ. Это ключевое соответствие: каждый байт в hex записывается ровно двумя символами, что делает hex идеальным форматом для отображения криптографических данных.">
+          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, textAlign: 'center' }}>
+            Каждый hex-символ = 4 бита (нибл)
+          </div>
+        </DiagramTooltip>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
           {nibbles.map((nibble, ni) => {
@@ -378,8 +398,9 @@ export function HexConverterDiagram() {
       </div>
 
       {/* Python equivalents */}
-      <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>Python:</div>
+      <DiagramTooltip content="Python нативно поддерживает работу с числами произвольной длины и различными системами счисления. bin() и hex() возвращают строковые представления, а int() с указанием основания парсит обратно.">
+        <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
+          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>Python:</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'monospace', fontSize: 12 }}>
           <div style={{ color: colors.accent }}>
             bin({value}) = '{`0b${value.toString(2)}`}'
@@ -391,7 +412,8 @@ export function HexConverterDiagram() {
             int('{`0x${hexStr}`}', 16) = {value}
           </div>
         </div>
-      </div>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
