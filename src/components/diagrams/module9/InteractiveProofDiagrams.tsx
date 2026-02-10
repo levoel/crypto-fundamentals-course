@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -25,6 +26,7 @@ interface SigmaStep {
   verifierAction: string;
   messageLabel?: string;
   messageDirection?: 'P->V' | 'V->P' | null;
+  tooltip: string;
 }
 
 const SIGMA_STEPS: SigmaStep[] = [
@@ -36,6 +38,7 @@ const SIGMA_STEPS: SigmaStep[] = [
     proverAction: 'Знает: x (секрет)',
     verifierAction: 'Знает: P = xG (публичный)',
     messageDirection: null,
+    tooltip: 'Sigma-протокол — трёхшаговая структура ZK-доказательства: commitment -> challenge -> response. Все ZK-протоколы (Schnorr, Guillou-Quisquater, Okamoto) следуют этому паттерну.',
   },
   {
     title: 'COMMITMENT',
@@ -46,6 +49,7 @@ const SIGMA_STEPS: SigmaStep[] = [
     verifierAction: 'Получает R',
     messageLabel: 'R = kG',
     messageDirection: 'P->V',
+    tooltip: 'Доказывающий выбирает случайное r и отправляет commitment a = g^r. Это скрывает секрет x, но привязывает доказывающего к определенному значению r.',
   },
   {
     title: 'CHALLENGE',
@@ -56,6 +60,7 @@ const SIGMA_STEPS: SigmaStep[] = [
     verifierAction: 'c = random',
     messageLabel: 'c (random challenge)',
     messageDirection: 'V->P',
+    tooltip: 'Верификатор отправляет случайный challenge e. Случайность challenge критична — если доказывающий может предсказать e, он может подделать доказательство.',
   },
   {
     title: 'RESPONSE',
@@ -66,6 +71,7 @@ const SIGMA_STEPS: SigmaStep[] = [
     verifierAction: 'Получает s',
     messageLabel: 's = k + cx',
     messageDirection: 'P->V',
+    tooltip: 'Доказывающий вычисляет response z = r + e*x mod q и отправляет верификатору. Это позволяет верифицировать знание x без его раскрытия.',
   },
   {
     title: 'VERIFY',
@@ -75,6 +81,7 @@ const SIGMA_STEPS: SigmaStep[] = [
     proverAction: 'Доказано: знает x',
     verifierAction: 'sG == R + cP?',
     messageDirection: null,
+    tooltip: 'Верификатор проверяет уравнение sG == R + cP. Алгебраически: sG = (k+cx)G = kG + cxG = R + cP. Если равенство выполняется, доказывающий знает x с overwhelming probability.',
   },
 ];
 
@@ -172,29 +179,31 @@ export function SigmaProtocolDiagram() {
       </div>
 
       {/* Step detail */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 12,
-        border: `1px solid ${current.color}30`,
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace', marginBottom: 8 }}>
-          {step + 1}. {current.title}: {current.subtitle}
-        </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
-          {current.description}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(167,139,250,0.15)' }}>
-            <div style={{ fontSize: 9, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 2 }}>Prover:</div>
-            <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.proverAction}</div>
+      <DiagramTooltip content={current.tooltip}>
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 12,
+          border: `1px solid ${current.color}30`,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace', marginBottom: 8 }}>
+            {step + 1}. {current.title}: {current.subtitle}
           </div>
-          <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(59,130,246,0.15)' }}>
-            <div style={{ fontSize: 9, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 2 }}>Verifier:</div>
-            <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.verifierAction}</div>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
+            {current.description}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(167,139,250,0.15)' }}>
+              <div style={{ fontSize: 9, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 2 }}>Prover:</div>
+              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.proverAction}</div>
+            </div>
+            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(59,130,246,0.15)' }}>
+              <div style={{ fontSize: 9, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 2 }}>Verifier:</div>
+              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.verifierAction}</div>
+            </div>
           </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Verify equation at step 4 */}
       {step === 4 && (
@@ -207,25 +216,27 @@ export function SigmaProtocolDiagram() {
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)', color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11, fontFamily: 'monospace', cursor: history.length > 1 ? 'pointer' : 'not-allowed',
-        }}>Back</button>
-        <button onClick={handleNext} disabled={step >= SIGMA_STEPS.length - 1} style={{
-          padding: '6px 16px', borderRadius: 6,
-          border: `1px solid ${step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
-          background: step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < SIGMA_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
-          fontSize: 11, fontFamily: 'monospace', cursor: step < SIGMA_STEPS.length - 1 ? 'pointer' : 'not-allowed',
-        }}>Step</button>
-        <button onClick={handleReset} style={{
-          padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)', color: colors.textMuted, fontSize: 11,
-          fontFamily: 'monospace', cursor: 'pointer',
-        }}>Reset</button>
-      </div>
+      <DiagramTooltip content="Навигация по шагам Sigma-протокола: commitment (P->V), challenge (V->P), response (P->V), verify. Три хода — минимальная структура для ZK-доказательства.">
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleBack} disabled={history.length <= 1} style={{
+            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.05)', color: history.length > 1 ? colors.text : colors.textMuted,
+            fontSize: 11, fontFamily: 'monospace', cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+          }}>Back</button>
+          <button onClick={handleNext} disabled={step >= SIGMA_STEPS.length - 1} style={{
+            padding: '6px 16px', borderRadius: 6,
+            border: `1px solid ${step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            background: step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+            color: step < SIGMA_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
+            fontSize: 11, fontFamily: 'monospace', cursor: step < SIGMA_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+          }}>Step</button>
+          <button onClick={handleReset} style={{
+            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.05)', color: colors.textMuted, fontSize: 11,
+            fontFamily: 'monospace', cursor: 'pointer',
+          }}>Reset</button>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -326,7 +337,9 @@ export function SchnorrProtocolDiagram() {
       {/* Secret key input */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(167,139,250,0.2)' }}>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Secret key x:</div>
+          <DiagramTooltip content="Секретный ключ x — приватное значение, которое доказывающий хочет подтвердить знание без раскрытия. В Schnorr-протоколе x определяет публичный ключ P = g^x mod p.">
+            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Secret key x:</div>
+          </DiagramTooltip>
           <input
             type="number"
             value={x}
@@ -361,49 +374,62 @@ export function SchnorrProtocolDiagram() {
 
       {/* Mode toggle + Run button */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button
-          onClick={() => { setMode('honest'); clearRounds(); }}
-          style={{
-            padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-            border: `1px solid ${mode === 'honest' ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            background: mode === 'honest' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-            color: mode === 'honest' ? '#22c55e' : colors.textMuted,
-            fontWeight: mode === 'honest' ? 600 : 400,
-          }}
-        >
-          Honest Prover
-        </button>
-        <button
-          onClick={() => { setMode('cheater'); clearRounds(); }}
-          style={{
-            padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-            border: `1px solid ${mode === 'cheater' ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            background: mode === 'cheater' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
-            color: mode === 'cheater' ? '#ef4444' : colors.textMuted,
-            fontWeight: mode === 'cheater' ? 600 : 400,
-          }}
-        >
-          Cheater (no x)
-        </button>
-        <button
-          onClick={runRound}
-          style={{
-            padding: '6px 18px', borderRadius: 6, fontSize: 11, fontFamily: 'monospace', cursor: 'pointer',
-            border: '1px solid rgba(96,165,250,0.3)', background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontWeight: 600,
-            marginLeft: 'auto',
-          }}
-        >
-          Run Round
-        </button>
-        <button
-          onClick={clearRounds}
-          style={{
-            padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: colors.textMuted,
-          }}
-        >
-          Clear
-        </button>
+        <DiagramTooltip content={mode === 'honest'
+          ? 'Честный режим: доказывающий знает секретный ключ x и корректно вычисляет response z = r + e*x. Верификация всегда проходит успешно.'
+          : 'Режим мошенника: доказывающий НЕ знает x и пытается угадать challenge заранее. С вероятностью ~100% обман раскрывается.'}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => { setMode('honest'); clearRounds(); }}
+              style={{
+                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
+                border: `1px solid ${mode === 'honest' ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                background: mode === 'honest' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+                color: mode === 'honest' ? '#22c55e' : colors.textMuted,
+                fontWeight: mode === 'honest' ? 600 : 400,
+              }}
+            >
+              Honest Prover
+            </button>
+            <button
+              onClick={() => { setMode('cheater'); clearRounds(); }}
+              style={{
+                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
+                border: `1px solid ${mode === 'cheater' ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                background: mode === 'cheater' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+                color: mode === 'cheater' ? '#ef4444' : colors.textMuted,
+                fontWeight: mode === 'cheater' ? 600 : 400,
+              }}
+            >
+              Cheater (no x)
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Выполнить один раунд протокола Шнорра: commitment -> challenge -> response -> verification.">
+          <div style={{ marginLeft: 'auto' }}>
+            <button
+              onClick={runRound}
+              style={{
+                padding: '6px 18px', borderRadius: 6, fontSize: 11, fontFamily: 'monospace', cursor: 'pointer',
+                border: '1px solid rgba(96,165,250,0.3)', background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontWeight: 600,
+              }}
+            >
+              Run Round
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Очистить историю раундов и начать заново.">
+          <div>
+            <button
+              onClick={clearRounds}
+              style={{
+                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: colors.textMuted,
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Rounds table */}
@@ -416,11 +442,22 @@ export function SchnorrProtocolDiagram() {
             gap: 1,
             marginBottom: 1,
           }}>
-            {['#', 'k', 'R', 'c', 's', 'g^s', 'R*P^c', 'Result'].map((h) => (
-              <div key={h} style={{
-                ...glassStyle, padding: '4px 4px', fontSize: 8, fontWeight: 600,
-                color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center',
-              }}>{h}</div>
+            {[
+              { h: '#', tip: 'Номер раунда протокола.' },
+              { h: 'k', tip: 'Случайное число k (nonce): Prover выбирает секретное k для вычисления commitment R = g^k.' },
+              { h: 'R', tip: 'Commitment R = g^k mod p: отправляется Verifier как первый шаг протокола.' },
+              { h: 'c', tip: 'Challenge c: случайное число от Verifier. Prover не может предсказать c заранее.' },
+              { h: 's', tip: 'Response s = k + c*x mod q (честный) или random (мошенник). Ключевое вычисление протокола.' },
+              { h: 'g^s', tip: 'Левая часть проверки: g^s mod p. Verifier вычисляет это значение.' },
+              { h: 'R*P^c', tip: 'Правая часть проверки: R * P^c mod p. Если g^s == R*P^c, доказательство верно.' },
+              { h: 'Result', tip: 'Результат верификации: PASS (g^s == R*P^c) или FAIL (значения не совпадают).' },
+            ].map(({ h, tip }) => (
+              <DiagramTooltip key={h} content={tip}>
+                <div style={{
+                  ...glassStyle, padding: '4px 4px', fontSize: 8, fontWeight: 600,
+                  color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center',
+                }}>{h}</div>
+              </DiagramTooltip>
             ))}
           </div>
           {/* Rows */}
@@ -460,14 +497,18 @@ export function SchnorrProtocolDiagram() {
         </div>
       )}
 
-      <DataBox
-        label={mode === 'honest' ? 'Honest Prover' : 'Cheater'}
-        value={mode === 'honest'
-          ? `Честный prover знает x=${x}, поэтому вычисляет s = k + c*x (mod ${SCHNORR_Q}). Верификация g^s == R * P^c ВСЕГДА проходит.`
-          : `Cheater НЕ знает x, выбирает случайный s. Верификация g^s == R * P^c проходит только при совпадении (~0%). Запустите 5-10 раундов!`
-        }
-        variant={mode === 'honest' ? 'info' : 'warning'}
-      />
+      <DiagramTooltip content={mode === 'honest'
+        ? `Честный доказывающий знает секрет x=${x} и всегда корректно вычисляет response s = k + c*x mod ${SCHNORR_Q}. Верификация g^s == R*P^c ВСЕГДА проходит — это свойство completeness.`
+        : 'Мошенник не знает x и выбирает случайный s. Вероятность прохождения верификации пренебрежимо мала — это свойство soundness протокола Шнорра.'}>
+        <DataBox
+          label={mode === 'honest' ? 'Honest Prover' : 'Cheater'}
+          value={mode === 'honest'
+            ? `Честный prover знает x=${x}, поэтому вычисляет s = k + c*x (mod ${SCHNORR_Q}). Верификация g^s == R * P^c ВСЕГДА проходит.`
+            : `Cheater НЕ знает x, выбирает случайный s. Верификация g^s == R * P^c проходит только при совпадении (~0%). Запустите 5-10 раундов!`
+          }
+          variant={mode === 'honest' ? 'info' : 'warning'}
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -572,11 +613,13 @@ export function FiatShamirDiagram() {
         </div>
       </div>
 
-      <DataBox
-        label="Ключевое следствие"
-        value="Fiat-Shamir -- ключевая трансформация: из интерактивного протокола -> неинтерактивное доказательство. ВСЕ SNARKs и STARKs используют этот приём. Бонус: Schnorr протокол + Fiat-Shamir = Schnorr подпись (Phase 2, CRYPTO-12)."
-        variant="info"
-      />
+      <DiagramTooltip content="Преобразование Фиата-Шамира заменяет случайный challenge верификатора хешем транскрипта: e = H(a, msg). Это превращает интерактивный протокол в неинтерактивное доказательство, которое можно отправить в блокчейн для on-chain верификации.">
+        <DataBox
+          label="Ключевое следствие"
+          value="Fiat-Shamir -- ключевая трансформация: из интерактивного протокола -> неинтерактивное доказательство. ВСЕ SNARKs и STARKs используют этот приём. Бонус: Schnorr протокол + Fiat-Shamir = Schnorr подпись (Phase 2, CRYPTO-12)."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

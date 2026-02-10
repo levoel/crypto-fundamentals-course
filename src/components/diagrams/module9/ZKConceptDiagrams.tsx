@@ -4,12 +4,13 @@
  * Exports:
  * - AliBabaCaveDiagram: Ali Baba cave simulation (interactive step-through, history array, 6 steps)
  * - ZKPropertiesDiagram: ZK properties triangle (static)
- * - ZKApplicationsDiagram: ZK applications landscape (static with hover)
+ * - ZKApplicationsDiagram: ZK applications landscape (static with DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -26,6 +27,7 @@ interface CaveStep {
   doorOpen?: boolean;
   peggyVisible?: boolean;
   victorLooking?: boolean;
+  tooltip: string;
 }
 
 const CAVE_STEPS: CaveStep[] = [
@@ -39,6 +41,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: false,
     peggyVisible: true,
     victorLooking: false,
+    tooltip: 'Пещера Али-Бабы — классическая аналогия для объяснения ZK-доказательств: доказывающий знает секретное слово (пароль от двери), а верификатор проверяет знание, не узнавая сам секрет.',
   },
   {
     title: 'ENTER',
@@ -50,6 +53,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: false,
     peggyVisible: false,
     victorLooking: false,
+    tooltip: 'Пегги случайно выбирает один из двух путей. Виктор не видит её выбор — это гарантирует, что он не может предсказать ответ и подстроить вызов.',
   },
   {
     title: 'CHALLENGE',
@@ -61,6 +65,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: false,
     peggyVisible: false,
     victorLooking: true,
+    tooltip: 'Виктор случайно выбирает сторону выхода. Случайность challenge критична — если Пегги могла бы предсказать запрос, она могла бы обмануть без знания секрета.',
   },
   {
     title: 'RESPONSE',
@@ -72,6 +77,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: true,
     peggyVisible: true,
     victorLooking: true,
+    tooltip: 'Зная секретное слово, Пегги открывает дверь и выходит через запрошенный путь. Без знания секрета она могла бы выйти правильно только с вероятностью 50%.',
   },
   {
     title: 'REPEAT',
@@ -83,6 +89,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: false,
     peggyVisible: true,
     victorLooking: true,
+    tooltip: 'Повторение раундов экспоненциально снижает вероятность обмана. После N раундов вероятность успешного мошенничества = (1/2)^N, что быстро становится пренебрежимо малым.',
   },
   {
     title: 'ZK PROPERTIES',
@@ -94,6 +101,7 @@ const CAVE_STEPS: CaveStep[] = [
     doorOpen: false,
     peggyVisible: true,
     victorLooking: true,
+    tooltip: 'Три фундаментальных свойства ZK-доказательства: полнота (честный prover всегда убедит), корректность (мошенник не обманет), нулевое разглашение (секрет не раскрыт).',
   },
 ];
 
@@ -225,54 +233,58 @@ export function AliBabaCaveDiagram() {
       </div>
 
       {/* Current step detail */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 12,
-        border: `1px solid ${current.color}30`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
-            {step + 1}. {current.title}: {current.subtitle}
+      <DiagramTooltip content={current.tooltip}>
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 12,
+          border: `1px solid ${current.color}30`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+              {step + 1}. {current.title}: {current.subtitle}
+            </div>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: `${current.color}15`,
+              color: current.color,
+              border: `1px solid ${current.color}30`,
+            }}>
+              Шаг {step + 1}/{CAVE_STEPS.length}
+            </span>
           </div>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${current.color}15`,
-            color: current.color,
-            border: `1px solid ${current.color}30`,
-          }}>
-            Шаг {step + 1}/{CAVE_STEPS.length}
-          </span>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Probability table (shown at step 4) */}
       {step === 4 && (
-        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(59,130,246,0.2)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 8 }}>
-            Вероятность обмана при повторении:
+        <DiagramTooltip content="Таблица вероятностей обмана: с каждым раундом вероятность успешного мошенничества падает экспоненциально. После 20 раундов вероятность обмана составляет менее 0.0001% — это обеспечивает soundness ZK-доказательства.">
+          <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 8 }}>
+              Вероятность обмана при повторении:
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+              {PROBABILITY_TABLE.map((row) => (
+                <div key={row.rounds} style={{
+                  ...glassStyle,
+                  padding: 8,
+                  textAlign: 'center',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>{row.rounds} раунд{row.rounds > 1 ? (row.rounds < 5 ? 'а' : 'ов') : ''}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>{row.prob}</div>
+                  <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>1/2^{row.rounds}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-            {PROBABILITY_TABLE.map((row) => (
-              <div key={row.rounds} style={{
-                ...glassStyle,
-                padding: 8,
-                textAlign: 'center',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>{row.rounds} раунд{row.rounds > 1 ? (row.rounds < 5 ? 'а' : 'ов') : ''}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>{row.prob}</div>
-                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>1/2^{row.rounds}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </DiagramTooltip>
       )}
 
       {/* ZK Properties summary (shown at step 5) */}
@@ -298,42 +310,46 @@ export function AliBabaCaveDiagram() {
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: history.length > 1 ? 'pointer' : 'not-allowed',
-        }}>
-          Back
-        </button>
-        <button onClick={handleNext} disabled={step >= CAVE_STEPS.length - 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: `1px solid ${step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
-          background: step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < CAVE_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: step < CAVE_STEPS.length - 1 ? 'pointer' : 'not-allowed',
-        }}>
-          Step
-        </button>
-        <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
-        }}>
-          Reset
-        </button>
+        <DiagramTooltip content="Навигация по шагам пещеры Али-Бабы: используйте кнопки для перехода между этапами ZK-доказательства — от setup до финальных свойств.">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleBack} disabled={history.length <= 1} style={{
+              padding: '6px 16px',
+              borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.05)',
+              color: history.length > 1 ? colors.text : colors.textMuted,
+              fontSize: 11,
+              fontFamily: 'monospace',
+              cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+            }}>
+              Back
+            </button>
+            <button onClick={handleNext} disabled={step >= CAVE_STEPS.length - 1} style={{
+              padding: '6px 16px',
+              borderRadius: 6,
+              border: `1px solid ${step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              background: step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+              color: step < CAVE_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
+              fontSize: 11,
+              fontFamily: 'monospace',
+              cursor: step < CAVE_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+            }}>
+              Step
+            </button>
+            <button onClick={handleReset} style={{
+              padding: '6px 16px',
+              borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.05)',
+              color: colors.textMuted,
+              fontSize: 11,
+              fontFamily: 'monospace',
+              cursor: 'pointer',
+            }}>
+              Reset
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -350,6 +366,7 @@ interface ZKProperty {
   example: string;
   formal: string;
   color: string;
+  tooltip: string;
 }
 
 const ZK_PROPERTIES: ZKProperty[] = [
@@ -360,6 +377,7 @@ const ZK_PROPERTIES: ZKProperty[] = [
     example: 'Пегги знает слово -> Виктор всегда примет.',
     formal: 'Pr[Verify(proof) = accept | statement is true] = 1',
     color: '#22c55e',
+    tooltip: 'Полнота (Completeness): если утверждение истинно и доказывающий знает свидетельство (witness), верификатор всегда примет доказательство. Гарантирует, что честный доказывающий никогда не будет отвергнут.',
   },
   {
     label: 'Soundness',
@@ -368,6 +386,7 @@ const ZK_PROPERTIES: ZKProperty[] = [
     example: 'Пегги НЕ знает слово -> обман раскроется через N раундов.',
     formal: 'Pr[Verify(proof) = accept | statement is false] < epsilon',
     color: '#3b82f6',
+    tooltip: 'Корректность (Soundness): если утверждение ложно, никакой нечестный доказывающий не сможет убедить верификатора принять доказательство (кроме с пренебрежимо малой вероятностью). Защищает от ложных доказательств.',
   },
   {
     label: 'Zero-Knowledge',
@@ -376,6 +395,7 @@ const ZK_PROPERTIES: ZKProperty[] = [
     example: 'Виктор знает ЧТО Пегги знает, но НЕ знает секретное слово.',
     formal: 'exists Simulator S: S(statement) ~ real proof transcript',
     color: '#f59e0b',
+    tooltip: 'Нулевое разглашение (Zero-Knowledge): верификатор не узнает ничего, кроме истинности утверждения. Формально: существует симулятор, создающий неотличимые транскрипты без знания свидетельства.',
   },
 ];
 
@@ -420,48 +440,52 @@ export function ZKPropertiesDiagram() {
       {/* Property cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
         {ZK_PROPERTIES.map((prop) => (
-          <div key={prop.label} style={{
-            ...glassStyle,
-            padding: 12,
-            border: `1px solid ${prop.color}25`,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: prop.color, fontFamily: 'monospace', marginBottom: 2 }}>
-              {prop.label}
+          <DiagramTooltip key={prop.label} content={prop.tooltip}>
+            <div style={{
+              ...glassStyle,
+              padding: 12,
+              border: `1px solid ${prop.color}25`,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: prop.color, fontFamily: 'monospace', marginBottom: 2 }}>
+                {prop.label}
+              </div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+                ({prop.labelRu})
+              </div>
+              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
+                {prop.definition}
+              </div>
+              <div style={{ fontSize: 9, fontStyle: 'italic', color: prop.color, lineHeight: 1.4, opacity: 0.8 }}>
+                {prop.example}
+              </div>
             </div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-              ({prop.labelRu})
-            </div>
-            <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-              {prop.definition}
-            </div>
-            <div style={{ fontSize: 9, fontStyle: 'italic', color: prop.color, lineHeight: 1.4, opacity: 0.8 }}>
-              {prop.example}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Formal definitions */}
-      <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-          Формальные определения:
-        </div>
-        {ZK_PROPERTIES.map((prop) => (
-          <div key={prop.label} style={{
-            fontSize: 10,
-            fontFamily: 'monospace',
-            color: colors.text,
-            marginBottom: 4,
-            padding: '4px 8px',
-            background: `${prop.color}08`,
-            borderRadius: 4,
-            borderLeft: `2px solid ${prop.color}40`,
-          }}>
-            <span style={{ color: prop.color, fontWeight: 600 }}>{prop.label}:</span>{' '}
-            {prop.formal}
+      <DiagramTooltip content="Формальные определения ZK-свойств используют парадигму симулятора: если существует полиномиальный алгоритм (симулятор), создающий транскрипты, неотличимые от реальных — протокол обеспечивает нулевое разглашение. Различают computational ZK (неотличимость для PPT-алгоритмов) и statistical ZK (неотличимость для любых алгоритмов).">
+        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+            Формальные определения:
           </div>
-        ))}
-      </div>
+          {ZK_PROPERTIES.map((prop) => (
+            <div key={prop.label} style={{
+              fontSize: 10,
+              fontFamily: 'monospace',
+              color: colors.text,
+              marginBottom: 4,
+              padding: '4px 8px',
+              background: `${prop.color}08`,
+              borderRadius: 4,
+              borderLeft: `2px solid ${prop.color}40`,
+            }}>
+              <span style={{ color: prop.color, fontWeight: 600 }}>{prop.label}:</span>{' '}
+              {prop.formal}
+            </div>
+          ))}
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -474,8 +498,8 @@ interface ZKApplication {
   title: string;
   titleRu: string;
   summary: string;
-  detail: string;
   color: string;
+  tooltip: string;
 }
 
 const ZK_APPLICATIONS: ZKApplication[] = [
@@ -483,126 +507,107 @@ const ZK_APPLICATIONS: ZKApplication[] = [
     title: 'Privacy',
     titleRu: 'Конфиденциальность',
     summary: 'Скрыть данные транзакций.',
-    detail: 'Zcash -- первая криптовалюта с приватными транзакциями. Sender, receiver, amount скрыты через zk-SNARKs.',
     color: '#a78bfa',
+    tooltip: 'Zcash использует zk-SNARKs для скрытия отправителя, получателя и суммы транзакции. Shielded-транзакции доказывают валидность перевода без раскрытия деталей.',
   },
   {
     title: 'Scalability',
     titleRu: 'Масштабируемость',
     summary: 'ZK Rollups сжимают тысячи транзакций в один proof.',
-    detail: 'zkSync, StarkNet, Polygon zkEVM, Scroll -- все используют validity proofs для масштабирования Ethereum (Module 8).',
     color: '#3b82f6',
+    tooltip: 'zk-Rollups (zkSync, StarkNet, Polygon zkEVM) используют ZK-доказательства для сжатия тысяч транзакций L2 в одно доказательство на L1, обеспечивая масштабируемость без потери безопасности.',
   },
   {
     title: 'Identity',
     titleRu: 'Идентификация',
     summary: 'Доказать свойство без раскрытия данных.',
-    detail: 'WorldID (Worldcoin): доказать что вы человек, не раскрывая кто вы. Semaphore: анонимное членство в группе.',
     color: '#22c55e',
+    tooltip: 'ZK-доказательства позволяют подтвердить возраст, гражданство или квалификацию без раскрытия документов. Основа для децентрализованной цифровой идентичности (DID).',
   },
   {
     title: 'Voting',
     titleRu: 'Голосование',
     summary: 'Приватное голосование с проверяемым результатом.',
-    detail: 'Доказать что голос подан правильно, не раскрывая за кого. MACI (Minimum Anti-Collusion Infrastructure) от Ethereum Foundation.',
     color: '#f59e0b',
+    tooltip: 'ZK-голосование позволяет доказать право голоса и корректность подсчета без раскрытия индивидуальных голосов. Предотвращает покупку голосов и принуждение.',
   },
   {
     title: 'Compliance',
     titleRu: 'Соответствие',
     summary: 'Доказать соблюдение правил без раскрытия данных.',
-    detail: "Банк доказывает регулятору: 'Наши резервы >= обязательств' без раскрытия конкретных балансов клиентов.",
     color: '#ef4444',
+    tooltip: 'ZK-compliance позволяет доказать соответствие регуляторным требованиям (достаточность резервов, KYC-проверка) без раскрытия конфиденциальных данных клиентов.',
   },
 ];
 
 /**
  * ZKApplicationsDiagram
  *
- * Grid of 5 ZK application cards with hover detail.
+ * Grid of 5 ZK application cards with DiagramTooltip.
  */
 export function ZKApplicationsDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Применения Zero-Knowledge: от блокчейна до реального мира" color="green">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
-        {ZK_APPLICATIONS.slice(0, 3).map((app, i) => (
-          <div
-            key={app.title}
-            onMouseEnter={() => setHoveredIdx(i)}
-            onMouseLeave={() => setHoveredIdx(null)}
-            style={{
-              ...glassStyle,
-              padding: 12,
-              cursor: 'pointer',
-              border: `1px solid ${hoveredIdx === i ? `${app.color}40` : 'rgba(255,255,255,0.06)'}`,
-              background: hoveredIdx === i ? `${app.color}08` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-            }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
-              {app.title}
+        {ZK_APPLICATIONS.slice(0, 3).map((app) => (
+          <DiagramTooltip key={app.title} content={app.tooltip}>
+            <div
+              style={{
+                ...glassStyle,
+                padding: 12,
+                cursor: 'pointer',
+                border: `1px solid rgba(255,255,255,0.06)`,
+                background: 'rgba(255,255,255,0.02)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
+                {app.title}
+              </div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                ({app.titleRu})
+              </div>
+              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+                {app.summary}
+              </div>
             </div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-              ({app.titleRu})
-            </div>
-            <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
-              {app.summary}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
-        {ZK_APPLICATIONS.slice(3).map((app, i) => (
-          <div
-            key={app.title}
-            onMouseEnter={() => setHoveredIdx(i + 3)}
-            onMouseLeave={() => setHoveredIdx(null)}
-            style={{
-              ...glassStyle,
-              padding: 12,
-              cursor: 'pointer',
-              border: `1px solid ${hoveredIdx === i + 3 ? `${app.color}40` : 'rgba(255,255,255,0.06)'}`,
-              background: hoveredIdx === i + 3 ? `${app.color}08` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-            }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
-              {app.title}
+        {ZK_APPLICATIONS.slice(3).map((app) => (
+          <DiagramTooltip key={app.title} content={app.tooltip}>
+            <div
+              style={{
+                ...glassStyle,
+                padding: 12,
+                cursor: 'pointer',
+                border: `1px solid rgba(255,255,255,0.06)`,
+                background: 'rgba(255,255,255,0.02)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
+                {app.title}
+              </div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                ({app.titleRu})
+              </div>
+              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+                {app.summary}
+              </div>
             </div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-              ({app.titleRu})
-            </div>
-            <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
-              {app.summary}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
-      {/* Hover detail */}
-      {hoveredIdx !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: `1px solid ${ZK_APPLICATIONS[hoveredIdx].color}30`,
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: ZK_APPLICATIONS[hoveredIdx].color, fontFamily: 'monospace', marginBottom: 4 }}>
-            {ZK_APPLICATIONS[hoveredIdx].title}: {ZK_APPLICATIONS[hoveredIdx].titleRu}
-          </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            {ZK_APPLICATIONS[hoveredIdx].detail}
-          </div>
-        </div>
-      )}
-
-      <DataBox
-        label="Ключевое наблюдение"
-        value="ZK = универсальная технология: где нужно ДОКАЗАТЬ без РАСКРЫТИЯ. От приватных транзакций (Zcash) до масштабирования (zkSync) и цифровой идентификации (WorldID)."
-        variant="info"
-      />
+      <DiagramTooltip content="ZK-доказательства — универсальная криптографическая технология: везде, где нужно ДОКАЗАТЬ что-то без РАСКРЫТИЯ секретной информации. От приватных транзакций до масштабирования блокчейнов и цифровой идентичности.">
+        <DataBox
+          label="Ключевое наблюдение"
+          value="ZK = универсальная технология: где нужно ДОКАЗАТЬ без РАСКРЫТИЯ. От приватных транзакций (Zcash) до масштабирования (zkSync) и цифровой идентификации (WorldID)."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
