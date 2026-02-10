@@ -2,14 +2,13 @@
  * Solana Architecture Diagrams (SOL-01)
  *
  * Exports:
- * - SolanaVsEthereumDiagram: Side-by-side comparison table (static with hover/tooltips)
- * - SolanaInnovationsDiagram: 8 key Solana innovations overview (static with hover)
+ * - SolanaVsEthereumDiagram: Side-by-side comparison table (static with DiagramTooltip)
+ * - SolanaInnovationsDiagram: 8 key Solana innovations overview (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
-import { DataBox } from '@primitives/DataBox';
-import { colors, glassStyle } from '@primitives/shared';
+import { DiagramTooltip } from '@primitives/Tooltip';
+import { colors } from '@primitives/shared';
 
 /* ================================================================== */
 /*  SolanaVsEthereumDiagram                                            */
@@ -114,10 +113,6 @@ const cellStyle: React.CSSProperties = {
 };
 
 export function SolanaVsEthereumDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
-  const hoveredData = hoveredRow !== null ? COMPARISON_DATA[hoveredRow] : null;
-
   return (
     <DiagramContainer title="Ethereum vs Solana: сравнение архитектур" color="green">
       <div style={{ overflowX: 'auto' }}>
@@ -130,57 +125,37 @@ export function SolanaVsEthereumDiagram() {
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_DATA.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{ cursor: 'default' }}
-                >
+            {COMPARISON_DATA.map((row, i) => (
+              <DiagramTooltip key={i} content={row.tooltip}>
+                <tr style={{ cursor: 'default' }}>
                   <td style={{
                     ...cellStyle,
                     fontWeight: 600,
-                    color: isHovered ? colors.primary : colors.text,
-                    background: isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                    color: colors.text,
+                    background: 'rgba(255,255,255,0.03)',
                   }}>
                     {row.aspect}
                   </td>
                   <td style={{
                     ...cellStyle,
                     color: colors.textMuted,
-                    background: isHovered ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)',
+                    background: 'rgba(255,255,255,0.03)',
                   }}>
                     {row.ethereum}
                   </td>
                   <td style={{
                     ...cellStyle,
                     color: colors.text,
-                    background: isHovered ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                    background: 'rgba(255,255,255,0.03)',
                   }}>
                     {row.solana}
                   </td>
                 </tr>
-              );
-            })}
+              </DiagramTooltip>
+            ))}
           </tbody>
         </table>
       </div>
-
-      {hoveredData ? (
-        <div style={{ marginTop: 12 }}>
-          <DataBox
-            label={hoveredData.aspect}
-            value={hoveredData.tooltip}
-            variant="highlight"
-          />
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 12 }}>
-          Наведите на строку, чтобы увидеть подробное сравнение
-        </div>
-      )}
     </DiagramContainer>
   );
 }
@@ -271,10 +246,6 @@ const INNOVATIONS: Innovation[] = [
 ];
 
 export function SolanaInnovationsDiagram() {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
-
-  const hoveredInnovation = hoveredId !== null ? INNOVATIONS.find((i) => i.id === hoveredId) : null;
-
   return (
     <DiagramContainer title="8 инноваций Solana" color="purple">
       {/* Layer legend */}
@@ -300,61 +271,43 @@ export function SolanaInnovationsDiagram() {
         gap: 10,
       }}>
         {INNOVATIONS.map((innovation) => {
-          const isHovered = hoveredId === innovation.id;
           const layerColor = LAYER_COLORS[innovation.layer];
           return (
-            <div
-              key={innovation.id}
-              onMouseEnter={() => setHoveredId(innovation.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              style={{
-                ...glassStyle,
-                padding: '12px 14px',
-                borderRadius: 8,
-                cursor: 'default',
-                background: isHovered ? `${layerColor}15` : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${isHovered ? layerColor + '50' : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.15s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{
-                  fontSize: 10, fontFamily: 'monospace', fontWeight: 700,
-                  color: layerColor,
-                  background: `${layerColor}20`,
-                  padding: '2px 6px', borderRadius: 4,
-                }}>
-                  {innovation.id}
-                </span>
-                <span style={{
-                  fontSize: 13, fontFamily: 'monospace', fontWeight: 600,
-                  color: isHovered ? layerColor : colors.text,
-                }}>
-                  {innovation.name}
-                </span>
+            <DiagramTooltip key={innovation.id} content={innovation.fullDesc}>
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  cursor: 'default',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: `1px solid rgba(255,255,255,0.08)`,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 10, fontFamily: 'monospace', fontWeight: 700,
+                    color: layerColor,
+                    background: `${layerColor}20`,
+                    padding: '2px 6px', borderRadius: 4,
+                  }}>
+                    {innovation.id}
+                  </span>
+                  <span style={{
+                    fontSize: 13, fontFamily: 'monospace', fontWeight: 600,
+                    color: colors.text,
+                  }}>
+                    {innovation.name}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                  {innovation.shortDesc}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
-                {innovation.shortDesc}
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
-
-      {/* Hover detail */}
-      {hoveredInnovation ? (
-        <div style={{ marginTop: 12 }}>
-          <DataBox
-            label={hoveredInnovation.name}
-            value={hoveredInnovation.fullDesc}
-            variant="highlight"
-          />
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 12 }}>
-          Наведите на инновацию, чтобы увидеть подробности и сравнение с Ethereum
-        </div>
-      )}
     </DiagramContainer>
   );
 }

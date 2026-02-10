@@ -2,13 +2,14 @@
  * Account Model Diagrams (SOL-04)
  *
  * Exports:
- * - SolanaAccountStructureDiagram: Solana account 5-field explorer with data/program toggle (static with hover)
- * - EthVsSolanaStateDiagram: Ethereum bundled vs Solana separated state model comparison (static with hover)
- * - PDADerivationDiagram: Step-through PDA derivation with FNV hash simulation (interactive, history array)
+ * - SolanaAccountStructureDiagram: Solana account 5-field explorer with data/program toggle (static with DiagramTooltip)
+ * - EthVsSolanaStateDiagram: Ethereum bundled vs Solana separated state model comparison (static with DiagramTooltip)
+ * - PDADerivationDiagram: Step-through PDA derivation with FNV hash simulation (interactive with DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -112,32 +113,32 @@ const ACCOUNT_FIELDS: AccountField[] = [
 ];
 
 export function SolanaAccountStructureDiagram() {
-  const [hoveredField, setHoveredField] = useState<number | null>(null);
   const [mode, setMode] = useState<'data' | 'program'>('data');
-
-  const hovered = hoveredField !== null ? ACCOUNT_FIELDS[hoveredField] : null;
 
   return (
     <DiagramContainer title="Структура аккаунта Solana" color="green">
       {/* Toggle */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
         {(['data', 'program'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => { setMode(m); setHoveredField(null); }}
-            style={{
-              ...glassStyle,
-              padding: '6px 16px',
-              cursor: 'pointer',
-              background: mode === m ? (m === 'data' ? colors.success + '20' : '#a855f720') : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${mode === m ? (m === 'data' ? colors.success : '#a855f7') : colors.border}`,
-              color: mode === m ? (m === 'data' ? colors.success : '#a855f7') : colors.textMuted,
-              fontSize: 12, fontFamily: 'monospace', fontWeight: 600,
-              borderRadius: 8,
-            }}
-          >
-            {m === 'data' ? 'Data Account' : 'Program Account'}
-          </button>
+          <DiagramTooltip key={m} content={m === 'data' ? 'Data-аккаунт хранит сериализованное состояние программы (counter, authority и т.д.). Принадлежит программе-владельцу.' : 'Program-аккаунт хранит исполняемый BPF bytecode. Принадлежит BPF Loader и помечен executable = true.'}>
+            <div>
+              <button
+                onClick={() => setMode(m)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 16px',
+                  cursor: 'pointer',
+                  background: mode === m ? (m === 'data' ? colors.success + '20' : '#a855f720') : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${mode === m ? (m === 'data' ? colors.success : '#a855f7') : colors.border}`,
+                  color: mode === m ? (m === 'data' ? colors.success : '#a855f7') : colors.textMuted,
+                  fontSize: 12, fontFamily: 'monospace', fontWeight: 600,
+                  borderRadius: 8,
+                }}
+              >
+                {m === 'data' ? 'Data Account' : 'Program Account'}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -156,13 +157,9 @@ export function SolanaAccountStructureDiagram() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {ACCOUNT_FIELDS.map((field, i) => {
-            const isHovered = hoveredField === i;
-            return (
+          {ACCOUNT_FIELDS.map((field) => (
+            <DiagramTooltip key={field.name} content={field.hoverRu}>
               <div
-                key={field.name}
-                onMouseEnter={() => setHoveredField(i)}
-                onMouseLeave={() => setHoveredField(null)}
                 style={{
                   ...glassStyle,
                   padding: '10px 14px',
@@ -171,8 +168,8 @@ export function SolanaAccountStructureDiagram() {
                   maxWidth: 170,
                   cursor: 'pointer',
                   borderLeft: `3px solid ${field.color}`,
-                  background: isHovered ? field.color + '15' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${isHovered ? field.color : colors.border}`,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${colors.border}`,
                   borderLeftWidth: 3,
                   borderLeftColor: field.color,
                   transition: 'background 0.15s, border-color 0.15s',
@@ -180,7 +177,7 @@ export function SolanaAccountStructureDiagram() {
               >
                 <div style={{
                   fontFamily: 'monospace', fontSize: 13, fontWeight: 600,
-                  color: isHovered ? field.color : colors.text,
+                  color: colors.text,
                 }}>
                   {field.name}
                 </div>
@@ -199,40 +196,10 @@ export function SolanaAccountStructureDiagram() {
                   {mode === 'data' ? field.dataExample : field.programExample}
                 </div>
               </div>
-            );
-          })}
+            </DiagramTooltip>
+          ))}
         </div>
       </div>
-
-      {/* Detail panel */}
-      {hovered ? (
-        <div style={{
-          ...glassStyle,
-          padding: '12px 14px',
-          borderLeft: `3px solid ${hovered.color}`,
-        }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: hovered.color, marginBottom: 6 }}>
-            {hovered.name}: {hovered.type}
-          </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-            {hovered.hoverRu}
-          </div>
-          <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
-            <div>
-              <span style={{ color: colors.success, fontWeight: 600 }}>Data Account: </span>
-              <span style={{ color: colors.text, fontFamily: 'monospace' }}>{hovered.dataExample}</span>
-            </div>
-            <div>
-              <span style={{ color: '#a855f7', fontWeight: 600 }}>Program: </span>
-              <span style={{ color: colors.text, fontFamily: 'monospace' }}>{hovered.programExample}</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
-          Наведите на поле, чтобы увидеть подробности
-        </div>
-      )}
     </DiagramContainer>
   );
 }
@@ -245,6 +212,7 @@ interface ComparisonRow {
   aspect: string;
   ethereum: string;
   solana: string;
+  tooltip: string;
 }
 
 const STATE_COMPARISON: ComparisonRow[] = [
@@ -252,142 +220,144 @@ const STATE_COMPARISON: ComparisonRow[] = [
     aspect: 'Хранение данных',
     ethereum: 'mapping(address => uint256) -- внутри контракта',
     solana: 'PDA: seeds = [b"balance", user.key()] -- отдельный аккаунт',
+    tooltip: 'В Ethereum данные хранятся в storage slots внутри контракта. В Solana данные вынесены в отдельные PDA-аккаунты, что позволяет параллельный доступ через Sealevel.',
   },
   {
     aspect: 'Вычисление слота',
     ethereum: 'keccak256(key . slot) -- storage slot',
     solana: 'SHA-256(seeds + bump + program_id) -- PDA адрес',
+    tooltip: 'Ethereum вычисляет storage slot через keccak256 от ключа и позиции. Solana вычисляет адрес PDA через SHA-256 от seeds, bump и program ID, гарантируя уникальность и детерминированность.',
   },
   {
     aspect: 'Расположение данных',
     ethereum: 'Внутри storage контракта',
     solana: 'Отдельный аккаунт, принадлежащий программе',
+    tooltip: 'В Ethereum все данные живут в storage trie контракта. В Solana данные в отдельных аккаунтах -- это ключевое различие, позволяющее параллельное выполнение.',
   },
   {
     aspect: 'Объявление',
     ethereum: 'Неявное (storage slot создается при записи)',
     solana: 'Явное (аккаунт нужно создать и оплатить rent)',
+    tooltip: 'В Ethereum storage slot создается автоматически при первой записи (SSTORE). В Solana аккаунт нужно явно создать через System Program и оплатить rent-exempt minimum.',
   },
 ];
 
 export function EthVsSolanaStateDiagram() {
-  const [hoveredSide, setHoveredSide] = useState<'eth' | 'sol' | null>(null);
-
   return (
     <DiagramContainer title="Ethereum vs Solana: модели состояния" color="purple">
       {/* Visual comparison */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         {/* Ethereum side */}
-        <div
-          onMouseEnter={() => setHoveredSide('eth')}
-          onMouseLeave={() => setHoveredSide(null)}
-          style={{
-            ...glassStyle,
-            flex: 1,
-            padding: '14px',
-            borderTop: `3px solid #a855f7`,
-            background: hoveredSide === 'eth' ? 'rgba(168,85,247,0.08)' : 'rgba(255,255,255,0.05)',
-            transition: 'background 0.15s',
-          }}
-        >
-          <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#a855f7', marginBottom: 10, textAlign: 'center' }}>
-            Ethereum: Smart Contract
+        <DiagramTooltip content="Ethereum использует модель глобального состояния, где каждый контракт хранит свое состояние внутри себя. Это упрощает композируемость, но создает конкуренцию за доступ к состоянию.">
+          <div
+            style={{
+              ...glassStyle,
+              flex: 1,
+              padding: '14px',
+              borderTop: `3px solid #a855f7`,
+              background: 'rgba(255,255,255,0.05)',
+              transition: 'background 0.15s',
+            }}
+          >
+            <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#a855f7', marginBottom: 10, textAlign: 'center' }}>
+              Ethereum: Smart Contract
+            </div>
+            {/* Single bundled box */}
+            <div style={{
+              ...glassStyle,
+              padding: '10px',
+              border: `1px solid #a855f740`,
+            }}>
+              {['Code (EVM bytecode)', 'Storage (key-value slots)', 'Balance (wei)', 'Nonce'].map((item, i) => (
+                <div key={i} style={{
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: colors.text,
+                  borderBottom: i < 3 ? `1px solid ${colors.border}` : 'none',
+                }}>
+                  {item}
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: '#a855f7', marginTop: 8, fontWeight: 600 }}>
+              Code + Data = ОДИН аккаунт
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+              Контракт -- как объект со свойствами
+            </div>
           </div>
-          {/* Single bundled box */}
-          <div style={{
-            ...glassStyle,
-            padding: '10px',
-            border: `1px solid #a855f740`,
-          }}>
-            {['Code (EVM bytecode)', 'Storage (key-value slots)', 'Balance (wei)', 'Nonce'].map((item, i) => (
-              <div key={i} style={{
-                padding: '4px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: colors.text,
-                borderBottom: i < 3 ? `1px solid ${colors.border}` : 'none',
-              }}>
-                {item}
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center', fontSize: 10, color: '#a855f7', marginTop: 8, fontWeight: 600 }}>
-            Code + Data = ОДИН аккаунт
-          </div>
-          <div style={{ textAlign: 'center', fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
-            Контракт -- как объект со свойствами
-          </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Solana side */}
-        <div
-          onMouseEnter={() => setHoveredSide('sol')}
-          onMouseLeave={() => setHoveredSide(null)}
-          style={{
-            ...glassStyle,
-            flex: 1,
-            padding: '14px',
-            borderTop: `3px solid ${colors.success}`,
-            background: hoveredSide === 'sol' ? `${colors.success}10` : 'rgba(255,255,255,0.05)',
-            transition: 'background 0.15s',
-          }}
-        >
-          <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: colors.success, marginBottom: 10, textAlign: 'center' }}>
-            Solana: Program + Data Accounts
-          </div>
-          {/* Two separate boxes with arrow */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-            {/* Program box */}
-            <div style={{
+        <DiagramTooltip content="Solana использует модель счетов (accounts), где данные хранятся отдельно от логики программ. Это позволяет параллельное выполнение транзакций через Sealevel.">
+          <div
+            style={{
               ...glassStyle,
-              padding: '8px 12px',
-              border: `1px solid ${colors.success}40`,
-              width: '100%',
-            }}>
-              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.success, fontWeight: 600 }}>
-                Program (executable)
-              </div>
-              <div style={{ fontSize: 10, color: colors.textMuted }}>
-                Stateless -- нет внутреннего хранилища
-              </div>
-              <div style={{ fontSize: 10, color: colors.textMuted }}>
-                Owner: BPF Loader
-              </div>
+              flex: 1,
+              padding: '14px',
+              borderTop: `3px solid ${colors.success}`,
+              background: 'rgba(255,255,255,0.05)',
+              transition: 'background 0.15s',
+            }}
+          >
+            <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: colors.success, marginBottom: 10, textAlign: 'center' }}>
+              Solana: Program + Data Accounts
             </div>
+            {/* Two separate boxes with arrow */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+              {/* Program box */}
+              <div style={{
+                ...glassStyle,
+                padding: '8px 12px',
+                border: `1px solid ${colors.success}40`,
+                width: '100%',
+              }}>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.success, fontWeight: 600 }}>
+                  Program (executable)
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>
+                  Stateless -- нет внутреннего хранилища
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>
+                  Owner: BPF Loader
+                </div>
+              </div>
 
-            {/* Arrow */}
-            <div style={{ fontSize: 11, color: colors.success, fontFamily: 'monospace' }}>
-              operates on
-            </div>
-            <div style={{ fontSize: 16, color: colors.success, lineHeight: 0.5 }}>
-              &#8595;
-            </div>
+              {/* Arrow */}
+              <div style={{ fontSize: 11, color: colors.success, fontFamily: 'monospace' }}>
+                operates on
+              </div>
+              <div style={{ fontSize: 16, color: colors.success, lineHeight: 0.5 }}>
+                &#8595;
+              </div>
 
-            {/* Data account box */}
-            <div style={{
-              ...glassStyle,
-              padding: '8px 12px',
-              border: `1px solid ${colors.primary}40`,
-              width: '100%',
-            }}>
-              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, fontWeight: 600 }}>
-                Data Account
-              </div>
-              <div style={{ fontSize: 10, color: colors.textMuted }}>
-                Owned by program, stores state
-              </div>
-              <div style={{ fontSize: 10, color: colors.textMuted }}>
-                Has lamport balance
+              {/* Data account box */}
+              <div style={{
+                ...glassStyle,
+                padding: '8px 12px',
+                border: `1px solid ${colors.primary}40`,
+                width: '100%',
+              }}>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, fontWeight: 600 }}>
+                  Data Account
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>
+                  Owned by program, stores state
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted }}>
+                  Has lamport balance
+                </div>
               </div>
             </div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: colors.success, marginTop: 8, fontWeight: 600 }}>
+              Code и Data = РАЗНЫЕ аккаунты
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+              Программа -- как функция, данные -- аргументы
+            </div>
           </div>
-          <div style={{ textAlign: 'center', fontSize: 10, color: colors.success, marginTop: 8, fontWeight: 600 }}>
-            Code и Data = РАЗНЫЕ аккаунты
-          </div>
-          <div style={{ textAlign: 'center', fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
-            Программа -- как функция, данные -- аргументы
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Comparison table */}
@@ -408,28 +378,32 @@ export function EthVsSolanaStateDiagram() {
           </thead>
           <tbody>
             {STATE_COMPARISON.map((row, i) => (
-              <tr key={i}>
-                <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontWeight: 600, color: colors.text, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
-                  {row.aspect}
-                </td>
-                <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: colors.textMuted, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
-                  {row.ethereum}
-                </td>
-                <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: colors.text, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
-                  {row.solana}
-                </td>
-              </tr>
+              <DiagramTooltip key={i} content={row.tooltip}>
+                <tr>
+                  <td style={{ padding: '6px 10px', fontFamily: 'monospace', fontWeight: 600, color: colors.text, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
+                    {row.aspect}
+                  </td>
+                  <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: colors.textMuted, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
+                    {row.ethereum}
+                  </td>
+                  <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: colors.text, background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
+                    {row.solana}
+                  </td>
+                </tr>
+              </DiagramTooltip>
             ))}
           </tbody>
         </table>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <DataBox
-          label="Ключевое отличие"
-          value='Ethereum контракты -- как объекты с properties. Solana программы -- как функции, получающие данные как аргументы. Программы stateless: они не хранят ничего внутри себя.'
-          variant="highlight"
-        />
+        <DiagramTooltip content="Разделение кода и данных -- фундаментальный выбор Solana. Программы stateless: они не хранят состояние, а получают его через аккаунты-аргументы при каждом вызове.">
+          <DataBox
+            label="Ключевое отличие"
+            value='Ethereum контракты -- как объекты с properties. Solana программы -- как функции, получающие данные как аргументы. Программы stateless: они не хранят ничего внутри себя.'
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -445,6 +419,14 @@ interface PDAStep {
   content: React.ReactNode;
 }
 
+const PDA_STEP_TOOLTIPS = [
+  'Seeds -- это входные данные для генерации PDA. Разработчик выбирает произвольные байтовые массивы, которые однозначно определяют конкретный PDA-аккаунт.',
+  'Program ID и магическая строка гарантируют, что PDA уникален для конкретной программы. Разные программы с одинаковыми seeds получат разные PDA-адреса.',
+  'Bump = 255 -- первый кандидат. Если SHA-256 дает точку на кривой Ed25519, значит у адреса может быть приватный ключ. Это небезопасно для PDA.',
+  'Bump = 254 -- следующий кандидат. Canonical bump -- это первый bump (сверху вниз), при котором результат НЕ на кривой Ed25519.',
+  'PDA-адрес найден. Он гарантированно не имеет приватного ключа, и только программа-владелец может подписывать транзакции от его имени через invoke_signed.',
+];
+
 function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex: string; programIdHex: string }) {
   const hash255 = fnvHash(seedHex + 'ff' + programIdHex + 'ProgramDerivedAddress');
   const hash254 = fnvHash(seedHex + 'fe' + programIdHex + 'ProgramDerivedAddress');
@@ -456,18 +438,22 @@ function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex
           Seeds -- произвольные массивы байтов, выбранные разработчиком:
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ ...glassStyle, padding: '8px 12px', borderLeft: `3px solid ${colors.success}` }}>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>Seed 1: b"counter"</div>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.success }}>
-              636f756e746572
+          <DiagramTooltip content="Первый seed -- строковая метка, определяющая тип PDA. Строка 'counter' кодируется в hex как 636f756e746572. Это позволяет иметь разные PDA для разных целей в одной программе.">
+            <div style={{ ...glassStyle, padding: '8px 12px', borderLeft: `3px solid ${colors.success}` }}>
+              <div style={{ fontSize: 10, color: colors.textMuted }}>Seed 1: b"counter"</div>
+              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.success }}>
+                636f756e746572
+              </div>
             </div>
-          </div>
-          <div style={{ ...glassStyle, padding: '8px 12px', borderLeft: `3px solid ${colors.primary}` }}>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>Seed 2: authority.key()</div>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.primary }}>
-              Ab5F...{programIdHex.slice(0, 4)}
+          </DiagramTooltip>
+          <DiagramTooltip content="Второй seed -- публичный ключ пользователя (authority). Это гарантирует, что каждый пользователь получит свой уникальный PDA-аккаунт для хранения данных.">
+            <div style={{ ...glassStyle, padding: '8px 12px', borderLeft: `3px solid ${colors.primary}` }}>
+              <div style={{ fontSize: 10, color: colors.textMuted }}>Seed 2: authority.key()</div>
+              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.primary }}>
+                Ab5F...{programIdHex.slice(0, 4)}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         </div>
       </div>
     );
@@ -479,15 +465,17 @@ function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>
           К seeds добавляются program ID и магическая строка:
         </div>
-        <div style={{ ...glassStyle, padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>
-          <span style={{ color: colors.success }}>seeds</span>
-          <span style={{ color: colors.textMuted }}> + </span>
-          <span style={{ color: '#f59e0b' }}>[bump]</span>
-          <span style={{ color: colors.textMuted }}> + </span>
-          <span style={{ color: colors.primary }}>program_id</span>
-          <span style={{ color: colors.textMuted }}> + </span>
-          <span style={{ color: '#a855f7' }}>"ProgramDerivedAddress"</span>
-        </div>
+        <DiagramTooltip content="Формула PDA: SHA-256(seeds || [bump] || program_id || 'ProgramDerivedAddress'). Bump перебирается от 255 вниз до нахождения адреса вне кривой Ed25519.">
+          <div style={{ ...glassStyle, padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>
+            <span style={{ color: colors.success }}>seeds</span>
+            <span style={{ color: colors.textMuted }}> + </span>
+            <span style={{ color: '#f59e0b' }}>[bump]</span>
+            <span style={{ color: colors.textMuted }}> + </span>
+            <span style={{ color: colors.primary }}>program_id</span>
+            <span style={{ color: colors.textMuted }}> + </span>
+            <span style={{ color: '#a855f7' }}>"ProgramDerivedAddress"</span>
+          </div>
+        </DiagramTooltip>
         <div style={{ fontSize: 11, color: colors.textMuted }}>
           SHA-256 от этой конкатенации дает кандидат-адрес. Bump перебирается с 255 вниз.
         </div>
@@ -501,28 +489,30 @@ function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>
           Bump = 255: вычисляем хеш и проверяем...
         </div>
-        <div style={{ ...glassStyle, padding: '10px 12px' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 11 }}>
-            <span style={{ color: colors.textMuted }}>SHA-256(seeds + </span>
-            <span style={{ color: '#f59e0b' }}>[255]</span>
-            <span style={{ color: colors.textMuted }}> + program_id + magic)</span>
+        <DiagramTooltip content="SHA-256 с bump=255 дал точку на кривой Ed25519. Это значит, что теоретически существует приватный ключ для этого адреса. Такой адрес небезопасен для PDA, поэтому пробуем следующий bump.">
+          <div style={{ ...glassStyle, padding: '10px 12px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 11 }}>
+              <span style={{ color: colors.textMuted }}>SHA-256(seeds + </span>
+              <span style={{ color: '#f59e0b' }}>[255]</span>
+              <span style={{ color: colors.textMuted }}> + program_id + magic)</span>
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text, marginTop: 6 }}>
+              = 0x{truncHex(hash255, 16)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <span style={{ fontSize: 12, color: colors.textMuted }}>На кривой Ed25519?</span>
+              <span style={{
+                padding: '2px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)',
+              }}>
+                DA -- на кривой
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>
+              Результат -- валидная точка Ed25519. Значит, у этого адреса МОЖЕТ быть приватный ключ. Небезопасно! Пробуем следующий bump.
+            </div>
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text, marginTop: 6 }}>
-            = 0x{truncHex(hash255, 16)}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: colors.textMuted }}>На кривой Ed25519?</span>
-            <span style={{
-              padding: '2px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-              background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)',
-            }}>
-              DA -- на кривой
-            </span>
-          </div>
-          <div style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>
-            Результат -- валидная точка Ed25519. Значит, у этого адреса МОЖЕТ быть приватный ключ. Небезопасно! Пробуем следующий bump.
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
     );
   }
@@ -533,28 +523,30 @@ function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>
           Bump = 254: вычисляем хеш и проверяем...
         </div>
-        <div style={{ ...glassStyle, padding: '10px 12px' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 11 }}>
-            <span style={{ color: colors.textMuted }}>SHA-256(seeds + </span>
-            <span style={{ color: '#f59e0b' }}>[254]</span>
-            <span style={{ color: colors.textMuted }}> + program_id + magic)</span>
+        <DiagramTooltip content="SHA-256 с bump=254 дал результат вне кривой Ed25519. Это значит, что приватный ключ для этого адреса не существует. Canonical bump = 254, PDA безопасен.">
+          <div style={{ ...glassStyle, padding: '10px 12px' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 11 }}>
+              <span style={{ color: colors.textMuted }}>SHA-256(seeds + </span>
+              <span style={{ color: '#f59e0b' }}>[254]</span>
+              <span style={{ color: colors.textMuted }}> + program_id + magic)</span>
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text, marginTop: 6 }}>
+              = 0x{truncHex(hash254, 16)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <span style={{ fontSize: 12, color: colors.textMuted }}>На кривой Ed25519?</span>
+              <span style={{
+                padding: '2px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                background: `${colors.success}15`, color: colors.success, border: `1px solid ${colors.success}40`,
+              }}>
+                NET -- не на кривой!
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: colors.success, marginTop: 6 }}>
+              Результат НЕ является точкой Ed25519. Валидный PDA! Canonical bump = 254.
+            </div>
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text, marginTop: 6 }}>
-            = 0x{truncHex(hash254, 16)}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <span style={{ fontSize: 12, color: colors.textMuted }}>На кривой Ed25519?</span>
-            <span style={{
-              padding: '2px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-              background: `${colors.success}15`, color: colors.success, border: `1px solid ${colors.success}40`,
-            }}>
-              NET -- не на кривой!
-            </span>
-          </div>
-          <div style={{ fontSize: 11, color: colors.success, marginTop: 6 }}>
-            Результат НЕ является точкой Ed25519. Валидный PDA! Canonical bump = 254.
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
     );
   }
@@ -562,33 +554,37 @@ function PDAStepContent({ step, seedHex, programIdHex }: { step: number; seedHex
   // step === 4
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ ...glassStyle, padding: '10px 12px', borderLeft: `3px solid ${colors.success}` }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.success, marginBottom: 6 }}>
-          PDA адрес найден:
+      <DiagramTooltip content="PDA-адрес детерминированно вычислен из seeds и program ID. Одни и те же seeds всегда дают один и тот же адрес. findProgramAddress() автоматически находит canonical bump.">
+        <div style={{ ...glassStyle, padding: '10px 12px', borderLeft: `3px solid ${colors.success}` }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: colors.success, marginBottom: 6 }}>
+            PDA адрес найден:
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: 14, color: colors.text }}>
+            0x{truncHex(hash254, 16)}
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+            Canonical bump = 254 | Seeds: [b"counter", authority]
+          </div>
         </div>
-        <div style={{ fontFamily: 'monospace', fontSize: 14, color: colors.text }}>
-          0x{truncHex(hash254, 16)}
+      </DiagramTooltip>
+      <DiagramTooltip content="PDA безопасны, потому что программа контролирует доступ к ним через invoke_signed. Runtime верифицирует, что предоставленные seeds действительно генерируют данный PDA-адрес.">
+        <div style={{
+          ...glassStyle,
+          padding: '10px 12px',
+          borderLeft: `3px solid #f59e0b`,
+          marginTop: 4,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', marginBottom: 4 }}>
+            Почему PDA безопасны:
+          </div>
+          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6 }}>
+            PDA НЕ лежат на кривой Ed25519, поэтому у них НЕТ приватного ключа.
+            Никто не может подписать транзакцию от имени PDA.
+            Только программа-владелец может "подписать" за свой PDA через invoke_signed.
+            Runtime проверяет, что seeds действительно дают этот PDA-адрес.
+          </div>
         </div>
-        <div style={{ fontFamily: 'monospace', fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
-          Canonical bump = 254 | Seeds: [b"counter", authority]
-        </div>
-      </div>
-      <div style={{
-        ...glassStyle,
-        padding: '10px 12px',
-        borderLeft: `3px solid #f59e0b`,
-        marginTop: 4,
-      }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', marginBottom: 4 }}>
-          Почему PDA безопасны:
-        </div>
-        <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6 }}>
-          PDA НЕ лежат на кривой Ed25519, поэтому у них НЕТ приватного ключа.
-          Никто не может подписать транзакцию от имени PDA.
-          Только программа-владелец может "подписать" за свой PDA через invoke_signed.
-          Runtime проверяет, что seeds действительно дают этот PDA-адрес.
-        </div>
-      </div>
+      </DiagramTooltip>
     </div>
   );
 }
@@ -618,19 +614,21 @@ export function PDADerivationDiagram() {
   return (
     <DiagramContainer title="Derivation PDA: от seeds до адреса" color="green">
       {/* Step info */}
-      <div style={{
-        ...glassStyle,
-        padding: '10px 14px',
-        marginBottom: 12,
-        borderLeft: `3px solid ${colors.success}`,
-      }}>
-        <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
-          {PDA_STEP_TITLES[step]}
+      <DiagramTooltip content={PDA_STEP_TOOLTIPS[step]}>
+        <div style={{
+          ...glassStyle,
+          padding: '10px 14px',
+          marginBottom: 12,
+          borderLeft: `3px solid ${colors.success}`,
+        }}>
+          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+            {PDA_STEP_TITLES[step]}
+          </div>
+          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+            {PDA_STEP_DESCRIPTIONS[step]}
+          </div>
         </div>
-        <div style={{ color: colors.textMuted, fontSize: 12 }}>
-          {PDA_STEP_DESCRIPTIONS[step]}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Step content */}
       <div style={{ ...glassStyle, padding: '14px', marginBottom: 12, minHeight: 140 }}>
@@ -639,38 +637,51 @@ export function PDADerivationDiagram() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
-          Сброс
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={btnStyle(step > 0, colors.text)}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.min(4, s + 1))}
-          disabled={step >= 4}
-          style={btnStyle(step < 4, colors.success)}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Вернуться к первому шагу (выбор seeds).">
+          <div>
+            <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к предыдущему шагу деривации PDA.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              style={btnStyle(step > 0, colors.text)}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу деривации PDA.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.min(4, s + 1))}
+              disabled={step >= 4}
+              style={btnStyle(step < 4, colors.success)}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
         {PDA_STEP_TITLES.map((_, i) => (
-          <div
-            key={i}
-            onClick={() => setStep(i)}
-            style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: i === step ? colors.success : 'rgba(255,255,255,0.15)',
-              border: `1px solid ${i === step ? colors.success : colors.border}`,
-              cursor: 'pointer',
-            }}
-          />
+          <DiagramTooltip key={i} content={PDA_STEP_TOOLTIPS[i]}>
+            <div
+              onClick={() => setStep(i)}
+              style={{
+                width: 10, height: 10, borderRadius: '50%',
+                background: i === step ? colors.success : 'rgba(255,255,255,0.15)',
+                border: `1px solid ${i === step ? colors.success : colors.border}`,
+                cursor: 'pointer',
+              }}
+            />
+          </DiagramTooltip>
         ))}
       </div>
     </DiagramContainer>
