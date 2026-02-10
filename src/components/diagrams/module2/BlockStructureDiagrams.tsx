@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
-import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -119,40 +119,41 @@ export function BlockHeaderExplorer() {
           const widthPct = (field.size / totalBytes) * 100;
           const isSelected = selectedIdx === i;
           return (
-            <div
-              key={i}
-              onClick={() => setSelectedIdx(isSelected ? null : i)}
-              style={{
-                flex: `0 0 ${widthPct}%`,
-                minWidth: 0,
-                padding: '6px 4px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: isSelected ? field.color + '25' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${isSelected ? field.color : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: 4,
-                transition: 'all 0.15s',
-              }}
-            >
-              <div style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                color: isSelected ? field.color : colors.textMuted,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {field.nameRu}
+            <DiagramTooltip key={i} content={field.description}>
+              <div
+                onClick={() => setSelectedIdx(isSelected ? null : i)}
+                style={{
+                  flex: `0 0 ${widthPct}%`,
+                  minWidth: 0,
+                  padding: '6px 4px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: isSelected ? field.color + '25' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${isSelected ? field.color : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 4,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div style={{
+                  fontSize: 9,
+                  fontFamily: 'monospace',
+                  color: isSelected ? field.color : colors.textMuted,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {field.nameRu}
+                </div>
+                <div style={{
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: colors.text,
+                  fontWeight: isSelected ? 600 : 400,
+                }}>
+                  {field.size} B
+                </div>
               </div>
-              <div style={{
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: colors.text,
-                fontWeight: isSelected ? 600 : 400,
-              }}>
-                {field.size} B
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -200,19 +201,21 @@ export function BlockHeaderExplorer() {
       )}
 
       {/* Total */}
-      <div style={{
-        ...glassStyle,
-        padding: '8px 14px',
-        marginTop: 12,
-        textAlign: 'center',
-        fontFamily: 'monospace',
-        fontSize: 13,
-      }}>
-        <span style={{ color: colors.primary }}>80 байт</span>
-        <span style={{ color: colors.textMuted }}> {'->'} SHA-256(SHA-256(header)) {'->'} </span>
-        <span style={{ color: colors.success }}>Block Hash</span>
-        <span style={{ color: colors.textMuted }}> (должен быть {'<'} target)</span>
-      </div>
+      <DiagramTooltip content="Заголовок блока всегда ровно 80 байт. Майнер хеширует эти 80 байт дважды (SHA-256d) и проверяет, что результат меньше target. Если да -- блок найден.">
+        <div style={{
+          ...glassStyle,
+          padding: '8px 14px',
+          marginTop: 12,
+          textAlign: 'center',
+          fontFamily: 'monospace',
+          fontSize: 13,
+        }}>
+          <span style={{ color: colors.primary }}>80 байт</span>
+          <span style={{ color: colors.textMuted }}> {'->'} SHA-256(SHA-256(header)) {'->'} </span>
+          <span style={{ color: colors.success }}>Block Hash</span>
+          <span style={{ color: colors.textMuted }}> (должен быть {'<'} target)</span>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -227,6 +230,7 @@ interface BlockInfo {
   prevHash: string;
   txCount: number;
   time: string;
+  tooltipRu: string;
 }
 
 const CHAIN_BLOCKS: BlockInfo[] = [
@@ -236,6 +240,7 @@ const CHAIN_BLOCKS: BlockInfo[] = [
     prevHash: fnvHash('block-839999') + fnvHash('block-839999-x'),
     txCount: 3050,
     time: '2024-04-20',
+    tooltipRu: 'Блок #840000 -- четвертый халвинг Bitcoin (апрель 2024). Награда за блок уменьшилась с 6.25 до 3.125 BTC. Каждый блок содержит хеш предыдущего, создавая неразрывную цепочку.',
   },
   {
     height: 840001,
@@ -243,6 +248,7 @@ const CHAIN_BLOCKS: BlockInfo[] = [
     prevHash: fnvHash('block-840000') + fnvHash('block-840000-x'),
     txCount: 2812,
     time: '2024-04-20',
+    tooltipRu: 'Блок #840001 содержит хеш блока #840000. Изменение любых данных в #840000 изменит его хеш, и #840001 станет невалидным. Каскадный эффект защищает всю цепочку.',
   },
   {
     height: 840002,
@@ -250,6 +256,7 @@ const CHAIN_BLOCKS: BlockInfo[] = [
     prevHash: fnvHash('block-840001') + fnvHash('block-840001-x'),
     txCount: 3201,
     time: '2024-04-20',
+    tooltipRu: 'Блок #840002 ссылается на #840001. Чтобы изменить транзакцию в #840000, атакующему нужно пересчитать Proof-of-Work для #840000, #840001 и #840002 -- это экспоненциально сложнее.',
   },
   {
     height: 840003,
@@ -257,32 +264,27 @@ const CHAIN_BLOCKS: BlockInfo[] = [
     prevHash: fnvHash('block-840002') + fnvHash('block-840002-x'),
     txCount: 2955,
     time: '2024-04-20',
+    tooltipRu: 'Блок #840003 -- самый новый в этой цепочке. Каждый новый блок делает предыдущие более защищенными. 6 подтверждений (~1 час) считаются практически необратимыми.',
   },
 ];
 
 export function BlockChainLinkDiagram() {
-  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Цепочка блоков" color="green">
       <div style={{ overflowX: 'auto' }}>
         <div style={{ display: 'flex', gap: 0, alignItems: 'center', minWidth: 700, padding: '8px 0' }}>
-          {CHAIN_BLOCKS.map((block, i) => {
-            const isHovered = hoveredBlock === i;
-            const isHighlighted = hoveredBlock !== null && i >= hoveredBlock;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-                {/* Block */}
+          {CHAIN_BLOCKS.map((block, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+              {/* Block */}
+              <DiagramTooltip content={block.tooltipRu}>
                 <div
-                  onMouseEnter={() => setHoveredBlock(i)}
-                  onMouseLeave={() => setHoveredBlock(null)}
                   style={{
                     ...glassStyle,
                     padding: '10px 12px',
                     width: 150,
                     cursor: 'pointer',
-                    background: isHighlighted ? 'rgba(231,76,60,0.08)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${isHovered ? colors.success : isHighlighted ? '#e74c3c40' : 'rgba(255,255,255,0.1)'}`,
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -299,35 +301,35 @@ export function BlockChainLinkDiagram() {
                     {block.txCount} tx | {block.time}
                   </div>
                 </div>
+              </DiagramTooltip>
 
-                {/* Arrow */}
-                {i < CHAIN_BLOCKS.length - 1 && (
-                  <svg width={30} height={30} viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
-                    <line x1={0} y1={15} x2={22} y2={15} stroke={colors.border} strokeWidth={1.5} />
-                    <polygon points="22,10 30,15 22,20" fill={colors.border} />
-                  </svg>
-                )}
-              </div>
-            );
-          })}
+              {/* Arrow */}
+              {i < CHAIN_BLOCKS.length - 1 && (
+                <svg width={30} height={30} viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
+                  <line x1={0} y1={15} x2={22} y2={15} stroke={colors.border} strokeWidth={1.5} />
+                  <polygon points="22,10 30,15 22,20" fill={colors.border} />
+                </svg>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {hoveredBlock !== null && (
-        <DataBox
-          label="Неизменяемость"
-          value={`Изменение блока #${CHAIN_BLOCKS[hoveredBlock].height} инвалидирует ${CHAIN_BLOCKS.length - hoveredBlock} блок${
-            CHAIN_BLOCKS.length - hoveredBlock > 1 ? (CHAIN_BLOCKS.length - hoveredBlock < 5 ? 'а' : 'ов') : ''
-          }: #${CHAIN_BLOCKS.slice(hoveredBlock).map(b => b.height).join(', #')}`}
-          variant="highlight"
-        />
-      )}
-
-      {hoveredBlock === null && (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 8 }}>
-          Наведите на блок, чтобы увидеть эффект изменения
+      <DiagramTooltip content="Неизменяемость блокчейна: изменение любого блока инвалидирует все последующие блоки, потому что каждый блок содержит хеш предыдущего. Чем больше подтверждений, тем выше защита.">
+        <div style={{
+          ...glassStyle,
+          padding: 10,
+          marginTop: 8,
+          borderColor: `${colors.warning}30`,
+          fontSize: 12,
+          color: colors.textMuted,
+          textAlign: 'center',
+          lineHeight: 1.6,
+        }}>
+          <strong style={{ color: colors.warning }}>Неизменяемость:</strong>{' '}
+          Изменение блока #{CHAIN_BLOCKS[0].height} инвалидирует все {CHAIN_BLOCKS.length} блоков в цепочке. Каждый новый блок делает предыдущие более защищёнными.
         </div>
-      )}
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -345,9 +347,13 @@ function buildMiniMerkle(labels: string[]): { leaves: string[]; mid: string[]; r
   return { leaves, mid, root };
 }
 
-export function MerkleInBlockDiagram() {
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+interface MerkleNodeInfo {
+  label: string;
+  hash: string;
+  tooltipRu: string;
+}
 
+export function MerkleInBlockDiagram() {
   const tree = buildMiniMerkle(TX_LABELS);
 
   const nodePositions: Record<string, { x: number; y: number; label: string; hash: string }> = {
@@ -359,6 +365,16 @@ export function MerkleInBlockDiagram() {
     l2: { x: 300, y: 150, label: 'H(tx3)', hash: tree.leaves[2] },
     l3: { x: 420, y: 150, label: 'H(tx4)', hash: tree.leaves[3] },
   };
+
+  const merkleLegend: MerkleNodeInfo[] = [
+    { label: 'Merkle Root', hash: tree.root, tooltipRu: 'Корень дерева Меркла -- единственный хеш, записанный в заголовок блока. Он фиксирует ВСЕ транзакции блока. Изменение любой транзакции меняет root.' },
+    { label: 'H(tx1+tx2)', hash: tree.mid[0], tooltipRu: 'Промежуточный узел: хеш от конкатенации H(tx1) и H(tx2). Если tx1 или tx2 изменится, этот хеш тоже изменится, и каскадом изменится root.' },
+    { label: 'H(tx3+tx4)', hash: tree.mid[1], tooltipRu: 'Промежуточный узел: хеш от конкатенации H(tx3) и H(tx4). Для Merkle Proof достаточно предоставить "сестринские" хеши по пути к root.' },
+    { label: 'H(tx1)', hash: tree.leaves[0], tooltipRu: 'Лист дерева: SHA-256d хеш транзакции tx1 (txid). Каждая транзакция блока представлена своим txid в виде листа дерева Меркла.' },
+    { label: 'H(tx2)', hash: tree.leaves[1], tooltipRu: 'Лист дерева: SHA-256d хеш транзакции tx2. Для доказательства включения tx2 нужны: H(tx1) + H(tx3+tx4) -- это Merkle Proof из 2 хешей.' },
+    { label: 'H(tx3)', hash: tree.leaves[2], tooltipRu: 'Лист дерева: SHA-256d хеш транзакции tx3. Merkle Proof позволяет проверить включение за O(log n) -- для 1000 tx нужно всего ~10 хешей.' },
+    { label: 'H(tx4)', hash: tree.leaves[3], tooltipRu: 'Лист дерева: SHA-256d хеш транзакции tx4. Если число транзакций нечётное, последний лист дублируется для построения сбалансированного дерева.' },
+  ];
 
   const edges: [string, string][] = [
     ['root', 'm0'], ['root', 'm1'],
@@ -379,21 +395,26 @@ export function MerkleInBlockDiagram() {
         marginBottom: 8,
       }}>
         {['Version', 'Prev Hash', 'Merkle Root', 'Time', 'nBits', 'Nonce'].map((field) => (
-          <span
-            key={field}
-            style={{
-              padding: '3px 8px',
-              fontSize: 10,
-              fontFamily: 'monospace',
-              borderRadius: 4,
-              background: field === 'Merkle Root' ? `${colors.accent}25` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${field === 'Merkle Root' ? colors.accent : 'rgba(255,255,255,0.1)'}`,
-              color: field === 'Merkle Root' ? colors.accent : colors.textMuted,
-              fontWeight: field === 'Merkle Root' ? 600 : 400,
-            }}
-          >
-            {field}
-          </span>
+          <DiagramTooltip key={field} content={
+            field === 'Merkle Root'
+              ? 'Merkle Root -- единственное поле заголовка, связанное с содержимым блока. Остальные 5 полей описывают метаданные блока.'
+              : `${field} -- одно из 6 полей 80-байтового заголовка блока.`
+          }>
+            <span
+              style={{
+                padding: '3px 8px',
+                fontSize: 10,
+                fontFamily: 'monospace',
+                borderRadius: 4,
+                background: field === 'Merkle Root' ? `${colors.accent}25` : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${field === 'Merkle Root' ? colors.accent : 'rgba(255,255,255,0.1)'}`,
+                color: field === 'Merkle Root' ? colors.accent : colors.textMuted,
+                fontWeight: field === 'Merkle Root' ? 600 : 400,
+              }}
+            >
+              {field}
+            </span>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -405,7 +426,7 @@ export function MerkleInBlockDiagram() {
         </svg>
       </div>
 
-      {/* Merkle tree SVG */}
+      {/* Merkle tree SVG (static, no hover) */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <svg width={500} height={200} viewBox="0 0 500 200">
           {/* Edges */}
@@ -424,35 +445,29 @@ export function MerkleInBlockDiagram() {
             );
           })}
 
-          {/* Nodes */}
+          {/* Nodes (static) */}
           {Object.entries(nodePositions).map(([id, node]) => {
-            const isHovered = hoveredNode === id;
             const isRoot = id === 'root';
             const nodeColor = isRoot ? colors.accent : id.startsWith('m') ? colors.primary : colors.success;
 
             return (
-              <g
-                key={id}
-                onMouseEnter={() => setHoveredNode(id)}
-                onMouseLeave={() => setHoveredNode(null)}
-                style={{ cursor: 'pointer' }}
-              >
+              <g key={id}>
                 <rect
                   x={node.x - 45}
                   y={node.y - 12}
                   width={90}
                   height={30}
                   rx={6}
-                  fill={isHovered ? nodeColor + '25' : 'rgba(255,255,255,0.05)'}
-                  stroke={isHovered ? nodeColor : colors.border}
-                  strokeWidth={isHovered ? 1.5 : 1}
+                  fill="rgba(255,255,255,0.05)"
+                  stroke={colors.border}
+                  strokeWidth={1}
                 />
                 <text
                   x={node.x}
                   y={node.y - 1}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fill={isHovered ? nodeColor : colors.textMuted}
+                  fill={nodeColor}
                   fontSize={9}
                   fontFamily="monospace"
                 >
@@ -466,7 +481,6 @@ export function MerkleInBlockDiagram() {
                   fill={colors.text}
                   fontSize={9}
                   fontFamily="monospace"
-                  fontWeight={isHovered ? 600 : 400}
                 >
                   {truncHex(node.hash)}
                 </text>
@@ -476,14 +490,35 @@ export function MerkleInBlockDiagram() {
         </svg>
       </div>
 
-      {/* Tooltip */}
-      {hoveredNode && (
-        <DataBox
-          label={nodePositions[hoveredNode].label}
-          value={`Хеш: ${nodePositions[hoveredNode].hash}`}
-          variant="highlight"
-        />
-      )}
+      {/* HTML Merkle legend with DiagramTooltip (replaces SVG hover + conditional DataBox) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+        gap: 6,
+        marginTop: 8,
+      }}>
+        {merkleLegend.map((node) => (
+          <DiagramTooltip key={node.label} content={node.tooltipRu}>
+            <div style={{
+              ...glassStyle,
+              padding: '6px 8px',
+              textAlign: 'center',
+              borderColor: node.label === 'Merkle Root' ? `${colors.accent}30` : 'rgba(255,255,255,0.08)',
+            }}>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: node.label === 'Merkle Root' ? colors.accent : node.label.startsWith('H(tx') && !node.label.includes('+') ? colors.success : colors.primary,
+              }}>
+                {node.label}
+              </div>
+              <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted }}>
+                {truncHex(node.hash)}
+              </div>
+            </div>
+          </DiagramTooltip>
+        ))}
+      </div>
 
       {/* Reference to Phase 2 */}
       <div style={{

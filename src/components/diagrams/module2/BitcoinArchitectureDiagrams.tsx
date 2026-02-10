@@ -6,8 +6,8 @@
  * - BitcoinVsBankingDiagram: Side-by-side comparison of traditional banking vs Bitcoin
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -85,10 +85,6 @@ function getCenter(comp: NodeComponent): { cx: number; cy: number } {
 }
 
 export function NodeArchitectureDiagram() {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
-  const hoveredComp = NODE_COMPONENTS.find((c) => c.id === hoveredId);
-
   return (
     <DiagramContainer title="Архитектура узла Bitcoin" color="blue">
       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -128,55 +124,58 @@ export function NodeArchitectureDiagram() {
             </marker>
           </defs>
 
-          {/* Components */}
-          {NODE_COMPONENTS.map((comp) => {
-            const isHovered = hoveredId === comp.id;
-            return (
-              <g
-                key={comp.id}
-                onMouseEnter={() => setHoveredId(comp.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                style={{ cursor: 'pointer' }}
+          {/* Components (static, no hover) */}
+          {NODE_COMPONENTS.map((comp) => (
+            <g key={comp.id}>
+              <rect
+                x={comp.x}
+                y={comp.y}
+                width={comp.width}
+                height={comp.height}
+                rx={8}
+                fill="rgba(255,255,255,0.05)"
+                stroke={colors.border}
+                strokeWidth={1}
+              />
+              <text
+                x={comp.x + comp.width / 2}
+                y={comp.y + comp.height / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={colors.text}
+                fontSize={13}
+                fontFamily="monospace"
+                fontWeight={400}
               >
-                <rect
-                  x={comp.x}
-                  y={comp.y}
-                  width={comp.width}
-                  height={comp.height}
-                  rx={8}
-                  fill={isHovered ? comp.color + '25' : 'rgba(255,255,255,0.05)'}
-                  stroke={isHovered ? comp.color : colors.border}
-                  strokeWidth={isHovered ? 2 : 1}
-                />
-                <text
-                  x={comp.x + comp.width / 2}
-                  y={comp.y + comp.height / 2}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill={isHovered ? comp.color : colors.text}
-                  fontSize={13}
-                  fontFamily="monospace"
-                  fontWeight={isHovered ? 600 : 400}
-                >
-                  {comp.label}
-                </text>
-              </g>
-            );
-          })}
+                {comp.label}
+              </text>
+            </g>
+          ))}
         </svg>
       </div>
 
-      {hoveredComp ? (
-        <DataBox
-          label={hoveredComp.label}
-          value={hoveredComp.description}
-          variant="highlight"
-        />
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 8 }}>
-          Наведите на компонент, чтобы узнать подробности
-        </div>
-      )}
+      {/* HTML node legend with DiagramTooltip (replaces SVG hover + conditional DataBox) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 8,
+        marginTop: 8,
+      }}>
+        {NODE_COMPONENTS.map((comp) => (
+          <DiagramTooltip key={comp.id} content={comp.description}>
+            <div style={{
+              ...glassStyle,
+              padding: '8px 10px',
+              borderColor: `${comp.color}30`,
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: comp.color }}>
+                {comp.label}
+              </div>
+            </div>
+          </DiagramTooltip>
+        ))}
+      </div>
     </DiagramContainer>
   );
 }
@@ -189,20 +188,19 @@ interface ComparisonRow {
   aspect: string;
   banking: string;
   bitcoin: string;
+  tooltipRu: string;
 }
 
 const COMPARISON_DATA: ComparisonRow[] = [
-  { aspect: 'Хранение данных', banking: 'Центральный реестр (одна БД)', bitcoin: 'Распределённый реестр (~60 000 узлов)' },
-  { aspect: 'Модель баланса', banking: 'Баланс на счёте (account model)', bitcoin: 'Набор UTXO (нет поля "баланс")' },
-  { aspect: 'Валидация', banking: 'Банк проверяет и одобряет', bitcoin: 'Каждый узел проверяет независимо' },
-  { aspect: 'Отказоустойчивость', banking: 'Single point of failure', bitcoin: 'Нет единой точки отказа' },
-  { aspect: 'Доступ', banking: 'KYC, рабочие часы, ограничения', bitcoin: '24/7, без разрешений (permissionless)' },
-  { aspect: 'Обработка', banking: 'Секунды (внутри), дни (международ.)', bitcoin: '~10 минут (1 подтверждение)' },
+  { aspect: 'Хранение данных', banking: 'Центральный реестр (одна БД)', bitcoin: 'Распределённый реестр (~60 000 узлов)', tooltipRu: 'В банке все данные хранятся в одной централизованной базе. В Bitcoin каждый полный узел хранит копию всей цепочки блоков. Нет единого хранилища, которое можно взломать или отключить.' },
+  { aspect: 'Модель баланса', banking: 'Баланс на счёте (account model)', bitcoin: 'Набор UTXO (нет поля "баланс")', tooltipRu: 'Банк хранит баланс как число в базе данных. Bitcoin не имеет понятия "баланс" -- только набор неизрасходованных выходов (UTXO). Баланс кошелька = сумма всех принадлежащих UTXO.' },
+  { aspect: 'Валидация', banking: 'Банк проверяет и одобряет', bitcoin: 'Каждый узел проверяет независимо', tooltipRu: 'В банке только банк решает, валидна ли транзакция. В Bitcoin каждый из ~60 000 узлов самостоятельно проверяет каждую транзакцию и блок по правилам консенсуса. "Don\'t trust, verify."' },
+  { aspect: 'Отказоустойчивость', banking: 'Single point of failure', bitcoin: 'Нет единой точки отказа', tooltipRu: 'Банк может быть отключен, заблокирован или взломан. Bitcoin работает пока хотя бы один узел функционирует. Для остановки сети нужно отключить все ~60 000 узлов одновременно.' },
+  { aspect: 'Доступ', banking: 'KYC, рабочие часы, ограничения', bitcoin: '24/7, без разрешений (permissionless)', tooltipRu: 'Банк требует документы (KYC), может заблокировать счет, работает в рабочие часы. Bitcoin доступен 24/7 для любого, кто может создать пару ключей. Никто не может запретить отправку транзакции.' },
+  { aspect: 'Обработка', banking: 'Секунды (внутри), дни (международ.)', bitcoin: '~10 минут (1 подтверждение)', tooltipRu: 'Внутрибанковские переводы мгновенны, международные -- дни через SWIFT. Bitcoin: ~10 минут для 1 подтверждения, 1 час для 6 подтверждений. Lightning Network: мгновенно для малых сумм.' },
 ];
 
 export function BitcoinVsBankingDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Bitcoin vs банковская система" color="purple">
       <div style={{ overflowX: 'auto' }}>
@@ -215,50 +213,46 @@ export function BitcoinVsBankingDiagram() {
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_DATA.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{ cursor: 'default' }}
-                >
-                  <td style={{
-                    ...cellStyle,
-                    fontWeight: 600,
-                    color: isHovered ? colors.primary : colors.text,
-                    background: isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.aspect}
-                  </td>
-                  <td style={{
-                    ...cellStyle,
-                    color: colors.textMuted,
-                    background: isHovered ? 'rgba(231,76,60,0.08)' : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.banking}
-                  </td>
-                  <td style={{
-                    ...cellStyle,
-                    color: colors.text,
-                    background: isHovered ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.bitcoin}
-                  </td>
-                </tr>
-              );
-            })}
+            {COMPARISON_DATA.map((row, i) => (
+              <tr key={i} style={{ cursor: 'default' }}>
+                <td style={{
+                  ...cellStyle,
+                  fontWeight: 600,
+                  color: colors.text,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  <DiagramTooltip content={row.tooltipRu}>
+                    <span>{row.aspect}</span>
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  ...cellStyle,
+                  color: colors.textMuted,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  {row.banking}
+                </td>
+                <td style={{
+                  ...cellStyle,
+                  color: colors.text,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  {row.bitcoin}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <DataBox
-          label="Ключевое отличие"
-          value="В банке баланс -- это запись в БД. В Bitcoin баланс вычисляется из набора UTXO. Нет центрального хранилища балансов."
-          variant="highlight"
-        />
+        <DiagramTooltip content="UTXO (Unspent Transaction Output) -- неизрасходованный выход транзакции. В Bitcoin нет поля 'баланс'. Кошелек суммирует все UTXO, принадлежащие вашим ключам, чтобы показать баланс.">
+          <DataBox
+            label="Ключевое отличие"
+            value="В банке баланс -- это запись в БД. В Bitcoin баланс вычисляется из набора UTXO. Нет центрального хранилища балансов."
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
