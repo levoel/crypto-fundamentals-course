@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
@@ -72,22 +73,34 @@ export function NumberLineDiagram() {
       {/* Base toggle buttons */}
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         {bases.map((b) => (
-          <button
+          <DiagramTooltip
             key={b.key}
-            onClick={() => setActiveBase(b.key)}
-            style={{
-              ...glassStyle,
-              padding: '6px 16px',
-              cursor: 'pointer',
-              background: activeBase === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${activeBase === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: activeBase === b.key ? colors.primary : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
-            }}
+            content={
+              b.key === 'decimal'
+                ? 'Десятичная система (основание 10) -- привычная человеку. В криптографии используется редко, но удобна для отображения значений (размер блока, gas-лимит, баланс).'
+                : b.key === 'binary'
+                  ? 'Двоичная система (основание 2) -- язык компьютера. Побитовые операции (XOR, AND, SHIFT) в двоичной форме -- основа SHA-256, AES и потоковых шифров.'
+                  : 'Шестнадцатеричная система (основание 16) -- компактная запись двоичных данных. Адреса Ethereum (0x...), хеши транзакций, ключи -- всё записывается в hex.'
+            }
           >
-            {b.label}
-          </button>
+            <div>
+              <button
+                onClick={() => setActiveBase(b.key)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 16px',
+                  cursor: 'pointer',
+                  background: activeBase === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${activeBase === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  color: activeBase === b.key ? colors.primary : colors.text,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {b.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -117,37 +130,49 @@ export function NumberLineDiagram() {
 
       {/* Three representations */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
-        <DataBox label="Десятичная" value={String(value)} variant={activeBase === 'decimal' ? 'highlight' : 'default'} />
-        <DataBox label="Двоичная" value={toBase(value, 'binary')} variant={activeBase === 'binary' ? 'highlight' : 'default'} />
-        <DataBox label="Шестнадцатеричная" value={toBase(value, 'hex')} variant={activeBase === 'hex' ? 'highlight' : 'default'} />
+        <DiagramTooltip content="Десятичное представление числа. Каждый разряд -- степень 10. Человеко-читаемая форма, используется в UI кошельков и эксплореров для отображения балансов.">
+          <DataBox label="Десятичная" value={String(value)} variant={activeBase === 'decimal' ? 'highlight' : 'default'} />
+        </DiagramTooltip>
+        <DiagramTooltip content="Двоичное представление (с префиксом 0b). Каждый разряд -- степень 2. Именно в этой форме данные хранятся в памяти и обрабатываются криптографическими алгоритмами (SHA-256, AES).">
+          <DataBox label="Двоичная" value={toBase(value, 'binary')} variant={activeBase === 'binary' ? 'highlight' : 'default'} />
+        </DiagramTooltip>
+        <DiagramTooltip content="Hex-представление (с префиксом 0x). Один hex-символ = 4 бита, что делает его идеальным для записи байтов. Ethereum-адреса, tx-хеши, keccak256 -- всё в hex.">
+          <DataBox label="Шестнадцатеричная" value={toBase(value, 'hex')} variant={activeBase === 'hex' ? 'highlight' : 'default'} />
+        </DiagramTooltip>
       </div>
 
       {/* Binary bit positions */}
       {activeBase === 'binary' && (
         <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
-            Разрядные значения (позиции битов):
-          </div>
+          <DiagramTooltip content="Каждый бит имеет позиционный вес -- степень двойки (2^n). Установленные биты (1) суммируются для получения числа. В криптографии размер ключа измеряется в битах: 256 бит для secp256k1, 128/256 бит для AES.">
+            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
+              Разрядные значения (позиции битов):
+            </div>
+          </DiagramTooltip>
           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
             {bits.map((b) => (
-              <div
+              <DiagramTooltip
                 key={b.position}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  padding: '4px 6px',
-                  borderRadius: 6,
-                  background: b.bit === 1 ? `${colors.primary}25` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${b.bit === 1 ? colors.primary + '40' : 'rgba(255,255,255,0.06)'}`,
-                  minWidth: 40,
-                }}
+                content={`Позиция ${b.position}: вес = 2^${b.position} = ${b.value}. ${b.bit === 1 ? `Бит установлен -- добавляет ${b.value} к итоговому значению.` : 'Бит не установлен (0) -- не вносит вклад в сумму.'}`}
               >
-                <span style={{ fontSize: 10, color: colors.textMuted }}>{b.value}</span>
-                <span style={{ fontSize: 16, fontFamily: 'monospace', color: b.bit === 1 ? colors.primary : colors.textMuted, fontWeight: 600 }}>
-                  {b.bit}
-                </span>
-              </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '4px 6px',
+                    borderRadius: 6,
+                    background: b.bit === 1 ? `${colors.primary}25` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${b.bit === 1 ? colors.primary + '40' : 'rgba(255,255,255,0.06)'}`,
+                    minWidth: 40,
+                  }}
+                >
+                  <span style={{ fontSize: 10, color: colors.textMuted }}>{b.value}</span>
+                  <span style={{ fontSize: 16, fontFamily: 'monospace', color: b.bit === 1 ? colors.primary : colors.textMuted, fontWeight: 600 }}>
+                    {b.bit}
+                  </span>
+                </div>
+              </DiagramTooltip>
             ))}
           </div>
           {value > 0 && (
@@ -161,13 +186,16 @@ export function NumberLineDiagram() {
       {/* Hex nibble grouping */}
       {activeBase === 'hex' && (
         <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
-            Группировка по 4 бита (ниблы):
-          </div>
+          <DiagramTooltip content="Нибл (nibble) -- группа из 4 бит, представляющая одну hex-цифру (0-F). Два нибла = 1 байт (8 бит). Именно поэтому каждый байт в hex записывается двумя символами: 0xFF = 11111111.">
+            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
+              Группировка по 4 бита (ниблы):
+            </div>
+          </DiagramTooltip>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Старший нибл</div>
-              <div style={{
+            <DiagramTooltip content="Старший нибл (high nibble) -- первые 4 бита байта. Содержит значение, умноженное на 16. В Ethereum-адресах каждый байт представлен двумя hex-символами: старшим и младшим ниблом.">
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Старший нибл</div>
+                <div style={{
                 padding: '8px 16px',
                 borderRadius: 8,
                 background: `${colors.accent}20`,
@@ -182,25 +210,28 @@ export function NumberLineDiagram() {
               <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4, fontFamily: 'monospace' }}>
                 {value.toString(2).padStart(8, '0').slice(0, 4)}
               </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Младший нибл</div>
-              <div style={{
-                padding: '8px 16px',
-                borderRadius: 8,
-                background: `${colors.success}20`,
-                border: `1px solid ${colors.success}40`,
-                fontFamily: 'monospace',
-                fontSize: 20,
-                color: colors.success,
-                fontWeight: 600,
-              }}>
-                {nibbles.low}
               </div>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4, fontFamily: 'monospace' }}>
-                {value.toString(2).padStart(8, '0').slice(4)}
+            </DiagramTooltip>
+            <DiagramTooltip content="Младший нибл (low nibble) -- последние 4 бита байта. Содержит значение от 0 до 15. Вместе со старшим ниблом образует один байт -- минимальную адресуемую единицу памяти.">
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Младший нибл</div>
+                <div style={{
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  background: `${colors.success}20`,
+                  border: `1px solid ${colors.success}40`,
+                  fontFamily: 'monospace',
+                  fontSize: 20,
+                  color: colors.success,
+                  fontWeight: 600,
+                }}>
+                  {nibbles.low}
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4, fontFamily: 'monospace' }}>
+                  {value.toString(2).padStart(8, '0').slice(4)}
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
           </div>
           <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'center', fontFamily: 'monospace' }}>
             0x{nibbles.high}{nibbles.low} = {parseInt(nibbles.high, 16)} * 16 + {parseInt(nibbles.low, 16)} = {value}
@@ -229,6 +260,7 @@ interface NotationEntry {
   usedIn: string;
   example: string;
   examplePython: string;
+  tooltip: string;
 }
 
 const notationEntries: NotationEntry[] = [
@@ -239,6 +271,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-01',
     example: 'a \u2261 b (mod n)',
     examplePython: 'a % n == b % n',
+    tooltip: 'Конгруэнтность -- равенство остатков при делении на модуль. Фундамент RSA, Diffie-Hellman и всей модулярной арифметики в криптографии.',
   },
   {
     symbol: '\u2200',
@@ -247,6 +280,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: '\u2200 a \u2208 G: a * e = a',
     examplePython: 'all(a * e == a for a in G)',
+    tooltip: 'Квантор всеобщности -- утверждение верно для каждого элемента. В криптографии используется при определении свойств групп: нейтральный элемент работает для ВСЕХ элементов.',
   },
   {
     symbol: '\u2203',
@@ -255,6 +289,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: '\u2203 x: a * x = e',
     examplePython: 'any(a * x == e for x in G)',
+    tooltip: 'Квантор существования -- хотя бы один элемент удовлетворяет условию. В группах ECC для каждого элемента СУЩЕСТВУЕТ обратный -- это гарантирует возможность расшифрования.',
   },
   {
     symbol: '\u2208',
@@ -263,6 +298,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-01, CRYPTO-02',
     example: 'a \u2208 Z_p',
     examplePython: 'a in Z_p',
+    tooltip: 'Принадлежность множеству. В криптографии ключи, точки кривых и сообщения должны принадлежать определённым множествам (конечным полям, группам точек на кривой).',
   },
   {
     symbol: '\u2209',
@@ -271,6 +307,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: '0 \u2209 Z*_p',
     examplePython: '0 not in Z_star_p',
+    tooltip: 'Непринадлежность множеству. Ноль исключён из мультипликативной группы Z*_p, потому что у нуля нет обратного элемента -- деление на ноль невозможно.',
   },
   {
     symbol: '|',
@@ -279,6 +316,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-01, CRYPTO-08',
     example: 'a | b',
     examplePython: 'b % a == 0',
+    tooltip: 'Делимость -- a делит b без остатка. Лежит в основе проверки простоты чисел и факторизации, от которых зависит безопасность RSA.',
   },
   {
     symbol: '\u27FA',
@@ -287,6 +325,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-01',
     example: 'a \u2261 b (mod n) \u27FA n | (a - b)',
     examplePython: '(a % n == b % n) == ((a - b) % n == 0)',
+    tooltip: 'Логическая эквивалентность -- два утверждения истинны или ложны одновременно. Используется для формулировки теорем модулярной арифметики.',
   },
   {
     symbol: '\u2192',
@@ -295,6 +334,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02, CRYPTO-04',
     example: 'f: A \u2192 B',
     examplePython: 'f = lambda a: ...',
+    tooltip: 'Отображение из множества A в множество B. Хеш-функция -- пример отображения: SHA-256 отображает произвольные данные в 256-битное значение.',
   },
   {
     symbol: '\u2205',
@@ -303,6 +343,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: 'A \u2229 B = \u2205',
     examplePython: 'A & B == set()',
+    tooltip: 'Множество без элементов. Если пересечение двух множеств пусто, они не пересекаются -- важно при разбиении пространства ключей.',
   },
   {
     symbol: '\u2282',
@@ -311,6 +352,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: 'Z*_p \u2282 Z_p',
     examplePython: 'Z_star_p < Z_p',
+    tooltip: 'Подмножество -- все элементы A содержатся в B. Мультипликативная группа Z*_p является подмножеством Z_p: из поля исключён только ноль.',
   },
   {
     symbol: '\u222A',
@@ -319,6 +361,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: 'A \u222A B',
     examplePython: 'A | B',
+    tooltip: 'Объединение множеств -- все элементы из обоих множеств. В теории множеств это аналог логического ИЛИ (OR) в побитовых операциях.',
   },
   {
     symbol: '\u2229',
@@ -327,6 +370,7 @@ const notationEntries: NotationEntry[] = [
     usedIn: 'CRYPTO-02',
     example: 'A \u2229 B',
     examplePython: 'A & B',
+    tooltip: 'Пересечение множеств -- элементы, принадлежащие обоим множествам. Аналог побитового AND. Используется в протоколах Private Set Intersection (PSI) для приватного вычисления.',
   },
 ];
 
@@ -383,7 +427,9 @@ export function NotationDictionary() {
                     color: selected === i ? colors.secondary : colors.text,
                     borderBottom: selected === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
                   }}>
-                    {entry.symbol}
+                    <DiagramTooltip content={entry.tooltip}>
+                      <span>{entry.symbol}</span>
+                    </DiagramTooltip>
                   </td>
                   <td style={{
                     padding: '8px 10px',

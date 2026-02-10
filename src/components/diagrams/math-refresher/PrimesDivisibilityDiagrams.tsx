@@ -9,6 +9,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
@@ -109,9 +110,11 @@ export function PrimesSieveDiagram() {
 
   return (
     <DiagramContainer title="Решето Эратосфена" color="green">
-      <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
-        Шаг {step}/{maxStep - 1}: {stepDescription}
-      </div>
+      <DiagramTooltip content="Решето Эратосфена -- древний алгоритм нахождения всех простых чисел до заданной границы. Последовательно вычёркивает составные числа. Простые числа -- основа RSA: безопасность шифрования зависит от сложности факторизации произведения двух больших простых чисел.">
+        <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+          Шаг {step}/{maxStep - 1}: {stepDescription}
+        </div>
+      </DiagramTooltip>
 
       {/* Number grid 10 columns */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4 }}>
@@ -182,11 +185,13 @@ export function PrimesSieveDiagram() {
       </div>
 
       {step === maxStep - 1 && (
-        <DataBox
-          label="Простые числа от 2 до 50"
-          value={numbers.filter(isPrimeSieve).join(', ')}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Все простые числа от 2 до 50. В RSA используются простые числа длиной 1024+ бит (>300 десятичных цифр). Перебор таких чисел невозможен -- используются вероятностные тесты простоты (Miller-Rabin).">
+          <DataBox
+            label="Простые числа от 2 до 50"
+            value={numbers.filter(isPrimeSieve).join(', ')}
+            variant="highlight"
+          />
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
@@ -382,32 +387,38 @@ export function FactorizationTreeDiagram() {
         </svg>
       </div>
 
-      <DataBox
-        label="Разложение"
-        value={`${value} = ${factorizationStr}`}
-        variant="highlight"
-      />
+      <DiagramTooltip content="Основная теорема арифметики: каждое число > 1 раскладывается на простые множители единственным образом (с точностью до порядка). В RSA число n = p * q, и вся безопасность основана на том, что факторизация больших n вычислительно неосуществима.">
+        <DataBox
+          label="Разложение"
+          value={`${value} = ${factorizationStr}`}
+          variant="highlight"
+        />
+      </DiagramTooltip>
 
       {/* Color legend for primes used */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {Array.from(factors.keys()).map((p) => (
-          <div
+          <DiagramTooltip
             key={p}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: getPrimeColor(p) + '20',
-              border: `1px solid ${getPrimeColor(p)}40`,
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: getPrimeColor(p),
-            }}
+            content={`Простой множитель ${p}. Входит в разложение ${factors.get(p)} раз(а). В RSA-2048 простые множители p и q имеют длину ~1024 бита -- перебор невозможен.`}
           >
-            {p}
-          </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: getPrimeColor(p) + '20',
+                border: `1px solid ${getPrimeColor(p)}40`,
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: getPrimeColor(p),
+              }}
+            >
+              {p}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
     </DiagramContainer>
@@ -493,33 +504,40 @@ export function GCDVisualization() {
         {/* Step equations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {visibleSteps.map((s, i) => (
-            <div
+            <DiagramTooltip
               key={i}
-              style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: i === step ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${i === step ? colors.secondary + '40' : 'rgba(255,255,255,0.08)'}`,
-              }}
+              content={s.r === 0
+                ? `Остаток равен нулю -- алгоритм завершён! НОД = ${s.b}. Расширенный алгоритм Евклида также находит коэффициенты ax + by = НОД(a,b), что критично для вычисления модулярного обратного в RSA.`
+                : `Деление с остатком: ${s.a} = ${s.q} * ${s.b} + ${s.r}. На каждом шаге большее число заменяется остатком. Алгоритм Евклида работает за O(log(min(a,b))) шагов -- эффективнее полного перебора.`
+              }
             >
-              <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
-                Шаг {i + 1}
-              </span>
-              <span style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
-                {s.equation}
-              </span>
-              <span style={{
-                fontSize: 12,
-                fontFamily: 'monospace',
-                color: s.r === 0 ? colors.success : colors.textMuted,
-                fontWeight: s.r === 0 ? 700 : 400,
-              }}>
-                r = {s.r}
-              </span>
-            </div>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '8px 12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: i === step ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i === step ? colors.secondary + '40' : 'rgba(255,255,255,0.08)'}`,
+                }}
+              >
+                <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  Шаг {i + 1}
+                </span>
+                <span style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
+                  {s.equation}
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  color: s.r === 0 ? colors.success : colors.textMuted,
+                  fontWeight: s.r === 0 ? 700 : 400,
+                }}>
+                  r = {s.r}
+                </span>
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
 
@@ -618,14 +636,18 @@ export function GCDVisualization() {
 
         {step >= maxStep - 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <DataBox
-              label="Результат"
-              value={`НОД(${a}, ${b}) = ${gcd}`}
-              variant="highlight"
-            />
-            <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
-              Python: math.gcd({a}, {b}) = {gcd}
-            </div>
+            <DiagramTooltip content="Наибольший общий делитель. НОД используется для проверки взаимной простоты чисел (НОД=1). В RSA: e и phi(n) должны быть взаимно просты. Расширенный алгоритм Евклида находит d = e^(-1) mod phi(n) -- приватный ключ.">
+              <DataBox
+                label="Результат"
+                value={`НОД(${a}, ${b}) = ${gcd}`}
+                variant="highlight"
+              />
+            </DiagramTooltip>
+            <DiagramTooltip content="Python предоставляет встроенную функцию math.gcd(). Для расширенного алгоритма Евклида используйте pow(e, -1, phi_n) в Python 3.8+ для вычисления модулярного обратного.">
+              <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
+                Python: math.gcd({a}, {b}) = {gcd}
+              </div>
+            </DiagramTooltip>
           </div>
         )}
       </div>
