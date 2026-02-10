@@ -3,7 +3,7 @@
  *
  * Exports:
  * - P2PKHStackAnimation: Step-through P2PKH script execution (7 steps, history array)
- * - OpcodeReferenceDiagram: Opcode reference grid with hover tooltips (10+ opcodes)
+ * - OpcodeReferenceDiagram: Opcode reference grid with DiagramTooltip (10+ opcodes)
  * - ScriptEvalFlowDiagram: Script validation process flow (scriptSig -> scriptPubKey)
  */
 
@@ -11,7 +11,7 @@ import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { Arrow } from '@primitives/Arrow';
-import { Grid } from '@primitives/Grid';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ------------------------------------------------------------------ */
@@ -154,6 +154,11 @@ const SCRIPT_DATA: Record<ScriptType, { ops: string[]; steps: ScriptStep[]; labe
   P2SH: { ops: P2SH_SCRIPT_OPS, steps: P2SH_STEPS, label: 'P2SH (Multisig)' },
 };
 
+const SCRIPT_TYPE_TOOLTIPS: Record<ScriptType, string> = {
+  P2PKH: 'Pay-to-Public-Key-Hash -- стандартная транзакция. Скрипт проверяет, что отправитель знает приватный ключ для данного публичного ключа. 7 шагов выполнения.',
+  P2SH: 'Pay-to-Script-Hash -- транзакция с произвольным скриптом. В данном примере: 2-of-3 мультиподпись. Сначала проверяется хеш скрипта, затем выполняется сам redeemScript.',
+};
+
 /* ------------------------------------------------------------------ */
 /*  P2PKHStackAnimation                                                */
 /* ------------------------------------------------------------------ */
@@ -196,49 +201,53 @@ export function P2PKHStackAnimation() {
       {/* Script type selector */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
         {(Object.keys(SCRIPT_DATA) as ScriptType[]).map((type) => (
-          <button
-            key={type}
-            onClick={() => handleScriptChange(type)}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-              color: scriptType === type ? colors.success : colors.textMuted,
-              border: `1px solid ${scriptType === type ? colors.success : 'rgba(255,255,255,0.1)'}`,
-              background: scriptType === type ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-            }}
-          >
-            {SCRIPT_DATA[type].label}
-          </button>
+          <DiagramTooltip key={type} content={SCRIPT_TYPE_TOOLTIPS[type]}>
+            <div>
+              <button
+                onClick={() => handleScriptChange(type)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: scriptType === type ? colors.success : colors.textMuted,
+                  border: `1px solid ${scriptType === type ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                  background: scriptType === type ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
+                }}
+              >
+                {SCRIPT_DATA[type].label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Step indicators */}
       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-        {data.steps.map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 600,
-              background: i <= step ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
-              border: `2px solid ${i === step ? colors.success : i < step ? `${colors.success}60` : 'rgba(255,255,255,0.1)'}`,
-              color: i <= step ? colors.success : colors.textMuted,
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-            }}
-            onClick={() => setStep(i)}
-          >
-            {i}
-          </div>
+        {data.steps.map((s, i) => (
+          <DiagramTooltip key={i} content={`${s.opLabel}: ${s.description.slice(0, 80)}...`}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 600,
+                background: i <= step ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${i === step ? colors.success : i < step ? `${colors.success}60` : 'rgba(255,255,255,0.1)'}`,
+                color: i <= step ? colors.success : colors.textMuted,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+              }}
+              onClick={() => setStep(i)}
+            >
+              {i}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -246,9 +255,11 @@ export function P2PKHStackAnimation() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 12, marginBottom: 16 }}>
         {/* Left: Script opcodes */}
         <div style={{ ...glassStyle, padding: 12, borderColor: `${colors.primary}30` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: colors.primary, marginBottom: 8, textAlign: 'center' }}>
-            Script
-          </div>
+          <DiagramTooltip content="Последовательность опкодов Bitcoin Script. Каждый опкод выполняется по порядку, манипулируя стеком. Активный опкод подсвечен зеленым.">
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.primary, marginBottom: 8, textAlign: 'center' }}>
+              Script
+            </div>
+          </DiagramTooltip>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {data.ops.map((op, i) => {
               const isActive = i === current.highlight;
@@ -278,9 +289,11 @@ export function P2PKHStackAnimation() {
 
         {/* Center: Stack visualization */}
         <div style={{ ...glassStyle, padding: 12, borderColor: `${colors.accent}30` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: colors.accent, marginBottom: 8, textAlign: 'center' }}>
-            Стек
-          </div>
+          <DiagramTooltip content="Стек (stack) -- основная структура данных Bitcoin Script. Операции push/pop выполняются сверху. Элементы добавляются и удаляются в порядке LIFO.">
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.accent, marginBottom: 8, textAlign: 'center' }}>
+              Стек
+            </div>
+          </DiagramTooltip>
           <div style={{
             display: 'flex',
             flexDirection: 'column-reverse',
@@ -292,27 +305,34 @@ export function P2PKHStackAnimation() {
               const isTop = i === current.stack.length - 1;
               const isTrueResult = item === 'true';
               return (
-                <div
-                  key={`${step}-${i}`}
-                  style={{
-                    padding: '6px 8px',
-                    borderRadius: 6,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    textAlign: 'center',
-                    color: isTrueResult ? colors.success : isTop ? colors.accent : colors.text,
-                    background: isTrueResult
-                      ? `${colors.success}20`
-                      : isTop
-                        ? `${colors.accent}15`
-                        : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${isTrueResult ? colors.success : isTop ? colors.accent : 'rgba(255,255,255,0.1)'}`,
-                    transition: 'all 0.3s',
-                  }}
-                >
-                  {item}
-                </div>
+                <DiagramTooltip key={`${step}-${i}`} content={
+                  isTrueResult
+                    ? 'Результат true на стеке означает успешную проверку скрипта. Транзакция валидна.'
+                    : isTop
+                      ? `Верхний элемент стека: ${item}. Следующая операция будет работать с этим элементом.`
+                      : `Элемент стека: ${item}. Будет использован, когда операция дойдет до него.`
+                }>
+                  <div
+                    style={{
+                      padding: '6px 8px',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      textAlign: 'center',
+                      color: isTrueResult ? colors.success : isTop ? colors.accent : colors.text,
+                      background: isTrueResult
+                        ? `${colors.success}20`
+                        : isTop
+                          ? `${colors.accent}15`
+                          : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isTrueResult ? colors.success : isTop ? colors.accent : 'rgba(255,255,255,0.1)'}`,
+                      transition: 'all 0.3s',
+                    }}
+                  >
+                    {item}
+                  </div>
+                </DiagramTooltip>
               );
             })}
           </div>
@@ -363,52 +383,58 @@ export function P2PKHStackAnimation() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handlePrev}
-          disabled={step <= 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step <= 0 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step <= 0 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step <= 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= maxStep}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= maxStep ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= maxStep ? colors.textMuted : colors.success,
-            border: `1px solid ${step >= maxStep ? 'rgba(255,255,255,0.1)' : colors.success}`,
-            background: step >= maxStep ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
-            opacity: step >= maxStep ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <div>
+          <button
+            onClick={handleReset}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              fontSize: 12,
+              color: colors.textMuted,
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+            }}
+          >
+            Сброс
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={handlePrev}
+            disabled={step <= 0}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: step <= 0 ? 'default' : 'pointer',
+              fontSize: 12,
+              color: step <= 0 ? colors.textMuted : colors.accent,
+              border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+              background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+              opacity: step <= 0 ? 0.5 : 1,
+            }}
+          >
+            Назад
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={handleNext}
+            disabled={step >= maxStep}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: step >= maxStep ? 'default' : 'pointer',
+              fontSize: 12,
+              color: step >= maxStep ? colors.textMuted : colors.success,
+              border: `1px solid ${step >= maxStep ? 'rgba(255,255,255,0.1)' : colors.success}`,
+              background: step >= maxStep ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
+              opacity: step >= maxStep ? 0.5 : 1,
+            }}
+          >
+            Далее
+          </button>
+        </div>
       </div>
     </DiagramContainer>
   );
@@ -441,6 +467,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   flow: 'Поток',
   timelock: 'Таймлок',
   arithmetic: 'Арифметика',
+};
+
+const CATEGORY_TOOLTIPS: Record<string, string> = {
+  crypto: 'Криптографические опкоды -- хеширование (HASH160, HASH256) и проверка подписей (CHECKSIG, CHECKMULTISIG). Основа безопасности Bitcoin Script.',
+  stack: 'Операции со стеком -- манипуляции элементами (DUP, EQUAL, EQUALVERIFY). Управляют порядком и наличием данных на стеке.',
+  flow: 'Управление потоком -- условное ветвление (IF/ELSE/ENDIF) и специальные операции (RETURN). Позволяют создавать сложную логику скриптов.',
+  timelock: 'Таймлок-опкоды -- временные ограничения на трату UTXO. CLTV (абсолютный) и CSV (относительный) используются в Lightning Network и HTLC.',
+  arithmetic: 'Арифметические операции -- работа с числами на стеке. Ограничены 4-байтовыми целыми числами из соображений безопасности.',
 };
 
 const OPCODES: OpcodeInfo[] = [
@@ -551,27 +585,27 @@ const OPCODES: OpcodeInfo[] = [
 ];
 
 /**
- * OpcodeReferenceDiagram - Opcode reference grid with hover tooltips.
- * Color-coded by category. Shows stack effects on hover.
+ * OpcodeReferenceDiagram - Opcode reference grid with DiagramTooltip.
+ * Color-coded by category. Shows stack effects via tooltip.
  */
 export function OpcodeReferenceDiagram() {
-  const [hovered, setHovered] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Справочник опкодов Bitcoin Script" color="blue">
       {/* Category legend */}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
         {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 10,
-              height: 10,
-              borderRadius: 3,
-              background: CATEGORY_COLORS[key],
-              opacity: 0.7,
-            }} />
-            <span style={{ fontSize: 11, color: colors.textMuted }}>{label}</span>
-          </div>
+          <DiagramTooltip key={key} content={CATEGORY_TOOLTIPS[key]}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 10,
+                height: 10,
+                borderRadius: 3,
+                background: CATEGORY_COLORS[key],
+                opacity: 0.7,
+              }} />
+              <span style={{ fontSize: 11, color: colors.textMuted }}>{label}</span>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -580,98 +614,53 @@ export function OpcodeReferenceDiagram() {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         gap: 8,
-        marginBottom: 16,
       }}>
-        {OPCODES.map((op, i) => {
+        {OPCODES.map((op) => {
           const catColor = CATEGORY_COLORS[op.category];
-          const isHovered = hovered === i;
           return (
-            <div
+            <DiagramTooltip
               key={op.name}
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                ...glassStyle,
-                padding: '10px 10px',
-                borderColor: isHovered ? `${catColor}60` : `${catColor}20`,
-                background: isHovered ? `${catColor}10` : 'transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                position: 'relative',
-              }}
+              content={<>{op.description}<br/><br/><strong>Стек:</strong> {op.stackBefore} {'→'} {op.stackAfter}</>}
             >
-              <div style={{
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: catColor,
-                marginBottom: 2,
-              }}>
-                {op.name}
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '10px 10px',
+                  borderColor: `${catColor}20`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  position: 'relative',
+                }}
+              >
+                <div style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  color: catColor,
+                  marginBottom: 2,
+                }}>
+                  {op.name}
+                </div>
+                <div style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                }}>
+                  {op.hex}
+                </div>
+                <div style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  marginTop: 4,
+                  lineHeight: 1.4,
+                }}>
+                  {op.description}
+                </div>
               </div>
-              <div style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-              }}>
-                {op.hex}
-              </div>
-              <div style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                marginTop: 4,
-                lineHeight: 1.4,
-              }}>
-                {op.description}
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
-
-      {/* Hover detail panel */}
-      {hovered !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          borderColor: `${CATEGORY_COLORS[OPCODES[hovered].category]}40`,
-          background: `${CATEGORY_COLORS[OPCODES[hovered].category]}08`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{
-              fontSize: 14,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: CATEGORY_COLORS[OPCODES[hovered].category],
-            }}>
-              {OPCODES[hovered].name}
-            </span>
-            <span style={{
-              fontSize: 11,
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${CATEGORY_COLORS[OPCODES[hovered].category]}20`,
-              color: CATEGORY_COLORS[OPCODES[hovered].category],
-            }}>
-              {CATEGORY_LABELS[OPCODES[hovered].category]}
-            </span>
-          </div>
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
-            {OPCODES[hovered].description}
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            fontFamily: 'monospace',
-            fontSize: 12,
-          }}>
-            <span style={{ color: colors.text }}>{OPCODES[hovered].stackBefore}</span>
-            <Arrow direction="right" />
-            <span style={{ color: colors.success }}>{OPCODES[hovered].stackAfter}</span>
-          </div>
-        </div>
-      )}
     </DiagramContainer>
   );
 }
@@ -688,6 +677,12 @@ export function OpcodeReferenceDiagram() {
 export function ScriptEvalFlowDiagram() {
   const [variant, setVariant] = useState<'standard' | 'p2sh' | 'segwit'>('standard');
 
+  const VARIANT_TOOLTIPS = {
+    standard: 'Стандартный P2PKH: scriptSig (подпись + pubKey) выполняется на стеке, затем scriptPubKey (OP_DUP OP_HASH160...) проверяет подпись. Самый простой вариант.',
+    p2sh: 'P2SH: сначала проверяется хеш скрипта, затем десериализуется и выполняется redeemScript (например, 2-of-3 мультиподпись). Позволяет сложные условия траты.',
+    segwit: 'SegWit: подпись и pubKey хранятся в отдельном witness-поле (не в scriptSig). Witness program в scriptPubKey определяет тип проверки. Решает malleability.',
+  };
+
   return (
     <DiagramContainer title="Процесс валидации скрипта" color="purple">
       {/* Variant selector */}
@@ -697,39 +692,48 @@ export function ScriptEvalFlowDiagram() {
           { key: 'p2sh' as const, label: 'P2SH' },
           { key: 'segwit' as const, label: 'SegWit' },
         ].map((v) => (
-          <button
-            key={v.key}
-            onClick={() => setVariant(v.key)}
-            style={{
-              ...glassStyle,
-              padding: '5px 12px',
-              cursor: 'pointer',
-              fontSize: 11,
-              fontWeight: 600,
-              color: variant === v.key ? colors.secondary : colors.textMuted,
-              border: `1px solid ${variant === v.key ? colors.secondary : 'rgba(255,255,255,0.1)'}`,
-              background: variant === v.key ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
-            }}
-          >
-            {v.label}
-          </button>
+          <DiagramTooltip key={v.key} content={VARIANT_TOOLTIPS[v.key]}>
+            <div>
+              <button
+                onClick={() => setVariant(v.key)}
+                style={{
+                  ...glassStyle,
+                  padding: '5px 12px',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: variant === v.key ? colors.secondary : colors.textMuted,
+                  border: `1px solid ${variant === v.key ? colors.secondary : 'rgba(255,255,255,0.1)'}`,
+                  background: variant === v.key ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
+                }}
+              >
+                {v.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Flow diagram */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
         {/* Phase 1: scriptSig / witness */}
-        <DataBox
-          label={variant === 'segwit' ? 'Witness Data' : 'scriptSig'}
-          value={
-            variant === 'standard'
-              ? '<sig> <pubKey>'
-              : variant === 'p2sh'
-                ? '<sig1> <sig2> <redeemScript>'
-                : '<sig> <pubKey> (в witness поле)'
-          }
-          variant="highlight"
-        />
+        <DiagramTooltip content={
+          variant === 'segwit'
+            ? 'Witness Data -- подпись и публичный ключ хранятся в отдельном поле транзакции, не в scriptSig. Это поле не участвует в вычислении txid.'
+            : 'scriptSig -- данные для разблокировки UTXO. Содержит подписи и публичные ключи (или redeemScript для P2SH). Выполняется первым на стеке.'
+        }>
+          <DataBox
+            label={variant === 'segwit' ? 'Witness Data' : 'scriptSig'}
+            value={
+              variant === 'standard'
+                ? '<sig> <pubKey>'
+                : variant === 'p2sh'
+                  ? '<sig1> <sig2> <redeemScript>'
+                  : '<sig> <pubKey> (в witness поле)'
+            }
+            variant="highlight"
+          />
+        </DiagramTooltip>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Arrow direction="down" />
@@ -737,25 +741,27 @@ export function ScriptEvalFlowDiagram() {
         </div>
 
         {/* Phase 2: Stack state after scriptSig */}
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          borderColor: `${colors.accent}30`,
-          textAlign: 'center',
-          width: '100%',
-          maxWidth: 300,
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: colors.accent, marginBottom: 4 }}>
-            Стек после фазы 1
+        <DiagramTooltip content="Состояние стека после выполнения scriptSig (или witness). Эти данные остаются на стеке и будут использованы при выполнении scriptPubKey.">
+          <div style={{
+            ...glassStyle,
+            padding: 12,
+            borderColor: `${colors.accent}30`,
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: 300,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: colors.accent, marginBottom: 4 }}>
+              Стек после фазы 1
+            </div>
+            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
+              {variant === 'standard'
+                ? '[sig, pubKey]'
+                : variant === 'p2sh'
+                  ? '[sig1, sig2, redeemScript]'
+                  : '[sig, pubKey]'}
+            </div>
           </div>
-          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
-            {variant === 'standard'
-              ? '[sig, pubKey]'
-              : variant === 'p2sh'
-                ? '[sig1, sig2, redeemScript]'
-                : '[sig, pubKey]'}
-          </div>
-        </div>
+        </DiagramTooltip>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Arrow direction="down" />
@@ -763,17 +769,19 @@ export function ScriptEvalFlowDiagram() {
         </div>
 
         {/* Phase 3: scriptPubKey execution */}
-        <DataBox
-          label="scriptPubKey"
-          value={
-            variant === 'standard'
-              ? 'OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG'
-              : variant === 'p2sh'
-                ? 'OP_HASH160 <scriptHash> OP_EQUAL'
-                : 'OP_0 <20-byte witness program>'
-          }
-          variant="default"
-        />
+        <DiagramTooltip content="scriptPubKey -- условие блокировки UTXO, записанное в выходе транзакции. Выполняется на стеке, который уже содержит данные из scriptSig.">
+          <DataBox
+            label="scriptPubKey"
+            value={
+              variant === 'standard'
+                ? 'OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG'
+                : variant === 'p2sh'
+                  ? 'OP_HASH160 <scriptHash> OP_EQUAL'
+                  : 'OP_0 <20-byte witness program>'
+            }
+            variant="default"
+          />
+        </DiagramTooltip>
 
         {/* P2SH extra phase */}
         {variant === 'p2sh' && (
@@ -783,22 +791,24 @@ export function ScriptEvalFlowDiagram() {
               <span style={{ fontSize: 11, color: colors.warning }}>Десериализовать redeemScript</span>
             </div>
 
-            <div style={{
-              ...glassStyle,
-              padding: 12,
-              borderColor: `${colors.warning}40`,
-              background: `${colors.warning}08`,
-              textAlign: 'center',
-              width: '100%',
-              maxWidth: 300,
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: colors.warning, marginBottom: 4 }}>
-                Выполнение redeemScript
+            <DiagramTooltip content="В P2SH после проверки хеша скрипта, redeemScript десериализуется и выполняется на стеке. Это позволяет создавать произвольно сложные условия траты.">
+              <div style={{
+                ...glassStyle,
+                padding: 12,
+                borderColor: `${colors.warning}40`,
+                background: `${colors.warning}08`,
+                textAlign: 'center',
+                width: '100%',
+                maxWidth: 300,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: colors.warning, marginBottom: 4 }}>
+                  Выполнение redeemScript
+                </div>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text }}>
+                  OP_2 &lt;pk1&gt; &lt;pk2&gt; &lt;pk3&gt; OP_3 OP_CHECKMULTISIG
+                </div>
               </div>
-              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text }}>
-                OP_2 &lt;pk1&gt; &lt;pk2&gt; &lt;pk3&gt; OP_3 OP_CHECKMULTISIG
-              </div>
-            </div>
+            </DiagramTooltip>
           </>
         )}
 
@@ -810,25 +820,27 @@ export function ScriptEvalFlowDiagram() {
               <span style={{ fontSize: 11, color: colors.info }}>Witness program определяет тип</span>
             </div>
 
-            <div style={{
-              ...glassStyle,
-              padding: 12,
-              borderColor: `${colors.info}40`,
-              background: `${colors.info}08`,
-              textAlign: 'center',
-              width: '100%',
-              maxWidth: 300,
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: colors.info, marginBottom: 4 }}>
-                Witness проверка
+            <DiagramTooltip content="Witness program определяет тип SegWit-транзакции. Version 0 + 20 байт = P2WPKH (аналог P2PKH). Version 0 + 32 байт = P2WSH (аналог P2SH). Version 1 = Taproot (P2TR).">
+              <div style={{
+                ...glassStyle,
+                padding: 12,
+                borderColor: `${colors.info}40`,
+                background: `${colors.info}08`,
+                textAlign: 'center',
+                width: '100%',
+                maxWidth: 300,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: colors.info, marginBottom: 4 }}>
+                  Witness проверка
+                </div>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text }}>
+                  Version 0, 20 bytes = P2WPKH (hash160 pubKey)
+                </div>
+                <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+                  Witness данные проверяются вместо scriptSig
+                </div>
               </div>
-              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text }}>
-                Version 0, 20 bytes = P2WPKH (hash160 pubKey)
-              </div>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
-                Witness данные проверяются вместо scriptSig
-              </div>
-            </div>
+            </DiagramTooltip>
           </>
         )}
 
@@ -837,43 +849,47 @@ export function ScriptEvalFlowDiagram() {
         </div>
 
         {/* Result */}
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          borderColor: `${colors.success}50`,
-          background: `${colors.success}10`,
-          textAlign: 'center',
-          width: '100%',
-          maxWidth: 300,
-        }}>
+        <DiagramTooltip content="Финальная проверка: если после выполнения всех скриптов на вершине стека находится ненулевое значение (true), транзакция считается валидной и может быть включена в блок.">
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: colors.success,
-            marginBottom: 4,
+            ...glassStyle,
+            padding: 14,
+            borderColor: `${colors.success}50`,
+            background: `${colors.success}10`,
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: 300,
           }}>
-            Стек: [true]
+            <div style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: colors.success,
+              marginBottom: 4,
+            }}>
+              Стек: [true]
+            </div>
+            <div style={{ fontSize: 11, color: colors.textMuted }}>
+              Транзакция валидна!
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted }}>
-            Транзакция валидна!
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Explanation note */}
-      <div style={{
-        marginTop: 16,
-        ...glassStyle,
-        padding: 10,
-        borderColor: `${colors.secondary}20`,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-      }}>
-        <strong style={{ color: colors.secondary }}>Правило:</strong>{' '}
-        После выполнения всех скриптов стек должен содержать одно ненулевое значение (true).
-        Если стек пуст или содержит false -- транзакция отклоняется.
-      </div>
+      <DiagramTooltip content="Это правило гарантирует, что только владелец приватного ключа может потратить UTXO. Пустой стек или false означает, что подпись не прошла проверку.">
+        <div style={{
+          marginTop: 16,
+          ...glassStyle,
+          padding: 10,
+          borderColor: `${colors.secondary}20`,
+          fontSize: 12,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+        }}>
+          <strong style={{ color: colors.secondary }}>Правило:</strong>{' '}
+          После выполнения всех скриптов стек должен содержать одно ненулевое значение (true).
+          Если стек пуст или содержит false -- транзакция отклоняется.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
