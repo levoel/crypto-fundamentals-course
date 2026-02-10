@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -89,6 +90,13 @@ const AUDIT_PHASES: AuditPhase[] = [
   },
 ];
 
+const PIPELINE_TOOLTIPS: Record<string, string> = {
+  scoping: 'Автоматический анализ (Slither, Mythril) выявляет типовые паттерны уязвимостей за секунды. Покрывает ~60% известных проблем, но пропускает логические ошибки.',
+  automated: 'Ручной аудит анализирует бизнес-логику, экономические атаки и сложные взаимодействия между контрактами. Требует опыта аудитора.',
+  manual: 'Отчёт классифицирует найденные уязвимости по критичности (Critical/High/Medium/Low/Informational) с рекомендациями по исправлению.',
+  reporting: 'Fix review проверяет корректность исправлений после аудита. Без fix review нельзя подтвердить что уязвимости действительно устранены.',
+};
+
 /**
  * AuditPipelineDiagram
  *
@@ -104,20 +112,20 @@ export function AuditPipelineDiagram() {
       {/* Phase progress bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
         {AUDIT_PHASES.map((p, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIndex(i)}
-            style={{
-              flex: Number(p.percentage.replace('%', '')),
-              height: 6,
-              borderRadius: 3,
-              cursor: 'pointer',
-              background: i <= stepIndex ? p.color : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.3s',
-              position: 'relative',
-            }}
-            title={`${p.title} (${p.percentage})`}
-          />
+          <DiagramTooltip key={i} content={`${p.title}: ${p.description.slice(0, 120)}...`}>
+            <div
+              onClick={() => setStepIndex(i)}
+              style={{
+                flex: Number(p.percentage.replace('%', '')),
+                height: 6,
+                borderRadius: 3,
+                cursor: 'pointer',
+                background: i <= stepIndex ? p.color : 'rgba(255,255,255,0.1)',
+                transition: 'all 0.3s',
+                position: 'relative',
+              }}
+            />
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -141,15 +149,17 @@ export function AuditPipelineDiagram() {
       </div>
 
       {/* Phase title */}
-      <div style={{
-        fontSize: 15,
-        fontWeight: 600,
-        color: phase.color,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {phase.title} ({phase.percentage} времени)
-      </div>
+      <DiagramTooltip content={phase.insight}>
+        <div style={{
+          fontSize: 15,
+          fontWeight: 600,
+          color: phase.color,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {phase.title} ({phase.percentage} времени)
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -190,22 +200,26 @@ export function AuditPipelineDiagram() {
         gap: 8,
         marginBottom: 14,
       }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Deliverable
+        <DiagramTooltip content="Deliverable -- конкретный артефакт, который аудитор создаёт по итогам фазы. Без deliverable фаза не считается завершённой.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Deliverable
+            </div>
+            <div style={{ fontSize: 12, color: phase.color, fontFamily: 'monospace', fontWeight: 600 }}>
+              {phase.deliverable}
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: phase.color, fontFamily: 'monospace', fontWeight: 600 }}>
-            {phase.deliverable}
+        </DiagramTooltip>
+        <DiagramTooltip content="Процент времени аудита, выделяемый на эту фазу. Распределение может меняться в зависимости от сложности проекта и scope.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              % от audit time
+            </div>
+            <div style={{ fontSize: 18, color: phase.color, fontFamily: 'monospace', fontWeight: 700 }}>
+              {phase.percentage}
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            % от audit time
-          </div>
-          <div style={{ fontSize: 18, color: phase.color, fontFamily: 'monospace', fontWeight: 700 }}>
-            {phase.percentage}
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Insight */}
@@ -223,55 +237,63 @@ export function AuditPipelineDiagram() {
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(AUDIT_PHASES.length - 1, s + 1))}
-          disabled={stepIndex >= AUDIT_PHASES.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= AUDIT_PHASES.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= AUDIT_PHASES.length - 1 ? colors.textMuted : phase.color,
-            fontSize: 13,
-            opacity: stepIndex >= AUDIT_PHASES.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <div>
+          <button
+            onClick={() => setStepIndex(0)}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontSize: 13,
+            }}
+          >
+            Сброс
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+            disabled={stepIndex === 0}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              color: stepIndex === 0 ? colors.textMuted : colors.text,
+              fontSize: 13,
+              opacity: stepIndex === 0 ? 0.5 : 1,
+            }}
+          >
+            Назад
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.min(AUDIT_PHASES.length - 1, s + 1))}
+            disabled={stepIndex >= AUDIT_PHASES.length - 1}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex >= AUDIT_PHASES.length - 1 ? 'not-allowed' : 'pointer',
+              color: stepIndex >= AUDIT_PHASES.length - 1 ? colors.textMuted : phase.color,
+              fontSize: 13,
+              opacity: stepIndex >= AUDIT_PHASES.length - 1 ? 0.5 : 1,
+            }}
+          >
+            Далее
+          </button>
+        </div>
       </div>
 
       {stepIndex >= AUDIT_PHASES.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Ключевое распределение"
-            value="Инструменты: ~20% findings. Manual review: ~80% findings. Аудит БЕЗ manual review = security theater. Аудит БЕЗ инструментов = неэффективность."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Это соотношение подтверждается статистикой: инструменты находят типовые уязвимости (reentrancy, overflow), а manual review — бизнес-логику, экономические атаки, oracle manipulation.">
+            <DataBox
+              label="Ключевое распределение"
+              value="Инструменты: ~20% findings. Manual review: ~80% findings. Аудит БЕЗ manual review = security theater. Аудит БЕЗ инструментов = неэффективность."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
@@ -315,11 +337,10 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
  * AuditChecklistDiagram
  *
  * 12 interactive checkboxes grouped by OWASP-style categories.
- * Progress bar shows completion. Hover for detailed tooltips.
+ * Progress bar shows completion. DiagramTooltip with item.tooltip data.
  */
 export function AuditChecklistDiagram() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const toggleItem = (id: string) => {
     setChecked((prev) => {
@@ -331,7 +352,6 @@ export function AuditChecklistDiagram() {
   };
 
   const progress = (checked.size / CHECKLIST_ITEMS.length) * 100;
-  const hoveredItem = CHECKLIST_ITEMS.find((item) => item.id === hoveredId);
 
   return (
     <DiagramContainer title="Security Audit Checklist (OWASP-based)" color="green">
@@ -342,9 +362,11 @@ export function AuditChecklistDiagram() {
           justifyContent: 'space-between',
           marginBottom: 6,
         }}>
-          <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-            Прогресс аудита
-          </span>
+          <DiagramTooltip content="Прогресс показывает долю пройденных проверок. Это базовый checklist из 12 пунктов — полный аудит включает 50+ проверок.">
+            <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+              Прогресс аудита
+            </span>
+          </DiagramTooltip>
           <span style={{
             fontSize: 10,
             fontFamily: 'monospace',
@@ -396,86 +418,66 @@ export function AuditChecklistDiagram() {
 
             {items.map((item) => {
               const isChecked = checked.has(item.id);
-              const isHovered = hoveredId === item.id;
 
               return (
-                <div
-                  key={item.id}
-                  onClick={() => toggleItem(item.id)}
-                  onMouseEnter={() => setHoveredId(item.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '5px 8px',
-                    marginBottom: 2,
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <div style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 3,
-                    border: `1.5px solid ${isChecked ? colors.success : 'rgba(255,255,255,0.2)'}`,
-                    background: isChecked ? `${colors.success}20` : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.2s',
-                  }}>
-                    {isChecked && (
-                      <span style={{ fontSize: 10, color: colors.success, lineHeight: 1 }}>
-                        &#10003;
-                      </span>
-                    )}
+                <DiagramTooltip key={item.id} content={item.tooltip}>
+                  <div
+                    onClick={() => toggleItem(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '5px 8px',
+                      marginBottom: 2,
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 3,
+                      border: `1.5px solid ${isChecked ? colors.success : 'rgba(255,255,255,0.2)'}`,
+                      background: isChecked ? `${colors.success}20` : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'all 0.2s',
+                    }}>
+                      {isChecked && (
+                        <span style={{ fontSize: 10, color: colors.success, lineHeight: 1 }}>
+                          &#10003;
+                        </span>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: isChecked ? colors.textMuted : colors.text,
+                      textDecoration: isChecked ? 'line-through' : 'none',
+                      transition: 'all 0.2s',
+                    }}>
+                      {item.label}
+                    </span>
                   </div>
-                  <span style={{
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: isChecked ? colors.textMuted : colors.text,
-                    textDecoration: isChecked ? 'line-through' : 'none',
-                    transition: 'all 0.2s',
-                  }}>
-                    {item.label}
-                  </span>
-                </div>
+                </DiagramTooltip>
               );
             })}
           </div>
         );
       })}
 
-      {/* Hover tooltip */}
-      {hoveredItem && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginTop: 8,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          transition: 'all 0.2s',
-        }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            {hoveredItem.category}: {hoveredItem.label}
-          </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-            {hoveredItem.tooltip}
-          </div>
-        </div>
-      )}
-
       {progress === 100 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Checklist complete"
-            value="Все 12 проверок пройдены. Это базовый checklist -- полный аудит включает 50+ проверок по категориям: governance, upgrades, token standards, external integrations."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Полный checklist аудита включает дополнительные категории: governance, upgrades (proxy patterns), token standards (ERC20/721/1155), external integrations, gas optimization.">
+            <DataBox
+              label="Checklist complete"
+              value="Все 12 проверок пройдены. Это базовый checklist -- полный аудит включает 50+ проверок по категориям: governance, upgrades, token standards, external integrations."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>

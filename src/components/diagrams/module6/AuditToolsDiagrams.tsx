@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -41,15 +42,32 @@ const TOOL_COLORS: Record<string, string> = {
   Aderyn: '#eab308',
 };
 
+const TOOL_TOOLTIPS: Record<string, string> = {
+  Slither: 'Slither (Trail of Bits) — статический анализатор на Python. Находит reentrancy, unchecked calls, shadowing. Быстрый (~1-5 секунд), низкий порог входа.',
+  Mythril: 'Mythril (ConsenSys) — символьное исполнение. Находит integer overflow, unchecked call, delegatecall injection. Медленнее Slither, но глубже.',
+  Aderyn: 'Aderyn (Cyfrin) — AST-анализатор на Rust. Новый инструмент с растущей библиотекой детекторов. Быстрый и надёжный, хорошо дополняет Slither.',
+};
+
+const CATEGORY_TOOLTIPS: Record<string, string> = {
+  'Подход': 'Подход определяет какие баги инструмент может найти. Static analysis быстрый но поверхностный. Symbolic execution медленный но находит глубокие multi-tx баги.',
+  'Язык': 'Язык реализации влияет на скорость и экосистему плагинов. Python — проще custom detectors, Rust — быстрее выполнение.',
+  'Скорость': 'Скорость критична для CI/CD: Slither/Aderyn за секунды, Mythril может анализировать контракт часами из-за path explosion.',
+  'Detectors': 'Количество детекторов определяет покрытие. Больше не значит лучше — важно качество и false positive rate.',
+  'Framework': 'Компания-разработчик определяет вектор развития и доверие к инструменту.',
+  'Сильные стороны': 'Каждый инструмент имеет уникальную нишу. Комбинация Slither + Mythril покрывает >90% автоматически обнаруживаемых уязвимостей.',
+  'Слабые стороны': 'Понимание слабостей помогает выбрать правильную комбинацию инструментов для конкретного проекта.',
+  'Лучше всего для': 'Выбор инструмента зависит от контекста: CI/CD (Slither), глубокий аудит (Mythril), быстрая проверка (Aderyn).',
+  'Docker': 'Docker-образы упрощают запуск инструментов без локальной установки зависимостей (Python, Rust, solc).',
+  'Output': 'Формат output влияет на интеграцию: SARIF для IDE/GitHub, JSON для автоматизации, Markdown для отчётов.',
+};
+
 /**
  * ToolComparisonDiagram
  *
  * HTML comparison table: Slither vs Mythril vs Aderyn across 10 dimensions.
- * Hover rows for emphasis. Header color-coded by tool.
+ * DiagramTooltip on tool names and category cells.
  */
 export function ToolComparisonDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Сравнение инструментов: Slither vs Mythril vs Aderyn" color="green">
       <div style={{ overflowX: 'auto' }}>
@@ -81,73 +99,73 @@ export function ToolComparisonDiagram() {
                   borderBottom: `2px solid ${TOOL_COLORS[tool]}40`,
                   minWidth: 140,
                 }}>
-                  {tool}
+                  <DiagramTooltip content={TOOL_TOOLTIPS[tool]}>
+                    {tool}
+                  </DiagramTooltip>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {TOOL_ROWS.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <td style={{
-                    padding: '7px 10px',
-                    color: isHovered ? colors.text : colors.textMuted,
-                    fontWeight: 600,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  }}>
+            {TOOL_ROWS.map((row, i) => (
+              <tr
+                key={i}
+                style={{
+                  transition: 'background 0.15s',
+                }}
+              >
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.textMuted,
+                  fontWeight: 600,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <DiagramTooltip content={CATEGORY_TOOLTIPS[row.category] || row.category}>
                     {row.category}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                  }}>
-                    {row.slither}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                  }}>
-                    {row.mythril}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                  }}>
-                    {row.aderyn}
-                  </td>
-                </tr>
-              );
-            })}
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                }}>
+                  {row.slither}
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                }}>
+                  {row.mythril}
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                }}>
+                  {row.aderyn}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <DataBox
-          label="Layered defense"
-          value="Ни один инструмент не находит все баги. Slither (быстрый, широкий) + Mythril (глубокий, медленный) + Manual review = максимальное покрытие."
-          variant="info"
-        />
+        <DiagramTooltip content="Layered defense — принцип: каждый инструмент покрывает слабости другого. Slither находит паттерны, Mythril — глубокие баги, manual review — бизнес-логику.">
+          <DataBox
+            label="Layered defense"
+            value="Ни один инструмент не находит все баги. Slither (быстрый, широкий) + Mythril (глубокий, медленный) + Manual review = максимальное покрытие."
+            variant="info"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -230,6 +248,13 @@ const SEVERITY_COLORS: Record<string, string> = {
   Informational: colors.textMuted,
 };
 
+const SEVERITY_TOOLTIPS: Record<string, string> = {
+  High: 'High severity — критическая уязвимость с прямым финансовым ущербом. Требует немедленного исправления до деплоя.',
+  Medium: 'Medium severity — уязвимость с ограниченным воздействием или требующая определённых условий для эксплуатации.',
+  Low: 'Low severity — минимальный риск, но стоит исправить. Может стать проблемой при изменении контекста.',
+  Informational: 'Informational — не уязвимость, но рекомендация по улучшению кода: naming, gas, code style.',
+};
+
 const TRIAGE_COLORS: Record<TriageClass, string> = {
   TP: '#f43f5e',
   FP: colors.success,
@@ -240,6 +265,12 @@ const TRIAGE_LABELS: Record<TriageClass, string> = {
   TP: 'True Positive',
   FP: 'False Positive',
   Info: 'Informational',
+};
+
+const TRIAGE_TOOLTIPS: Record<TriageClass, string> = {
+  TP: 'True Positive — инструмент правильно обнаружил реальную уязвимость. Требует исправления.',
+  FP: 'False Positive — ложное срабатывание. Инструмент нашёл паттерн, но в контексте это не уязвимость.',
+  Info: 'Informational — не уязвимость, а рекомендация. Стоит рассмотреть, но не блокирует деплой.',
 };
 
 /**
@@ -272,54 +303,57 @@ export function SlitherOutputGuideDiagram() {
         marginBottom: 14,
       }}>
         {(Object.entries(triageSummary) as [TriageClass, number][]).map(([cls, count]) => (
-          <div
-            key={cls}
-            onClick={() => setFilter((prev) => prev === cls ? 'all' : cls)}
-            style={{
-              ...glassStyle,
-              padding: 10,
-              textAlign: 'center',
-              cursor: 'pointer',
-              background: filter === cls ? `${TRIAGE_COLORS[cls]}10` : 'transparent',
-              border: filter === cls ? `1px solid ${TRIAGE_COLORS[cls]}40` : '1px solid rgba(255,255,255,0.08)',
-              transition: 'all 0.2s',
-            }}
-          >
-            <div style={{ fontSize: 18, fontWeight: 700, color: TRIAGE_COLORS[cls], fontFamily: 'monospace' }}>
-              {count}
+          <DiagramTooltip key={cls} content={TRIAGE_TOOLTIPS[cls]}>
+            <div
+              onClick={() => setFilter((prev) => prev === cls ? 'all' : cls)}
+              style={{
+                ...glassStyle,
+                padding: 10,
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: filter === cls ? `${TRIAGE_COLORS[cls]}10` : 'transparent',
+                border: filter === cls ? `1px solid ${TRIAGE_COLORS[cls]}40` : '1px solid rgba(255,255,255,0.08)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 18, fontWeight: 700, color: TRIAGE_COLORS[cls], fontFamily: 'monospace' }}>
+                {count}
+              </div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                {TRIAGE_LABELS[cls]}
+              </div>
             </div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-              {TRIAGE_LABELS[cls]}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Mock terminal output */}
-      <div style={{
-        background: 'rgba(0,0,0,0.3)',
-        borderRadius: 6,
-        padding: 10,
-        marginBottom: 14,
-        border: '1px solid rgba(255,255,255,0.06)',
-        fontFamily: 'monospace',
-        fontSize: 10,
-        color: colors.textMuted,
-        lineHeight: 1.3,
-      }}>
-        <div>$ docker compose --profile security run slither contracts/security/VulnerableVault.sol</div>
-        <div style={{ color: colors.success, marginTop: 4 }}>Compilation warnings/errors on VulnerableVault.sol:</div>
-        <div>...</div>
-        <div style={{ marginTop: 4 }}>
-          VulnerableVault.sol analyzed ({MOCK_FINDINGS.length} findings)
+      <DiagramTooltip content="Детекторы Slither проверяют ~80 паттернов уязвимостей. Каждый результат включает: detector name, severity (Impact + Confidence), описание и файл:строка.">
+        <div style={{
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: 6,
+          padding: 10,
+          marginBottom: 14,
+          border: '1px solid rgba(255,255,255,0.06)',
+          fontFamily: 'monospace',
+          fontSize: 10,
+          color: colors.textMuted,
+          lineHeight: 1.3,
+        }}>
+          <div>$ docker compose --profile security run slither contracts/security/VulnerableVault.sol</div>
+          <div style={{ color: colors.success, marginTop: 4 }}>Compilation warnings/errors on VulnerableVault.sol:</div>
+          <div>...</div>
+          <div style={{ marginTop: 4 }}>
+            VulnerableVault.sol analyzed ({MOCK_FINDINGS.length} findings)
+          </div>
+          <div style={{ color: '#f43f5e' }}>
+            {MOCK_FINDINGS.filter((f) => f.severity === 'High').length} High,{' '}
+            {MOCK_FINDINGS.filter((f) => f.severity === 'Medium').length} Medium,{' '}
+            {MOCK_FINDINGS.filter((f) => f.severity === 'Low').length} Low,{' '}
+            {MOCK_FINDINGS.filter((f) => f.severity === 'Informational').length} Informational
+          </div>
         </div>
-        <div style={{ color: '#f43f5e' }}>
-          {MOCK_FINDINGS.filter((f) => f.severity === 'High').length} High,{' '}
-          {MOCK_FINDINGS.filter((f) => f.severity === 'Medium').length} Medium,{' '}
-          {MOCK_FINDINGS.filter((f) => f.severity === 'Low').length} Low,{' '}
-          {MOCK_FINDINGS.filter((f) => f.severity === 'Informational').length} Informational
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Findings list */}
       <div style={{ marginBottom: 14 }}>
@@ -343,18 +377,20 @@ export function SlitherOutputGuideDiagram() {
             >
               {/* Header line */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: SEVERITY_COLORS[finding.severity],
-                  fontFamily: 'monospace',
-                  padding: '1px 6px',
-                  borderRadius: 3,
-                  background: `${SEVERITY_COLORS[finding.severity]}15`,
-                  border: `1px solid ${SEVERITY_COLORS[finding.severity]}30`,
-                }}>
-                  {finding.severity}
-                </span>
+                <DiagramTooltip content={SEVERITY_TOOLTIPS[finding.severity]}>
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: SEVERITY_COLORS[finding.severity],
+                    fontFamily: 'monospace',
+                    padding: '1px 6px',
+                    borderRadius: 3,
+                    background: `${SEVERITY_COLORS[finding.severity]}15`,
+                    border: `1px solid ${SEVERITY_COLORS[finding.severity]}30`,
+                  }}>
+                    {finding.severity}
+                  </span>
+                </DiagramTooltip>
                 <span style={{
                   fontSize: 9,
                   color: TRIAGE_COLORS[finding.triage],
@@ -406,11 +442,13 @@ export function SlitherOutputGuideDiagram() {
         })}
       </div>
 
-      <DataBox
-        label="Triage -- навык аудитора"
-        value="Slither находит 5 findings, но только 2 -- настоящие баги (TP). 1 -- false positive (FP). 2 -- informational. Умение отличить TP от FP = ключевой навык security researcher."
-        variant="info"
-      />
+      <DiagramTooltip content="~30-50% результатов Slither — ложные срабатывания. Аудитор должен проверить каждый результат вручную. slither-disable-next-line для подавления известных false positives.">
+        <DataBox
+          label="Triage -- навык аудитора"
+          value="Slither находит 5 findings, но только 2 -- настоящие баги (TP). 1 -- false positive (FP). 2 -- informational. Умение отличить TP от FP = ключевой навык security researcher."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

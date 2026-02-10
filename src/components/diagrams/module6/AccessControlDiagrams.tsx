@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -68,6 +69,15 @@ const COMPARISON_ROWS: ComparisonRow[] = [
   },
 ];
 
+const ASPECT_TOOLTIPS: Record<string, string> = {
+  'mint()': 'mint() создаёт новые токены. Без access control любой может вызвать mint() и создать бесконечное количество токенов, обесценив весь supply.',
+  'burn()': 'burn() уничтожает токены. Без проверки msg.sender атакующий может сжечь токены других пользователей напрямую.',
+  'Наследование': 'Наследование от Ownable добавляет модификатор onlyOwner и функции transferOwnership/renounceOwnership. Одна строка import меняет security posture.',
+  'Конструктор': 'Конструктор Ownable(msg.sender) устанавливает deployer как owner. Это критически важно: без этого owner = address(0) и никто не контролирует контракт.',
+  'Вектор атаки': 'Классический rug pull: атакующий минтит миллиарды токенов и продаёт на DEX, обрушивая цену до нуля для всех держателей.',
+  'Реальный пример': 'OpenZeppelin Ownable и AccessControl — стандарт индустрии. Используются в 95%+ production контрактов.',
+};
+
 /**
  * AccessControlComparisonDiagram
  *
@@ -75,8 +85,6 @@ const COMPARISON_ROWS: ComparisonRow[] = [
  * Color-coded rows highlighting security differences.
  */
 export function AccessControlComparisonDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="UnsafeToken vs UnsafeTokenFixed: сравнение" color="rose">
       {/* Table header */}
@@ -126,14 +134,11 @@ export function AccessControlComparisonDiagram() {
 
       {/* Table rows */}
       {COMPARISON_ROWS.map((row, i) => {
-        const isHovered = hoveredRow === i;
         const isLast = i === COMPARISON_ROWS.length - 1;
 
         return (
           <div
             key={i}
-            onMouseEnter={() => setHoveredRow(i)}
-            onMouseLeave={() => setHoveredRow(null)}
             style={{
               display: 'grid',
               gridTemplateColumns: '120px 1fr 1fr',
@@ -146,13 +151,15 @@ export function AccessControlComparisonDiagram() {
               ...glassStyle,
               padding: 10,
               fontSize: 11,
-              color: isHovered ? colors.text : colors.textMuted,
+              color: colors.textMuted,
               fontFamily: 'monospace',
               fontWeight: 600,
               borderRadius: isLast ? '0 0 0 12px' : 0,
-              background: isHovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+              background: 'rgba(255,255,255,0.03)',
             }}>
-              {row.aspect}
+              <DiagramTooltip content={ASPECT_TOOLTIPS[row.aspect] || row.aspect}>
+                {row.aspect}
+              </DiagramTooltip>
             </div>
             <div style={{
               ...glassStyle,
@@ -161,7 +168,7 @@ export function AccessControlComparisonDiagram() {
               color: row.vulnColor,
               fontFamily: 'monospace',
               borderRadius: 0,
-              background: isHovered ? 'rgba(244,63,94,0.06)' : 'rgba(255,255,255,0.03)',
+              background: 'rgba(255,255,255,0.03)',
             }}>
               {row.vulnerable}
             </div>
@@ -172,7 +179,7 @@ export function AccessControlComparisonDiagram() {
               color: row.fixedColor,
               fontFamily: 'monospace',
               borderRadius: isLast ? '0 0 12px 0' : 0,
-              background: isHovered ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
+              background: 'rgba(255,255,255,0.03)',
             }}>
               {row.fixed}
             </div>
@@ -181,11 +188,13 @@ export function AccessControlComparisonDiagram() {
       })}
 
       <div style={{ marginTop: 12 }}>
-        <DataBox
-          label="Ключевой вывод"
-          value="Отсутствие access control -- уязвимость #1 по OWASP Smart Contract Top 10. Одна строка (onlyOwner) предотвращает катастрофические потери."
-          variant="highlight"
-        />
+        <DiagramTooltip content="OWASP Smart Contract Top 10 — классификация уязвимостей смарт-контрактов. Access Control (#1) лидирует по количеству потерянных средств.">
+          <DataBox
+            label="Ключевой вывод"
+            value="Отсутствие access control -- уязвимость #1 по OWASP Smart Contract Top 10. Одна строка (onlyOwner) предотвращает катастрофические потери."
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -249,6 +258,13 @@ const AC_EVOLUTION: ACStep[] = [
   },
 ];
 
+const ROLE_TOOLTIPS: Record<string, string> = {
+  'Нет контроля доступа': 'Без access control все функции эквивалентны public API. Любой бот может вызвать mint(), burn(), pause() — полная потеря средств неизбежна.',
+  'Ownable (один владелец)': 'Ownable (OpenZeppelin) — простейший контроль: один owner с полными правами. Подходит для простых контрактов. Риск: единая точка отказа.',
+  'Ownable2Step (безопасная передача)': 'Ownable2Step добавляет confirmацию: новый owner должен вызвать acceptOwnership(). Защищает от опечатки в адресе при transferOwnership().',
+  'AccessControl (RBAC)': 'OpenZeppelin AccessControl — стандартная реализация RBAC с DEFAULT_ADMIN_ROLE. Поддерживает иерархию ролей и adminRole для каждой роли.',
+};
+
 /**
  * RoleHierarchyDiagram
  *
@@ -265,32 +281,35 @@ export function RoleHierarchyDiagram() {
     <DiagramContainer title="Эволюция access control: от нуля до RBAC" color="blue">
       {/* Step progress bar */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-        {AC_EVOLUTION.map((_, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIndex(i)}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? accentColor : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
-            }}
-          />
+        {AC_EVOLUTION.map((s, i) => (
+          <DiagramTooltip key={i} content={ROLE_TOOLTIPS[s.title] || s.description}>
+            <div
+              onClick={() => setStepIndex(i)}
+              style={{
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                cursor: 'pointer',
+                background: i <= stepIndex ? accentColor : 'rgba(255,255,255,0.1)',
+                transition: 'all 0.2s',
+              }}
+            />
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={ROLE_TOOLTIPS[step.title] || step.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -322,79 +341,89 @@ export function RoleHierarchyDiagram() {
       </div>
 
       {/* Code snippet */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 14,
-        background: 'rgba(0,0,0,0.3)',
-        border: `1px solid ${accentColor}30`,
-      }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-          Solidity
-        </div>
-        <pre style={{
-          fontSize: 11,
-          fontFamily: 'monospace',
-          color: colors.accent,
-          margin: 0,
-          whiteSpace: 'pre-wrap',
-          lineHeight: 1.5,
+      <DiagramTooltip content="Solidity код демонстрирует конкретный паттерн access control. Обратите внимание на import и модификатор в сигнатуре функции.">
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 14,
+          background: 'rgba(0,0,0,0.3)',
+          border: `1px solid ${accentColor}30`,
         }}>
-          {step.code}
-        </pre>
-      </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+            Solidity
+          </div>
+          <pre style={{
+            fontSize: 11,
+            fontFamily: 'monospace',
+            color: colors.accent,
+            margin: 0,
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}>
+            {step.code}
+          </pre>
+        </div>
+      </DiagramTooltip>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(AC_EVOLUTION.length - 1, s + 1))}
-          disabled={stepIndex >= AC_EVOLUTION.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= AC_EVOLUTION.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= AC_EVOLUTION.length - 1 ? colors.textMuted : accentColor,
-            fontSize: 13,
-            opacity: stepIndex >= AC_EVOLUTION.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <div>
+          <button
+            onClick={() => setStepIndex(0)}
+            style={{
+              ...glassStyle,
+              padding: '8px 16px',
+              cursor: 'pointer',
+              color: colors.text,
+              fontSize: 13,
+            }}
+          >
+            Сброс
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+            disabled={stepIndex === 0}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              color: stepIndex === 0 ? colors.textMuted : colors.text,
+              fontSize: 13,
+              opacity: stepIndex === 0 ? 0.5 : 1,
+            }}
+          >
+            Назад
+          </button>
+        </div>
+        <div>
+          <button
+            onClick={() => setStepIndex((s) => Math.min(AC_EVOLUTION.length - 1, s + 1))}
+            disabled={stepIndex >= AC_EVOLUTION.length - 1}
+            style={{
+              ...glassStyle,
+              padding: '8px 20px',
+              cursor: stepIndex >= AC_EVOLUTION.length - 1 ? 'not-allowed' : 'pointer',
+              color: stepIndex >= AC_EVOLUTION.length - 1 ? colors.textMuted : accentColor,
+              fontSize: 13,
+              opacity: stepIndex >= AC_EVOLUTION.length - 1 ? 0.5 : 1,
+            }}
+          >
+            Далее
+          </button>
+        </div>
       </div>
 
       {stepIndex >= AC_EVOLUTION.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Рекомендация"
-            value="Для простых контрактов: Ownable2Step. Для DeFi-протоколов: AccessControl (RBAC) + TimelockController для задержки критических операций."
-            variant="highlight"
-          />
+          <DiagramTooltip content="TimelockController добавляет задержку (24-48 часов) между предложением и исполнением критических операций. Даёт пользователям время отреагировать.">
+            <DataBox
+              label="Рекомендация"
+              value="Для простых контрактов: Ownable2Step. Для DeFi-протоколов: AccessControl (RBAC) + TimelockController для задержки критических операций."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>
