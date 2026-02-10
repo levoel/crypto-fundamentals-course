@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -83,32 +84,42 @@ export function FlashbotsProtectFlowDiagram() {
     <DiagramContainer title="Flashbots Protect: пошаговый flow" color="green">
       {/* Visual flow */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-        {['Setup RPC', 'Private Send', 'Builder', 'Result'].map((label, i) => (
+        {(['Setup RPC', 'Private Send', 'Builder', 'Result'] as const).map((label, i) => {
+          const stepTooltips = [
+            'Настройка Flashbots Protect RPC в кошельке. Одноразовая конфигурация за 30 секунд -- все будущие транзакции идут через приватный канал.',
+            'Транзакция отправляется напрямую к Flashbots, минуя публичный mempool. Searcher-боты не видят её и не могут построить sandwich.',
+            'Block builder включает транзакцию в блок. Если не включена за 25 блоков -- автоотмена без потери газа.',
+            'Результат: полная защита от sandwich, возврат 90% MEV, и бесплатные failed tx (revert не включается в блок).',
+          ];
+          return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div
-              onClick={() => setStepIndex(i)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                background: i === stepIndex ? `${colors.success}20` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${i === stepIndex ? colors.success : 'rgba(255,255,255,0.08)'}`,
-                cursor: 'pointer',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: i <= stepIndex ? colors.success : colors.textMuted,
-                fontWeight: i === stepIndex ? 600 : 400,
-                transition: 'all 0.2s',
-              }}
-            >
-              {label}
-            </div>
+            <DiagramTooltip content={stepTooltips[i]}>
+              <div
+                onClick={() => setStepIndex(i)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  background: i === stepIndex ? `${colors.success}20` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i === stepIndex ? colors.success : 'rgba(255,255,255,0.08)'}`,
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: i <= stepIndex ? colors.success : colors.textMuted,
+                  fontWeight: i === stepIndex ? 600 : 400,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {label}
+              </div>
+            </DiagramTooltip>
             {i < 3 && (
               <span style={{ color: i < stepIndex ? colors.success : 'rgba(255,255,255,0.15)', fontSize: 14 }}>
                 {'\u2192'}
               </span>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step indicator */}
@@ -158,71 +169,87 @@ export function FlashbotsProtectFlowDiagram() {
         marginBottom: 16,
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
-            ...glassStyle,
-            padding: 10,
-          }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-              {v.label}
+          <DiagramTooltip key={i} content={`${v.label}: ${v.value}. Этот параметр показывает ключевую характеристику текущего шага Flashbots Protect flow.`}>
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+            }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                {v.label}
+              </div>
+              <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+                {v.value}
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
-              {v.value}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStepIndex(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStepIndex((s) => Math.min(FLASHBOTS_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= FLASHBOTS_HISTORY.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? colors.textMuted : colors.success,
-            fontSize: 13,
-            opacity: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Сбросить демонстрацию к первому шагу -- настройке Flashbots Protect RPC.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex(0)}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                color: colors.text,
+                fontSize: 13,
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу Flashbots Protect flow.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
+              disabled={stepIndex === 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 20px',
+                cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+                color: stepIndex === 0 ? colors.textMuted : colors.text,
+                fontSize: 13,
+                opacity: stepIndex === 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу: от настройки RPC до результата защиты.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStepIndex((s) => Math.min(FLASHBOTS_HISTORY.length - 1, s + 1))}
+              disabled={stepIndex >= FLASHBOTS_HISTORY.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 20px',
+                cursor: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+                color: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? colors.textMuted : colors.success,
+                fontSize: 13,
+                opacity: stepIndex >= FLASHBOTS_HISTORY.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {stepIndex >= FLASHBOTS_HISTORY.length - 1 && (
         <div style={{ marginTop: 12 }}>
-          <DataBox
-            label="Ключевой вывод"
-            value="Flashbots Protect: бесплатная защита от sandwich, refund 90% MEV, и бесплатные failed tx. Добавьте rpc.flashbots.net/fast в MetaMask прямо сейчас."
-            variant="highlight"
-          />
+          <DiagramTooltip content="Flashbots Protect -- бесплатный сервис от Flashbots. Достаточно добавить RPC в MetaMask для полной защиты от sandwich-атак и возврата 90% MEV.">
+            <DataBox
+              label="Ключевой вывод"
+              value="Flashbots Protect: бесплатная защита от sandwich, refund 90% MEV, и бесплатные failed tx. Добавьте rpc.flashbots.net/fast в MetaMask прямо сейчас."
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
       )}
     </DiagramContainer>

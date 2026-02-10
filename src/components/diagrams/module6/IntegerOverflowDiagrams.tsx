@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -91,44 +92,50 @@ export function OverflowVisualizationDiagram() {
         gap: 24,
         marginBottom: 16,
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Decimal
+        <DiagramTooltip content="Десятичное представление uint8. Диапазон: 0-255. При приближении к максимуму (250+) значение подсвечивается красным -- зона риска переполнения.">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Decimal
+            </div>
+            <div style={{
+              fontSize: 32,
+              fontWeight: 700,
+              fontFamily: 'monospace',
+              color: value >= 250 ? '#f43f5e' : colors.text,
+            }}>
+              {value}
+            </div>
           </div>
-          <div style={{
-            fontSize: 32,
-            fontWeight: 700,
-            fontFamily: 'monospace',
-            color: value >= 250 ? '#f43f5e' : colors.text,
-          }}>
-            {value}
+        </DiagramTooltip>
+        <DiagramTooltip content="Двоичное (binary) представление числа. uint8 -- это 8 бит. Когда все биты = 1 (11111111), значение = 255 -- максимум. Следующий +1 обнуляет все биты.">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Binary
+            </div>
+            <div style={{
+              fontSize: 20,
+              fontFamily: 'monospace',
+              color: colors.accent,
+              letterSpacing: 2,
+            }}>
+              {toBinary(value)}
+            </div>
           </div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Binary
+        </DiagramTooltip>
+        <DiagramTooltip content="Шестнадцатеричное (hex) представление. 0xFF = 255 -- максимальное значение uint8. В Solidity и EVM hex-формат используется повсеместно для адресов, данных и storage.">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Hex
+            </div>
+            <div style={{
+              fontSize: 20,
+              fontFamily: 'monospace',
+              color: colors.primary,
+            }}>
+              0x{value.toString(16).toUpperCase().padStart(2, '0')}
+            </div>
           </div>
-          <div style={{
-            fontSize: 20,
-            fontFamily: 'monospace',
-            color: colors.accent,
-            letterSpacing: 2,
-          }}>
-            {toBinary(value)}
-          </div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Hex
-          </div>
-          <div style={{
-            fontSize: 20,
-            fontFamily: 'monospace',
-            color: colors.primary,
-          }}>
-            0x{value.toString(16).toUpperCase().padStart(2, '0')}
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Slider */}
@@ -151,48 +158,60 @@ export function OverflowVisualizationDiagram() {
 
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
-        <button
-          onClick={handleSafeAdd}
-          style={{
-            ...glassStyle,
-            padding: '10px 20px',
-            cursor: 'pointer',
-            color: colors.success,
-            fontSize: 13,
-            fontFamily: 'monospace',
-            fontWeight: 600,
-            border: `1px solid ${colors.success}40`,
-          }}
-        >
-          +1 safe (checked)
-        </button>
-        <button
-          onClick={handleUncheckedAdd}
-          style={{
-            ...glassStyle,
-            padding: '10px 20px',
-            cursor: 'pointer',
-            color: '#f43f5e',
-            fontSize: 13,
-            fontFamily: 'monospace',
-            fontWeight: 600,
-            border: '1px solid rgba(244,63,94,0.4)',
-          }}
-        >
-          +1 unchecked
-        </button>
-        <button
-          onClick={() => { setValue(250); setMode('idle'); }}
-          style={{
-            ...glassStyle,
-            padding: '10px 16px',
-            cursor: 'pointer',
-            color: colors.textMuted,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
+        <DiagramTooltip content="Безопасное сложение (checked arithmetic). В Solidity 0.8+ при переполнении транзакция откатывается с Panic(0x11). Это поведение по умолчанию.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleSafeAdd}
+              style={{
+                ...glassStyle,
+                padding: '10px 20px',
+                cursor: 'pointer',
+                color: colors.success,
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                border: `1px solid ${colors.success}40`,
+              }}
+            >
+              +1 safe (checked)
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Небезопасное сложение (unchecked). В блоке unchecked {} проверки отключены для экономии ~120 gas за операцию. При переполнении значение оборачивается: 255 + 1 = 0.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleUncheckedAdd}
+              style={{
+                ...glassStyle,
+                padding: '10px 20px',
+                cursor: 'pointer',
+                color: '#f43f5e',
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                border: '1px solid rgba(244,63,94,0.4)',
+              }}
+            >
+              +1 unchecked
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Сбросить значение к 250 для повторной демонстрации переполнения.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => { setValue(250); setMode('idle'); }}
+              style={{
+                ...glassStyle,
+                padding: '10px 16px',
+                cursor: 'pointer',
+                color: colors.textMuted,
+                fontSize: 13,
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Status message */}
@@ -237,41 +256,44 @@ export function OverflowVisualizationDiagram() {
         marginBottom: 16,
       }}>
         {SCENARIOS.map((s, i) => (
-          <div key={i} style={{
-            ...glassStyle,
-            padding: 14,
-            border: `1px solid ${s.color}30`,
-          }}>
+          <DiagramTooltip key={i} content={s.description}>
             <div style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: s.color,
-              fontFamily: 'monospace',
-              marginBottom: 6,
+              ...glassStyle,
+              padding: 14,
+              border: `1px solid ${s.color}30`,
             }}>
-              {s.title}
+              <div style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: s.color,
+                fontFamily: 'monospace',
+                marginBottom: 6,
+              }}>
+                {s.title}
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: colors.accent,
+                background: 'rgba(0,0,0,0.3)',
+                padding: '6px 8px',
+                borderRadius: 4,
+                marginBottom: 8,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}>
+                {s.code}
+              </div>
+              <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+                {s.description}
+              </div>
             </div>
-            <div style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: colors.accent,
-              background: 'rgba(0,0,0,0.3)',
-              padding: '6px 8px',
-              borderRadius: 4,
-              marginBottom: 8,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-            }}>
-              {s.code}
-            </div>
-            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-              {s.description}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Downcast demo */}
+      <DiagramTooltip content="Приведение типов (downcasting) НЕ проверяется даже в Solidity 0.8+. uint8(256) молча обрезает до 0. Используйте SafeCast из OpenZeppelin для безопасного downcasting.">
       <div style={{ ...glassStyle, padding: 14, marginBottom: 12 }}>
         <div style={{
           fontSize: 12,
@@ -320,12 +342,15 @@ export function OverflowVisualizationDiagram() {
           {downcastInput} & 0xFF = {downcastResult} (сохраняются только младшие 8 бит)
         </div>
       </div>
+      </DiagramTooltip>
 
+      <DiagramTooltip content="Solidity 0.8+ автоматически проверяет overflow/underflow (checked arithmetic). Опасности остаются в unchecked {} блоках и при unsafe downcasting -- используйте SafeCast от OpenZeppelin.">
       <DataBox
         label="Ключевой вывод"
         value="Solidity 0.8+ защищает от overflow по умолчанию. Опасности: unchecked {} блоки и unsafe downcasting. Используйте unchecked только при математически доказанной безопасности, SafeCast для downcasting."
         variant="highlight"
       />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
