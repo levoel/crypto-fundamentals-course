@@ -3,12 +3,13 @@
  *
  * Exports:
  * - PoHHashChainDiagram: Step-through PoH hash chain with event interleaving (interactive, history array)
- * - PoHVerificationDiagram: Sequential generation vs parallel verification (static with hover)
+ * - PoHVerificationDiagram: Sequential generation vs parallel verification (static with DiagramTooltip)
  */
 
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -148,6 +149,17 @@ function buildPoHSteps(): PoHStep[] {
   ];
 }
 
+/** Tooltip content for hash chain boxes based on whether they contain an event */
+function hashBoxTooltip(entry: PoHEntry): string {
+  if (entry.event) {
+    return `H(${entry.index}) содержит событие "${entry.event}". Хеш вычислен от предыдущего хеша + данные события, что даёт событию доказуемую позицию во времени.`;
+  }
+  if (entry.index === 0) {
+    return 'H(0) — начальный хеш цепочки, вычисленный из seed-значения. Все последующие хеши строятся на этом фундаменте, образуя Verifiable Delay Function (VDF).';
+  }
+  return `H(${entry.index}) = SHA-256(H(${entry.index - 1})). Каждый хеш в цепочке последовательно зависит от предыдущего, что делает невозможным параллельное вычисление и гарантирует порядок.`;
+}
+
 export function PoHHashChainDiagram() {
   const [step, setStep] = useState(0);
   const steps = buildPoHSteps();
@@ -193,28 +205,30 @@ export function PoHHashChainDiagram() {
                   )}
 
                   {/* Hash box */}
-                  <div style={{
-                    ...glassStyle,
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    background: isHighlighted ? `${boxColor}15` : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${isHighlighted ? boxColor + '60' : 'rgba(255,255,255,0.1)'}`,
-                    textAlign: 'center',
-                    minWidth: 100,
-                  }}>
+                  <DiagramTooltip content={hashBoxTooltip(entry)}>
                     <div style={{
-                      fontSize: 10, fontFamily: 'monospace', fontWeight: 600,
-                      color: boxColor, marginBottom: 4,
+                      ...glassStyle,
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: isHighlighted ? `${boxColor}15` : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isHighlighted ? boxColor + '60' : 'rgba(255,255,255,0.1)'}`,
+                      textAlign: 'center',
+                      minWidth: 100,
                     }}>
-                      H({entry.index})
+                      <div style={{
+                        fontSize: 10, fontFamily: 'monospace', fontWeight: 600,
+                        color: boxColor, marginBottom: 4,
+                      }}>
+                        H({entry.index})
+                      </div>
+                      <div style={{
+                        fontSize: 11, fontFamily: 'monospace',
+                        color: colors.text, letterSpacing: 0.5,
+                      }}>
+                        {entry.hash}
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: 11, fontFamily: 'monospace',
-                      color: colors.text, letterSpacing: 0.5,
-                    }}>
-                      {entry.hash}
-                    </div>
-                  </div>
+                  </DiagramTooltip>
                 </div>
 
                 {/* Arrow to next */}
@@ -233,35 +247,49 @@ export function PoHHashChainDiagram() {
       </div>
 
       {/* Message */}
-      <DataBox
-        label={`Шаг ${step + 1} из ${steps.length}`}
-        value={currentStep.message}
-        variant="highlight"
-      />
+      <DiagramTooltip content="Пошаговое описание процесса построения цепочки PoH. Каждый шаг демонстрирует, как последовательное хеширование создаёт криптографические часы — Verifiable Delay Function.">
+        <DataBox
+          label={`Шаг ${step + 1} из ${steps.length}`}
+          value={currentStep.message}
+          variant="highlight"
+        />
+      </DiagramTooltip>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
-        <button
-          onClick={() => setStep(0)}
-          style={btnStyle(step > 0, colors.text)}
-          disabled={step === 0}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => canBack && setStep((s) => s - 1)}
-          disabled={!canBack}
-          style={btnStyle(canBack, colors.text)}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => canForward && setStep((s) => s + 1)}
-          disabled={!canForward}
-          style={btnStyle(canForward, '#22c55e')}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Сброс к первому шагу — начальному seed-хешу цепочки PoH.">
+          <div>
+            <button
+              onClick={() => setStep(0)}
+              style={btnStyle(step > 0, colors.text)}
+              disabled={step === 0}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу построения цепочки хешей.">
+          <div>
+            <button
+              onClick={() => canBack && setStep((s) => s - 1)}
+              disabled={!canBack}
+              style={btnStyle(canBack, colors.text)}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу: увидеть, как добавляется новый хеш или событие в цепочку.">
+          <div>
+            <button
+              onClick={() => canForward && setStep((s) => s + 1)}
+              disabled={!canForward}
+              style={btnStyle(canForward, '#22c55e')}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -272,165 +300,165 @@ export function PoHHashChainDiagram() {
 /* ================================================================== */
 
 export function PoHVerificationDiagram() {
-  const [hoveredSection, setHoveredSection] = useState<'gen' | 'ver' | null>(null);
-
   const coreColors = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b'];
   const chainLen = 8;
 
   return (
     <DiagramContainer title="PoH: генерация vs верификация" color="blue">
       {/* Generation section */}
-      <div
-        onMouseEnter={() => setHoveredSection('gen')}
-        onMouseLeave={() => setHoveredSection(null)}
-        style={{
-          ...glassStyle,
-          padding: 16,
-          borderRadius: 10,
-          marginBottom: 12,
-          background: hoveredSection === 'gen' ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${hoveredSection === 'gen' ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)'}`,
-          transition: 'all 0.15s',
-          cursor: 'default',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <div style={{
-            fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-            color: '#f59e0b',
-            background: 'rgba(245,158,11,0.15)',
-            padding: '3px 8px', borderRadius: 4,
-          }}>
-            Генерация (последовательная)
-          </div>
-          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
-            1 ядро, N операций, O(N)
-          </span>
-        </div>
-
-        {/* Single CPU generating chain */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto' }}>
-          {/* CPU icon */}
-          <div style={{
+      <DiagramTooltip content="Генератор PoH последовательно вычисляет SHA-256 хеши, создавая криптографические часы. Каждый хеш зависит от предыдущего, что гарантирует порядок событий без необходимости синхронизации между валидаторами.">
+        <div
+          style={{
             ...glassStyle,
-            padding: '6px 10px', borderRadius: 6, textAlign: 'center',
-            background: 'rgba(245,158,11,0.1)',
-            border: '1px solid rgba(245,158,11,0.3)',
-            minWidth: 48, flexShrink: 0,
-          }}>
-            <div style={{ fontSize: 14 }}>CPU</div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Core 1</div>
-          </div>
-
-          <span style={{ color: colors.textMuted, fontFamily: 'monospace', fontSize: 12, flexShrink: 0 }}>{'\u2192'}</span>
-
-          {/* Hash chain */}
-          {Array.from({ length: chainLen }, (_, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              <div style={{
-                ...glassStyle,
-                padding: '4px 8px', borderRadius: 4, textAlign: 'center',
-                background: 'rgba(245,158,11,0.05)',
-                border: '1px solid rgba(245,158,11,0.15)',
-                minWidth: 36,
-              }}>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b' }}>
-                  H({i})
-                </span>
-              </div>
-              {i < chainLen - 1 && (
-                <span style={{ color: colors.textMuted, fontSize: 10, fontFamily: 'monospace' }}>{'\u2192'}</span>
-              )}
+            padding: 16,
+            borderRadius: 10,
+            marginBottom: 12,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            transition: 'all 0.15s',
+            cursor: 'default',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{
+              fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
+              color: '#f59e0b',
+              background: 'rgba(245,158,11,0.15)',
+              padding: '3px 8px', borderRadius: 4,
+            }}>
+              Генерация (последовательная)
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Verification section */}
-      <div
-        onMouseEnter={() => setHoveredSection('ver')}
-        onMouseLeave={() => setHoveredSection(null)}
-        style={{
-          ...glassStyle,
-          padding: 16,
-          borderRadius: 10,
-          marginBottom: 12,
-          background: hoveredSection === 'ver' ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${hoveredSection === 'ver' ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.08)'}`,
-          transition: 'all 0.15s',
-          cursor: 'default',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <div style={{
-            fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-            color: '#22c55e',
-            background: 'rgba(34,197,94,0.15)',
-            padding: '3px 8px', borderRadius: 4,
-          }}>
-            Верификация (параллельная)
+            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+              1 ядро, N операций, O(N)
+            </span>
           </div>
-          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
-            4 ядра, N/4 операций каждое, O(N/cores)
-          </span>
-        </div>
 
-        {/* 4 cores each verifying a chunk */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[0, 1, 2, 3].map((coreIdx) => {
-            const startH = coreIdx * 2;
-            const endH = startH + 2;
-            return (
-              <div key={coreIdx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Single CPU generating chain */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto' }}>
+            {/* CPU icon */}
+            <div style={{
+              ...glassStyle,
+              padding: '6px 10px', borderRadius: 6, textAlign: 'center',
+              background: 'rgba(245,158,11,0.1)',
+              border: '1px solid rgba(245,158,11,0.3)',
+              minWidth: 48, flexShrink: 0,
+            }}>
+              <div style={{ fontSize: 14 }}>CPU</div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Core 1</div>
+            </div>
+
+            <span style={{ color: colors.textMuted, fontFamily: 'monospace', fontSize: 12, flexShrink: 0 }}>{'\u2192'}</span>
+
+            {/* Hash chain */}
+            {Array.from({ length: chainLen }, (_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                 <div style={{
                   ...glassStyle,
                   padding: '4px 8px', borderRadius: 4, textAlign: 'center',
-                  background: `${coreColors[coreIdx]}10`,
-                  border: `1px solid ${coreColors[coreIdx]}30`,
-                  minWidth: 48, flexShrink: 0,
+                  background: 'rgba(245,158,11,0.05)',
+                  border: '1px solid rgba(245,158,11,0.15)',
+                  minWidth: 36,
                 }}>
-                  <div style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx], fontWeight: 600 }}>
-                    Core {coreIdx + 1}
-                  </div>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b' }}>
+                    H({i})
+                  </span>
                 </div>
-                <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-                  проверяет
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <div style={{
-                    ...glassStyle,
-                    padding: '3px 6px', borderRadius: 3,
-                    background: `${coreColors[coreIdx]}08`,
-                    border: `1px solid ${coreColors[coreIdx]}20`,
-                  }}>
-                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
-                      H({startH})
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 10, color: colors.textMuted }}>{'\u2192'}</span>
-                  <div style={{
-                    ...glassStyle,
-                    padding: '3px 6px', borderRadius: 3,
-                    background: `${coreColors[coreIdx]}08`,
-                    border: `1px solid ${coreColors[coreIdx]}20`,
-                  }}>
-                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
-                      H({endH})
-                    </span>
-                  </div>
-                </div>
+                {i < chainLen - 1 && (
+                  <span style={{ color: colors.textMuted, fontSize: 10, fontFamily: 'monospace' }}>{'\u2192'}</span>
+                )}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
+
+      {/* Verification section */}
+      <DiagramTooltip content="Верификация PoH параллельна: любой валидатор может независимо проверить цепочку хешей, разбив её на сегменты и верифицируя каждый на отдельном ядре CPU. Это делает проверку значительно быстрее генерации.">
+        <div
+          style={{
+            ...glassStyle,
+            padding: 16,
+            borderRadius: 10,
+            marginBottom: 12,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            transition: 'all 0.15s',
+            cursor: 'default',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{
+              fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
+              color: '#22c55e',
+              background: 'rgba(34,197,94,0.15)',
+              padding: '3px 8px', borderRadius: 4,
+            }}>
+              Верификация (параллельная)
+            </div>
+            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+              4 ядра, N/4 операций каждое, O(N/cores)
+            </span>
+          </div>
+
+          {/* 4 cores each verifying a chunk */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {[0, 1, 2, 3].map((coreIdx) => {
+              const startH = coreIdx * 2;
+              const endH = startH + 2;
+              return (
+                <div key={coreIdx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{
+                    ...glassStyle,
+                    padding: '4px 8px', borderRadius: 4, textAlign: 'center',
+                    background: `${coreColors[coreIdx]}10`,
+                    border: `1px solid ${coreColors[coreIdx]}30`,
+                    minWidth: 48, flexShrink: 0,
+                  }}>
+                    <div style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx], fontWeight: 600 }}>
+                      Core {coreIdx + 1}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                    проверяет
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <div style={{
+                      ...glassStyle,
+                      padding: '3px 6px', borderRadius: 3,
+                      background: `${coreColors[coreIdx]}08`,
+                      border: `1px solid ${coreColors[coreIdx]}20`,
+                    }}>
+                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
+                        H({startH})
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 10, color: colors.textMuted }}>{'\u2192'}</span>
+                    <div style={{
+                      ...glassStyle,
+                      padding: '3px 6px', borderRadius: 3,
+                      background: `${coreColors[coreIdx]}08`,
+                      border: `1px solid ${coreColors[coreIdx]}20`,
+                    }}>
+                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
+                        H({endH})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </DiagramTooltip>
 
       {/* Key insight */}
-      <DataBox
-        label="Ключевое свойство"
-        value="Эта асимметрия делает PoH полезным: один лидер генерирует доказательство (последовательно, медленно), а все валидаторы верифицируют его быстро (параллельно, во много раз быстрее)."
-        variant="highlight"
-      />
+      <DiagramTooltip content="Асимметрия генерации и верификации — ключевое свойство PoH. Генерация требует O(N) последовательных операций, а верификация — O(N/cores), что позволяет всем валидаторам быстро проверить доказательство.">
+        <DataBox
+          label="Ключевое свойство"
+          value="Эта асимметрия делает PoH полезным: один лидер генерирует доказательство (последовательно, медленно), а все валидаторы верифицируют его быстро (параллельно, во много раз быстрее)."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
