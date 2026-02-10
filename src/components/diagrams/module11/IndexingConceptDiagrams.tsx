@@ -9,6 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -125,15 +126,19 @@ export function RPCvsIndexerDiagram() {
         {/* Step 0: Scenario -- dApp wanting data */}
         {step === 0 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
-            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>dApp</div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>Transfer History?</div>
-            </div>
+            <DiagramTooltip content="dApp хочет показать историю Transfer-событий: отправители, получатели, суммы. Типичная задача для любого DeFi или NFT проекта.">
+              <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>dApp</div>
+                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>Transfer History?</div>
+              </div>
+            </DiagramTooltip>
             <div style={{ fontSize: 18, color: colors.textMuted }}>?</div>
-            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>Blockchain</div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>20M+ блоков</div>
-            </div>
+            <DiagramTooltip content="Ethereum mainnet содержит 20+ миллионов блоков. Прямой запрос всех событий через RPC -- технически невозможен за разумное время.">
+              <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>Blockchain</div>
+                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>20M+ блоков</div>
+              </div>
+            </DiagramTooltip>
           </div>
         )}
 
@@ -230,16 +235,18 @@ export function RPCvsIndexerDiagram() {
         {step === 5 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {[
-              { label: 'Blockchain', color: '#a78bfa' },
-              { label: 'Indexer', color: '#3b82f6' },
-              { label: 'PostgreSQL', color: '#22c55e' },
-              { label: 'GraphQL', color: '#f59e0b' },
-              { label: 'dApp', color: '#06b6d4' },
+              { label: 'Blockchain', color: '#a78bfa', tip: 'Источник данных: блоки, транзакции и event logs. Индексатор читает их через RPC или специализированный Data Lake.' },
+              { label: 'Indexer', color: '#3b82f6', tip: 'Процессор фильтрует нужные события, декодирует ABI и трансформирует данные в структурированные сущности.' },
+              { label: 'PostgreSQL', color: '#22c55e', tip: 'Реляционная база данных хранит обработанные данные с индексами. Позволяет JOIN, GROUP BY, сортировку.' },
+              { label: 'GraphQL', color: '#f59e0b', tip: 'GraphQL API автоматически генерируется из схемы. Поддерживает фильтрацию, пагинацию и подписки.' },
+              { label: 'dApp', color: '#06b6d4', tip: 'Фронтенд делает один GraphQL-запрос вместо тысяч RPC-вызовов. Данные уже обработаны и готовы к отображению.' },
             ].map((box, i, arr) => (
               <div key={box.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ ...glassStyle, padding: '8px 12px', border: `1px solid ${box.color}30`, textAlign: 'center' }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: box.color, fontFamily: 'monospace' }}>{box.label}</div>
-                </div>
+                <DiagramTooltip content={box.tip}>
+                  <div style={{ ...glassStyle, padding: '8px 12px', border: `1px solid ${box.color}30`, textAlign: 'center' }}>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: box.color, fontFamily: 'monospace' }}>{box.label}</div>
+                  </div>
+                </DiagramTooltip>
                 {i < arr.length - 1 && <div style={{ fontSize: 14, color: '#22c55e' }}>&rarr;</div>}
               </div>
             ))}
@@ -289,16 +296,21 @@ export function RPCvsIndexerDiagram() {
       </div>
 
       {/* Current step detail */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 12,
-        border: `1px solid ${current.color}30`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
-            {step + 1}. {current.title}: {current.subtitle}
-          </div>
+      <DiagramTooltip content={
+        current.phase === 'problem'
+          ? 'Проблемы прямого RPC-доступа: таймауты на больших диапазонах блоков, отсутствие структурированных запросов (JOIN, GROUP BY) и дублирование работы между пользователями.'
+          : 'Индексатор решает все проблемы RPC: читает блокчейн один раз, обрабатывает данные и предоставляет быстрый GraphQL API.'
+      }>
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 12,
+          border: `1px solid ${current.color}30`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+              {step + 1}. {current.title}: {current.subtitle}
+            </div>
           <span style={{
             fontSize: 9,
             fontFamily: 'monospace',
@@ -315,6 +327,7 @@ export function RPCvsIndexerDiagram() {
           {current.description}
         </div>
       </div>
+      </DiagramTooltip>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8 }}>
@@ -378,6 +391,14 @@ const PIPELINE_STAGES: PipelineStage[] = [
   { label: 'dApp / Фронтенд', icon: '\ud83c\udf10', description: 'Визуализация данных для пользователя', color: '#06b6d4' },
 ];
 
+const PIPELINE_TOOLTIPS: Record<string, string> = {
+  'Блокчейн (EVM)': 'Extract: блокчейн генерирует блоки с транзакциями и event logs. Индексатор подключается через RPC или SQD Network для получения данных.',
+  'Процессор': 'Transform: процессор фильтрует события по topic0, декодирует raw hex через ABI и создаёт типизированные объекты (entities).',
+  'База данных (PostgreSQL)': 'Load: структурированные данные сохраняются в PostgreSQL с индексами. Это позволяет выполнять SQL-запросы: JOIN, GROUP BY, ORDER BY.',
+  'GraphQL API': 'Serve: GraphQL сервер автоматически генерируется из schema.graphql. Поддерживает фильтрацию, пагинацию, сортировку и WebSocket-подписки.',
+  'dApp / Фронтенд': 'Consume: фронтенд делает один GraphQL-запрос и получает готовые данные. Никакого ручного парсинга hex или множественных RPC-вызовов.',
+};
+
 const ARROW_LABELS = ['RPC polling', 'Batch processing', 'SQL writes', 'HTTP/WS queries'];
 
 export function IndexingPipelineDiagram() {
@@ -387,21 +408,23 @@ export function IndexingPipelineDiagram() {
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 16, overflowX: 'auto', paddingBottom: 8 }}>
         {PIPELINE_STAGES.map((stage, i) => (
           <div key={stage.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-            <div style={{
-              ...glassStyle,
-              padding: '10px 12px',
-              border: `1px solid ${stage.color}30`,
-              textAlign: 'center',
-              minWidth: 100,
-            }}>
-              <div style={{ fontSize: 16, marginBottom: 4 }}>{stage.icon}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, color: stage.color, fontFamily: 'monospace', marginBottom: 4 }}>
-                {stage.label}
+            <DiagramTooltip content={PIPELINE_TOOLTIPS[stage.label]}>
+              <div style={{
+                ...glassStyle,
+                padding: '10px 12px',
+                border: `1px solid ${stage.color}30`,
+                textAlign: 'center',
+                minWidth: 100,
+              }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>{stage.icon}</div>
+                <div style={{ fontSize: 9, fontWeight: 600, color: stage.color, fontFamily: 'monospace', marginBottom: 4 }}>
+                  {stage.label}
+                </div>
+                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                  {stage.description}
+                </div>
               </div>
-              <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
-                {stage.description}
-              </div>
-            </div>
+            </DiagramTooltip>
             {i < PIPELINE_STAGES.length - 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                 <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
@@ -414,11 +437,13 @@ export function IndexingPipelineDiagram() {
         ))}
       </div>
 
-      <DataBox
-        label="Ключевое наблюдение"
-        value="Все индексаторы (Subsquid, The Graph, SubQuery) следуют этому паттерну. Различия -- в реализации каждого этапа."
-        variant="info"
-      />
+      <DiagramTooltip content="ETL-паттерн (Extract-Transform-Load) -- фундамент всех блокчейн-индексаторов. Subsquid, The Graph и SubQuery различаются реализацией, но архитектура одинакова.">
+        <DataBox
+          label="Ключевое наблюдение"
+          value="Все индексаторы (Subsquid, The Graph, SubQuery) следуют этому паттерну. Различия -- в реализации каждого этапа."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -466,6 +491,13 @@ const TOPIC_ENTRIES: TopicEntry[] = [
   },
 ];
 
+const TOPIC_TOOLTIPS: Record<string, string> = {
+  'Topic0': 'Topic0 -- хеш сигнатуры события (keccak256). Именно по этому значению индексаторы фильтруют нужные события из миллионов блоков.',
+  'Topic1': 'Topic1 -- первый indexed-параметр (from). Индексированные параметры хранятся в topics и доступны для быстрого B-tree поиска.',
+  'Topic2': 'Topic2 -- второй indexed-параметр (to). EVM допускает максимум 3 индексированных параметра (topic1, topic2, topic3).',
+  'Data': 'Data -- неиндексированные параметры (value). Хранятся в поле data лога. Поиск по ним невозможен без полного сканирования.',
+};
+
 export function EventTopicsDiagram() {
   const [viewMode, setViewMode] = useState<'raw' | 'decoded'>('decoded');
 
@@ -496,71 +528,77 @@ export function EventTopicsDiagram() {
       {/* Event log entries */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {TOPIC_ENTRIES.map((entry) => (
-          <div key={entry.label} style={{
-            ...glassStyle,
-            padding: 10,
-            border: `1px solid ${entry.color}25`,
-            display: 'flex',
-            gap: 12,
-            alignItems: 'flex-start',
-          }}>
-            <div style={{ minWidth: 60 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: entry.color, fontFamily: 'monospace' }}>
-                {entry.label}
-              </div>
-              <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-                {entry.description}
-              </div>
-            </div>
+          <DiagramTooltip key={entry.label} content={TOPIC_TOOLTIPS[entry.label]}>
             <div style={{
-              flex: 1,
-              fontSize: viewMode === 'raw' ? 8 : 10,
-              fontFamily: 'monospace',
-              color: entry.color,
-              wordBreak: 'break-all',
-              lineHeight: 1.5,
-              padding: '4px 8px',
-              background: `${entry.color}08`,
-              borderRadius: 4,
+              ...glassStyle,
+              padding: 10,
+              border: `1px solid ${entry.color}25`,
+              display: 'flex',
+              gap: 12,
+              alignItems: 'flex-start',
             }}>
-              {viewMode === 'raw' ? entry.rawHex : entry.decoded}
+              <div style={{ minWidth: 60 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: entry.color, fontFamily: 'monospace' }}>
+                  {entry.label}
+                </div>
+                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                  {entry.description}
+                </div>
+              </div>
+              <div style={{
+                flex: 1,
+                fontSize: viewMode === 'raw' ? 8 : 10,
+                fontFamily: 'monospace',
+                color: entry.color,
+                wordBreak: 'break-all',
+                lineHeight: 1.5,
+                padding: '4px 8px',
+                background: `${entry.color}08`,
+                borderRadius: 4,
+              }}>
+                {viewMode === 'raw' ? entry.rawHex : entry.decoded}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Explanation */}
-      <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(167,139,250,0.15)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 6 }}>
-          Как это работает:
+      <DiagramTooltip content="EVM событие -- это запись в transaction receipt. Topics индексируются Bloom-фильтром на уровне блока, что позволяет быстро определить, содержит ли блок нужное событие.">
+        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(167,139,250,0.15)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 6 }}>
+            Как это работает:
+          </div>
+          <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.6 }}>
+            Topic0 = keccak256(&apos;Transfer(address,address,uint256)&apos;) = 0xddf252ad...
+            Индексированные параметры попадают в topics (быстрый поиск по B-tree).
+            Неиндексированные -- в data. Именно так Subsquid и The Graph находят нужные события.
+          </div>
         </div>
-        <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.6 }}>
-          Topic0 = keccak256(&apos;Transfer(address,address,uint256)&apos;) = 0xddf252ad...
-          Индексированные параметры попадают в topics (быстрый поиск по B-tree).
-          Неиндексированные -- в data. Именно так Subsquid и The Graph находят нужные события.
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Filter code */}
-      <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
-          Как процессор фильтрует:
+      <DiagramTooltip content="addLog() -- метод процессора для подписки на события. Процессор пропускает блоки без нужных событий, что драматически ускоряет индексацию.">
+        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
+            Как процессор фильтрует:
+          </div>
+          <div style={{
+            fontSize: 9,
+            fontFamily: 'monospace',
+            color: '#3b82f6',
+            padding: '8px 10px',
+            background: 'rgba(59,130,246,0.08)',
+            borderRadius: 4,
+            lineHeight: 1.5,
+          }}>
+            addLog({'{'} topic0: [TRANSFER_TOPIC] {'}'})
+          </div>
+          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 6, lineHeight: 1.5 }}>
+            Процессор читает ТОЛЬКО блоки с Transfer событиями, пропуская остальные.
+          </div>
         </div>
-        <div style={{
-          fontSize: 9,
-          fontFamily: 'monospace',
-          color: '#3b82f6',
-          padding: '8px 10px',
-          background: 'rgba(59,130,246,0.08)',
-          borderRadius: 4,
-          lineHeight: 1.5,
-        }}>
-          addLog({'{'} topic0: [TRANSFER_TOPIC] {'}'})
-        </div>
-        <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 6, lineHeight: 1.5 }}>
-          Процессор читает ТОЛЬКО блоки с Transfer событиями, пропуская остальные.
-        </div>
-      </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
