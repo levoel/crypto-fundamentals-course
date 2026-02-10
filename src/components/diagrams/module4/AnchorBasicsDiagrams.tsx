@@ -2,12 +2,13 @@
  * Anchor Basics Diagrams (SOL-06)
  *
  * Exports:
- * - AnchorProgramStructureDiagram: Annotated Anchor program structure with macro highlights (static with hover)
- * - AnchorChecksTableDiagram: What Anchor checks automatically vs what requires manual validation (interactive table)
+ * - AnchorProgramStructureDiagram: Annotated Anchor program structure with macro highlights (click-based with DiagramTooltip)
+ * - AnchorChecksTableDiagram: What Anchor checks automatically vs what requires manual validation (interactive table with DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -21,6 +22,7 @@ interface MacroAnnotation {
   description: string;
   generates: string[];
   color: string;
+  tooltipRu: string;
 }
 
 const MACRO_ANNOTATIONS: MacroAnnotation[] = [
@@ -35,6 +37,7 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
       'Сериализация результатов обратно в account.data',
     ],
     color: colors.primary,
+    tooltipRu: '#[program] -- главный макрос Anchor. Он генерирует entrypoint программы, dispatch по дискриминатору инструкции (первые 8 байт SHA-256 от имени метода) и автоматическую десериализацию Context<T>.',
   },
   {
     macro: '#[derive(Accounts)]',
@@ -47,6 +50,7 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
       'Выполнение constraint-выражений (seeds, bump, has_one, mut)',
     ],
     color: colors.accent,
+    tooltipRu: '#[derive(Accounts)] генерирует валидацию всех аккаунтов в контексте инструкции. Для каждого поля проверяется owner, discriminator, signer и constraint-выражения. Это устраняет ~70% уязвимостей.',
   },
   {
     macro: '#[account]',
@@ -59,6 +63,7 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
       'Проверка discriminator при каждом чтении',
     ],
     color: colors.success,
+    tooltipRu: '#[account] определяет структуру данных аккаунта. Anchor генерирует Borsh (де)сериализацию и 8-байтный discriminator (SHA-256("account:Name")[:8]) для защиты от подмены типа аккаунта.',
   },
   {
     macro: '#[error_code]',
@@ -71,6 +76,7 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
       'TypeScript клиент получает типизированные ошибки через IDL',
     ],
     color: '#e879f9',
+    tooltipRu: '#[error_code] создает типизированные ошибки программы с кодами начиная с 6000. Каждая ошибка с #[msg("...")] попадает в IDL, что позволяет TypeScript клиенту показать пользователю понятное сообщение.',
   },
 ];
 
@@ -78,7 +84,7 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
  * AnchorProgramStructureDiagram
  *
  * Shows the four key Anchor macros and what code they generate.
- * Hover over each macro to see generated code details.
+ * Click on each macro to see generated code details.
  */
 export function AnchorProgramStructureDiagram() {
   const [selectedMacro, setSelectedMacro] = useState<number>(0);
@@ -92,49 +98,54 @@ export function AnchorProgramStructureDiagram() {
         {MACRO_ANNOTATIONS.map((m, i) => {
           const isActive = i === selectedMacro;
           return (
-            <button
-              key={i}
-              onClick={() => setSelectedMacro(i)}
-              style={{
-                ...glassStyle,
-                padding: '8px 14px',
-                cursor: 'pointer',
-                background: isActive ? `${m.color}20` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isActive ? m.color : 'rgba(255,255,255,0.08)'}`,
-                color: isActive ? m.color : colors.textMuted,
-                fontSize: 13,
-                fontFamily: 'monospace',
-                fontWeight: isActive ? 600 : 400,
-                transition: 'all 0.2s',
-              }}
-            >
-              {m.macro}
-            </button>
+            <DiagramTooltip key={i} content={m.tooltipRu}>
+              <div>
+                <button
+                  onClick={() => setSelectedMacro(i)}
+                  style={{
+                    ...glassStyle,
+                    padding: '8px 14px',
+                    cursor: 'pointer',
+                    background: isActive ? `${m.color}20` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isActive ? m.color : 'rgba(255,255,255,0.08)'}`,
+                    color: isActive ? m.color : colors.textMuted,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    fontWeight: isActive ? 600 : 400,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {m.macro}
+                </button>
+              </div>
+            </DiagramTooltip>
           );
         })}
       </div>
 
       {/* Target code */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        background: `${current.color}08`,
-        border: `1px solid ${current.color}30`,
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-          Применяется к:
-        </div>
-        <pre style={{
-          margin: 0,
-          fontSize: 13,
-          fontFamily: 'monospace',
-          color: current.color,
-          whiteSpace: 'pre-wrap',
+      <DiagramTooltip content={`Этот макрос применяется к ${current.macro === '#[program]' ? 'модулю программы' : current.macro === '#[derive(Accounts)]' ? 'структуре контекста инструкции' : current.macro === '#[account]' ? 'структуре данных аккаунта' : 'enum пользовательских ошибок'}. Anchor анализирует его на этапе компиляции и генерирует boilerplate-код.`}>
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          background: `${current.color}08`,
+          border: `1px solid ${current.color}30`,
+          marginBottom: 12,
         }}>
-          {current.target}
-        </pre>
-      </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            Применяется к:
+          </div>
+          <pre style={{
+            margin: 0,
+            fontSize: 13,
+            fontFamily: 'monospace',
+            color: current.color,
+            whiteSpace: 'pre-wrap',
+          }}>
+            {current.target}
+          </pre>
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -147,49 +158,53 @@ export function AnchorProgramStructureDiagram() {
       </div>
 
       {/* Generated code list */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-          Что генерирует компилятор:
-        </div>
-        {current.generates.map((g, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 8,
-            marginBottom: 6,
-          }}>
-            <span style={{
-              fontSize: 11,
-              color: current.color,
-              fontFamily: 'monospace',
-              flexShrink: 0,
-              marginTop: 2,
-            }}>
-              {i + 1}.
-            </span>
-            <span style={{
-              fontSize: 12,
-              color: colors.text,
-              fontFamily: 'monospace',
-              lineHeight: 1.5,
-            }}>
-              {g}
-            </span>
+      <DiagramTooltip content="Anchor генерирует этот код на этапе компиляции через proc-макросы Rust. Разработчик пишет декларативные аннотации, а компилятор создает весь boilerplate: валидацию, (де)сериализацию, dispatch и error handling.">
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+            Что генерирует компилятор:
           </div>
-        ))}
-      </div>
+          {current.generates.map((g, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              marginBottom: 6,
+            }}>
+              <span style={{
+                fontSize: 11,
+                color: current.color,
+                fontFamily: 'monospace',
+                flexShrink: 0,
+                marginTop: 2,
+              }}>
+                {i + 1}.
+              </span>
+              <span style={{
+                fontSize: 12,
+                color: colors.text,
+                fontFamily: 'monospace',
+                lineHeight: 1.5,
+              }}>
+                {g}
+              </span>
+            </div>
+          ))}
+        </div>
+      </DiagramTooltip>
 
       {/* Summary data box */}
-      <DataBox
-        label="Ключевой принцип"
-        value="Anchor-макросы генерируют ~70% boilerplate: entrypoint, dispatch, (де)сериализацию, валидацию аккаунтов"
-        variant="highlight"
-      />
+      <DiagramTooltip content="Anchor-макросы устраняют типичные уязвимости Solana-программ: пропущенная проверка owner, неправильный discriminator, отсутствие проверки signer. Без Anchor разработчик должен писать все эти проверки вручную.">
+        <DataBox
+          label="Ключевой принцип"
+          value="Anchor-макросы генерируют ~70% boilerplate: entrypoint, dispatch, (де)сериализацию, валидацию аккаунтов"
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -204,6 +219,7 @@ interface CheckItem {
   description: string;
   anchor: string;
   consequence: string;
+  tooltipRu: string;
 }
 
 const CHECKS: CheckItem[] = [
@@ -213,6 +229,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка, что аккаунт принадлежит ожидаемой программе',
     anchor: 'Account<\'info, T> -- автоматически проверяет owner == program_id',
     consequence: 'Без проверки: чужая программа может подменить аккаунт',
+    tooltipRu: 'Anchor автоматически проверяет, что owner аккаунта совпадает с program_id. Без этой проверки атакующий может передать аккаунт, принадлежащий другой программе, и обойти валидацию данных.',
   },
   {
     check: 'Discriminator (тип аккаунта)',
@@ -220,6 +237,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка 8-байтного дискриминатора -- аккаунт действительно Counter, а не другой тип',
     anchor: '#[account] генерирует SHA-256("account:Counter")[:8]',
     consequence: 'Без проверки: данные могут быть десериализованы неправильно',
+    tooltipRu: 'Discriminator -- первые 8 байт SHA-256("account:TypeName"). Anchor проверяет его при каждом чтении аккаунта. Без дискриминатора атакующий может подставить аккаунт другого типа с теми же полями.',
   },
   {
     check: 'Signer verification',
@@ -227,6 +245,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка, что аккаунт подписал транзакцию',
     anchor: 'Signer<\'info> -- автоматическая проверка is_signer',
     consequence: 'Без проверки: кто угодно может вызвать привилегированную функцию',
+    tooltipRu: 'Signer<\'info> проверяет, что аккаунт действительно подписал транзакцию (is_signer = true). Без этой проверки любой может вызвать административные функции (withdraw, update_authority) от чужого имени.',
   },
   {
     check: 'PDA derivation',
@@ -234,6 +253,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка, что адрес аккаунта совпадает с ожидаемым PDA',
     anchor: 'seeds = [...], bump -- проверяет create_program_address',
     consequence: 'Без проверки: атакующий может подставить произвольный аккаунт',
+    tooltipRu: 'Constraint seeds = [...] и bump проверяют, что адрес аккаунта -- это PDA, вычисленный из указанных seeds. Без этой проверки атакующий может передать произвольный аккаунт вместо ожидаемого PDA.',
   },
   {
     check: 'Constraint expressions',
@@ -241,6 +261,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка has_one, address, constraint выражений',
     anchor: 'has_one = authority, constraint = counter.active',
     consequence: 'Без проверки: нарушение инвариантов данных',
+    tooltipRu: 'has_one = authority проверяет, что поле authority в аккаунте совпадает с переданным аккаунтом. constraint = expr позволяет добавить произвольные проверки. Anchor выполняет их автоматически перед вызовом handler.',
   },
   {
     check: 'Init / mut / close lifecycle',
@@ -248,6 +269,7 @@ const CHECKS: CheckItem[] = [
     description: 'Создание, мутабельность и закрытие аккаунтов',
     anchor: 'init -> CPI к System Program; mut -> persist changes; close -> zero + lamports',
     consequence: 'Без проверки: двойное создание, потеря данных, утечка lamports',
+    tooltipRu: 'init создает аккаунт через CPI к System Program. mut сохраняет изменения после выполнения handler. close обнуляет data, переводит lamports и устанавливает discriminator в закрытый. Без close возможна утечка lamports.',
   },
   {
     check: 'Business logic',
@@ -255,6 +277,7 @@ const CHECKS: CheckItem[] = [
     description: 'Корректность вычислений, переполнение, логика приложения',
     anchor: 'require!(), checked_add(), if/else в handler',
     consequence: 'Anchor валидирует АККАУНТЫ, но не вашу ЛОГИКУ',
+    tooltipRu: 'Anchor не проверяет бизнес-логику -- это ответственность разработчика. require!() для условий, checked_add()/checked_sub() для арифметики. Anchor валидирует аккаунты, но не ваши вычисления.',
   },
   {
     check: 'remaining_accounts',
@@ -262,6 +285,7 @@ const CHECKS: CheckItem[] = [
     description: 'Дополнительные аккаунты, не описанные в #[derive(Accounts)]',
     anchor: 'ctx.remaining_accounts -- НУЛЕВАЯ защита от Anchor',
     consequence: 'Атакующий может передать произвольные аккаунты',
+    tooltipRu: 'remaining_accounts -- аккаунты, переданные сверх описанных в #[derive(Accounts)]. Anchor не проверяет их owner, discriminator или signer. Каждый remaining_account нужно валидировать вручную.',
   },
   {
     check: 'Post-CPI data freshness',
@@ -269,6 +293,7 @@ const CHECKS: CheckItem[] = [
     description: 'После CPI данные в десериализованных аккаунтах могут быть устаревшими',
     anchor: 'account.reload() после CPI',
     consequence: 'Использование stale данных -> неверные решения',
+    tooltipRu: 'После CPI-вызова данные в десериализованных аккаунтах могут быть устаревшими -- целевая программа могла их изменить. Вызовите account.reload() после CPI для получения актуальных данных.',
   },
   {
     check: 'CPI target program',
@@ -276,6 +301,7 @@ const CHECKS: CheckItem[] = [
     description: 'Проверка, что CPI вызывает ожидаемую программу, а не подмену',
     anchor: 'Program<\'info, T> для CPI target или ручная проверка program_id',
     consequence: 'Confused deputy attack -- вызов вредоносной программы',
+    tooltipRu: 'Без проверки program_id целевой программы возможен confused deputy attack: атакующий подставляет вредоносную программу вместо System Program или Token Program. Используйте Program<\'info, T> для автопроверки.',
   },
   {
     check: 'Arithmetic overflow',
@@ -283,6 +309,7 @@ const CHECKS: CheckItem[] = [
     description: 'Rust в release mode не проверяет overflow по умолчанию',
     anchor: 'checked_add(), checked_mul(), checked_sub()',
     consequence: 'Тихое переполнение -> некорректные балансы/счетчики',
+    tooltipRu: 'В release mode Rust не проверяет арифметическое переполнение -- u64::MAX + 1 тихо станет 0. Используйте checked_add(), checked_sub(), checked_mul() или saturating_* методы для безопасной арифметики.',
   },
   {
     check: 'Cross-instruction consistency',
@@ -290,6 +317,7 @@ const CHECKS: CheckItem[] = [
     description: 'Состояние между инструкциями в одной транзакции',
     anchor: 'Ручные проверки в handler или require!() с перечитыванием',
     consequence: 'Flash loan атаки, front-running внутри транзакции',
+    tooltipRu: 'В одной транзакции Solana можно вызвать несколько инструкций. Состояние между ними может измениться. Flash loan атаки используют это: занимают токены в первой инструкции, используют во второй, возвращают в третьей.',
   },
 ];
 
@@ -302,7 +330,6 @@ const CHECKS: CheckItem[] = [
  */
 export function AnchorChecksTableDiagram() {
   const [filter, setFilter] = useState<'all' | 'automatic' | 'manual'>('all');
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   const filtered = filter === 'all' ? CHECKS : CHECKS.filter((c) => c.category === filter);
 
@@ -314,29 +341,32 @@ export function AnchorChecksTableDiagram() {
       {/* Filter buttons */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {([
-          { key: 'all' as const, label: `Все (${CHECKS.length})`, color: colors.text },
-          { key: 'automatic' as const, label: `Автоматические (${autoCount})`, color: colors.success },
-          { key: 'manual' as const, label: `Ручные (${manualCount})`, color: '#f59e0b' },
+          { key: 'all' as const, label: `Все (${CHECKS.length})`, color: colors.text, tooltipRu: 'Показать все проверки: автоматические (Anchor) и ручные (разработчик). Всего 11 категорий проверок безопасности.' },
+          { key: 'automatic' as const, label: `Автоматические (${autoCount})`, color: colors.success, tooltipRu: 'Anchor выполняет эти проверки автоматически при десериализации контекста. Разработчику нужно только правильно определить типы полей.' },
+          { key: 'manual' as const, label: `Ручные (${manualCount})`, color: '#f59e0b', tooltipRu: 'Эти проверки разработчик должен реализовать самостоятельно в handler. Anchor не может автоматизировать проверку бизнес-логики.' },
         ]).map((f) => {
           const isActive = filter === f.key;
           return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                ...glassStyle,
-                padding: '6px 14px',
-                cursor: 'pointer',
-                background: isActive ? `${f.color}20` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isActive ? f.color : 'rgba(255,255,255,0.08)'}`,
-                color: isActive ? f.color : colors.textMuted,
-                fontSize: 12,
-                fontFamily: 'monospace',
-                transition: 'all 0.2s',
-              }}
-            >
-              {f.label}
-            </button>
+            <DiagramTooltip key={f.key} content={f.tooltipRu}>
+              <div>
+                <button
+                  onClick={() => setFilter(f.key)}
+                  style={{
+                    ...glassStyle,
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    background: isActive ? `${f.color}20` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isActive ? f.color : 'rgba(255,255,255,0.08)'}`,
+                    color: isActive ? f.color : colors.textMuted,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {f.label}
+                </button>
+              </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -361,15 +391,12 @@ export function AnchorChecksTableDiagram() {
 
       {/* Rows */}
       {filtered.map((item, i) => {
-        const isHovered = hoveredRow === i;
         const isAuto = item.category === 'automatic';
         const catColor = isAuto ? colors.success : '#f59e0b';
 
         return (
-          <div key={i}>
+          <DiagramTooltip key={i} content={item.tooltipRu}>
             <div
-              onMouseEnter={() => setHoveredRow(i)}
-              onMouseLeave={() => setHoveredRow(null)}
               style={{
                 display: 'grid',
                 gridTemplateColumns: '28px 1fr 200px',
@@ -385,7 +412,7 @@ export function AnchorChecksTableDiagram() {
                 color: catColor,
                 fontFamily: 'monospace',
                 textAlign: 'center',
-                background: isHovered ? `${catColor}10` : 'rgba(255,255,255,0.02)',
+                background: 'rgba(255,255,255,0.02)',
                 transition: 'all 0.15s',
               }}>
                 {i + 1}
@@ -394,9 +421,9 @@ export function AnchorChecksTableDiagram() {
                 ...glassStyle,
                 padding: '8px 10px',
                 fontSize: 12,
-                color: isHovered ? colors.text : colors.textMuted,
+                color: colors.textMuted,
                 fontFamily: 'monospace',
-                background: isHovered ? `${catColor}08` : 'rgba(255,255,255,0.02)',
+                background: 'rgba(255,255,255,0.02)',
                 transition: 'all 0.15s',
               }}>
                 {item.check}
@@ -409,46 +436,24 @@ export function AnchorChecksTableDiagram() {
                 fontFamily: 'monospace',
                 fontWeight: 600,
                 textAlign: 'center',
-                background: isHovered ? `${catColor}15` : `${catColor}05`,
+                background: `${catColor}05`,
                 transition: 'all 0.15s',
               }}>
                 {isAuto ? 'Anchor (auto)' : 'Developer (manual)'}
               </div>
             </div>
-
-            {/* Detail panel on hover */}
-            {isHovered && (
-              <div style={{
-                ...glassStyle,
-                padding: 12,
-                marginBottom: 4,
-                background: `${catColor}08`,
-                border: `1px solid ${catColor}20`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-              }}>
-                <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-                  {item.description}
-                </div>
-                <div style={{ fontSize: 11, fontFamily: 'monospace', color: catColor }}>
-                  Anchor: {item.anchor}
-                </div>
-                <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#f43f5e' }}>
-                  Риск: {item.consequence}
-                </div>
-              </div>
-            )}
-          </div>
+          </DiagramTooltip>
         );
       })}
 
       {/* Summary */}
-      <DataBox
-        label="Ключевой вывод"
-        value={`Anchor проверяет ${autoCount} аспектов автоматически. ${manualCount} аспектов требуют ручной проверки в handler. Не путайте валидацию аккаунтов с валидацией логики.`}
-        variant="highlight"
-      />
+      <DiagramTooltip content={`Anchor покрывает ${autoCount} категорий проверок автоматически. Оставшиеся ${manualCount} -- ответственность разработчика. Ключевое правило: Anchor валидирует аккаунты, но не бизнес-логику.`}>
+        <DataBox
+          label="Ключевой вывод"
+          value={`Anchor проверяет ${autoCount} аспектов автоматически. ${manualCount} аспектов требуют ручной проверки в handler. Не путайте валидацию аккаунтов с валидацией логики.`}
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
