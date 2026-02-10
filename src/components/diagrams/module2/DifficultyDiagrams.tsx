@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -100,15 +101,17 @@ export function DifficultyAdjustmentTimeline() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Formula display */}
-        <div style={{ ...glassStyle, padding: '10px 14px', fontSize: 12, fontFamily: 'monospace' }}>
-          <div style={{ color: colors.textMuted, marginBottom: 6 }}>Формула корректировки:</div>
-          <div style={{ color: colors.text }}>
-            new_target = old_target * (actual_time / expected_time)
+        <DiagramTooltip content="Каждые 2016 блоков (~2 недели) Bitcoin пересчитывает target. Если блоки находились быстрее 10 мин -- target уменьшается (сложность растёт). Медленнее -- target увеличивается (сложность падает).">
+          <div style={{ ...glassStyle, padding: '10px 14px', fontSize: 12, fontFamily: 'monospace' }}>
+            <div style={{ color: colors.textMuted, marginBottom: 6 }}>Формула корректировки:</div>
+            <div style={{ color: colors.text }}>
+              new_target = old_target * (actual_time / expected_time)
+            </div>
+            <div style={{ color: colors.textMuted, marginTop: 4 }}>
+              expected_time = 2016 * 600с = 1 209 600с (14 дней) | factor: min 0.25x, max 4.0x
+            </div>
           </div>
-          <div style={{ color: colors.textMuted, marginTop: 4 }}>
-            expected_time = 2016 * 600с = 1 209 600с (14 дней) | factor: min 0.25x, max 4.0x
-          </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Bar chart */}
         <div style={{ overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
@@ -215,26 +218,28 @@ export function DifficultyAdjustmentTimeline() {
 
         {/* Selected epoch details */}
         {selectedEpoch !== null && (
-          <div
-            style={{
-              ...glassStyle,
-              padding: '12px',
-              border: `1px solid ${colors.primary}30`,
-              background: `${colors.primary}08`,
-            }}
-          >
-            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>
-              {EPOCHS[selectedEpoch].label}: {EPOCHS[selectedEpoch].actualDays} дней (ожидалось {EPOCHS[selectedEpoch].expectedDays})
+          <DiagramTooltip content={EPOCHS[selectedEpoch].description}>
+            <div
+              style={{
+                ...glassStyle,
+                padding: '12px',
+                border: `1px solid ${colors.primary}30`,
+                background: `${colors.primary}08`,
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>
+                {EPOCHS[selectedEpoch].label}: {EPOCHS[selectedEpoch].actualDays} дней (ожидалось {EPOCHS[selectedEpoch].expectedDays})
+              </div>
+              <div style={{ fontSize: 12, color: colors.textMuted }}>
+                {EPOCHS[selectedEpoch].description}
+              </div>
+              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text, marginTop: 6 }}>
+                factor = {EPOCHS[selectedEpoch].actualDays} / {EPOCHS[selectedEpoch].expectedDays} = {EPOCHS[selectedEpoch].factor.toFixed(3)}
+                {EPOCHS[selectedEpoch].factor < 0.25 && ' (capped at 0.25)'}
+                {EPOCHS[selectedEpoch].factor > 4.0 && ' (capped at 4.0)'}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: colors.textMuted }}>
-              {EPOCHS[selectedEpoch].description}
-            </div>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text, marginTop: 6 }}>
-              factor = {EPOCHS[selectedEpoch].actualDays} / {EPOCHS[selectedEpoch].expectedDays} = {EPOCHS[selectedEpoch].factor.toFixed(3)}
-              {EPOCHS[selectedEpoch].factor < 0.25 && ' (capped at 0.25)'}
-              {EPOCHS[selectedEpoch].factor > 4.0 && ' (capped at 4.0)'}
-            </div>
-          </div>
+          </DiagramTooltip>
         )}
 
         {/* nBits encoding */}
@@ -243,28 +248,36 @@ export function DifficultyAdjustmentTimeline() {
             nBits компактный формат (Genesis block)
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <DataBox
-              label="nBits"
-              value={`0x${genesisNBits.toString(16)}`}
-              variant="default"
-            />
-            <DataBox
-              label="Экспонента"
-              value={`0x${decoded.exponent.toString(16)} = ${decoded.exponent}`}
-              variant="default"
-            />
-            <DataBox
-              label="Мантисса"
-              value={`0x${decoded.mantissa.toString(16).padStart(6, '0')}`}
-              variant="default"
-            />
+            <DiagramTooltip content="nBits -- компактное 4-байтовое представление target в заголовке блока. Первый байт -- экспонента, остальные 3 -- мантисса. Полный target = мантисса * 2^(8*(экспонента-3)).">
+              <DataBox
+                label="nBits"
+                value={`0x${genesisNBits.toString(16)}`}
+                variant="default"
+              />
+            </DiagramTooltip>
+            <DiagramTooltip content="Экспонента задаёт количество байт в полном target. Для Genesis block: 0x1d = 29, то есть target занимает 29 байт (232 бит). Чем меньше экспонента, тем сложнее майнинг.">
+              <DataBox
+                label="Экспонента"
+                value={`0x${decoded.exponent.toString(16)} = ${decoded.exponent}`}
+                variant="default"
+              />
+            </DiagramTooltip>
+            <DiagramTooltip content="Мантисса -- старшие 3 значащих байта target. Совместно с экспонентой определяет точное пороговое значение, ниже которого должен быть хеш блока.">
+              <DataBox
+                label="Мантисса"
+                value={`0x${decoded.mantissa.toString(16).padStart(6, '0')}`}
+                variant="default"
+              />
+            </DiagramTooltip>
           </div>
           <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, marginTop: 8 }}>
             target = 0x{decoded.mantissa.toString(16).padStart(6, '0')} * 2^(8 * ({decoded.exponent} - 3)) = 0x00000000FFFF00...0000
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
-            Формат: первый байт = экспонента (количество байт в target), остальные 3 байта = мантисса (старшие значащие байты target).
-          </div>
+          <DiagramTooltip content="Compact формат позволяет хранить 256-битный target в 4 байтах заголовка. Каждый узел сети декодирует nBits и проверяет: hash < target. Если хеш блока меньше target, блок валиден.">
+            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+              Формат: первый байт = экспонента (количество байт в target), остальные 3 байта = мантисса (старшие значащие байты target).
+            </div>
+          </DiagramTooltip>
         </div>
       </div>
     </DiagramContainer>

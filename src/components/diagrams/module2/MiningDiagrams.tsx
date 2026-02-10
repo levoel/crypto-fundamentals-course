@@ -9,6 +9,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -226,9 +227,11 @@ export function MiningSimulator() {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {/* Left: block header fields */}
           <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 4 }}>
-              Заголовок блока
-            </div>
+            <DiagramTooltip content="Заголовок блока Bitcoin -- 80 байт, содержащих version, prev hash, merkle root, timestamp, nBits (target) и nonce. Майнер изменяет nonce и хеширует заголовок дважды (SHA-256d), пока хеш не станет меньше target.">
+              <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 4 }}>
+                Заголовок блока
+              </div>
+            </DiagramTooltip>
             {[
               { label: 'Version', value: HEADER_FIELDS.version },
               { label: 'Prev Hash', value: HEADER_FIELDS.prevHash.slice(0, 16) + '...' },
@@ -252,23 +255,25 @@ export function MiningSimulator() {
               </div>
             ))}
             {/* Nonce - highlighted */}
-            <div
-              style={{
-                ...glassStyle,
-                padding: '6px 10px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: 12,
-                border: `1px solid ${colors.primary}50`,
-                background: `${colors.primary}10`,
-              }}
-            >
-              <span style={{ color: colors.primary, fontWeight: 600 }}>Nonce</span>
-              <span style={{ fontFamily: 'monospace', color: colors.primary, fontWeight: 600, fontSize: 14 }}>
-                {nonce}
-              </span>
-            </div>
+            <DiagramTooltip content="Nonce (number used once) -- единственное поле заголовка, которое майнер может свободно изменять. 4 байта = 2^32 вариантов. Если все nonce перебраны, изменяют extraNonce в coinbase-транзакции.">
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '6px 10px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  border: `1px solid ${colors.primary}50`,
+                  background: `${colors.primary}10`,
+                }}
+              >
+                <span style={{ color: colors.primary, fontWeight: 600 }}>Nonce</span>
+                <span style={{ fontFamily: 'monospace', color: colors.primary, fontWeight: 600, fontSize: 14 }}>
+                  {nonce}
+                </span>
+              </div>
+            </DiagramTooltip>
           </div>
 
           {/* Right: hash result and target */}
@@ -276,31 +281,37 @@ export function MiningSimulator() {
             <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 4 }}>
               Результат хеширования
             </div>
-            <div
-              style={{
-                ...glassStyle,
-                padding: '12px',
-                border: `1px solid ${found && meetsTarget ? '#4ade80' : colors.border}`,
-                background: found && meetsTarget ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)',
-                transition: 'all 0.3s',
-              }}
-            >
-              <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Hash:</div>
-              <div style={{ letterSpacing: 1, lineHeight: 1.6 }}>{renderHash()}</div>
-            </div>
-            <div style={{ ...glassStyle, padding: '12px' }}>
-              <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Target (цель):</div>
-              <div style={{ fontFamily: 'monospace', fontSize: 18, color: colors.accent, letterSpacing: 1 }}>
-                {targetDisplay}
+            <DiagramTooltip content="SHA-256d хеш заголовка блока. Майнер ищет nonce, при котором хеш начинается с необходимого количества нулей. Зелёные символы показывают совпадение с target.">
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '12px',
+                  border: `1px solid ${found && meetsTarget ? '#4ade80' : colors.border}`,
+                  background: found && meetsTarget ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)',
+                  transition: 'all 0.3s',
+                }}
+              >
+                <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Hash:</div>
+                <div style={{ letterSpacing: 1, lineHeight: 1.6 }}>{renderHash()}</div>
               </div>
-            </div>
-            <InteractiveValue
-              value={difficulty}
-              onChange={handleDifficultyChange}
-              min={1}
-              max={5}
-              label="Ведущие нули (сложность)"
-            />
+            </DiagramTooltip>
+            <DiagramTooltip content="Целевое значение (target) задаёт верхнюю границу допустимого хеша. Хеш блока должен быть меньше target для принятия блока сетью. Больше ведущих нулей = меньше target = выше сложность.">
+              <div style={{ ...glassStyle, padding: '12px' }}>
+                <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Target (цель):</div>
+                <div style={{ fontFamily: 'monospace', fontSize: 18, color: colors.accent, letterSpacing: 1 }}>
+                  {targetDisplay}
+                </div>
+              </div>
+            </DiagramTooltip>
+            <DiagramTooltip content="Количество ведущих нулей в целевом хеше. Больше нулей = выше сложность = больше попыток для нахождения валидного блока. Каждый дополнительный ноль увеличивает сложность в 16 раз.">
+              <InteractiveValue
+                value={difficulty}
+                onChange={handleDifficultyChange}
+                min={1}
+                max={5}
+                label="Ведущие нули (сложность)"
+              />
+            </DiagramTooltip>
           </div>
         </div>
 
@@ -326,44 +337,67 @@ export function MiningSimulator() {
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={handleIncrement}
-            disabled={mining}
-            style={btnStyle(!mining, colors.primary)}
-          >
-            +1 Nonce
-          </button>
-          <button
-            onClick={handleStartStop}
-            style={btnStyle(true, mining ? '#ef4444' : '#4ade80')}
-          >
-            {mining ? 'Стоп' : 'Старт майнинг'}
-          </button>
-          <button onClick={handleReset} style={btnStyle(true, colors.textMuted)}>
-            Сброс
-          </button>
+          <DiagramTooltip content="Увеличить nonce на 1 и пересчитать хеш. В ручном режиме (Пошагово) позволяет наблюдать, как каждое изменение nonce полностью меняет хеш (лавинный эффект).">
+            <div style={{ display: 'inline-block' }}>
+              <button
+                onClick={handleIncrement}
+                disabled={mining}
+                style={btnStyle(!mining, colors.primary)}
+              >
+                +1 Nonce
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content={mining ? "Остановить перебор nonce." : "Запустить симуляцию перебора nonce для поиска хеша меньше целевого значения."}>
+            <div style={{ display: 'inline-block' }}>
+              <button
+                onClick={handleStartStop}
+                style={btnStyle(true, mining ? '#ef4444' : '#4ade80')}
+              >
+                {mining ? 'Стоп' : 'Старт майнинг'}
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Сбросить nonce в 0 и остановить майнинг. Начать поиск заново.">
+            <div style={{ display: 'inline-block' }}>
+              <button onClick={handleReset} style={btnStyle(true, colors.textMuted)}>
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         {/* Speed selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {(['step', 'slow', 'fast', 'turbo'] as Speed[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSpeed(s)}
-              style={{
-                ...glassStyle,
-                padding: '5px 12px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: speed === s ? colors.primary : colors.textMuted,
-                background: speed === s ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${speed === s ? colors.primary + '40' : colors.border}`,
-                borderRadius: 6,
-              }}
-            >
-              {SPEED_LABELS[s]}
-            </button>
-          ))}
+          {(['step', 'slow', 'fast', 'turbo'] as Speed[]).map((s) => {
+            const speedTooltips: Record<Speed, string> = {
+              step: 'Ручной режим -- нажимайте "+1 Nonce" для каждой попытки. Лучше всего для понимания процесса.',
+              slow: 'Автоматический перебор с интервалом 500мс. Можно наблюдать каждый шаг.',
+              fast: 'Быстрый перебор (50мс). Хорошо видна скорость нахождения блока при разной сложности.',
+              turbo: 'Максимальная скорость (10мс). Демонстрирует экспоненциальный рост времени поиска при увеличении сложности.',
+            };
+            return (
+              <DiagramTooltip key={s} content={speedTooltips[s]}>
+                <div style={{ display: 'inline-block' }}>
+                  <button
+                    onClick={() => setSpeed(s)}
+                    style={{
+                      ...glassStyle,
+                      padding: '5px 12px',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      color: speed === s ? colors.primary : colors.textMuted,
+                      background: speed === s ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${speed === s ? colors.primary + '40' : colors.border}`,
+                      borderRadius: 6,
+                    }}
+                  >
+                    {SPEED_LABELS[s]}
+                  </button>
+                </div>
+              </DiagramTooltip>
+            );
+          })}
         </div>
       </div>
     </DiagramContainer>
@@ -416,13 +450,15 @@ export function HashTargetVisualization() {
   return (
     <DiagramContainer title="Хеш ниже цели: лотерея Proof of Work" color="blue">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-        <InteractiveValue
-          value={difficulty}
-          onChange={setDifficulty}
-          min={1}
-          max={5}
-          label="Ведущие нули цели"
-        />
+        <DiagramTooltip content="Количество ведущих нулей в целевом хеше определяет сложность. Чем больше нулей, тем меньше target и тем меньше вероятность найти валидный хеш за одну попытку.">
+          <InteractiveValue
+            value={difficulty}
+            onChange={setDifficulty}
+            min={1}
+            max={5}
+            label="Ведущие нули цели"
+          />
+        </DiagramTooltip>
 
         <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
           <svg width={barWidth + 40} height={200} viewBox={`0 0 ${barWidth + 40} 200`}>
@@ -525,23 +561,29 @@ export function HashTargetVisualization() {
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <DataBox
-            label="Вероятность"
-            value={`target / 2^64 = 1 / 16^${difficulty} = 1 / ${Math.pow(16, difficulty).toLocaleString()}`}
-            variant="default"
-          />
-          <DataBox
-            label="Валидные хеши"
-            value={`${samples.filter((s) => s.belowTarget).length} из ${samples.length}`}
-            variant="highlight"
-          />
+          <DiagramTooltip content="Вероятность нахождения валидного хеша за одну попытку. При d ведущих нулях (hex) вероятность = 1/16^d. Среднее количество попыток = 16^d.">
+            <DataBox
+              label="Вероятность"
+              value={`target / 2^64 = 1 / 16^${difficulty} = 1 / ${Math.pow(16, difficulty).toLocaleString()}`}
+              variant="default"
+            />
+          </DiagramTooltip>
+          <DiagramTooltip content="Количество сгенерированных хешей, которые оказались меньше target (зелёные точки на числовой прямой). Чем выше сложность, тем меньше хешей проходят проверку.">
+            <DataBox
+              label="Валидные хеши"
+              value={`${samples.filter((s) => s.belowTarget).length} из ${samples.length}`}
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </div>
 
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', maxWidth: 480 }}>
-          Зеленая зона -- хеши меньше цели (валидный блок).
-          Красные точки -- хеши выше цели (не прошли PoW).
-          Чем больше ведущих нулей, тем уже зеленая зона и тем больше попыток нужно.
-        </div>
+        <DiagramTooltip content="Proof of Work -- это лотерея. Каждый хеш -- случайное число на числовой прямой. Зелёная зона (0..target) -- выигрышная. Чем уже зона, тем сложнее «выиграть» и тем больше энергии тратит сеть.">
+          <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', maxWidth: 480 }}>
+            Зеленая зона -- хеши меньше цели (валидный блок).
+            Красные точки -- хеши выше цели (не прошли PoW).
+            Чем больше ведущих нулей, тем уже зеленая зона и тем больше попыток нужно.
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );

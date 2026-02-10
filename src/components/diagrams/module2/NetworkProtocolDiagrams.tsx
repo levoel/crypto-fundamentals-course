@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -157,22 +158,25 @@ export function NetworkTopologyDiagram() {
         {/* Flow selector tabs */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {(['discovery', 'block', 'transaction'] as FlowType[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => handleFlowChange(f)}
-              style={{
-                ...glassStyle,
-                padding: '6px 14px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: activeFlow === f ? colors.primary : colors.textMuted,
-                background: activeFlow === f ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${activeFlow === f ? colors.primary + '40' : colors.border}`,
-                borderRadius: 6,
-              }}
-            >
-              {FLOWS[f].title}
-            </button>
+            <DiagramTooltip key={f} content={FLOWS[f].description}>
+              <div style={{ display: 'inline-block' }}>
+                <button
+                  onClick={() => handleFlowChange(f)}
+                  style={{
+                    ...glassStyle,
+                    padding: '6px 14px',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    color: activeFlow === f ? colors.primary : colors.textMuted,
+                    background: activeFlow === f ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${activeFlow === f ? colors.primary + '40' : colors.border}`,
+                    borderRadius: 6,
+                  }}
+                >
+                  {FLOWS[f].title}
+                </button>
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
 
@@ -289,63 +293,82 @@ export function NetworkTopologyDiagram() {
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {(['full', 'miner', 'spv'] as NodeType[]).map((t) => (
-            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: NODE_COLORS[t],
-                }}
-              />
-              <span style={{ fontSize: 11, color: colors.textMuted }}>{NODE_LABELS_RU[t]}</span>
-            </div>
-          ))}
+          {(['full', 'miner', 'spv'] as NodeType[]).map((t) => {
+            const legendTooltips: Record<NodeType, string> = {
+              full: 'Полный узел (full node) хранит полную копию блокчейна и независимо верифицирует все транзакции и блоки. Обеспечивает максимальную безопасность и децентрализацию сети.',
+              miner: 'Майнер -- полный узел, который дополнительно участвует в Proof of Work: перебирает nonce для нахождения хеша ниже target. За найденный блок получает награду (coinbase + fees).',
+              spv: 'SPV-клиент (Simplified Payment Verification) проверяет транзакции через Merkle-доказательства, не скачивая весь блокчейн. Доверяет полным узлам для валидации блоков.',
+            };
+            return (
+              <DiagramTooltip key={t} content={legendTooltips[t]}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: NODE_COLORS[t],
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: colors.textMuted }}>{NODE_LABELS_RU[t]}</span>
+                </div>
+              </DiagramTooltip>
+            );
+          })}
         </div>
 
         {/* Step through controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button
-            onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
-            disabled={activeStep === 0}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: activeStep === 0 ? 'not-allowed' : 'pointer',
-              color: activeStep === 0 ? colors.textMuted : colors.text,
-              fontSize: 12,
-              opacity: activeStep === 0 ? 0.5 : 1,
-            }}
-          >
-            Назад
-          </button>
+          <DiagramTooltip content="Вернуться к предыдущему шагу сетевого протокола.">
+            <div style={{ display: 'inline-block' }}>
+              <button
+                onClick={() => setActiveStep((s) => Math.max(0, s - 1))}
+                disabled={activeStep === 0}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: activeStep === 0 ? 'not-allowed' : 'pointer',
+                  color: activeStep === 0 ? colors.textMuted : colors.text,
+                  fontSize: 12,
+                  opacity: activeStep === 0 ? 0.5 : 1,
+                }}
+              >
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
           <span style={{ fontSize: 12, color: colors.textMuted, alignSelf: 'center', fontFamily: 'monospace' }}>
             {activeStep + 1} / {flow.steps.length}
           </span>
-          <button
-            onClick={() => setActiveStep((s) => Math.min(flow.steps.length - 1, s + 1))}
-            disabled={activeStep >= flow.steps.length - 1}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: activeStep >= flow.steps.length - 1 ? 'not-allowed' : 'pointer',
-              color: activeStep >= flow.steps.length - 1 ? colors.textMuted : colors.primary,
-              fontSize: 12,
-              opacity: activeStep >= flow.steps.length - 1 ? 0.5 : 1,
-            }}
-          >
-            Далее
-          </button>
+          <DiagramTooltip content="Перейти к следующему шагу сетевого протокола.">
+            <div style={{ display: 'inline-block' }}>
+              <button
+                onClick={() => setActiveStep((s) => Math.min(flow.steps.length - 1, s + 1))}
+                disabled={activeStep >= flow.steps.length - 1}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: activeStep >= flow.steps.length - 1 ? 'not-allowed' : 'pointer',
+                  color: activeStep >= flow.steps.length - 1 ? colors.textMuted : colors.primary,
+                  fontSize: 12,
+                  opacity: activeStep >= flow.steps.length - 1 ? 0.5 : 1,
+                }}
+              >
+                Далее
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         {/* Current step description */}
         {currentStep && (
-          <DataBox
-            label={`Шаг ${activeStep + 1}: ${currentStep.message}`}
-            value={currentStep.description}
-            variant="highlight"
-          />
+          <DiagramTooltip content={currentStep.description}>
+            <DataBox
+              label={`Шаг ${activeStep + 1}: ${currentStep.message}`}
+              value={currentStep.description}
+              variant="highlight"
+            />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>
