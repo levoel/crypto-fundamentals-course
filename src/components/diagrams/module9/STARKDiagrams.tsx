@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -121,23 +122,25 @@ export function FRIProtocolDiagram() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
         {FRI_STEPS.map((st, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: i <= current ? '#fff' : colors.textMuted,
-              background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.3s',
-            }}>
-              {st.icon}
-            </div>
+            <DiagramTooltip content={st.detail}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: i <= current ? '#fff' : colors.textMuted,
+                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.3s',
+              }}>
+                {st.icon}
+              </div>
+            </DiagramTooltip>
             {i < FRI_STEPS.length - 1 && (
               <div style={{
                 width: 20,
@@ -175,9 +178,11 @@ export function FRIProtocolDiagram() {
             {s.title}
           </span>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-          {s.description}
-        </div>
+        <DiagramTooltip content={s.description}>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+            {s.description}
+          </div>
+        </DiagramTooltip>
         <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', fontStyle: 'italic' }}>
           {s.detail}
         </div>
@@ -186,36 +191,41 @@ export function FRIProtocolDiagram() {
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
-          { label: `Step ${current + 1}/${FRI_STEPS.length}`, action: step, disabled: current >= FRI_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу FRI-протокола.' },
+          { label: `Step ${current + 1}/${FRI_STEPS.length}`, action: step, disabled: current >= FRI_STEPS.length - 1, tooltip: 'Перейти к следующему шагу FRI-протокола. Каждый шаг уменьшает степень полинома вдвое.' },
+          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать просмотр FRI-протокола с первого шага.' },
         ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={btn.disabled}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
-            }}
-          >
-            {btn.label}
-          </button>
+          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+            <div>
+              <button
+                onClick={btn.action}
+                disabled={btn.disabled}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: btn.disabled ? 'default' : 'pointer',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  opacity: btn.disabled ? 0.5 : 1,
+                }}
+              >
+                {btn.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
-      <DataBox
-        label="Почему FRI?"
-        value="FRI = Fast Reed-Solomon IOP of Proximity. Использует только hash functions (no elliptic curves), поэтому STARKs: (1) не требуют trusted setup, (2) quantum-resistant, (3) прозрачны."
-        variant="info"
-      />
+      <DiagramTooltip content="FRI (Fast Reed-Solomon IOP of Proximity) — основа STARK proof system. Использует только hash-функции вместо эллиптических кривых, что обеспечивает прозрачность (no trusted setup) и квантовую устойчивость.">
+        <DataBox
+          label="Почему FRI?"
+          value="FRI = Fast Reed-Solomon IOP of Proximity. Использует только hash functions (no elliptic curves), поэтому STARKs: (1) не требуют trusted setup, (2) quantum-resistant, (3) прозрачны."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -308,8 +318,6 @@ const DEEP_COMPARISON_ROWS: DeepComparisonRow[] = [
  * Phase 8 = ЧТО отличает. Phase 9 = ПОЧЕМУ отличает (cryptographic basis).
  */
 export function SNARKvsSTARKDeepDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="SNARKs vs STARKs: глубокое сравнение" color="orange">
       <div style={{
@@ -366,81 +374,58 @@ export function SNARKvsSTARKDeepDiagram() {
             </tr>
           </thead>
           <tbody>
-            {DEEP_COMPARISON_ROWS.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                    cursor: 'help',
-                  }}
-                  title={row.tooltip}
-                >
-                  <td style={{
-                    padding: '7px 10px',
-                    color: isHovered ? colors.text : colors.textMuted,
-                    fontWeight: 600,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    {row.category}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: row.snarkAdvantage ? colors.success : colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                    fontWeight: row.snarkAdvantage ? 600 : 400,
-                  }}>
-                    {row.snark}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: row.starkAdvantage ? colors.success : colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                    fontWeight: row.starkAdvantage ? 600 : 400,
-                  }}>
-                    {row.stark}
-                  </td>
-                </tr>
-              );
-            })}
+            {DEEP_COMPARISON_ROWS.map((row, i) => (
+              <tr
+                key={i}
+                style={{
+                  cursor: 'help',
+                }}
+              >
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.textMuted,
+                  fontWeight: 600,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <DiagramTooltip content={row.tooltip}>
+                    <span>{row.category}</span>
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: row.snarkAdvantage ? colors.success : colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                  fontWeight: row.snarkAdvantage ? 600 : 400,
+                }}>
+                  {row.snark}
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: row.starkAdvantage ? colors.success : colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                  fontWeight: row.starkAdvantage ? 600 : 400,
+                }}>
+                  {row.stark}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Expanded tooltip on hover */}
-      {hoveredRow !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginTop: 10,
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(255,255,255,0.03)',
-        }}>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 700, color: '#f59e0b' }}>
-              {DEEP_COMPARISON_ROWS[hoveredRow].category}:
-            </span>{' '}
-            {DEEP_COMPARISON_ROWS[hoveredRow].tooltip}
-          </div>
-        </div>
-      )}
-
       <div style={{ marginTop: 12 }}>
-        <DataBox
-          label="Ключевое различие (WHY)"
-          value="SNARK: маленький proof потому что EC pairings позволяют 'сжать' polynomial check в 3 group elements. STARK: большой proof потому что hash-based commitments (Merkle paths) не сжимаются -- но зато нет trusted setup и есть quantum resistance."
-          variant="info"
-        />
+        <DiagramTooltip content="Фундаментальный trade-off: SNARKs используют EC pairings для сжатия proof до 3 group elements (~128 байт), но требуют trusted setup. STARKs используют hash-based commitments (Merkle paths), которые не сжимаются — но обеспечивают прозрачность и квантовую устойчивость.">
+          <DataBox
+            label="Ключевое различие (WHY)"
+            value="SNARK: маленький proof потому что EC pairings позволяют 'сжать' polynomial check в 3 group elements. STARK: большой proof потому что hash-based commitments (Merkle paths) не сжимаются -- но зато нет trusted setup и есть quantum resistance."
+            variant="info"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );

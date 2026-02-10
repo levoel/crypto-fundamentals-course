@@ -6,8 +6,8 @@
  * - ConstraintOperatorsDiagram: Operator comparison table with exploit example
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -71,8 +71,6 @@ const ANNOTATED_CODE: CodeAnnotation[] = [
  * Static diagram showing Circom syntax elements.
  */
 export function CircomAnatomyDiagram() {
-  const [hoveredLine, setHoveredLine] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Анатомия Circom: template, signals, constraints" color="blue">
       {/* Code block */}
@@ -87,70 +85,64 @@ export function CircomAnatomyDiagram() {
         lineHeight: 1.8,
       }}>
         {ANNOTATED_CODE.map((item, i) => (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredLine(i)}
-            onMouseLeave={() => setHoveredLine(null)}
-            style={{
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: hoveredLine === i ? `${item.color}12` : 'transparent',
-              borderLeft: hoveredLine === i ? `3px solid ${item.color}` : '3px solid transparent',
-              transition: 'all 0.15s',
-              cursor: item.annotation ? 'help' : 'default',
-            }}
-          >
-            <span style={{ color: item.color }}>{item.line}</span>
-          </div>
+          item.annotation ? (
+            <DiagramTooltip key={i} content={item.annotation}>
+              <div
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  borderLeft: `3px solid ${item.color}`,
+                  cursor: 'help',
+                }}
+              >
+                <span style={{ color: item.color }}>{item.line}</span>
+              </div>
+            </DiagramTooltip>
+          ) : (
+            <div
+              key={i}
+              style={{
+                padding: '2px 8px',
+                borderRadius: 4,
+                borderLeft: '3px solid transparent',
+              }}
+            >
+              <span style={{ color: item.color }}>{item.line}</span>
+            </div>
+          )
         ))}
       </div>
-
-      {/* Annotation tooltip */}
-      {hoveredLine !== null && ANNOTATED_CODE[hoveredLine].annotation && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginBottom: 12,
-          borderRadius: 6,
-          border: `1px solid ${ANNOTATED_CODE[hoveredLine].color}30`,
-          background: `${ANNOTATED_CODE[hoveredLine].color}08`,
-        }}>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 700, color: ANNOTATED_CODE[hoveredLine].color, fontFamily: 'monospace' }}>
-              {ANNOTATED_CODE[hoveredLine].line.trim()}
-            </span>
-            <br />
-            {ANNOTATED_CODE[hoveredLine].annotation}
-          </div>
-        </div>
-      )}
 
       {/* Signal types legend */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         {[
-          { label: 'signal input', color: '#10b981', desc: 'Приватный вход (prover)' },
-          { label: 'signal output', color: '#f59e0b', desc: 'Публичный выход (verifier)' },
-          { label: 'signal (intermediate)', color: '#6366f1', desc: 'Промежуточное значение' },
+          { label: 'signal input', color: '#10b981', desc: 'Приватный вход (prover)', tooltip: 'Input signals — приватные входные данные, которые знает только prover. Verifier не видит их значения, но может проверить корректность вычислений через proof.' },
+          { label: 'signal output', color: '#f59e0b', desc: 'Публичный выход (verifier)', tooltip: 'Output signals — публичные значения, видимые verifier. Это результат вычисления, который можно проверить без знания приватных входов.' },
+          { label: 'signal (intermediate)', color: '#6366f1', desc: 'Промежуточное значение', tooltip: 'Промежуточные сигналы хранят результаты частичных вычислений внутри circuit. Они нужны для flattening: разбиения сложных выражений на элементарные R1CS-ограничения.' },
         ].map((s) => (
-          <div key={s.label} style={{
-            ...glassStyle,
-            padding: '6px 10px',
-            borderRadius: 6,
-            border: `1px solid ${s.color}30`,
-            fontSize: 10,
-            fontFamily: 'monospace',
-          }}>
-            <span style={{ color: s.color, fontWeight: 600 }}>{s.label}</span>
-            <span style={{ color: colors.textMuted, marginLeft: 6 }}>{s.desc}</span>
-          </div>
+          <DiagramTooltip key={s.label} content={s.tooltip}>
+            <div style={{
+              ...glassStyle,
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: `1px solid ${s.color}30`,
+              fontSize: 10,
+              fontFamily: 'monospace',
+            }}>
+              <span style={{ color: s.color, fontWeight: 600 }}>{s.label}</span>
+              <span style={{ color: colors.textMuted, marginLeft: 6 }}>{s.desc}</span>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
-      <DataBox
-        label="Template"
-        value="Template -- как class в OOP: описывает signals и constraints. component main = Template() создает конкретный instance. Каждый template может быть параметризован (например, Multiplier(N))."
-        variant="info"
-      />
+      <DiagramTooltip content="Template в Circom — аналог class в ООП. Описывает сигналы (inputs/outputs) и ограничения (constraints). component main = Template() создает конкретный экземпляр для генерации proof.">
+        <DataBox
+          label="Template"
+          value="Template -- как class в OOP: описывает signals и constraints. component main = Template() создает конкретный instance. Каждый template может быть параметризован (например, Multiplier(N))."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -206,8 +198,6 @@ const OPERATORS: OperatorInfo[] = [
  * exploit example showing unsafe <-- without constraint.
  */
 export function ConstraintOperatorsDiagram() {
-  const [hoveredOp, setHoveredOp] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Операторы Circom: <== (safe) vs <-- (dangerous)" color="red">
       {/* Operator table */}
@@ -234,168 +224,148 @@ export function ConstraintOperatorsDiagram() {
             </tr>
           </thead>
           <tbody>
-            {OPERATORS.map((op, i) => {
-              const isHovered = hoveredOp === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredOp(i)}
-                  onMouseLeave={() => setHoveredOp(null)}
-                  style={{
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                    cursor: 'help',
-                  }}
-                >
-                  <td style={{
-                    padding: '8px 10px',
+            {OPERATORS.map((op, i) => (
+              <tr
+                key={i}
+                style={{
+                  cursor: 'help',
+                }}
+              >
+                <td style={{
+                  padding: '8px 10px',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: op.safetyColor,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <DiagramTooltip content={op.explanation}>
+                    <span>{op.operator}</span>
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  color: colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                }}>
+                  {op.does}
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontSize: 10,
                     fontWeight: 700,
-                    fontSize: 14,
                     color: op.safetyColor,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    background: `${op.safetyColor}15`,
+                    border: `1px solid ${op.safetyColor}30`,
                   }}>
-                    {op.operator}
-                  </td>
-                  <td style={{
-                    padding: '8px 10px',
-                    color: colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                  }}>
-                    {op.does}
-                  </td>
-                  <td style={{
-                    padding: '8px 10px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: op.safetyColor,
-                      background: `${op.safetyColor}15`,
-                      border: `1px solid ${op.safetyColor}30`,
-                    }}>
-                      {op.safety}
-                    </span>
-                  </td>
-                  <td style={{
-                    padding: '8px 10px',
-                    color: colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    {op.example}
-                  </td>
-                </tr>
-              );
-            })}
+                    {op.safety}
+                  </span>
+                </td>
+                <td style={{
+                  padding: '8px 10px',
+                  color: colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  {op.example}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Expanded explanation on hover */}
-      {hoveredOp !== null && (
+      {/* EXPLOIT EXAMPLE */}
+      <DiagramTooltip content="Under-constrained circuit — критическая уязвимость в ZK. Без constraint (===) prover может подставить произвольное значение, и verifier примет ложное доказательство. Это нарушает soundness — главное свойство proof system.">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          marginBottom: 14,
-          borderRadius: 6,
-          border: `1px solid ${OPERATORS[hoveredOp].safetyColor}30`,
-          background: `${OPERATORS[hoveredOp].safetyColor}08`,
+          padding: 14,
+          borderRadius: 8,
+          border: '2px solid rgba(239, 68, 68, 0.5)',
+          background: 'rgba(239, 68, 68, 0.05)',
+          marginBottom: 12,
         }}>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 700, color: OPERATORS[hoveredOp].safetyColor }}>
-              {OPERATORS[hoveredOp].operator}
-            </span>{' '}
-            {OPERATORS[hoveredOp].explanation}
-          </div>
-        </div>
-      )}
-
-      {/* EXPLOIT EXAMPLE */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        borderRadius: 8,
-        border: '2px solid rgba(239, 68, 68, 0.5)',
-        background: 'rgba(239, 68, 68, 0.05)',
-        marginBottom: 12,
-      }}>
-        <div style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: '#ef4444',
-          marginBottom: 8,
-          fontFamily: 'monospace',
-        }}>
-          EXPLOIT: circuit без constraint принимает ложные proofs
-        </div>
-
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {/* Vulnerable */}
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{
-              fontSize: 10,
-              color: '#ef4444',
-              fontWeight: 700,
-              marginBottom: 4,
-              fontFamily: 'monospace',
-            }}>
-              VULNERABLE (no constraint):
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: 10,
-              borderRadius: 6,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              lineHeight: 1.6,
-              border: '1px solid rgba(239,68,68,0.2)',
-            }}>
-              <div style={{ color: colors.textMuted }}>{'// BUG: no constraint!'}</div>
-              <div><span style={{ color: '#ef4444' }}>c {'<--'} a * b;</span></div>
-              <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999'}</div>
-              <div style={{ color: colors.textMuted }}>{'// Verifier ACCEPTS!'}</div>
-            </div>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#ef4444',
+            marginBottom: 8,
+            fontFamily: 'monospace',
+          }}>
+            EXPLOIT: circuit без constraint принимает ложные proofs
           </div>
 
-          {/* Correct */}
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{
-              fontSize: 10,
-              color: '#10b981',
-              fontWeight: 700,
-              marginBottom: 4,
-              fontFamily: 'monospace',
-            }}>
-              CORRECT (with constraint):
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {/* Vulnerable */}
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{
+                fontSize: 10,
+                color: '#ef4444',
+                fontWeight: 700,
+                marginBottom: 4,
+                fontFamily: 'monospace',
+              }}>
+                VULNERABLE (no constraint):
+              </div>
+              <div style={{
+                ...glassStyle,
+                padding: 10,
+                borderRadius: 6,
+                fontSize: 11,
+                fontFamily: 'monospace',
+                lineHeight: 1.6,
+                border: '1px solid rgba(239,68,68,0.2)',
+              }}>
+                <div style={{ color: colors.textMuted }}>{'// BUG: no constraint!'}</div>
+                <div><span style={{ color: '#ef4444' }}>c {'<--'} a * b;</span></div>
+                <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999'}</div>
+                <div style={{ color: colors.textMuted }}>{'// Verifier ACCEPTS!'}</div>
+              </div>
             </div>
-            <div style={{
-              ...glassStyle,
-              padding: 10,
-              borderRadius: 6,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              lineHeight: 1.6,
-              border: '1px solid rgba(16,185,129,0.2)',
-            }}>
-              <div style={{ color: colors.textMuted }}>{'// SAFE: assignment + constraint'}</div>
-              <div><span style={{ color: '#10b981' }}>c {'<=='} a * b;</span></div>
-              <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999?'}</div>
-              <div style={{ color: colors.textMuted }}>{'// Verifier REJECTS!'}</div>
+
+            {/* Correct */}
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{
+                fontSize: 10,
+                color: '#10b981',
+                fontWeight: 700,
+                marginBottom: 4,
+                fontFamily: 'monospace',
+              }}>
+                CORRECT (with constraint):
+              </div>
+              <div style={{
+                ...glassStyle,
+                padding: 10,
+                borderRadius: 6,
+                fontSize: 11,
+                fontFamily: 'monospace',
+                lineHeight: 1.6,
+                border: '1px solid rgba(16,185,129,0.2)',
+              }}>
+                <div style={{ color: colors.textMuted }}>{'// SAFE: assignment + constraint'}</div>
+                <div><span style={{ color: '#10b981' }}>c {'<=='} a * b;</span></div>
+                <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999?'}</div>
+                <div style={{ color: colors.textMuted }}>{'// Verifier REJECTS!'}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
-      <DataBox
-        label="Правило #1"
-        value="ВСЕГДА используйте <== (safe). Используйте <-- ТОЛЬКО для non-quadratic expressions (sqrt, division), и НЕМЕДЛЕННО добавляйте === constraint. Каждый <-- без === -- потенциальная уязвимость."
-        variant="warning"
-      />
+      <DiagramTooltip content="Золотое правило Circom: оператор <== объединяет присвоение и constraint в одну безопасную операцию. Оператор <-- без === — потенциальная уязвимость, нарушающая soundness proof system.">
+        <DataBox
+          label="Правило #1"
+          value="ВСЕГДА используйте <== (safe). Используйте <-- ТОЛЬКО для non-quadratic expressions (sqrt, division), и НЕМЕДЛЕННО добавляйте === constraint. Каждый <-- без === -- потенциальная уязвимость."
+          variant="warning"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
