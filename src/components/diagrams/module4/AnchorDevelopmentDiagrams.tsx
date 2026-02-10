@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -46,6 +47,7 @@ interface LifecycleStep {
     owner: string;
   };
   color: string;
+  tooltip: string;
 }
 
 const LIFECYCLE_STEPS: LifecycleStep[] = [
@@ -57,6 +59,7 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
     code: '// PDA = findProgramAddress(\n//   [b"counter", authority],\n//   program_id\n// )',
     state: { exists: false, data: '-', lamports: '0', owner: 'System Program' },
     color: colors.textMuted,
+    tooltip: 'PDA (Program Derived Address) вычисляется детерминированно из seeds и program ID. Аккаунт ещё не существует на блокчейне — это лишь математически выведенный адрес, готовый к инициализации.',
   },
   {
     phase: '1. Init (создание)',
@@ -66,6 +69,7 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
     code: '#[account(\n  init,\n  payer = authority,\n  space = Counter::SPACE,  // 49\n  seeds = [b"counter", authority.key().as_ref()],\n  bump,\n)]',
     state: { exists: true, data: '[disc|00..00] (49 bytes)', lamports: 'rent-exempt min', owner: 'course_counter' },
     color: colors.primary,
+    tooltip: 'Init выполняет 3 операции через CPI в System Program: allocate (выделение space байт), assign (назначение owner = программа), transfer (перевод lamports для rent-exemption). Затем Anchor записывает 8-байтный discriminator в начало data.',
   },
   {
     phase: '2. Use (чтение/запись)',
@@ -75,6 +79,7 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
     code: '#[account(\n  mut,\n  seeds = [b"counter", authority.key().as_ref()],\n  bump = counter.bump,\n  has_one = authority @ CourseError::Unauthorized,\n)]',
     state: { exists: true, data: '[disc|auth|count=N|bump]', lamports: 'rent-exempt min', owner: 'course_counter' },
     color: colors.success,
+    tooltip: 'Use-фаза: Anchor загружает аккаунт, проверяет все constraints (discriminator, owner, seeds, bump, has_one), десериализует данные через Borsh. Handler изменяет поля, после чего Anchor автоматически сериализует обратно.',
   },
   {
     phase: '3. Realloc (опционально)',
@@ -84,6 +89,7 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
     code: '#[account(\n  mut,\n  realloc = Counter::SPACE + extra,\n  realloc::payer = authority,\n  realloc::zero = true,\n)]',
     state: { exists: true, data: '[disc|auth|count|bump|...extra]', lamports: 'new rent-exempt', owner: 'course_counter' },
     color: colors.accent,
+    tooltip: 'Realloc позволяет динамически изменять размер аккаунта. При увеличении payer доплачивает разницу в rent. При уменьшении — получает refund. realloc::zero = true обнуляет новое пространство для безопасности.',
   },
   {
     phase: '4. Close (закрытие)',
@@ -93,8 +99,17 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
     code: '#[account(\n  mut,\n  close = authority,\n  has_one = authority,\n)]',
     state: { exists: false, data: '[zeroed]', lamports: '0 (refunded)', owner: 'System Program' },
     color: '#f43f5e',
+    tooltip: 'Close обнуляет все данные аккаунта (предотвращает revival-атаки), переводит все lamports получателю и сбрасывает owner на System Program. Runtime удалит аккаунт в конце слота, когда баланс станет 0.',
   },
 ];
+
+/** Tooltip for account state grid fields */
+const STATE_FIELD_TOOLTIPS: Record<string, string> = {
+  exists: 'Флаг существования аккаунта на блокчейне. false означает, что по данному адресу нет данных — аккаунт не создан или уже закрыт.',
+  owner: 'Owner определяет, какая программа имеет право изменять данные аккаунта. При init owner назначается на вашу программу. Только owner может записывать данные.',
+  data: 'Содержимое аккаунта: первые 8 байт — discriminator (SHA-256 от имени типа), далее — сериализованные через Borsh поля структуры.',
+  lamports: 'Баланс аккаунта в lamports (1 SOL = 10^9 lamports). Для существования аккаунт должен содержать rent-exempt минимум, зависящий от размера data.',
+};
 
 /**
  * AccountLifecycleDiagram
@@ -115,29 +130,30 @@ export function AccountLifecycleDiagram() {
           const isActive = i === step;
           const isPast = i < step;
           return (
-            <div
-              key={i}
-              onClick={() => setStep(i)}
-              style={{
-                flex: 1,
-                padding: '8px 6px',
-                ...glassStyle,
-                background: isActive ? `${s.color}20` : isPast ? `${s.color}08` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isActive ? s.color : isPast ? s.color + '30' : 'rgba(255,255,255,0.06)'}`,
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? s.color : isPast ? s.color + 'aa' : colors.textMuted,
-              }}>
-                {s.phase}
+            <DiagramTooltip key={i} content={s.tooltip}>
+              <div
+                onClick={() => setStep(i)}
+                style={{
+                  flex: 1,
+                  padding: '8px 6px',
+                  ...glassStyle,
+                  background: isActive ? `${s.color}20` : isPast ? `${s.color}08` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isActive ? s.color : isPast ? s.color + '30' : 'rgba(255,255,255,0.06)'}`,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? s.color : isPast ? s.color + 'aa' : colors.textMuted,
+                }}>
+                  {s.phase}
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -149,23 +165,25 @@ export function AccountLifecycleDiagram() {
 
       {/* Constraint */}
       {current.constraint !== '(нет)' && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: `${current.color}08`,
-          border: `1px solid ${current.color}25`,
-          marginBottom: 10,
-        }}>
-          <pre style={{
-            margin: 0,
-            fontSize: 12,
-            fontFamily: 'monospace',
-            color: current.color,
-            whiteSpace: 'pre-wrap',
+        <DiagramTooltip content={`Anchor-макрос для фазы "${current.phase}". Каждый атрибут (init, mut, seeds, bump, has_one, close) генерирует проверки, которые выполняются ДО вашего handler-кода.`}>
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: `${current.color}08`,
+            border: `1px solid ${current.color}25`,
+            marginBottom: 10,
           }}>
-            {current.code}
-          </pre>
-        </div>
+            <pre style={{
+              margin: 0,
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: current.color,
+              whiteSpace: 'pre-wrap',
+            }}>
+              {current.code}
+            </pre>
+          </div>
+        </DiagramTooltip>
       )}
 
       {/* Description */}
@@ -174,62 +192,76 @@ export function AccountLifecycleDiagram() {
       </div>
 
       {/* Account state panel */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        marginBottom: 14,
-      }}>
-        <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
-          Состояние аккаунта:
+      <DiagramTooltip content="Состояние аккаунта на данном этапе жизненного цикла. Каждое поле (exists, owner, data, lamports) отражает текущее значение на блокчейне после выполнения инструкции.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          marginBottom: 14,
+        }}>
+          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+            Состояние аккаунта:
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {[
+              { label: 'exists', value: current.state.exists ? 'true' : 'false', c: current.state.exists ? colors.success : '#f43f5e' },
+              { label: 'owner', value: current.state.owner, c: colors.accent },
+              { label: 'data', value: current.state.data, c: colors.primary },
+              { label: 'lamports', value: current.state.lamports, c: colors.success },
+            ].map((f) => (
+              <DiagramTooltip key={f.label} content={STATE_FIELD_TOOLTIPS[f.label]}>
+                <div style={{
+                  ...glassStyle,
+                  padding: '6px 8px',
+                  background: 'rgba(0,0,0,0.2)',
+                }}>
+                  <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>{f.label}</div>
+                  <div style={{ fontSize: 11, color: f.c, fontFamily: 'monospace', marginTop: 2 }}>{f.value}</div>
+                </div>
+              </DiagramTooltip>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {[
-            { label: 'exists', value: current.state.exists ? 'true' : 'false', c: current.state.exists ? colors.success : '#f43f5e' },
-            { label: 'owner', value: current.state.owner, c: colors.accent },
-            { label: 'data', value: current.state.data, c: colors.primary },
-            { label: 'lamports', value: current.state.lamports, c: colors.success },
-          ].map((f) => (
-            <div key={f.label} style={{
-              ...glassStyle,
-              padding: '6px 8px',
-              background: 'rgba(0,0,0,0.2)',
-            }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>{f.label}</div>
-              <div style={{ fontSize: 11, color: f.c, fontFamily: 'monospace', marginTop: 2 }}>{f.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={navBtnStyle(step > 0, current.color)}
-        >
-          Назад
-        </button>
+        <DiagramTooltip content="Вернуться к предыдущей фазе жизненного цикла аккаунта.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              style={navBtnStyle(step > 0, current.color)}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
         <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace', alignSelf: 'center' }}>
           {step + 1} / {LIFECYCLE_STEPS.length}
         </span>
-        <button
-          onClick={() => setStep((s) => Math.min(LIFECYCLE_STEPS.length - 1, s + 1))}
-          disabled={step >= LIFECYCLE_STEPS.length - 1}
-          style={navBtnStyle(step < LIFECYCLE_STEPS.length - 1, current.color)}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Перейти к следующей фазе: увидеть, как изменяется состояние аккаунта.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.min(LIFECYCLE_STEPS.length - 1, s + 1))}
+              disabled={step >= LIFECYCLE_STEPS.length - 1}
+              style={navBtnStyle(step < LIFECYCLE_STEPS.length - 1, current.color)}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {step >= LIFECYCLE_STEPS.length - 1 && (
-        <DataBox
-          label="Полный цикл"
-          value="init (создать + выделить + назначить owner) -> use (читать/писать) -> close (обнулить + вернуть lamports)"
-          variant="highlight"
-        />
+        <DiagramTooltip content="Полный цикл жизни аккаунта Solana: от математического PDA-адреса через инициализацию, использование и опциональный realloc до закрытия с возвратом lamports.">
+          <DataBox
+            label="Полный цикл"
+            value="init (создать + выделить + назначить owner) -> use (читать/писать) -> close (обнулить + вернуть lamports)"
+            variant="highlight"
+          />
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
@@ -246,6 +278,7 @@ interface ValidationStep {
   pass: string;
   fail: string;
   color: string;
+  tooltip: string;
 }
 
 const VALIDATION_STEPS: ValidationStep[] = [
@@ -256,6 +289,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Тип аккаунта подтвержден -- это действительно Counter',
     fail: 'AccountDiscriminatorMismatch -- чужой тип аккаунта',
     color: colors.primary,
+    tooltip: 'Discriminator — 8-байтный хеш имени типа аккаунта. Anchor записывает его при init и проверяет при каждом доступе. Предотвращает использование аккаунта неправильного типа (type confusion attack).',
   },
   {
     order: 2,
@@ -264,6 +298,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Аккаунт принадлежит нашей программе',
     fail: 'AccountOwnedByWrongProgram -- аккаунт от другой программы',
     color: colors.accent,
+    tooltip: 'Owner-проверка гарантирует, что аккаунт был создан и управляется именно вашей программой. Без этой проверки злоумышленник может подставить аккаунт от другой программы с поддельными данными.',
   },
   {
     order: 3,
@@ -272,6 +307,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'PDA-адрес совпадает с ожидаемым',
     fail: 'ConstraintSeeds -- неверный PDA (другие seeds или bump)',
     color: colors.success,
+    tooltip: 'Seeds + Bump верифицирует, что переданный аккаунт — это именно тот PDA, который ожидается. PDA вычисляется детерминированно, поэтому подмена невозможна без знания правильных seeds.',
   },
   {
     order: 4,
@@ -280,6 +316,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Транзакция подписана authority',
     fail: 'MissingSigner -- аккаунт не подписал транзакцию',
     color: '#e879f9',
+    tooltip: 'Signer-проверка подтверждает, что authority действительно подписал транзакцию своим приватным ключом. Без этой проверки любой мог бы вызвать инструкцию от чужого имени.',
   },
   {
     order: 5,
@@ -288,6 +325,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Аккаунт помечен как writable в транзакции',
     fail: 'ConstraintMut -- аккаунт не помечен как writable',
     color: '#f59e0b',
+    tooltip: 'Mut-проверка гарантирует, что аккаунт помечен как writable в транзакции. Solana runtime использует этот флаг для оптимистичной параллелизации: read-only аккаунты обрабатываются параллельно.',
   },
   {
     order: 6,
@@ -296,6 +334,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Поле authority в аккаунте совпадает с переданным signer',
     fail: 'CourseError::Unauthorized -- неверный authority',
     color: '#f43f5e',
+    tooltip: 'has_one проверяет, что поле внутри данных аккаунта (например, authority) совпадает с переданным аккаунтом. Это связывает аккаунт с его владельцем и предотвращает несанкционированный доступ.',
   },
   {
     order: 7,
@@ -304,6 +343,7 @@ const VALIDATION_STEPS: ValidationStep[] = [
     pass: 'Данные успешно десериализованы в Counter { authority, count, bump }',
     fail: 'AccountDidNotDeserialize -- поврежденные данные',
     color: colors.primary,
+    tooltip: 'Десериализация через Borsh преобразует сырые байты (после 8-байтного discriminator) в структуру Counter. Если данные повреждены или формат не совпадает, десериализация завершится ошибкой.',
   },
 ];
 
@@ -326,18 +366,19 @@ export function ConstraintValidationDiagram() {
           const isActive = i === step;
           const isPast = i < step;
           return (
-            <div
-              key={i}
-              onClick={() => setStep(i)}
-              style={{
-                flex: 1,
-                height: 6,
-                borderRadius: 3,
-                background: isActive ? s.color : isPast ? s.color + '60' : 'rgba(255,255,255,0.08)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            />
+            <DiagramTooltip key={i} content={s.tooltip}>
+              <div
+                onClick={() => setStep(i)}
+                style={{
+                  flex: 1,
+                  height: 6,
+                  borderRadius: 3,
+                  background: isActive ? s.color : isPast ? s.color + '60' : 'rgba(255,255,255,0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              />
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -366,85 +407,101 @@ export function ConstraintValidationDiagram() {
       </div>
 
       {/* Check expression */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        background: `${current.color}08`,
-        border: `1px solid ${current.color}25`,
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-          Проверка:
-        </div>
-        <pre style={{
-          margin: 0,
-          fontSize: 12,
-          fontFamily: 'monospace',
-          color: current.color,
-          whiteSpace: 'pre-wrap',
-          lineHeight: 1.5,
+      <DiagramTooltip content={`Проверка #${current.order}: ${current.name}. Anchor генерирует этот код из макроса #[account(...)]. Если проверка не пройдена, транзакция автоматически откатывается.`}>
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          background: `${current.color}08`,
+          border: `1px solid ${current.color}25`,
+          marginBottom: 12,
         }}>
-          {current.check}
-        </pre>
-      </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            Проверка:
+          </div>
+          <pre style={{
+            margin: 0,
+            fontSize: 12,
+            fontFamily: 'monospace',
+            color: current.color,
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}>
+            {current.check}
+          </pre>
+        </div>
+      </DiagramTooltip>
 
       {/* Pass / Fail outcomes */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: `${colors.success}08`,
-          border: `1px solid ${colors.success}20`,
-        }}>
-          <div style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
-            PASS
+        <DiagramTooltip content="Успешная проверка: constraint выполнен, данные аккаунта корректны. Anchor переходит к следующей проверке или вызывает handler.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: `${colors.success}08`,
+            border: `1px solid ${colors.success}20`,
+          }}>
+            <div style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
+              PASS
+            </div>
+            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+              {current.pass}
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            {current.pass}
+        </DiagramTooltip>
+        <DiagramTooltip content="Неудачная проверка: constraint нарушен. Anchor возвращает ошибку, транзакция откатывается (revert), никакие данные не изменяются. Это защита от уязвимостей.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: '#f43f5e08',
+            border: '1px solid #f43f5e20',
+          }}>
+            <div style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
+              FAIL
+            </div>
+            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+              {current.fail}
+            </div>
           </div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: '#f43f5e08',
-          border: '1px solid #f43f5e20',
-        }}>
-          <div style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
-            FAIL
-          </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            {current.fail}
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={navBtnStyle(step > 0, current.color)}
-        >
-          Назад
-        </button>
+        <DiagramTooltip content="Вернуться к предыдущей проверке в цепочке валидации constraints.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              style={navBtnStyle(step > 0, current.color)}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
         <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace', alignSelf: 'center' }}>
           {step + 1} / {VALIDATION_STEPS.length}
         </span>
-        <button
-          onClick={() => setStep((s) => Math.min(VALIDATION_STEPS.length - 1, s + 1))}
-          disabled={step >= VALIDATION_STEPS.length - 1}
-          style={navBtnStyle(step < VALIDATION_STEPS.length - 1, current.color)}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Перейти к следующей проверке: увидеть, какой constraint Anchor проверяет далее.">
+          <div>
+            <button
+              onClick={() => setStep((s) => Math.min(VALIDATION_STEPS.length - 1, s + 1))}
+              disabled={step >= VALIDATION_STEPS.length - 1}
+              style={navBtnStyle(step < VALIDATION_STEPS.length - 1, current.color)}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {step >= VALIDATION_STEPS.length - 1 && (
-        <DataBox
-          label="Все 7 проверок пройдены"
-          value="Только после прохождения ВСЕХ constraint-проверок Anchor вызывает ваш handler. Любой сбой = автоматический revert."
-          variant="highlight"
-        />
+        <DiagramTooltip content="Все 7 constraint-проверок выполняются автоматически до вызова вашего handler. Порядок проверок оптимизирован: самые быстрые (discriminator) — первые, самые тяжёлые (десериализация) — последние.">
+          <DataBox
+            label="Все 7 проверок пройдены"
+            value="Только после прохождения ВСЕХ constraint-проверок Anchor вызывает ваш handler. Любой сбой = автоматический revert."
+            variant="highlight"
+          />
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
