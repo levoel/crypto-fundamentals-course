@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -23,6 +24,7 @@ interface CCStep {
   chain: 'source' | 'relay' | 'destination';
   color: string;
   icon: string;
+  tooltipRu: string;
 }
 
 const CC_STEPS: CCStep[] = [
@@ -33,6 +35,7 @@ const CC_STEPS: CCStep[] = [
     chain: 'source',
     color: '#3b82f6',
     icon: 'SRC',
+    tooltipRu: 'Source TX -- начало cross-chain операции. Пользователь вызывает bridge контракт на source chain. Контракт записывает message в event log. Формат: (destination chain ID, payload bytes, sender address).',
   },
   {
     title: 'RELAY',
@@ -41,6 +44,7 @@ const CC_STEPS: CCStep[] = [
     chain: 'relay',
     color: '#f59e0b',
     icon: 'RLY',
+    tooltipRu: 'Relay -- передача сообщения между чейнами. Relayer мониторит события source chain и создает proof (Merkle proof блока, подписи валидаторов, или ZK proof). Relayer НЕ может подделать message -- proof криптографически привязан к source chain.',
   },
   {
     title: 'VERIFICATION',
@@ -49,6 +53,7 @@ const CC_STEPS: CCStep[] = [
     chain: 'destination',
     color: '#8b5cf6',
     icon: 'VRF',
+    tooltipRu: 'Verification -- критический шаг безопасности. Destination контракт проверяет proof: валидность Merkle path, подписи валидаторов, или ZK proof. Если proof невалиден, транзакция отклоняется. Это единственная защита от поддельных сообщений.',
   },
   {
     title: 'EXECUTION',
@@ -57,6 +62,7 @@ const CC_STEPS: CCStep[] = [
     chain: 'destination',
     color: '#10b981',
     icon: 'EXE',
+    tooltipRu: 'Execution -- выполнение payload на destination chain. Примеры: mint wrapped tokens, обновление состояния протокола, вызов целевой функции. Execution атомарен -- либо весь payload выполняется, либо ничего.',
   },
   {
     title: 'CONFIRMATION',
@@ -65,6 +71,7 @@ const CC_STEPS: CCStep[] = [
     chain: 'source',
     color: '#06b6d4',
     icon: 'OK',
+    tooltipRu: 'Confirmation -- опциональное подтверждение на source chain. Некоторые протоколы (LayerZero, Chainlink CCIP) отправляют confirmation обратно на source. Это позволяет source контракту обновить состояние (например, разблокировать locked tokens).',
   },
 ];
 
@@ -116,9 +123,11 @@ export function CrossChainMessagingDiagram() {
           background: s.chain === 'source' ? 'rgba(59,130,246,0.06)' : 'transparent',
           transition: 'all 0.3s',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
-            Source Chain
-          </div>
+          <DiagramTooltip content="Source Chain -- блокчейн-отправитель. Здесь пользователь инициирует cross-chain операцию. Bridge контракт записывает message в event log и (опционально) блокирует активы.">
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6, display: 'inline-block' }}>
+              Source Chain
+            </span>
+          </DiagramTooltip>
           {CC_STEPS.filter((_, i) => i <= current).map((st, i) => (
             st.chain === 'source' && (
               <div key={i} style={{
@@ -144,14 +153,16 @@ export function CrossChainMessagingDiagram() {
           justifyContent: 'center',
           gap: 4,
         }}>
-          <div style={{
-            fontSize: 9,
-            color: '#f59e0b',
-            fontFamily: 'monospace',
-            fontWeight: 600,
-          }}>
-            Relayer
-          </div>
+          <DiagramTooltip content="Relayer -- off-chain сервис, передающий сообщения между чейнами. Может быть централизованным (один оператор), децентрализованным (сеть нод), или permissionless (любой может стать relayer).">
+            <span style={{
+              fontSize: 9,
+              color: '#f59e0b',
+              fontFamily: 'monospace',
+              fontWeight: 600,
+            }}>
+              Relayer
+            </span>
+          </DiagramTooltip>
           <div style={{
             width: 2,
             height: 40,
@@ -176,9 +187,11 @@ export function CrossChainMessagingDiagram() {
           background: s.chain === 'destination' ? 'rgba(139,92,246,0.06)' : 'transparent',
           transition: 'all 0.3s',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', fontFamily: 'monospace', marginBottom: 6 }}>
-            Destination Chain
-          </div>
+          <DiagramTooltip content="Destination Chain -- блокчейн-получатель. Здесь выполняется payload сообщения после верификации proof. Receiving контракт проверяет доказательство и выполняет целевое действие.">
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', fontFamily: 'monospace', marginBottom: 6, display: 'inline-block' }}>
+              Destination Chain
+            </span>
+          </DiagramTooltip>
           {CC_STEPS.filter((_, i) => i <= current).map((st, i) => (
             st.chain === 'destination' && (
               <div key={i} style={{
@@ -207,25 +220,29 @@ export function CrossChainMessagingDiagram() {
         borderRadius: 8,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
-          }}>
-            {s.label}
-          </span>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: CHAIN_COLORS[s.chain],
-            fontWeight: 600,
-          }}>
-            [{s.chain}]
-          </span>
+          <DiagramTooltip content={s.tooltipRu}>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              color: s.color,
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: `${s.color}15`,
+              border: `1px solid ${s.color}30`,
+            }}>
+              {s.label}
+            </span>
+          </DiagramTooltip>
+          <DiagramTooltip content={`Текущий шаг выполняется на ${s.chain === 'source' ? 'source chain (отправитель)' : s.chain === 'relay' ? 'relay layer (передача)' : 'destination chain (получатель)'}. ${s.chain === 'relay' ? 'Relayer работает off-chain.' : 'Транзакция записывается в блокчейн.'}`}>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              color: CHAIN_COLORS[s.chain],
+              fontWeight: 600,
+            }}>
+              [{s.chain}]
+            </span>
+          </DiagramTooltip>
           <span style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>
             {s.title}
           </span>
@@ -242,24 +259,25 @@ export function CrossChainMessagingDiagram() {
           { label: `Step ${current + 1}/${CC_STEPS.length}`, action: step, disabled: current >= CC_STEPS.length - 1 },
           { label: 'Reset', action: reset, disabled: history.length <= 1 },
         ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={btn.disabled}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
-            }}
-          >
-            {btn.label}
-          </button>
+          <div key={btn.label}>
+            <button
+              onClick={btn.action}
+              disabled={btn.disabled}
+              style={{
+                ...glassStyle,
+                padding: '6px 14px',
+                cursor: btn.disabled ? 'default' : 'pointer',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 6,
+                opacity: btn.disabled ? 0.5 : 1,
+              }}
+            >
+              {btn.label}
+            </button>
+          </div>
         ))}
       </div>
 
@@ -283,6 +301,7 @@ interface TransferModel {
   examples: string;
   risk: string;
   advantage: string;
+  tooltipRu: string;
 }
 
 const TRANSFER_MODELS: TransferModel[] = [
@@ -293,6 +312,7 @@ const TRANSFER_MODELS: TransferModel[] = [
     examples: 'Wrapped ETH, Wrapped BTC',
     risk: 'Bridge контракт хранит ВСЕ locked assets (single point of failure)',
     advantage: 'Универсальный, работает для любого токена',
+    tooltipRu: 'Lock-and-Mint -- самая распространенная модель. Оригинальный токен заблокирован в bridge контракте на source chain, wrapped версия создается на destination. Главный риск: bridge контракт -- honeypot для хакеров (Ronin bridge hack: $625M, Wormhole: $320M).',
   },
   {
     name: 'Burn-and-Mint',
@@ -301,6 +321,7 @@ const TRANSFER_MODELS: TransferModel[] = [
     examples: 'USDC (native на обоих chains via Circle CCTP)',
     risk: 'Минимальный -- нет locked assets',
     advantage: 'Нет liquidity risk. Токен нативный на обоих chains.',
+    tooltipRu: 'Burn-and-Mint -- идеальная модель: токен сжигается на source и создается на destination. Нет wrapped tokens, нет locked assets. Пример: USDC через CCTP (Circle). Ограничение: требует контроля над выпуском токена (только issuer может реализовать).',
   },
   {
     name: 'Liquidity Pool',
@@ -309,6 +330,7 @@ const TRANSFER_MODELS: TransferModel[] = [
     examples: 'Across, Stargate',
     risk: 'Ограничен ликвидностью в пуле, комиссии LP',
     advantage: 'Быстро (не ждем L1 finality), без wrapped tokens.',
+    tooltipRu: 'Liquidity Pool -- модель на основе пулов ликвидности. LP предоставляют ликвидность на обоих chains. Пользователь депонирует на source, LP выдает на destination. Быстро (~минуты), но ограничено ликвидностью и требует incentives для LP.',
   },
 ];
 
@@ -316,10 +338,9 @@ const TRANSFER_MODELS: TransferModel[] = [
  * AssetTransferModelsDiagram
  *
  * 3-column comparison of asset transfer models with risk profile arrow.
+ * hoveredModel migrated to DiagramTooltip on model cards.
  */
 export function AssetTransferModelsDiagram() {
-  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
-
   return (
     <DiagramContainer title="Модели передачи активов" color="orange">
       <div style={{
@@ -328,20 +349,16 @@ export function AssetTransferModelsDiagram() {
         gap: 8,
         marginBottom: 14,
       }}>
-        {TRANSFER_MODELS.map((model) => {
-          const isHovered = hoveredModel === model.name;
-          return (
+        {TRANSFER_MODELS.map((model) => (
+          <DiagramTooltip key={model.name} content={model.tooltipRu}>
             <div
-              key={model.name}
-              onMouseEnter={() => setHoveredModel(model.name)}
-              onMouseLeave={() => setHoveredModel(null)}
               style={{
                 ...glassStyle,
                 padding: 14,
                 borderRadius: 6,
                 cursor: 'pointer',
-                background: isHovered ? `${model.color}10` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isHovered ? `${model.color}40` : 'rgba(255,255,255,0.08)'}`,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 transition: 'all 0.2s',
               }}
             >
@@ -371,28 +388,27 @@ export function AssetTransferModelsDiagram() {
                 Examples: {model.examples}
               </div>
 
-              {isHovered && (
-                <div style={{ marginTop: 8 }}>
-                  <div style={{
-                    fontSize: 10,
-                    color: '#f43f5e',
-                    fontFamily: 'monospace',
-                    marginBottom: 4,
-                  }}>
-                    Risk: {model.risk}
-                  </div>
-                  <div style={{
-                    fontSize: 10,
-                    color: colors.success,
-                    fontFamily: 'monospace',
-                  }}>
-                    Advantage: {model.advantage}
-                  </div>
+              {/* Always-visible risk/advantage (replaces hover) */}
+              <div style={{ marginTop: 8 }}>
+                <div style={{
+                  fontSize: 10,
+                  color: '#f43f5e',
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}>
+                  Risk: {model.risk}
                 </div>
-              )}
+                <div style={{
+                  fontSize: 10,
+                  color: colors.success,
+                  fontFamily: 'monospace',
+                }}>
+                  Advantage: {model.advantage}
+                </div>
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* Risk profile arrow */}
@@ -402,9 +418,11 @@ export function AssetTransferModelsDiagram() {
         gap: 8,
         marginBottom: 14,
       }}>
-        <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 50 }}>
-          Risk:
-        </span>
+        <DiagramTooltip content="Шкала риска отражает объем locked assets. Lock-and-Mint -- максимальный риск (bridge контракт = honeypot). Burn-and-Mint -- минимальный (нет locked assets).">
+          <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 50 }}>
+            Risk:
+          </span>
+        </DiagramTooltip>
         <span style={{ fontSize: 10, color: '#f43f5e', fontWeight: 600 }}>High</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
           <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(244,63,94,0.4)' }} />
@@ -431,6 +449,7 @@ interface TrustModel {
   description: string;
   example: string;
   security: string;
+  tooltipRu: string;
 }
 
 const TRUST_MODELS: TrustModel[] = [
@@ -440,6 +459,7 @@ const TRUST_MODELS: TrustModel[] = [
     description: 'Light client или state proof на destination chain. Trustless верификация. Самый безопасный, но самый дорогой.',
     example: 'IBC (Cosmos), rollup native bridges',
     security: 'Cryptographic -- аналогичен L1 безопасности',
+    tooltipRu: 'Natively Verified -- самый безопасный тип моста. Destination chain запускает light client source chain и верифицирует state proofs. Примеры: IBC (Cosmos -- light client каждого chain), L1/L2 native bridges (rollup bridge через validity/fraud proofs). Стоимость: высокий gas на верификацию.',
   },
   {
     name: 'Externally Verified',
@@ -447,6 +467,7 @@ const TRUST_MODELS: TrustModel[] = [
     description: 'Набор валидаторов/guardians подписывают сообщения. Trust assumption: honest majority валидаторов.',
     example: 'Wormhole (19 guardians), Multichain (MPC)',
     security: 'Зависит от честности T-of-N валидаторов',
+    tooltipRu: 'Externally Verified -- мост с внешними валидаторами. Группа подписантов (guardians/validators) подтверждает сообщения. Trust assumption: T-of-N честных подписантов. Уязвимость: компрометация T ключей = полный контроль над мостом. Wormhole hack ($320M) -- компрометация signature verification.',
   },
   {
     name: 'Optimistic',
@@ -454,6 +475,7 @@ const TRUST_MODELS: TrustModel[] = [
     description: 'Сообщения считаются валидными, пока не оспорены. Challenge period для диспутов.',
     example: 'Across, Connext (older versions)',
     security: 'Требует хотя бы одного честного watcher',
+    tooltipRu: 'Optimistic -- модель с презумпцией валидности. Сообщения принимаются без proof, но challenge period позволяет оспорить. Достаточно одного честного watcher для безопасности (1-of-N assumption). Tradeoff: задержка на challenge period (часы-дни).',
   },
 ];
 
@@ -462,10 +484,9 @@ const TRUST_MODELS: TrustModel[] = [
  *
  * Horizontal trust model spectrum from most to least secure.
  * Security and cost arrows.
+ * hoveredModel migrated to DiagramTooltip on spectrum items.
  */
 export function TrustSpectrumDiagram() {
-  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
-
   return (
     <DiagramContainer title="Модели доверия мостов" color="red">
       {/* Spectrum cards */}
@@ -474,21 +495,17 @@ export function TrustSpectrumDiagram() {
         gap: 4,
         marginBottom: 14,
       }}>
-        {TRUST_MODELS.map((model) => {
-          const isHovered = hoveredModel === model.name;
-          return (
+        {TRUST_MODELS.map((model) => (
+          <DiagramTooltip key={model.name} content={model.tooltipRu}>
             <div
-              key={model.name}
-              onMouseEnter={() => setHoveredModel(model.name)}
-              onMouseLeave={() => setHoveredModel(null)}
               style={{
                 flex: 1,
                 ...glassStyle,
                 padding: 14,
                 borderRadius: 6,
                 cursor: 'pointer',
-                background: isHovered ? `${model.color}10` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isHovered ? `${model.color}40` : 'rgba(255,255,255,0.08)'}`,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 transition: 'all 0.2s',
               }}
             >
@@ -517,28 +534,27 @@ export function TrustSpectrumDiagram() {
                 Example: {model.example}
               </div>
 
-              {isHovered && (
-                <div style={{
-                  marginTop: 8,
-                  padding: 6,
-                  borderRadius: 4,
-                  background: `${model.color}08`,
-                  border: `1px solid ${model.color}20`,
-                }}>
-                  <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
-                    Security: {model.security}
-                  </div>
+              {/* Always-visible security (replaces hover) */}
+              <div style={{
+                marginTop: 8,
+                padding: 6,
+                borderRadius: 4,
+                background: `${model.color}08`,
+                border: `1px solid ${model.color}20`,
+              }}>
+                <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
+                  Security: {model.security}
                 </div>
-              )}
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* Arrows */}
       {[
-        { label: 'Security', left: 'High', right: 'Low', color: '#10b981' },
-        { label: 'Cost', left: 'High', right: 'Low', color: '#f43f5e' },
+        { label: 'Security', left: 'High', right: 'Low', color: '#10b981', tooltipRu: 'Уровень безопасности снижается слева направо. Natively Verified обеспечивает криптографическую безопасность на уровне L1. Optimistic полагается на наличие хотя бы одного честного watcher.' },
+        { label: 'Cost', left: 'High', right: 'Low', color: '#f43f5e', tooltipRu: 'Стоимость верификации снижается слева направо. Native verification требует запуск light client (дорогой gas). Optimistic -- минимальный gas (proof только при dispute).' },
       ].map((arrow) => (
         <div key={arrow.label} style={{
           display: 'flex',
@@ -546,9 +562,11 @@ export function TrustSpectrumDiagram() {
           gap: 8,
           marginBottom: 6,
         }}>
-          <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 60 }}>
-            {arrow.label}:
-          </span>
+          <DiagramTooltip content={arrow.tooltipRu}>
+            <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 60 }}>
+              {arrow.label}:
+            </span>
+          </DiagramTooltip>
           <span style={{ fontSize: 10, color: arrow.color, fontWeight: 600 }}>{arrow.left}</span>
           <div style={{
             flex: 1,
