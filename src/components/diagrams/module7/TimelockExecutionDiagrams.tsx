@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -149,40 +150,50 @@ export function TimelockFlowDiagram() {
         border: `1px solid ${current.stateColor}30`,
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: current.stateColor,
-            fontFamily: 'monospace',
-          }}>
-            {step + 1}. {current.title}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${current.stateColor}15`,
+        <DiagramTooltip content={
+          step === 0 ? 'PROPOSE -- создание предложения через governor.propose(). Любой участник с достаточным voting power (>= proposalThreshold) может создать proposal. Параметры: targets (контракты), values (ETH), calldatas (вызовы функций), description (описание).'
+          : step === 1 ? 'VOTING DELAY -- обязательная пауза перед началом голосования. Дает сообществу время изучить предложение, провести дискуссию и подготовиться к голосованию. Типичное значение: 1 день.'
+          : step === 2 ? 'VOTE -- период активного голосования. Каждый владелец с делегированными голосами (voting power > 0 на момент snapshot) может голосовать For (1), Against (0) или Abstain (2). Голос нельзя изменить после подачи.'
+          : step === 3 ? 'VOTING ENDS -- система автоматически проверяет результат: quorum >= 4% от total supply И For > Against. Если оба условия выполнены -- proposal Succeeded, иначе Defeated.'
+          : step === 4 ? 'QUEUE -- Governor вызывает timelock.schedule() для постановки в очередь исполнения. С этого момента начинается timelock delay -- обязательная задержка безопасности перед исполнением.'
+          : step === 5 ? 'TIMELOCK DELAY -- критический период безопасности. Сообщество видит, какое действие будет исполнено, и может принять меры: вывести средства из протокола, отменить proposal через guardian, или подготовиться к изменениям.'
+          : 'EXECUTE -- финальное исполнение. Любой может вызвать execute() после истечения timelock delay. TimelockController выполняет запланированные on-chain действия (transfer, parameter change, upgrade). Необратимо.'
+        }>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{
+              fontSize: 14,
+              fontWeight: 700,
               color: current.stateColor,
-              border: `1px solid ${current.stateColor}30`,
-            }}>
-              State: {current.state}
-            </span>
-            <span style={{
-              fontSize: 9,
               fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: 'rgba(255,255,255,0.05)',
-              color: colors.textMuted,
-              border: '1px solid rgba(255,255,255,0.1)',
             }}>
-              {current.day}
-            </span>
+              {step + 1}. {current.title}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <span style={{
+                fontSize: 9,
+                fontFamily: 'monospace',
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: `${current.stateColor}15`,
+                color: current.stateColor,
+                border: `1px solid ${current.stateColor}30`,
+              }}>
+                State: {current.state}
+              </span>
+              <span style={{
+                fontSize: 9,
+                fontFamily: 'monospace',
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: 'rgba(255,255,255,0.05)',
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                {current.day}
+              </span>
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Description */}
         <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
@@ -191,30 +202,34 @@ export function TimelockFlowDiagram() {
 
         {/* Role and code */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div style={{
-            ...glassStyle,
-            padding: 10,
-            border: '1px solid rgba(255,255,255,0.06)',
-          }}>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
-              Role:
+          <DiagramTooltip content="Роль определяет, кто выполняет действие на каждом шаге. В TimelockController есть три ключевые роли: Proposer (может ставить в очередь), Executor (может исполнять после задержки), Canceller (может отменять). Разделение ролей -- принцип defense in depth.">
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+                Role:
+              </div>
+              <div style={{ fontSize: 10, color: '#f97316', fontFamily: 'monospace' }}>
+                {current.role}
+              </div>
             </div>
-            <div style={{ fontSize: 10, color: '#f97316', fontFamily: 'monospace' }}>
-              {current.role}
+          </DiagramTooltip>
+          <DiagramTooltip content={`Solidity-код текущего шага: ${current.action}. В тестах Foundry используется vm.warp() для симуляции прохождения времени. В production время проходит естественным образом между блоками.`}>
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+                Code:
+              </div>
+              <div style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
+                {current.codeHint}
+              </div>
             </div>
-          </div>
-          <div style={{
-            ...glassStyle,
-            padding: 10,
-            border: '1px solid rgba(255,255,255,0.06)',
-          }}>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
-              Code:
-            </div>
-            <div style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
-              {current.codeHint}
-            </div>
-          </div>
+          </DiagramTooltip>
         </div>
       </div>
 

@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -181,44 +182,57 @@ export function ProposalStateMachineDiagram() {
 
       {/* Selected state detail */}
       {selectedState !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: `1px solid ${STATES[selectedState].color}30`,
-        }}>
+        <DiagramTooltip content={
+          selectedState === 0 ? 'Pending -- предложение создано, но голосование ещё не началось. votingDelay дает сообществу время изучить предложение перед голосованием. Типичная задержка: 1-2 дня.'
+          : selectedState === 1 ? 'Active -- голосование открыто. Участники могут голосовать For, Against или Abstain. Период голосования (votingPeriod) обычно длится 1 неделю. Голоса взвешены по checkpoint на момент создания proposal.'
+          : selectedState === 2 ? 'Succeeded -- предложение принято. Quorum достигнут (обычно 4% от total supply) и For > Against. Теперь предложение можно поместить в очередь Timelock для исполнения.'
+          : selectedState === 3 ? 'Defeated -- предложение отклонено. Либо quorum не достигнут (недостаточная явка), либо голосов Against >= For. Предложение можно создать заново с изменениями.'
+          : selectedState === 4 ? 'Queued -- предложение в очереди TimelockController. Задержка перед исполнением дает сообществу время отреагировать на потенциально вредоносные предложения (вывести средства, отменить proposal).'
+          : selectedState === 5 ? 'Executed -- предложение исполнено on-chain. Смарт-контракт выполнил все запланированные действия (transfer, parameter change, upgrade). Это финальное и необратимое состояние.'
+          : selectedState === 6 ? 'Canceled -- предложение отменено proposer-ом или guardian-ом. Возможно из любого незавершенного состояния (Pending, Active, Succeeded, Queued). Guardian -- защитный механизм для экстренных случаев.'
+          : 'Expired -- предложение не было исполнено в течение grace period после timelock delay. Обычно grace period составляет 1-7 дней. Необходимо создать новый proposal.'
+        }>
           <div style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: STATES[selectedState].color,
-            fontFamily: 'monospace',
-            marginBottom: 4,
+            ...glassStyle,
+            padding: 12,
+            marginBottom: 12,
+            border: `1px solid ${STATES[selectedState].color}30`,
           }}>
-            {STATES[selectedState].name}
-          </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            {STATES[selectedState].description}
-          </div>
-          {activeTransitions.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-                Transitions:
-              </div>
-              {activeTransitions.map((t, i) => (
-                <div key={i} style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
-                  {STATES[t.from].name} {'->'} {STATES[t.to].name}: {t.condition}
-                </div>
-              ))}
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: STATES[selectedState].color,
+              fontFamily: 'monospace',
+              marginBottom: 4,
+            }}>
+              {STATES[selectedState].name}
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+              {STATES[selectedState].description}
+            </div>
+            {activeTransitions.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                  Transitions:
+                </div>
+                {activeTransitions.map((t, i) => (
+                  <div key={i} style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
+                    {STATES[t.from].name} {'->'} {STATES[t.to].name}: {t.condition}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DiagramTooltip>
       )}
 
-      <DataBox
-        label="Proposal Lifecycle"
-        value="Pending -> Active -> Succeeded/Defeated -> Queued -> Executed. Кликните на состояние для деталей. Canceled возможен из любого незавершенного состояния."
-        variant="highlight"
-      />
+      <DiagramTooltip content="Proposal lifecycle в OpenZeppelin Governor следует строгой конечной машине состояний. Каждый переход имеет условие (время, результат голосования, quorum). Canceled -- особое состояние, доступное из любого незавершенного шага. Это обеспечивает предсказуемость и безопасность governance-процесса.">
+        <DataBox
+          label="Proposal Lifecycle"
+          value="Pending -> Active -> Succeeded/Defeated -> Queued -> Executed. Кликните на состояние для деталей. Canceled возможен из любого незавершенного состояния."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -274,8 +288,6 @@ const ATTACK_VECTORS: AttackVector[] = [
  * Color-coded: red=flash loan, orange=vote buying, yellow=voter apathy.
  */
 export function GovernanceAttacksDiagram() {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Атаки на governance: угрозы и защита" color="red">
       <div style={{
@@ -284,22 +296,19 @@ export function GovernanceAttacksDiagram() {
         gap: 12,
         marginBottom: 12,
       }}>
-        {ATTACK_VECTORS.map((atk, i) => {
-          const isHovered = hoverIdx === i;
-          return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoverIdx(i)}
-              onMouseLeave={() => setHoverIdx(null)}
-              style={{
-                ...glassStyle,
-                padding: 16,
-                cursor: 'default',
-                border: `1px solid ${isHovered ? atk.color : 'rgba(255,255,255,0.08)'}`,
-                background: isHovered ? `${atk.color}10` : 'rgba(255,255,255,0.03)',
-                transition: 'all 0.2s',
-              }}
-            >
+        {ATTACK_VECTORS.map((atk, i) => (
+          <DiagramTooltip
+            key={i}
+            content={`${atk.nameRu} (${atk.example}, потери: ${atk.loss}). Механизм: ${atk.mechanism} Защита: ${atk.defense}`}
+          >
+            <div style={{
+              ...glassStyle,
+              padding: 16,
+              cursor: 'default',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)',
+              transition: 'all 0.2s',
+            }}>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: atk.color, fontFamily: 'monospace' }}>
@@ -318,43 +327,21 @@ export function GovernanceAttacksDiagram() {
                 </span>
               </div>
 
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
                 {atk.example}
               </div>
-
-              {/* Mechanism (visible on hover) */}
-              <div style={{
-                maxHeight: isHovered ? 200 : 50,
-                overflow: 'hidden',
-                transition: 'max-height 0.3s',
-              }}>
-                <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-                  {atk.mechanism}
-                </div>
-                <div style={{
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  background: 'rgba(34,197,94,0.08)',
-                  border: '1px solid rgba(34,197,94,0.2)',
-                }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 4 }}>
-                    Defense:
-                  </div>
-                  <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
-                    {atk.defense}
-                  </div>
-                </div>
-              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
-      <DataBox
-        label="Key Takeaway"
-        value="ERC20Votes checkpoints -- главная защита от flash loan governance. Snapshot voting power фиксируется при создании proposal, а не при голосовании."
-        variant="highlight"
-      />
+      <DiagramTooltip content="ERC20Votes checkpoints -- главная защита от flash loan governance атак. Voting power фиксируется в момент создания proposal (snapshot), а не в момент голосования. Это делает бесполезным заем токенов через flash loan для манипуляции голосованием.">
+        <DataBox
+          label="Key Takeaway"
+          value="ERC20Votes checkpoints -- главная защита от flash loan governance. Snapshot voting power фиксируется при создании proposal, а не при голосовании."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

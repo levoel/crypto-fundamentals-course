@@ -7,6 +7,7 @@
 
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -175,38 +176,70 @@ export function GovernorArchitectureDiagram() {
         </svg>
       </div>
 
-      {/* Optional extensions */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        marginBottom: 12,
-        border: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-          Optional extensions:
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {OPTIONAL_EXTENSIONS.map((ext, i) => (
-            <span key={i} style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: 'rgba(255,255,255,0.05)',
-              color: colors.textMuted,
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}>
-              {ext}
-            </span>
-          ))}
-        </div>
+      {/* Core extension tags (HTML, wrappable with DiagramTooltip) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        <DiagramTooltip content="GovernorCountingSimple реализует подсчет голосов по схеме For/Against/Abstain. Каждый голосующий выбирает одну из трёх опций. Abstain засчитывается для quorum, но не влияет на результат (For vs Against). Это стандартный и наиболее распространенный модуль подсчета.">
+          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace' }}>GovernorCountingSimple</div>
+            <div style={{ fontSize: 9, color: colors.textMuted }}>Vote counting (For/Against/Abstain)</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="GovernorVotes подключает Governor к токену, реализующему интерфейс IVotes (обычно ERC20Votes). Считывает voting power через getVotes() и getPastVotes(). Поддерживает как ERC20Votes, так и ERC721Votes (NFT governance).">
+          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(34,197,94,0.2)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace' }}>GovernorVotes</div>
+            <div style={{ fontSize: 9, color: colors.textMuted }}>Token-based voting power (IVotes)</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="GovernorVotesQuorumFraction задает quorum как процент от total supply. Стандартное значение 4% означает, что минимум 4% всех токенов должны участвовать в голосовании. Quorum пересчитывается автоматически при изменении total supply (mint/burn).">
+          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(168,85,247,0.2)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#a855f7', fontFamily: 'monospace' }}>GovernorVotesQuorumFraction</div>
+            <div style={{ fontSize: 9, color: colors.textMuted }}>Quorum as % of total supply (4%)</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="GovernorTimelockControl направляет исполнение proposal через TimelockController. Все одобренные предложения проходят задержку (обычно 1-2 дня) перед исполнением. Это дает сообществу время отреагировать на потенциально вредоносные предложения.">
+          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(249,115,22,0.2)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#f97316', fontFamily: 'monospace' }}>GovernorTimelockControl</div>
+            <div style={{ fontSize: 9, color: colors.textMuted }}>Execution through TimelockController</div>
+          </div>
+        </DiagramTooltip>
       </div>
 
-      <DataBox
-        label="Modular Architecture"
-        value="Governor base + 4 extensions = полная governance система. GovernorCountingSimple (подсчет), GovernorVotes (токены), GovernorVotesQuorumFraction (кворум), GovernorTimelockControl (исполнение)."
-        variant="highlight"
-      />
+      {/* Optional extensions */}
+      <DiagramTooltip content="Дополнительные модули OpenZeppelin Governor: GovernorSettings позволяет изменять votingDelay/votingPeriod/proposalThreshold через governance. GovernorPreventLateQuorum продлевает голосование если quorum достигнут поздно. GovernorStorage хранит proposal данные on-chain. GovernorProposalGuardian добавляет роль guardian для экстренной отмены.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          marginBottom: 12,
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+            Optional extensions:
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {OPTIONAL_EXTENSIONS.map((ext, i) => (
+              <span key={i} style={{
+                fontSize: 9,
+                fontFamily: 'monospace',
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: 'rgba(255,255,255,0.05)',
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                {ext}
+              </span>
+            ))}
+          </div>
+        </div>
+      </DiagramTooltip>
+
+      <DiagramTooltip content="OpenZeppelin Governor использует модульную архитектуру на основе множественного наследования Solidity. Базовый контракт Governor предоставляет core-функции (propose, castVote, queue, execute), а расширения добавляют специализированную логику. Из-за множественного наследования требуется 6 function overrides (C3 linearization).">
+        <DataBox
+          label="Modular Architecture"
+          value="Governor base + 4 extensions = полная governance система. GovernorCountingSimple (подсчет), GovernorVotes (токены), GovernorVotesQuorumFraction (кворум), GovernorTimelockControl (исполнение)."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
