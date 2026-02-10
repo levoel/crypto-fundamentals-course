@@ -1,0 +1,654 @@
+{
+  "title": "Troubleshooting криптографии и блокчейна",
+  "description": "База знаний типичных ошибок при разработке с криптографией и блокчейном — от ключей и транзакций до смарт-контрактов и ZK. Используйте фильтры или Cmd+K для поиска.",
+  "filters": {
+    "primary": {
+      "label": "Фильтр по модулю",
+      "field": "module",
+      "options": [
+        { "id": "crypto", "label": "Криптография", "icon": "lock", "color": "purple" },
+        { "id": "bitcoin", "label": "Bitcoin", "icon": "cube", "color": "orange" },
+        { "id": "ethereum", "label": "Ethereum", "icon": "code", "color": "blue" },
+        { "id": "solana", "label": "Solana", "icon": "lightning", "color": "green" },
+        { "id": "defi", "label": "DeFi", "icon": "rocket", "color": "teal" },
+        { "id": "security", "label": "Безопасность", "icon": "shield", "color": "red" },
+        { "id": "zk", "label": "Zero-Knowledge", "icon": "target", "color": "indigo" },
+        { "id": "common", "label": "Общие", "icon": "gear", "color": "gray" }
+      ]
+    },
+    "secondary": {
+      "label": "Фильтр по категории",
+      "field": "category",
+      "options": [
+        { "id": "keys-wallets", "label": "Ключи и кошельки", "icon": "lock", "color": "purple" },
+        { "id": "transactions", "label": "Транзакции", "icon": "lightning", "color": "amber" },
+        { "id": "smart-contracts", "label": "Смарт-контракты", "icon": "code", "color": "blue" },
+        { "id": "installation", "label": "Установка и настройка", "icon": "wrench", "color": "gray" },
+        { "id": "docker", "label": "Docker и окружение", "icon": "cube", "color": "cyan" },
+        { "id": "testing", "label": "Тестирование", "icon": "check", "color": "green" },
+        { "id": "circuits", "label": "ZK-схемы", "icon": "target", "color": "indigo" }
+      ]
+    }
+  },
+  "entries": [
+    {
+      "errorMessage": "ValueError: Ciphertext length must equal key size",
+      "module": "crypto",
+      "category": "keys-wallets",
+      "symptoms": [
+        "RSA шифрование падает с ValueError при попытке зашифровать данные",
+        "Размер открытого текста превышает размер ключа RSA",
+        "Ошибка возникает при прямом шифровании файлов или длинных строк через RSA"
+      ],
+      "cause": "RSA может шифровать только блоки данных размером не больше длины ключа минус размер padding. Для RSA-2048 это максимум 245 байт (OAEP) или 214 байт (PKCS1v15). Прямое шифрование файлов или длинных строк через RSA невозможно — используйте гибридное шифрование (AES + RSA).",
+      "solution": [
+        "Проверьте размер данных: `len(plaintext)` должен быть меньше `key_size_bytes - padding_overhead`",
+        "Для RSA-2048 с OAEP: максимум 190 байт (с SHA-256 hash), для PKCS1v15: 245 байт",
+        "Используйте гибридное шифрование: сгенерируйте случайный AES-ключ, зашифруйте данные AES, затем зашифруйте AES-ключ через RSA",
+        "Пример: `aes_key = os.urandom(32)` -> шифруем данные AES-GCM -> шифруем `aes_key` через RSA"
+      ],
+      "relatedLessons": [
+        { "title": "RSA", "slug": "02-crypto-foundations/08-rsa" },
+        { "title": "Симметричное шифрование (AES)", "slug": "02-crypto-foundations/06-symmetric-aes" }
+      ]
+    },
+    {
+      "errorMessage": "openssl: error:0607507A digital envelope routines EVP_DecryptFinal_ex wrong final block length",
+      "module": "crypto",
+      "category": "keys-wallets",
+      "symptoms": [
+        "Расшифровка AES падает с ошибкой wrong final block length",
+        "Зашифрованные данные повреждены или обрезаны",
+        "Несовпадение режима шифрования при шифровании и расшифровке"
+      ],
+      "cause": "Ошибка padding при AES в режиме CBC/ECB. Типичные причины: неправильный ключ, неправильный IV, повреждённые данные, несовпадение режима (зашифровано в CBC, расшифровывается в ECB), или данные не выровнены по размеру блока (16 байт).",
+      "solution": [
+        "Убедитесь, что используете тот же ключ и IV для расшифровки: ключ и IV должны быть идентичны тем, что были при шифровании",
+        "Проверьте режим шифрования: `AES-256-CBC` при шифровании = `AES-256-CBC` при расшифровке",
+        "Убедитесь, что данные не повреждены при передаче (base64 encode/decode корректен)",
+        "Используйте AES-GCM вместо CBC — он автоматически проверяет целостность и не требует ручного padding"
+      ],
+      "relatedLessons": [
+        { "title": "Симметричное шифрование (AES)", "slug": "02-crypto-foundations/06-symmetric-aes" },
+        { "title": "Режимы блочного шифрования", "slug": "02-crypto-foundations/07-block-cipher-modes" }
+      ]
+    },
+    {
+      "errorMessage": "ValueError: Invalid private key (secp256k1: scalar out of range)",
+      "module": "crypto",
+      "category": "keys-wallets",
+      "symptoms": [
+        "Генерация или импорт приватного ключа ECDSA падает с ошибкой",
+        "Приватный ключ = 0 или >= порядка кривой n",
+        "Ключ выглядит валидным (32 байта), но отклоняется библиотекой"
+      ],
+      "cause": "Приватный ключ secp256k1 должен быть целым числом в диапазоне [1, n-1], где n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141. Значение 0 или >= n недопустимо. Это может произойти при ручной генерации ключей без проверки диапазона.",
+      "solution": [
+        "Используйте криптографически безопасный генератор: `from ecdsa import SigningKey, SECP256k1; sk = SigningKey.generate(curve=SECP256k1)`",
+        "При ручном создании проверяйте диапазон: `1 <= private_key_int < curve_order`",
+        "Для ethers.js: `const wallet = ethers.Wallet.createRandom()` вместо ручного ввода",
+        "Никогда не используйте слабые источники энтропии (`random.randint`, `Math.random()`) для генерации ключей"
+      ],
+      "relatedLessons": [
+        { "title": "ECDSA", "slug": "02-crypto-foundations/11-ecdsa" },
+        { "title": "Эллиптические кривые", "slug": "02-crypto-foundations/09-elliptic-curves" },
+        { "title": "secp256k1 и Ed25519", "slug": "02-crypto-foundations/10-secp256k1-ed25519" }
+      ]
+    },
+    {
+      "errorMessage": "TypeError: Unicode-objects must be encoded before hashing (hashlib)",
+      "module": "crypto",
+      "category": "installation",
+      "symptoms": [
+        "Python `hashlib.sha256()` падает при передаче строки вместо bytes",
+        "Ошибка TypeError: Unicode-objects must be encoded before hashing",
+        "Хеш-функция отказывается принимать текстовые данные"
+      ],
+      "cause": "Хеш-функции в Python работают только с байтами (bytes), а не со строками (str). Строку нужно предварительно закодировать в байты через `.encode()`. Это частая ошибка при первом знакомстве с криптографией в Python.",
+      "solution": [
+        "Используйте `.encode()`: `hashlib.sha256('hello'.encode('utf-8')).hexdigest()`",
+        "Или передавайте bytes литерал: `hashlib.sha256(b'hello').hexdigest()`",
+        "Для бинарных данных (файлы, ключи) используйте `rb` режим чтения: `open('file', 'rb').read()`",
+        "Помните: один и тот же текст в разных кодировках даёт разные хеши (UTF-8 vs Latin-1)"
+      ],
+      "relatedLessons": [
+        { "title": "Хеш-функции", "slug": "02-crypto-foundations/03-hash-functions" },
+        { "title": "SHA-256 визуализация", "slug": "02-crypto-foundations/04-sha256-visualization" }
+      ]
+    },
+    {
+      "errorCode": "-28",
+      "errorMessage": "error code: -28, message: Loading block index...",
+      "module": "bitcoin",
+      "category": "installation",
+      "symptoms": [
+        "Bitcoin Core (bitcoind) не отвечает на RPC-запросы",
+        "Команды bitcoin-cli возвращают ошибку -28",
+        "Нода запущена, но ещё не готова к работе"
+      ],
+      "cause": "Bitcoin Core загружает и проверяет блокчейн при запуске. Этот процесс может занять от нескольких минут (pruned node) до нескольких дней (full node, первая синхронизация). Ошибка -28 означает, что нода ещё не завершила инициализацию.",
+      "solution": [
+        "Дождитесь завершения синхронизации: `bitcoin-cli getblockchaininfo` покажет прогресс в поле `verificationprogress`",
+        "Для ускорения используйте pruned режим: `prune=550` в bitcoin.conf",
+        "Для лабораторных работ используйте regtest: `bitcoind -regtest` — моментальный запуск без синхронизации",
+        "Проверьте прогресс: `bitcoin-cli -getinfo` должен показать `blocks` и `headers`"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Bitcoin", "slug": "03-bitcoin/01-bitcoin-architecture" },
+        { "title": "Структура блока", "slug": "03-bitcoin/03-block-structure" }
+      ]
+    },
+    {
+      "errorCode": "-6",
+      "errorMessage": "error code: -6, message: Insufficient funds",
+      "module": "bitcoin",
+      "category": "transactions",
+      "symptoms": [
+        "Создание Bitcoin-транзакции падает с ошибкой insufficient funds",
+        "Баланс кошелька показывает средства, но отправка не работает",
+        "UTXO недостаточны для суммы + комиссия"
+      ],
+      "cause": "В модели UTXO баланс — это сумма неизрасходованных выходов. Ошибка возникает когда сумма доступных UTXO меньше суммы отправки + комиссия (fee). Также возможно: UTXO ещё не подтверждены (0 confirmations) или заблокированы другой транзакцией.",
+      "solution": [
+        "Проверьте доступные UTXO: `bitcoin-cli listunspent`",
+        "Учтите комиссию: сумма входов >= сумма выходов + fee",
+        "Включите неподтверждённые UTXO: `bitcoin-cli listunspent 0` (минимум 0 подтверждений)",
+        "В regtest сгенерируйте блоки для подтверждения: `bitcoin-cli -regtest generatetoaddress 1 <address>`",
+        "Используйте `fundrawtransaction` для автоматического выбора UTXO и расчёта change"
+      ],
+      "relatedLessons": [
+        { "title": "UTXO модель", "slug": "03-bitcoin/02-utxo-model" },
+        { "title": "Типы транзакций", "slug": "03-bitcoin/05-transaction-types" }
+      ]
+    },
+    {
+      "errorMessage": "Non-mandatory-script-verify-flag (Script evaluated without error but finished with false/empty top stack element)",
+      "module": "bitcoin",
+      "category": "transactions",
+      "symptoms": [
+        "Bitcoin транзакция отклоняется при broadcast",
+        "Скрипт валидации возвращает false",
+        "P2PKH или P2SH скрипт не проходит верификацию"
+      ],
+      "cause": "ScriptSig (unlocking script) не удовлетворяет условиям ScriptPubKey (locking script). Типичные причины: неправильная подпись (подписан другой ключ или другие данные), неправильный порядок элементов в стеке, или попытка потратить output с неправильным ключом.",
+      "solution": [
+        "Проверьте, что подпись соответствует правильному приватному ключу для данного P2PKH адреса",
+        "Убедитесь, что sighash type совпадает: `SIGHASH_ALL` (0x01) — самый частый",
+        "Для P2SH мультисиг: проверьте порядок подписей — они должны идти в том же порядке, что и публичные ключи",
+        "Используйте `bitcoin-cli decoderawtransaction` для анализа структуры транзакции",
+        "Для отладки: `bitcoin-cli testmempoolaccept '[\"hex\"]'` покажет причину отклонения"
+      ],
+      "relatedLessons": [
+        { "title": "Bitcoin Script", "slug": "03-bitcoin/04-bitcoin-script" },
+        { "title": "Типы транзакций", "slug": "03-bitcoin/05-transaction-types" }
+      ]
+    },
+    {
+      "errorCode": "-26",
+      "errorMessage": "error code: -26, message: min relay fee not met",
+      "module": "bitcoin",
+      "category": "transactions",
+      "symptoms": [
+        "Транзакция отклоняется нодой при broadcast",
+        "Ошибка min relay fee not met",
+        "Транзакция с нулевой или слишком низкой комиссией"
+      ],
+      "cause": "Комиссия транзакции ниже минимального порога relay fee ноды. Bitcoin ноды имеют параметр `minrelaytxfee` (по умолчанию 0.00001 BTC/kB), и отклоняют транзакции с комиссией ниже этого порога для защиты от спама.",
+      "solution": [
+        "Увеличьте комиссию: fee = размер транзакции (в vbytes) * fee rate (sat/vB)",
+        "Проверьте текущий fee rate: `bitcoin-cli estimatesmartfee 6` (для подтверждения в ~6 блоках)",
+        "Для regtest: `bitcoin-cli -regtest settxfee 0.0001`",
+        "При ручном создании: используйте `fundrawtransaction` с параметром `feeRate`",
+        "Помните: SegWit транзакции легче (меньше vbytes), значит дешевле"
+      ],
+      "relatedLessons": [
+        { "title": "Майнинг и Proof of Work", "slug": "03-bitcoin/06-mining-pow" },
+        { "title": "Корректировка сложности", "slug": "03-bitcoin/07-difficulty-adjustment" }
+      ]
+    },
+    {
+      "errorMessage": "Error: insufficient funds for intrinsic transaction cost",
+      "module": "ethereum",
+      "category": "transactions",
+      "symptoms": [
+        "Отправка транзакции в Ethereum падает с ошибкой insufficient funds",
+        "Баланс аккаунта меньше суммы перевода + gas * gasPrice",
+        "Деплой контракта падает из-за нехватки ETH на газ"
+      ],
+      "cause": "Баланс отправителя меньше, чем value + gasLimit * gasPrice (для legacy tx) или value + gasLimit * maxFeePerGas (для EIP-1559). Минимальная стоимость газа для простого перевода: 21000 * gasPrice.",
+      "solution": [
+        "Проверьте баланс: `await provider.getBalance(address)` (ethers.js) или `eth_getBalance` RPC",
+        "Для локальной ноды (Hardhat/Anvil): аккаунты уже имеют 10000 ETH",
+        "Для тестнета: используйте faucet для получения тестовых ETH (Sepolia, Holesky)",
+        "Уменьшите gasLimit или используйте `estimateGas()` для точного расчёта",
+        "Для EIP-1559: проверьте `maxFeePerGas` и `maxPriorityFeePerGas` — они влияют на итоговую стоимость"
+      ],
+      "relatedLessons": [
+        { "title": "Газ и выполнение", "slug": "04-ethereum/05-gas-execution" },
+        { "title": "Модель аккаунтов", "slug": "04-ethereum/02-account-model" }
+      ]
+    },
+    {
+      "errorMessage": "Error: nonce too low / replacement transaction underpriced",
+      "module": "ethereum",
+      "category": "transactions",
+      "symptoms": [
+        "Транзакция отклоняется с ошибкой nonce too low",
+        "Повторная отправка транзакции не проходит",
+        "replacement transaction underpriced при попытке заменить pending tx"
+      ],
+      "cause": "Nonce — это порядковый номер транзакции аккаунта. Ошибка nonce too low: транзакция с таким nonce уже подтверждена. Ошибка underpriced: попытка заменить pending транзакцию с тем же nonce, но gasPrice ниже предыдущей (нужно минимум +10%).",
+      "solution": [
+        "Получите актуальный nonce: `await provider.getTransactionCount(address, 'pending')`",
+        "Для замены pending tx: увеличьте gasPrice минимум на 10%: `newGasPrice = oldGasPrice * 1.1`",
+        "Для отмены tx: отправьте tx с тем же nonce, value=0, to=свой адрес, повышенный gasPrice",
+        "В Hardhat: `await network.provider.send('hardhat_setNonce', [address, '0x0'])` для сброса"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" },
+        { "title": "Модель аккаунтов", "slug": "04-ethereum/02-account-model" }
+      ]
+    },
+    {
+      "errorMessage": "Error: execution reverted: <reason string>",
+      "module": "ethereum",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Вызов функции контракта падает с execution reverted",
+        "Solidity require() или revert() сработал",
+        "Транзакция потребляет весь газ и откатывается"
+      ],
+      "cause": "Контракт явно отклонил транзакцию через require(), revert() или assert(). Reason string содержит описание ошибки (если указано). Типичные причины: не выполнено условие require, вызов от неавторизованного адреса, недостаточный баланс токенов.",
+      "solution": [
+        "Прочитайте reason string — он объясняет причину: `Error: execution reverted: Ownable: caller is not the owner`",
+        "Используйте `staticCall()` (ethers v6) или `callStatic` (ethers v5) для тестирования без отправки транзакции",
+        "Для custom errors (Solidity 0.8.4+): декодируйте через `contract.interface.parseError(data)`",
+        "Проверьте порядок вызовов: `approve()` перед `transferFrom()`, `deposit()` перед `withdraw()`"
+      ],
+      "relatedLessons": [
+        { "title": "Solidity основы", "slug": "04-ethereum/06-solidity-basics" },
+        { "title": "Паттерны и тестирование Solidity", "slug": "04-ethereum/07-solidity-patterns-testing" }
+      ]
+    },
+    {
+      "errorMessage": "CompilerError: Stack too deep, try removing local variables",
+      "module": "ethereum",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Компиляция Solidity падает с Stack too deep",
+        "Функция имеет слишком много локальных переменных",
+        "Ошибка возникает при сложных функциях с >16 переменными"
+      ],
+      "cause": "EVM имеет ограничение стека: максимум 16 слотов доступны для операций. Когда функция использует больше 16 локальных переменных (включая параметры и return values), компилятор не может разместить их все в стеке.",
+      "solution": [
+        "Разбейте функцию на несколько меньших: выделите логические блоки в internal функции",
+        "Используйте struct для группировки связанных переменных: `struct Params { uint a; uint b; uint c; }`",
+        "Используйте scoping блоки `{ }` для ограничения области видимости временных переменных",
+        "Включите via-ir optimizer в solc: `settings: { viaIR: true }` — он обходит ограничение стека"
+      ],
+      "relatedLessons": [
+        { "title": "Solidity основы", "slug": "04-ethereum/06-solidity-basics" },
+        { "title": "EVM: стек, память, хранилище", "slug": "04-ethereum/04-evm-stack-memory-storage" }
+      ]
+    },
+    {
+      "errorMessage": "ProviderError: the method eth_sendTransaction does not exist/is not available",
+      "module": "ethereum",
+      "category": "installation",
+      "symptoms": [
+        "Отправка транзакции через remote provider (Infura, Alchemy) падает",
+        "Ошибка eth_sendTransaction does not exist",
+        "Код работает на Hardhat/Anvil, но не работает с внешним провайдером"
+      ],
+      "cause": "Remote RPC провайдеры (Infura, Alchemy) не хранят приватные ключи и не поддерживают eth_sendTransaction. Для отправки транзакций нужно подписывать их локально (eth_sendRawTransaction) с помощью Wallet/Signer.",
+      "solution": [
+        "Используйте Wallet с провайдером: `const wallet = new ethers.Wallet(privateKey, provider)`",
+        "Или через viem: `const walletClient = createWalletClient({ account, chain, transport: http(rpcUrl) })`",
+        "Для Hardhat: переключитесь на `hre.network.provider` вместо внешнего провайдера для тестов",
+        "Никогда не храните приватные ключи в коде — используйте переменные окружения: `process.env.PRIVATE_KEY`"
+      ],
+      "relatedLessons": [
+        { "title": "EVM: стек, память, хранилище", "slug": "04-ethereum/04-evm-stack-memory-storage" },
+        { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" }
+      ]
+    },
+    {
+      "errorMessage": "HardhatError: HH108: Cannot connect to the network localhost",
+      "module": "ethereum",
+      "category": "docker",
+      "symptoms": [
+        "Hardhat не может подключиться к локальной или удалённой ноде",
+        "Ошибка HH108 при запуске тестов или деплое",
+        "localhost:8545 не отвечает"
+      ],
+      "cause": "Hardhat пытается подключиться к JSON-RPC ноде, но она не запущена или недоступна. Возможно: забыли запустить `npx hardhat node`, Docker контейнер с нодой не запущен, или URL ноды указан неверно в hardhat.config.",
+      "solution": [
+        "Запустите локальную ноду: `npx hardhat node` (в отдельном терминале)",
+        "Для Docker: `docker compose up -d hardhat` и проверьте `docker compose ps`",
+        "Проверьте URL в hardhat.config: `networks: { localhost: { url: 'http://127.0.0.1:8545' } }`",
+        "Для тестов без ноды: используйте встроенную сеть Hardhat (`npx hardhat test` без --network)"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" },
+        { "title": "Паттерны и тестирование Solidity", "slug": "04-ethereum/07-solidity-patterns-testing" }
+      ]
+    },
+    {
+      "errorMessage": "Error: Account allocation failed: memory allocation failed, out of memory",
+      "module": "solana",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Создание аккаунта Solana падает с ошибкой allocation failed",
+        "Программа не может записать данные в аккаунт",
+        "AccountInfo data слишком мал для хранимых данных"
+      ],
+      "cause": "В Solana размер аккаунта фиксируется при создании и не может быть увеличен позже. Если при создании указан слишком маленький space, данные не поместятся. Также ошибка возникает при попытке записать данные в аккаунт, размер которого уже полностью использован.",
+      "solution": [
+        "Рассчитайте правильный размер: `space = 8 (discriminator) + serialized_data_size`",
+        "Для Anchor: размер вычисляется автоматически через `#[account(init, space = 8 + MyStruct::INIT_SPACE)]`",
+        "Используйте `#[derive(InitSpace)]` на структуре для автоматического расчёта",
+        "Для динамических данных (String, Vec): добавьте 4 байта prefix + максимальный размер данных"
+      ],
+      "relatedLessons": [
+        { "title": "Программы и инструкции", "slug": "05-solana/05-programs-instructions" },
+        { "title": "Модель аккаунтов Solana", "slug": "05-solana/04-account-model" }
+      ]
+    },
+    {
+      "errorMessage": "Error: Transaction simulation failed: Attempt to debit an account but found no record of a prior credit",
+      "module": "solana",
+      "category": "transactions",
+      "symptoms": [
+        "Транзакция Solana падает при симуляции",
+        "Аккаунт не имеет SOL для оплаты транзакции",
+        "Новый кошелёк на devnet/localnet без средств"
+      ],
+      "cause": "Аккаунт отправителя не имеет SOL для оплаты rent и transaction fee. На devnet/localnet нужно предварительно получить SOL через airdrop. На mainnet нужно перевести SOL на аккаунт.",
+      "solution": [
+        "На localnet: `solana airdrop 2 <address> --url localhost`",
+        "На devnet: `solana airdrop 2 <address> --url devnet` (лимит ~2 SOL за запрос)",
+        "В тестах Anchor: `await provider.connection.requestAirdrop(wallet.publicKey, 2 * LAMPORTS_PER_SOL)`",
+        "Проверьте баланс: `solana balance <address> --url localhost`"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Solana", "slug": "05-solana/01-solana-architecture" },
+        { "title": "Программы и инструкции", "slug": "05-solana/05-programs-instructions" }
+      ]
+    },
+    {
+      "errorMessage": "AnchorError: AccountNotInitialized. Error Code: AccountNotInitialized",
+      "module": "solana",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Вызов Anchor программы падает с AccountNotInitialized",
+        "PDA аккаунт существует, но не инициализирован",
+        "Попытка читать данные из неинициализированного аккаунта"
+      ],
+      "cause": "Anchor ожидает, что аккаунт инициализирован (содержит discriminator и данные). Если аккаунт ещё не создан через `init` constraint, или был создан вручную без правильного discriminator, Anchor не может десериализовать его данные.",
+      "solution": [
+        "Убедитесь, что аккаунт создан через `#[account(init, ...)]` в отдельной инструкции инициализации",
+        "Порядок вызова: сначала `initialize()`, потом `update()` / `read()`",
+        "Для проверки существования: используйте `#[account(init_if_needed)]` (требует `realloc` feature)",
+        "Проверьте seeds PDA: `#[account(seeds = [b\"seed\", user.key().as_ref()], bump)]` должны совпадать"
+      ],
+      "relatedLessons": [
+        { "title": "Anchor основы", "slug": "05-solana/06-anchor-basics" },
+        { "title": "Anchor разработка", "slug": "05-solana/07-anchor-development" }
+      ]
+    },
+    {
+      "errorMessage": "Error: failed to send transaction: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1",
+      "module": "solana",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Anchor транзакция падает с custom program error",
+        "Hex код ошибки (0x1, 0x7d1, и т.д.) вместо читаемого сообщения",
+        "Constraint violation в Anchor программе"
+      ],
+      "cause": "Anchor преобразует constraint violations в числовые коды ошибок. 0x1 = AccountConstraintViolation (has_one, seeds mismatch), 0x7d1 = AccountNotInitialized, 0xbc4 = ConstraintMut. Для кастомных ошибок: 0x1770 + index в #[error_code] enum.",
+      "solution": [
+        "Декодируйте ошибку: `anchor idl errors` покажет все ошибки программы",
+        "Частые коды: 0x0 = InstructionMissing, 0x1 = InstructionFallbackNotFound, 0x7d0 = AccountDiscriminatorAlreadySet",
+        "Проверьте constraints: `has_one = authority` требует, чтобы поле `authority` аккаунта совпадало с переданным",
+        "Включите `anchor test --provider.cluster localnet` для полных логов ошибок"
+      ],
+      "relatedLessons": [
+        { "title": "Anchor основы", "slug": "05-solana/06-anchor-basics" },
+        { "title": "Тестирование Solana", "slug": "05-solana/08-testing-solana" }
+      ]
+    },
+    {
+      "errorMessage": "Error: UNPREDICTABLE_GAS_LIMIT (ethers.js) / execution reverted при DeFi операции",
+      "module": "defi",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Swap на Uniswap/DEX падает с UNPREDICTABLE_GAS_LIMIT",
+        "DeFi контракт reverts при вызове",
+        "estimateGas() падает до отправки транзакции"
+      ],
+      "cause": "DeFi транзакция откатывается в процессе симуляции. Типичные причины: slippage превышен (цена изменилась), deadline истёк, insufficient allowance (не сделан approve), insufficient liquidity, или обращение к паре которая не существует.",
+      "solution": [
+        "Проверьте approve: `await token.approve(routerAddress, amount)` перед swap/deposit",
+        "Увеличьте slippage tolerance: `amountOutMin = amountOut * 0.95` (5% slippage)",
+        "Увеличьте deadline: `Math.floor(Date.now() / 1000) + 60 * 20` (20 минут)",
+        "Для fork тестирования: используйте актуальный блок `--fork-block-number` для консистентного state"
+      ],
+      "relatedLessons": [
+        { "title": "AMM концепции", "slug": "06-defi/02-amm-concept" },
+        { "title": "Uniswap V2 математика", "slug": "06-defi/03-uniswap-v2-math" }
+      ]
+    },
+    {
+      "errorMessage": "ERC20: insufficient allowance",
+      "module": "defi",
+      "category": "transactions",
+      "symptoms": [
+        "transferFrom() или DeFi операция падает с insufficient allowance",
+        "Контракт не может списать токены от имени пользователя",
+        "Approve был сделан, но на другой адрес или сумму"
+      ],
+      "cause": "ERC-20 стандарт требует двухшаговый процесс: сначала owner вызывает approve(spender, amount), затем spender может вызвать transferFrom(). Ошибка возникает когда allowance = 0 или меньше запрашиваемой суммы.",
+      "solution": [
+        "Перед DeFi операцией вызовите approve: `await token.approve(protocolAddress, ethers.MaxUint256)`",
+        "Проверьте текущий allowance: `await token.allowance(owner, spender)`",
+        "Используйте `MaxUint256` для одноразового безлимитного approve (удобно для тестов)",
+        "Для продакшена: approve точную сумму, не MaxUint256 (безопасность)"
+      ],
+      "relatedLessons": [
+        { "title": "ERC-20 стандарт", "slug": "04-ethereum/08-erc20-standard" },
+        { "title": "DeFi экосистема", "slug": "06-defi/01-defi-ecosystem" }
+      ]
+    },
+    {
+      "errorMessage": "Error: health factor below 1 / liquidation threshold reached",
+      "module": "defi",
+      "category": "transactions",
+      "symptoms": [
+        "Lending позиция ликвидирована",
+        "Health factor упал ниже 1.0",
+        "Невозможно занять больше средств — позиция undercollateralized"
+      ],
+      "cause": "Health Factor = (collateral * liquidation_threshold) / debt. Когда HF < 1, позиция может быть ликвидирована. Причины: цена залога упала, долг вырос (проценты), или liquidation threshold для актива изменился.",
+      "solution": [
+        "Мониторьте Health Factor: `aave.getUserAccountData(address)` возвращает `healthFactor`",
+        "Увеличьте collateral: добавьте залог через `supply()` для повышения HF",
+        "Уменьшите долг: частично погасите через `repay()` для повышения HF",
+        "Установите алерт: HF < 1.5 — предупреждение, HF < 1.2 — критическое",
+        "Используйте стабильные залоги (USDC, DAI) для предсказуемого HF"
+      ],
+      "relatedLessons": [
+        { "title": "Lending протоколы", "slug": "06-defi/06-lending-protocols" },
+        { "title": "Ликвидации", "slug": "06-defi/07-liquidations" }
+      ]
+    },
+    {
+      "errorMessage": "Slither: Reentrancy vulnerability detected in <function>",
+      "module": "security",
+      "category": "testing",
+      "symptoms": [
+        "Slither выдаёт High severity finding: reentrancy",
+        "Функция делает внешний вызов до обновления состояния",
+        "Паттерн: external call -> state change"
+      ],
+      "cause": "Функция выполняет внешний вызов (transfer, call) до обновления внутреннего состояния контракта. Атакующий может вызвать функцию повторно через fallback/receive до того, как состояние обновится, и вывести средства многократно.",
+      "solution": [
+        "Применяйте паттерн Checks-Effects-Interactions (CEI): 1) проверки, 2) обновление состояния, 3) внешние вызовы",
+        "Используйте `ReentrancyGuard` от OpenZeppelin: `contract MyContract is ReentrancyGuard { function withdraw() external nonReentrant { ... } }`",
+        "Замените `call{value: amount}(\"\")` на `Address.sendValue()` с проверкой",
+        "Для pull-payment: используйте `PullPayment` pattern (баланс хранится, пользователь забирает)"
+      ],
+      "relatedLessons": [
+        { "title": "Атаки повторного входа", "slug": "07-security/02-reentrancy-attacks" },
+        { "title": "Обзор уязвимостей", "slug": "07-security/01-vulnerability-overview" }
+      ]
+    },
+    {
+      "errorMessage": "Error: msg.sender is a contract, not an EOA / onlyEOA check failed",
+      "module": "security",
+      "category": "smart-contracts",
+      "symptoms": [
+        "Вызов контракта от другого контракта отклоняется",
+        "require(msg.sender == tx.origin) блокирует вызов",
+        "Мультисиг или контрактный кошелёк не может взаимодействовать с протоколом"
+      ],
+      "cause": "Контракт использует tx.origin проверку или require(msg.sender.code.length == 0) для ограничения вызовов только от EOA. Это антипаттерн: он блокирует контрактные кошельки (Gnosis Safe, Account Abstraction) и не защищает от атак (tx.origin может быть обманут через phishing).",
+      "solution": [
+        "Не используйте `tx.origin` для авторизации — это уязвимость (phishing attack)",
+        "Для защиты от flash loan атак: используйте time-lock или multi-block delay вместо onlyEOA",
+        "Для Account Abstraction совместимости: проверяйте `msg.sender` через access control, не через code.length",
+        "Паттерн: `modifier onlyAuthorized() { require(hasRole(ROLE, msg.sender)); }`"
+      ],
+      "relatedLessons": [
+        { "title": "Уязвимости контроля доступа", "slug": "07-security/04-access-control-vulnerabilities" },
+        { "title": "MEV концепции", "slug": "07-security/05-mev-concepts" }
+      ]
+    },
+    {
+      "errorMessage": "error[T3001]: Non quadratic constraints are not allowed in Circom!",
+      "module": "zk",
+      "category": "circuits",
+      "symptoms": [
+        "Компиляция Circom цепи падает с ошибкой T3001",
+        "Constraint содержит умножение трёх и более сигналов",
+        "Выражение вида `a * b * c === d` отклоняется компилятором"
+      ],
+      "cause": "R1CS (Rank-1 Constraint System) допускает только квадратичные constraints вида A * B = C, где A, B, C — линейные комбинации сигналов. Выражения с тремя и более перемножениями сигналов не квадратичны и должны быть разбиты на промежуточные шаги.",
+      "solution": [
+        "Разбейте на промежуточные сигналы: `signal tmp <-- a * b; tmp * c === d;`",
+        "Добавьте constraint для промежуточного: `signal tmp; tmp <== a * b; tmp * c === d;`",
+        "Используйте `<==` (assign + constrain) вместо `<--` + отдельный constraint",
+        "Для деления: `signal inv <-- 1 / b; inv * b === 1; a * inv === result;`"
+      ],
+      "relatedLessons": [
+        { "title": "ZK-STARKs", "slug": "10-zero-knowledge/06-zk-starks" },
+        { "title": "Circom основы", "slug": "10-zero-knowledge/07-circom-basics" }
+      ]
+    },
+    {
+      "errorMessage": "INVALID_PROOF / snarkjs: Verification failed",
+      "module": "zk",
+      "category": "circuits",
+      "symptoms": [
+        "Верификация ZK доказательства возвращает false",
+        "snarkjs verify выводит INVALID_PROOF",
+        "On-chain verifier отклоняет proof"
+      ],
+      "cause": "Доказательство не соответствует verification key или public inputs. Причины: witness изменился после генерации proof, public inputs переданы в неправильном порядке, proof сгенерирован для другой цепи (другой .zkey файл), или proof испорчен при передаче.",
+      "solution": [
+        "Убедитесь, что public inputs идентичны при генерации proof и верификации",
+        "Проверьте порядок public inputs: `snarkjs zkey export verificationkey` показывает ожидаемый порядок",
+        "Перегенерируйте proof с актуальным witness: `snarkjs groth16 prove circuit.zkey witness.wtns proof.json public.json`",
+        "Для on-chain: убедитесь, что Verifier.sol сгенерирован из того же .zkey, что и proof"
+      ],
+      "relatedLessons": [
+        { "title": "Groth16 и trusted setup", "slug": "10-zero-knowledge/05-groth16-trusted-setup" },
+        { "title": "Написание ZK-схем", "slug": "10-zero-knowledge/08-writing-zk-circuits" }
+      ]
+    },
+    {
+      "errorMessage": "Error: Witness does not satisfy the constraints / assert failed in witness generation",
+      "module": "zk",
+      "category": "circuits",
+      "symptoms": [
+        "Генерация witness падает с ошибкой",
+        "Входные данные не удовлетворяют constraints цепи",
+        "assert внутри template Circom не выполняется"
+      ],
+      "cause": "Входные данные (input.json) не удовлетворяют математическим ограничениям цепи. Например: для цепи доказательства знания прообраза хеша, если указан неправильный прообраз, hash(input) != expected_hash, и constraint не выполняется.",
+      "solution": [
+        "Проверьте входные данные в `input.json`: все значения должны быть строками чисел",
+        "Для hash preimage: убедитесь, что hash(preimage) действительно равен ожидаемому хешу",
+        "Используйте `circom --inspect` для анализа constraints перед генерацией witness",
+        "Проверьте типы: Circom работает с полем Fr (модуль p), отрицательные числа = p - |n|"
+      ],
+      "relatedLessons": [
+        { "title": "Circom основы", "slug": "10-zero-knowledge/07-circom-basics" },
+        { "title": "Написание ZK-схем", "slug": "10-zero-knowledge/08-writing-zk-circuits" }
+      ]
+    },
+    {
+      "errorMessage": "docker: Error response from daemon: Conflict. The container name is already in use",
+      "module": "common",
+      "category": "docker",
+      "symptoms": [
+        "Docker контейнер не запускается из-за конфликта имён",
+        "Ошибка Conflict при docker run или docker compose up",
+        "Предыдущий контейнер с тем же именем не удалён"
+      ],
+      "cause": "Docker контейнер с указанным именем уже существует (возможно остановлен, но не удалён). Docker не позволяет создать два контейнера с одинаковым именем.",
+      "solution": [
+        "Удалите существующий контейнер: `docker rm -f <container_name>`",
+        "Или используйте docker compose: `docker compose down && docker compose up -d`",
+        "Для полной очистки: `docker compose down -v` (удалит и volumes)",
+        "Используйте `docker compose up -d --force-recreate` для пересоздания контейнеров"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" },
+        { "title": "Архитектура Solana", "slug": "05-solana/01-solana-architecture" }
+      ]
+    },
+    {
+      "errorMessage": "Error: Cannot find module / ModuleNotFoundError: No module named",
+      "module": "common",
+      "category": "installation",
+      "symptoms": [
+        "Import модуля падает с Cannot find module (Node.js) или No module named (Python)",
+        "Зависимости не установлены",
+        "Пакет установлен глобально, но не в проекте"
+      ],
+      "cause": "Необходимый пакет не установлен в текущем окружении. Для Node.js: пакет отсутствует в node_modules. Для Python: пакет не установлен в текущем virtualenv. Часто происходит после клонирования репозитория без установки зависимостей.",
+      "solution": [
+        "Для Node.js: `bun install` или `npm install` в корне проекта",
+        "Для Python: `pip install -r requirements.txt` в активированном virtualenv",
+        "Проверьте наличие файла зависимостей: `package.json` (Node.js) или `requirements.txt` (Python)",
+        "Для Docker: пересоберите образ `docker compose build --no-cache`",
+        "Убедитесь, что версия Node.js/Python совместима (проверьте `engines` в package.json)"
+      ],
+      "relatedLessons": [
+        { "title": "Хеш-функции", "slug": "02-crypto-foundations/03-hash-functions" },
+        { "title": "Solidity основы", "slug": "04-ethereum/06-solidity-basics" }
+      ]
+    },
+    {
+      "errorMessage": "EADDRINUSE: address already in use :::8545",
+      "module": "common",
+      "category": "docker",
+      "symptoms": [
+        "Запуск локальной ноды (Hardhat, Anvil, Ganache) падает с EADDRINUSE",
+        "Порт 8545 уже занят другим процессом",
+        "Предыдущая нода не была корректно остановлена"
+      ],
+      "cause": "Порт 8545 (стандартный для Ethereum JSON-RPC) уже используется другим процессом. Это может быть предыдущий запуск Hardhat node, Anvil, Ganache, или другой сервис.",
+      "solution": [
+        "Найдите процесс на порту: `lsof -i :8545` (macOS/Linux) или `netstat -ano | findstr 8545` (Windows)",
+        "Завершите процесс: `kill -9 <PID>` (macOS/Linux)",
+        "Или используйте другой порт: `npx hardhat node --port 8546`",
+        "Для Docker: проверьте port mappings в docker-compose.yml и остановите конфликтующие контейнеры"
+      ],
+      "relatedLessons": [
+        { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" },
+        { "title": "Паттерны и тестирование Solidity", "slug": "04-ethereum/07-solidity-patterns-testing" }
+      ]
+    }
+  ]
+}
