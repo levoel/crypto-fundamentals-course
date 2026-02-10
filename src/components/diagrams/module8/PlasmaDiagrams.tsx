@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -100,6 +101,43 @@ export function PlasmaArchitectureDiagram() {
         </svg>
       </div>
 
+      {/* Layer tooltips below SVG */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <DiagramTooltip content="L1 (Ethereum) хранит Plasma-контракт, который принимает депозиты и Merkle roots от оператора. L1 -- арбитр: при dispute пользователь может выйти, предоставив Merkle proof своего баланса.">
+          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', padding: '3px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            L1 (Ethereum)
+          </span>
+        </DiagramTooltip>
+        <DiagramTooltip content="Оператор -- единственный узел, обрабатывающий транзакции на child chain. Он формирует блоки, вычисляет Merkle root и публикует его на L1. Centralized point of failure: если оператор злонамерен или исчезнет, пользователи должны массово выйти.">
+          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b', padding: '3px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            Operator
+          </span>
+        </DiagramTooltip>
+        <DiagramTooltip content="Child chain -- отдельный блокчейн, где происходят пользовательские транзакции. Высокая пропускная способность, но данные НЕ публикуются на L1. Это фундаментальная проблема data availability Plasma.">
+          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', padding: '3px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            Child Chain
+          </span>
+        </DiagramTooltip>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <DiagramTooltip content="Депозит -- перевод активов с L1 в Plasma child chain. Средства блокируются в Plasma-контракте на Ethereum, а эквивалент появляется на child chain.">
+          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#10b981', padding: '2px 6px', borderRadius: 3, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
+            Deposits
+          </span>
+        </DiagramTooltip>
+        <DiagramTooltip content="Merkle root -- криптографический хеш всех транзакций в блоке child chain. Оператор публикует только root (32 байта) на L1, не сами транзакции. Это экономит газ, но создает проблему data availability.">
+          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#a78bfa', padding: '2px 6px', borderRadius: 3, background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)' }}>
+            Merkle roots
+          </span>
+        </DiagramTooltip>
+        <DiagramTooltip content="Exit -- вывод средств обратно на L1. Пользователь предоставляет Merkle proof своего баланса. Challenge period позволяет оспорить невалидные выходы. Это единственный механизм безопасности для пользователей.">
+          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#f43f5e', padding: '2px 6px', borderRadius: 3, background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.15)' }}>
+            Exits (Merkle proof)
+          </span>
+        </DiagramTooltip>
+      </div>
+
       <DataBox
         label="Ключевая проблема"
         value="Оператор публикует только Merkle root, НЕ данные транзакций. Если оператор исчезнет, пользователи не смогут доказать свои балансы. Это фундаментальный недостаток Plasma."
@@ -120,6 +158,7 @@ interface MassExitStep {
   usersAffected: number;
   statusColor: string;
   icon: string;
+  tooltipRu: string;
 }
 
 const MASS_EXIT_STEPS: MassExitStep[] = [
@@ -130,6 +169,7 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
     usersAffected: 0,
     statusColor: '#10b981',
     icon: 'OK',
+    tooltipRu: 'При нормальной работе Plasma экономит газ: вместо 1000 транзакций на L1, публикуется один 32-байтный Merkle root. Но безопасность зависит от доступности данных у оператора.',
   },
   {
     title: 'DATA WITHHOLDING',
@@ -138,6 +178,7 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
     usersAffected: 500,
     statusColor: '#f59e0b',
     icon: '!!',
+    tooltipRu: 'Data withholding attack -- оператор публикует Merkle root, но скрывает данные транзакций. Пользователи не могут построить Merkle proof для exit. Это уникальная уязвимость Plasma, отсутствующая в rollups.',
   },
   {
     title: 'PANIC -- Mass Exit',
@@ -146,6 +187,7 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
     usersAffected: 800,
     statusColor: '#f43f5e',
     icon: '!!!',
+    tooltipRu: 'Mass exit -- лавинообразный процесс. Каждый пользователь отправляет отдельную L1-транзакцию с Merkle proof. При 10,000 пользователях это 10,000 L1-транзакций одновременно.',
   },
   {
     title: 'L1 CONGESTION',
@@ -154,6 +196,7 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
     usersAffected: 1000,
     statusColor: '#ef4444',
     icon: 'CRIT',
+    tooltipRu: 'Ethereum обрабатывает ~15 TPS. При mass exit тысячи транзакций конкурируют за блок-пространство. Gas price может вырасти в 100x. Пользователи с малыми балансами теряют средства -- стоимость exit превышает баланс.',
   },
   {
     title: 'LESSON -- Why Rollups Won',
@@ -162,6 +205,7 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
     usersAffected: 0,
     statusColor: '#a78bfa',
     icon: 'FIX',
+    tooltipRu: 'Rollups = Plasma + data on-chain. Простое решение: публиковать calldata/blobs на L1. Стоимость выше, но mass exit невозможен -- любой узел может восстановить полное состояние из L1-данных.',
   },
 ];
 
@@ -185,28 +229,29 @@ export function MassExitDiagram() {
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
         {MASS_EXIT_STEPS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIdx(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              fontWeight: i === stepIdx ? 700 : 400,
-              cursor: 'pointer',
-              background: i === stepIdx ? `${s.statusColor}20` : 'rgba(255,255,255,0.03)',
-              color: i === stepIdx ? s.statusColor : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-              border: `1px solid ${i === stepIdx ? s.statusColor + '50' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.2s',
-            }}
-          >
-            {i + 1}
-          </div>
+          <DiagramTooltip key={i} content={s.tooltipRu}>
+            <div
+              onClick={() => setStepIdx(i)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: i === stepIdx ? 700 : 400,
+                cursor: 'pointer',
+                background: i === stepIdx ? `${s.statusColor}20` : 'rgba(255,255,255,0.03)',
+                color: i === stepIdx ? s.statusColor : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                border: `1px solid ${i === stepIdx ? s.statusColor + '50' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              {i + 1}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -219,21 +264,25 @@ export function MassExitDiagram() {
       }}>
         {/* Title + status */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: step.statusColor, fontFamily: 'monospace' }}>
-            Step {stepIdx + 1}: {step.title}
-          </div>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${step.statusColor}15`,
-            color: step.statusColor,
-            border: `1px solid ${step.statusColor}30`,
-            fontWeight: 700,
-          }}>
-            {step.icon}
-          </span>
+          <DiagramTooltip content={step.tooltipRu}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: step.statusColor, fontFamily: 'monospace' }}>
+              Step {stepIdx + 1}: {step.title}
+            </span>
+          </DiagramTooltip>
+          <DiagramTooltip content={`Статус: ${step.icon}. L1 нагрузка ${step.l1Load}%, затронуто пользователей: ${step.usersAffected}/1000.`}>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: `${step.statusColor}15`,
+              color: step.statusColor,
+              border: `1px solid ${step.statusColor}30`,
+              fontWeight: 700,
+            }}>
+              {step.icon}
+            </span>
+          </DiagramTooltip>
         </div>
 
         {/* Description */}
@@ -245,9 +294,11 @@ export function MassExitDiagram() {
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
           {/* L1 Load */}
           <div style={{ flex: 1, minWidth: 140 }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4 }}>
-              L1 Load: <span style={{ color: step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981' }}>{step.l1Load}%</span>
-            </div>
+            <DiagramTooltip content={`L1 нагрузка ${step.l1Load}%. При mass exit тысячи exit-транзакций конкурируют за блок-пространство Ethereum. Каждая exit-транзакция требует Merkle proof (~500-1000 gas).`}>
+              <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4, display: 'inline-block' }}>
+                L1 Load: <span style={{ color: step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981' }}>{step.l1Load}%</span>
+              </span>
+            </DiagramTooltip>
             <div style={{
               height: 14,
               background: 'rgba(255,255,255,0.05)',
@@ -267,9 +318,11 @@ export function MassExitDiagram() {
 
           {/* Users affected */}
           <div style={{ flex: 1, minWidth: 140 }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4 }}>
-              Users affected: <span style={{ color: step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981' }}>{step.usersAffected}/1000</span>
-            </div>
+            <DiagramTooltip content={`${step.usersAffected} из 1000 пользователей затронуты. При data withholding пользователи теряют возможность доказать свои балансы и вынуждены использовать последнее известное состояние для exit.`}>
+              <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4, display: 'inline-block' }}>
+                Users affected: <span style={{ color: step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981' }}>{step.usersAffected}/1000</span>
+              </span>
+            </DiagramTooltip>
             <div style={{
               height: 14,
               background: 'rgba(255,255,255,0.05)',
@@ -297,9 +350,11 @@ export function MassExitDiagram() {
             borderRadius: 6,
             border: '1px solid rgba(239,68,68,0.2)',
           }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#ef4444', marginBottom: 6, fontWeight: 600 }}>
-              Ethereum Mempool Overflow:
-            </div>
+            <DiagramTooltip content="Визуализация переполнения Ethereum mempool. Красные блоки -- exit-транзакции Plasma-пользователей. При mass exit mempool заполняется тысячами exit TX, вытесняя обычные транзакции.">
+              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#ef4444', marginBottom: 6, fontWeight: 600, display: 'inline-block' }}>
+                Ethereum Mempool Overflow:
+              </span>
+            </DiagramTooltip>
             <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               {Array.from({ length: 40 }, (_, i) => (
                 <div key={i} style={{
@@ -307,7 +362,7 @@ export function MassExitDiagram() {
                   height: 12,
                   borderRadius: 2,
                   background: i < 35 ? '#ef4444' : 'rgba(255,255,255,0.05)',
-                  opacity: i < 35 ? (0.3 + Math.random() * 0.5) : 0.3,
+                  opacity: i < 35 ? 0.6 : 0.3,
                   fontSize: 6,
                   display: 'flex',
                   alignItems: 'center',
@@ -328,15 +383,21 @@ export function MassExitDiagram() {
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
-        <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
-          Reset
-        </button>
-        <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
-          Back
-        </button>
-        <button onClick={goNext} disabled={stepIdx === MASS_EXIT_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === MASS_EXIT_STEPS.length - 1 ? 0.5 : 1 }}>
-          Step
-        </button>
+        <div>
+          <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+            Reset
+          </button>
+        </div>
+        <div>
+          <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+            Back
+          </button>
+        </div>
+        <div>
+          <button onClick={goNext} disabled={stepIdx === MASS_EXIT_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === MASS_EXIT_STEPS.length - 1 ? 0.5 : 1 }}>
+            Step
+          </button>
+        </div>
       </div>
 
       <DataBox

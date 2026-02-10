@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -24,6 +25,7 @@ interface ChannelStep {
   stateVersion: number | null;
   onChain: boolean;
   highlight: string;
+  tooltipRu: string;
 }
 
 const CHANNEL_STEPS: ChannelStep[] = [
@@ -36,6 +38,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: 0,
     onChain: true,
     highlight: '#10b981',
+    tooltipRu: 'Открытие канала -- единственная ончейн-транзакция. Multisig-контракт блокирует депозиты обоих участников. Это создает "виртуальный банк" между Alice и Bob.',
   },
   {
     title: 'TRANSACT OFF-CHAIN -- Alice pays Bob 1 ETH',
@@ -46,6 +49,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: 1,
     onChain: false,
     highlight: '#6366f1',
+    tooltipRu: 'Каждая оффчейн-транзакция -- подписанное сообщение с новым состоянием. Обе стороны хранят полную историю подписанных состояний. Это позволяет доказать финальный баланс при закрытии.',
   },
   {
     title: 'TRANSACT OFF-CHAIN -- Bob pays Alice 2 ETH',
@@ -56,6 +60,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: 2,
     onChain: false,
     highlight: '#6366f1',
+    tooltipRu: 'Версия состояния (nonce) гарантирует порядок. Более новое состояние всегда побеждает старое. Это основа механизма dispute resolution.',
   },
   {
     title: 'COOPERATIVE CLOSE',
@@ -66,6 +71,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: 2,
     onChain: true,
     highlight: '#10b981',
+    tooltipRu: 'Кооперативное закрытие -- идеальный сценарий. Всего 2 ончейн-транзакции (open + close) вместо N транзакций. Экономия газа = (N-2) * gasPrice.',
   },
   {
     title: 'DISPUTE CLOSE (альтернатива)',
@@ -76,6 +82,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: 2,
     onChain: true,
     highlight: '#f43f5e',
+    tooltipRu: 'Dispute mechanism -- защита от мошенничества. Challenge period (обычно 24-48 часов) дает время для оспаривания. Контракт принимает состояние с наивысшей версией.',
   },
   {
     title: 'LIMITATIONS',
@@ -86,6 +93,7 @@ const CHANNEL_STEPS: ChannelStep[] = [
     stateVersion: null,
     onChain: false,
     highlight: '#f59e0b',
+    tooltipRu: 'Ограничения state channels привели к разработке Plasma и Rollups. Фиксированные участники делают каналы непригодными для DeFi-протоколов с произвольным числом пользователей.',
   },
 ];
 
@@ -110,28 +118,29 @@ export function ChannelLifecycleDiagram() {
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
         {CHANNEL_STEPS.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setStepIdx(i)}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              fontWeight: i === stepIdx ? 700 : 400,
-              cursor: 'pointer',
-              background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-              color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-              border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.2s',
-            }}
-          >
-            {i + 1}
-          </div>
+          <DiagramTooltip key={i} content={s.tooltipRu}>
+            <div
+              onClick={() => setStepIdx(i)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                fontWeight: i === stepIdx ? 700 : 400,
+                cursor: 'pointer',
+                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              {i + 1}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -144,20 +153,24 @@ export function ChannelLifecycleDiagram() {
       }}>
         {/* Title and phase */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: step.highlight, fontFamily: 'monospace' }}>
-            Step {stepIdx + 1}: {step.title}
-          </div>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: step.onChain ? '#10b98115' : '#6366f115',
-            color: step.onChain ? '#10b981' : '#6366f1',
-            border: `1px solid ${step.onChain ? '#10b98130' : '#6366f130'}`,
-          }}>
-            {step.phase}
-          </span>
+          <DiagramTooltip content={step.tooltipRu}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: step.highlight, fontFamily: 'monospace' }}>
+              Step {stepIdx + 1}: {step.title}
+            </span>
+          </DiagramTooltip>
+          <DiagramTooltip content={step.onChain ? 'On-chain транзакция записывается в блокчейн. Требует газ и время на подтверждение. Дорого, но финально.' : 'Off-chain операция не записывается в блокчейн. Мгновенно, бесплатно, приватно. Но требует подписей обеих сторон.'}>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: step.onChain ? '#10b98115' : '#6366f115',
+              color: step.onChain ? '#10b981' : '#6366f1',
+              border: `1px solid ${step.onChain ? '#10b98130' : '#6366f130'}`,
+            }}>
+              {step.phase}
+            </span>
+          </DiagramTooltip>
         </div>
 
         {/* Description */}
@@ -169,9 +182,11 @@ export function ChannelLifecycleDiagram() {
         <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
           {/* Alice */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', marginBottom: 4 }}>
-              Alice: {step.aliceBalance} ETH
-            </div>
+            <DiagramTooltip content={`Alice владеет ${step.aliceBalance} из ${totalBalance} ETH в канале. При закрытии канала контракт выдаст Alice ровно ${step.aliceBalance} ETH.`}>
+              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', marginBottom: 4, display: 'inline-block' }}>
+                Alice: {step.aliceBalance} ETH
+              </span>
+            </DiagramTooltip>
             <div style={{
               height: 20,
               background: 'rgba(255,255,255,0.05)',
@@ -190,9 +205,11 @@ export function ChannelLifecycleDiagram() {
           </div>
           {/* Bob */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', marginBottom: 4 }}>
-              Bob: {step.bobBalance} ETH
-            </div>
+            <DiagramTooltip content={`Bob владеет ${step.bobBalance} из ${totalBalance} ETH в канале. Сумма балансов всегда равна начальному депозиту (${totalBalance} ETH) -- невозможно создать или уничтожить средства.`}>
+              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', marginBottom: 4, display: 'inline-block' }}>
+                Bob: {step.bobBalance} ETH
+              </span>
+            </DiagramTooltip>
             <div style={{
               height: 20,
               background: 'rgba(255,255,255,0.05)',
@@ -214,29 +231,39 @@ export function ChannelLifecycleDiagram() {
         {/* State version + on-chain indicator */}
         <div style={{ display: 'flex', gap: 16, fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
           {step.stateVersion !== null && (
-            <span>State version: <span style={{ color: step.highlight }}>{step.stateVersion}</span></span>
+            <DiagramTooltip content={`State version ${step.stateVersion} -- порядковый номер состояния. При dispute контракт принимает состояние с наивысшей версией. Это гарантирует, что мошенник не сможет откатить канал к старому состоянию.`}>
+              <span>State version: <span style={{ color: step.highlight }}>{step.stateVersion}</span></span>
+            </DiagramTooltip>
           )}
-          <span>
-            {step.onChain ? (
-              <span style={{ color: '#10b981' }}>ON-CHAIN TX</span>
-            ) : (
-              <span style={{ color: '#6366f1' }}>OFF-CHAIN</span>
-            )}
-          </span>
+          <DiagramTooltip content={step.onChain ? 'Ончейн-транзакция записывается в блок Ethereum. Требует газ, но обеспечивает финальность. Используется только для открытия и закрытия канала.' : 'Оффчейн-операция происходит вне блокчейна. Только подписанные сообщения между участниками. Мгновенно и бесплатно.'}>
+            <span>
+              {step.onChain ? (
+                <span style={{ color: '#10b981' }}>ON-CHAIN TX</span>
+              ) : (
+                <span style={{ color: '#6366f1' }}>OFF-CHAIN</span>
+              )}
+            </span>
+          </DiagramTooltip>
         </div>
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
-          Reset
-        </button>
-        <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
-          Back
-        </button>
-        <button onClick={goNext} disabled={stepIdx === CHANNEL_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === CHANNEL_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === CHANNEL_STEPS.length - 1 ? 0.5 : 1 }}>
-          Step
-        </button>
+        <div>
+          <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+            Reset
+          </button>
+        </div>
+        <div>
+          <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+            Back
+          </button>
+        </div>
+        <div>
+          <button onClick={goNext} disabled={stepIdx === CHANNEL_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === CHANNEL_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === CHANNEL_STEPS.length - 1 ? 0.5 : 1 }}>
+            Step
+          </button>
+        </div>
       </div>
     </DiagramContainer>
   );
@@ -275,13 +302,23 @@ export function PaymentChannelDiagram() {
     <DiagramContainer title="Payment Channel: баланс между участниками" color="green">
       {/* State counter */}
       <div style={{ textAlign: 'center', marginBottom: 14 }}>
-        <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>
-          State #{stateCount}: </span>
-        <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#6366f1', fontWeight: 600 }}>
-          Alice = {aliceBalance} ETH</span>
+        <DiagramTooltip content={`Каждое перемещение слайдера = новое подписанное состояние канала (state #${stateCount}). В реальном канале каждое состояние подписывается обеими сторонами и хранит nonce для упорядочивания.`}>
+          <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>
+            State #{stateCount}:
+          </span>
+        </DiagramTooltip>
+        {' '}
+        <DiagramTooltip content={`Alice владеет ${aliceBalance} ETH. При кооперативном закрытии канала контракт отправит Alice ровно ${aliceBalance} ETH.`}>
+          <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#6366f1', fontWeight: 600 }}>
+            Alice = {aliceBalance} ETH
+          </span>
+        </DiagramTooltip>
         <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>, </span>
-        <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#10b981', fontWeight: 600 }}>
-          Bob = {bobBalance} ETH</span>
+        <DiagramTooltip content={`Bob владеет ${bobBalance} ETH. Сумма Alice + Bob всегда = ${totalBalance} ETH (начальный депозит). Средства не создаются и не уничтожаются.`}>
+          <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#10b981', fontWeight: 600 }}>
+            Bob = {bobBalance} ETH
+          </span>
+        </DiagramTooltip>
       </div>
 
       {/* Balance bars */}
@@ -330,8 +367,12 @@ export function PaymentChannelDiagram() {
       {/* Slider */}
       <div style={{ marginBottom: 14, padding: '0 4px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6366f1' }}>Alice gets more</span>
-          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#10b981' }}>Bob gets more</span>
+          <DiagramTooltip content="Перемещение слайдера влево увеличивает долю Alice. В реальном канале Alice создает подписанное сообщение с новым распределением и отправляет Bob.">
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6366f1' }}>Alice gets more</span>
+          </DiagramTooltip>
+          <DiagramTooltip content="Перемещение слайдера вправо увеличивает долю Bob. Bob подписывает новое состояние, подтверждая согласие с распределением.">
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#10b981' }}>Bob gets more</span>
+          </DiagramTooltip>
         </div>
         <input
           type="range"
@@ -345,9 +386,11 @@ export function PaymentChannelDiagram() {
 
       {/* Reset */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-        <button onClick={resetChannel} style={{ ...glassStyle, padding: '5px 12px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}>
-          Reset channel
-        </button>
+        <div>
+          <button onClick={resetChannel} style={{ ...glassStyle, padding: '5px 12px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}>
+            Reset channel
+          </button>
+        </div>
       </div>
 
       <DataBox
