@@ -10,6 +10,7 @@
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -135,114 +136,139 @@ export function UTXOFlowDiagram() {
   return (
     <DiagramContainer title="Поток UTXO: от входов к выходам" color="green">
       {/* Step info */}
-      <div style={{
-        ...glassStyle,
-        padding: '10px 14px',
-        marginBottom: 12,
-        borderLeft: `3px solid ${colors.success}`,
-      }}>
-        <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
-          {current.title}
+      <DiagramTooltip content={current.description}>
+        <div style={{
+          ...glassStyle,
+          padding: '10px 14px',
+          marginBottom: 12,
+          borderLeft: `3px solid ${colors.success}`,
+        }}>
+          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+            {current.title}
+          </div>
+          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ color: colors.textMuted, fontSize: 12 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* UTXO display */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         {current.utxos.map((item, i) => {
           const sc = statusColors[item.status];
+          const utxoTooltips: Record<string, string> = {
+            unspent: `Неизрасходованный выход (UTXO): ${item.utxo.amount} BTC принадлежит ${item.utxo.owner}. Этот UTXO можно использовать как вход в новую транзакцию.`,
+            selected: `Выбранный вход: ${item.utxo.amount} BTC от ${item.utxo.owner}. Будет потрачен целиком -- UTXO нельзя разделить частично, поэтому создаётся выход-сдача.`,
+            spent: `Потраченный UTXO: ${item.utxo.amount} BTC удалён из UTXO set. После включения транзакции в блок этот выход больше нельзя использовать (защита от double-spending).`,
+            new: `Новый UTXO: ${item.utxo.amount} BTC для ${item.utxo.owner}. Создан текущей транзакцией и добавлен в UTXO set.`,
+          };
           return (
-            <div
-              key={`${item.utxo.txid}-${item.utxo.vout}-${i}`}
-              style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                flex: '1 1 auto',
-                minWidth: 180,
-                borderLeft: `3px solid ${sc}`,
-                opacity: item.status === 'spent' ? 0.4 : 1,
-                textDecoration: item.status === 'spent' ? 'line-through' : 'none',
-              }}
-            >
-              <div style={{ fontSize: 11, color: sc, fontWeight: 600, marginBottom: 2 }}>
-                {item.utxo.owner}
-                {item.status === 'spent' && ' (потрачен)'}
-                {item.status === 'selected' && ' (выбран)'}
-                {item.status === 'new' && ' (новый)'}
+            <DiagramTooltip key={`${item.utxo.txid}-${item.utxo.vout}-${i}`} content={utxoTooltips[item.status]}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '8px 12px',
+                  flex: '1 1 auto',
+                  minWidth: 180,
+                  borderLeft: `3px solid ${sc}`,
+                  opacity: item.status === 'spent' ? 0.4 : 1,
+                  textDecoration: item.status === 'spent' ? 'line-through' : 'none',
+                }}
+              >
+                <div style={{ fontSize: 11, color: sc, fontWeight: 600, marginBottom: 2 }}>
+                  {item.utxo.owner}
+                  {item.status === 'spent' && ' (потрачен)'}
+                  {item.status === 'selected' && ' (выбран)'}
+                  {item.status === 'new' && ' (новый)'}
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+                  {item.utxo.amount} BTC
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: 10, color: colors.textMuted }}>
+                  txid:{truncHex(item.utxo.txid)}:{item.utxo.vout}
+                </div>
               </div>
-              <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
-                {item.utxo.amount} BTC
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: 10, color: colors.textMuted }}>
-                txid:{truncHex(item.utxo.txid)}:{item.utxo.vout}
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
 
       {/* Fee formula */}
       {current.showTx && current.txLabel && (
-        <DataBox label="Транзакция" value={current.txLabel} variant="highlight" />
+        <DiagramTooltip content="Детали текущей транзакции. В модели UTXO транзакция потребляет целые UTXO как входы и создаёт новые выходы. Разница между суммой входов и суммой выходов -- это комиссия майнеру.">
+          <DataBox label="Транзакция" value={current.txLabel} variant="highlight" />
+        </DiagramTooltip>
       )}
 
       {/* Fee formula - always show */}
-      <div style={{
-        ...glassStyle,
-        padding: '8px 14px',
-        marginTop: 8,
-        textAlign: 'center',
-        fontFamily: 'monospace',
-        fontSize: 13,
-        color: '#f1c40f',
-      }}>
-        fee = sum(inputs) - sum(outputs)
-      </div>
+      <DiagramTooltip content="Комиссия (fee) в Bitcoin вычисляется неявно: это разница между суммой всех входов и суммой всех выходов. Нет отдельного поля 'fee' в транзакции -- майнер забирает разницу.">
+        <div style={{
+          ...glassStyle,
+          padding: '8px 14px',
+          marginTop: 8,
+          textAlign: 'center',
+          fontFamily: 'monospace',
+          fontSize: 13,
+          color: '#f1c40f',
+        }}>
+          fee = sum(inputs) - sum(outputs)
+        </div>
+      </DiagramTooltip>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
-        <button
-          onClick={() => setStep(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step === 0 ? 'not-allowed' : 'pointer',
-            color: step === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: step === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.min(FLOW_STEPS.length - 1, s + 1))}
-          disabled={step >= FLOW_STEPS.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= FLOW_STEPS.length - 1 ? 'not-allowed' : 'pointer',
-            color: step >= FLOW_STEPS.length - 1 ? colors.textMuted : colors.success,
-            fontSize: 13,
-            opacity: step >= FLOW_STEPS.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Вернуться к первому шагу демонстрации UTXO потока.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep(0)}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                color: colors.text,
+                fontSize: 13,
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу потока UTXO.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step === 0 ? 'not-allowed' : 'pointer',
+                color: step === 0 ? colors.textMuted : colors.text,
+                fontSize: 13,
+                opacity: step === 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу потока UTXO.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep((s) => Math.min(FLOW_STEPS.length - 1, s + 1))}
+              disabled={step >= FLOW_STEPS.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= FLOW_STEPS.length - 1 ? 'not-allowed' : 'pointer',
+                color: step >= FLOW_STEPS.length - 1 ? colors.textMuted : colors.success,
+                fontSize: 13,
+                opacity: step >= FLOW_STEPS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Step indicator */}
@@ -308,13 +334,15 @@ export function UTXOSetVisualization() {
 
   return (
     <DiagramContainer title="Множество UTXO" color="blue">
-      <InteractiveValue
-        value={blockHeight}
-        onChange={setBlockHeight}
-        min={1}
-        max={6}
-        label="Высота блока"
-      />
+      <DiagramTooltip content="Высота блока определяет, какие UTXO существуют в данный момент. При каждом новом блоке одни UTXO создаются (выходы транзакций), другие -- тратятся (входы). Перемещайте слайдер, чтобы наблюдать эволюцию UTXO set.">
+        <InteractiveValue
+          value={blockHeight}
+          onChange={setBlockHeight}
+          min={1}
+          max={6}
+          label="Высота блока"
+        />
+      </DiagramTooltip>
 
       {/* UTXO list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 12 }}>
@@ -363,33 +391,39 @@ export function UTXOSetVisualization() {
 
       {/* Balances */}
       <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-        <DataBox
-          label="Alice (сумма UTXO)"
-          value={`${aliceBalance.toFixed(4)} BTC`}
-          variant="highlight"
-        />
-        <DataBox
-          label="Bob (сумма UTXO)"
-          value={`${bobBalance.toFixed(4)} BTC`}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Баланс Alice -- сумма всех неизрасходованных выходов (UTXO), принадлежащих Alice на данной высоте блока. Каждый UTXO привязан к конкретному адресу и может быть потрачен только владельцем приватного ключа.">
+          <DataBox
+            label="Alice (сумма UTXO)"
+            value={`${aliceBalance.toFixed(4)} BTC`}
+            variant="highlight"
+          />
+        </DiagramTooltip>
+        <DiagramTooltip content="Баланс Bob -- сумма всех неизрасходованных выходов (UTXO), принадлежащих Bob. В отличие от банковского счёта, баланс не хранится как число -- он вычисляется из множества UTXO.">
+          <DataBox
+            label="Bob (сумма UTXO)"
+            value={`${bobBalance.toFixed(4)} BTC`}
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
 
       {/* Key message */}
-      <div style={{
-        ...glassStyle,
-        padding: '10px 14px',
-        marginTop: 8,
-        textAlign: 'center',
-        borderLeft: `3px solid #f1c40f`,
-      }}>
-        <span style={{ color: '#f1c40f', fontWeight: 600, fontSize: 13 }}>
-          В Bitcoin нет поля "баланс"
-        </span>
-        <span style={{ color: colors.textMuted, fontSize: 12 }}>
-          {' '} -- баланс = сумма всех UTXO, которые вы можете потратить
-        </span>
-      </div>
+      <DiagramTooltip content="В модели UTXO нет понятия 'аккаунт' или 'баланс'. Каждая монета -- это конкретный неизрасходованный выход конкретной транзакции. Кошелёк просто суммирует все UTXO, которые пользователь может потратить.">
+        <div style={{
+          ...glassStyle,
+          padding: '10px 14px',
+          marginTop: 8,
+          textAlign: 'center',
+          borderLeft: `3px solid #f1c40f`,
+        }}>
+          <span style={{ color: '#f1c40f', fontWeight: 600, fontSize: 13 }}>
+            В Bitcoin нет поля "баланс"
+          </span>
+          <span style={{ color: colors.textMuted, fontSize: 12 }}>
+            {' '} -- баланс = сумма всех UTXO, которые вы можете потратить
+          </span>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -434,19 +468,21 @@ export function ChangeAddressDiagram() {
   return (
     <DiagramContainer title="Сдача и адреса сдачи" color="purple">
       {/* Step info */}
-      <div style={{
-        ...glassStyle,
-        padding: '10px 14px',
-        marginBottom: 12,
-        borderLeft: `3px solid ${colors.accent}`,
-      }}>
-        <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
-          {current.title}
+      <DiagramTooltip content={current.description}>
+        <div style={{
+          ...glassStyle,
+          padding: '10px 14px',
+          marginBottom: 12,
+          borderLeft: `3px solid ${colors.accent}`,
+        }}>
+          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+            {current.title}
+          </div>
+          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ color: colors.textMuted, fontSize: 12 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Visual */}
       <svg width="100%" height={180} viewBox="0 0 500 180">
@@ -533,46 +569,58 @@ export function ChangeAddressDiagram() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
-        <button
-          onClick={() => setStep(0)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step === 0 ? 'not-allowed' : 'pointer',
-            color: step === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: step === 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={() => setStep((s) => Math.min(CHANGE_STEPS.length - 1, s + 1))}
-          disabled={step >= CHANGE_STEPS.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= CHANGE_STEPS.length - 1 ? 'not-allowed' : 'pointer',
-            color: step >= CHANGE_STEPS.length - 1 ? colors.textMuted : colors.accent,
-            fontSize: 13,
-            opacity: step >= CHANGE_STEPS.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Вернуться к первому шагу демонстрации адреса сдачи.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep(0)}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                color: colors.text,
+                fontSize: 13,
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step === 0 ? 'not-allowed' : 'pointer',
+                color: step === 0 ? colors.textMuted : colors.text,
+                fontSize: 13,
+                opacity: step === 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу демонстрации адреса сдачи.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setStep((s) => Math.min(CHANGE_STEPS.length - 1, s + 1))}
+              disabled={step >= CHANGE_STEPS.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= CHANGE_STEPS.length - 1 ? 'not-allowed' : 'pointer',
+                color: step >= CHANGE_STEPS.length - 1 ? colors.textMuted : colors.accent,
+                fontSize: 13,
+                opacity: step >= CHANGE_STEPS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Step dots */}

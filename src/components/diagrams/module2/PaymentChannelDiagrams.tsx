@@ -9,6 +9,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { Grid } from '@primitives/Grid';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -145,37 +146,41 @@ export function CommitmentTransactionDiagram() {
       </div>
 
       {/* to_local output */}
-      <div style={{
-        padding: 8,
-        background: 'rgba(255,255,255,0.03)',
-        borderRadius: 6,
-        marginBottom: 6,
-        border: `1px solid ${isPenalty ? colors.danger + '30' : colors.warning + '20'}`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span style={{ fontSize: 10, color: colors.warning, fontWeight: 600 }}>to_local</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toLocal}</span>
+      <DiagramTooltip content="to_local -- ваши средства в commitment TX. Защищены таймлоком (OP_CHECKSEQUENCEVERIFY): вы не можете забрать их мгновенно при закрытии канала. Это окно даёт партнёру время обнаружить мошенничество и применить ключ отзыва.">
+        <div style={{
+          padding: 8,
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: 6,
+          marginBottom: 6,
+          border: `1px solid ${isPenalty ? colors.danger + '30' : colors.warning + '20'}`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+            <span style={{ fontSize: 10, color: colors.warning, fontWeight: 600 }}>to_local</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toLocal}</span>
+          </div>
+          <div style={{ fontSize: 9, color: colors.textMuted }}>
+            {tx.localNote}
+          </div>
         </div>
-        <div style={{ fontSize: 9, color: colors.textMuted }}>
-          {tx.localNote}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* to_remote output */}
-      <div style={{
-        padding: 8,
-        background: 'rgba(255,255,255,0.03)',
-        borderRadius: 6,
-        border: `1px solid ${colors.success}20`,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span style={{ fontSize: 10, color: colors.success, fontWeight: 600 }}>to_remote</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toRemote}</span>
+      <DiagramTooltip content="to_remote -- средства партнёра в commitment TX. Доступны мгновенно (без таймлока), потому что партнёр не может мошенничать со своей СОБСТВЕННОЙ commitment TX -- только вы можете её опубликовать.">
+        <div style={{
+          padding: 8,
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: 6,
+          border: `1px solid ${colors.success}20`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+            <span style={{ fontSize: 10, color: colors.success, fontWeight: 600 }}>to_remote</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toRemote}</span>
+          </div>
+          <div style={{ fontSize: 9, color: colors.textMuted }}>
+            {tx.remoteNote}
+          </div>
         </div>
-        <div style={{ fontSize: 9, color: colors.textMuted }}>
-          {tx.remoteNote}
-        </div>
-      </div>
+      </DiagramTooltip>
     </div>
   );
 
@@ -213,40 +218,44 @@ export function CommitmentTransactionDiagram() {
       </div>
 
       {/* Step description */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        borderColor: isPenalty ? `${colors.danger}40` : `${colors.secondary}40`,
-        marginBottom: 16,
-      }}>
+      <DiagramTooltip content={current.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: isPenalty ? colors.danger : colors.secondary,
-          marginBottom: 6,
+          ...glassStyle,
+          padding: 14,
+          borderColor: isPenalty ? `${colors.danger}40` : `${colors.secondary}40`,
+          marginBottom: 16,
         }}>
-          {current.title}
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: isPenalty ? colors.danger : colors.secondary,
+            marginBottom: 6,
+          }}>
+            {current.title}
+          </div>
+          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Warning banner for penalty step */}
       {current.warning && (
-        <div style={{
-          padding: '10px 14px',
-          background: `${colors.danger}15`,
-          border: `2px solid ${colors.danger}50`,
-          borderRadius: 8,
-          marginBottom: 16,
-          textAlign: 'center',
-          fontSize: 14,
-          fontWeight: 700,
-          color: colors.danger,
-        }}>
-          {current.warning}
-        </div>
+        <DiagramTooltip content="Публикация отозванного (revoked) состояния канала -- это мошенничество. Протокол LN-penalty позволяет честному партнёру забрать ВСЕ средства канала, делая мошенничество экономически невыгодным.">
+          <div style={{
+            padding: '10px 14px',
+            background: `${colors.danger}15`,
+            border: `2px solid ${colors.danger}50`,
+            borderRadius: 8,
+            marginBottom: 16,
+            textAlign: 'center',
+            fontSize: 14,
+            fontWeight: 700,
+            color: colors.danger,
+          }}>
+            {current.warning}
+          </div>
+        </DiagramTooltip>
       )}
 
       {/* TX visualizations */}
@@ -268,83 +277,99 @@ export function CommitmentTransactionDiagram() {
 
       {/* Penalty result */}
       {isPenalty && (
-        <div style={{
-          marginTop: 12,
-          ...glassStyle,
-          padding: 12,
-          borderColor: `${colors.danger}30`,
-          background: `${colors.danger}08`,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger, marginBottom: 4 }}>
-            Результат: Bob забирает ВСЕ 10 BTC
+        <DiagramTooltip content="Механизм наказания (LN-penalty) -- ключевой элемент безопасности Lightning Network. Асимметрия commitment TX + ключи отзыва + таймлоки создают экономический стимул для честного поведения без доверия к партнёру.">
+          <div style={{
+            marginTop: 12,
+            ...glassStyle,
+            padding: 12,
+            borderColor: `${colors.danger}30`,
+            background: `${colors.danger}08`,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger, marginBottom: 4 }}>
+              Результат: Bob забирает ВСЕ 10 BTC
+            </div>
+            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+              Bob использует ключ отзыва до истечения таймлока Alice. Ончейн-транзакция переводит все средства канала Bob. Alice теряет всё. Это -- экономическая гарантия честности.
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
-            Bob использует ключ отзыва до истечения таймлока Alice. Ончейн-транзакция переводит все средства канала Bob. Alice теряет всё. Это -- экономическая гарантия честности.
-          </div>
-        </div>
+        </DiagramTooltip>
       )}
 
       {/* Detail note */}
-      <div style={{
-        marginTop: 12,
-        padding: 10,
-        ...glassStyle,
-        borderColor: 'rgba(255,255,255,0.08)',
-        fontSize: 11,
-        color: colors.textMuted,
-        lineHeight: 1.5,
-      }}>
-        {current.detail}
-      </div>
+      <DiagramTooltip content={current.detail}>
+        <div style={{
+          marginTop: 12,
+          padding: 10,
+          ...glassStyle,
+          borderColor: 'rgba(255,255,255,0.08)',
+          fontSize: 11,
+          color: colors.textMuted,
+          lineHeight: 1.5,
+        }}>
+          {current.detail}
+        </div>
+      </DiagramTooltip>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handlePrev}
-          disabled={step <= 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step <= 0 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step <= 0 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step <= 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= COMMITMENT_STEPS.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= COMMITMENT_STEPS.length - 1 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= COMMITMENT_STEPS.length - 1 ? colors.textMuted : colors.secondary,
-            border: `1px solid ${step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.secondary}`,
-            background: step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.secondary}15`,
-            opacity: step >= COMMITMENT_STEPS.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
+        <DiagramTooltip content="Вернуться к первому шагу демонстрации commitment TX.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleReset}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handlePrev}
+              disabled={step <= 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step <= 0 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step <= 0 ? colors.textMuted : colors.accent,
+                border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                opacity: step <= 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу демонстрации commitment TX.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleNext}
+              disabled={step >= COMMITMENT_STEPS.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= COMMITMENT_STEPS.length - 1 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step >= COMMITMENT_STEPS.length - 1 ? colors.textMuted : colors.secondary,
+                border: `1px solid ${step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.secondary}`,
+                background: step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.secondary}15`,
+                opacity: step >= COMMITMENT_STEPS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -578,37 +603,43 @@ export function HTLCMultiHopDiagram() {
       </div>
 
       {/* Step description */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        borderColor: isTimeout ? `${colors.danger}40` : `${colors.success}40`,
-        marginBottom: 16,
-      }}>
+      <DiagramTooltip content={current.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: isTimeout ? colors.danger : colors.success,
-          marginBottom: 6,
+          ...glassStyle,
+          padding: 14,
+          borderColor: isTimeout ? `${colors.danger}40` : `${colors.success}40`,
+          marginBottom: 16,
         }}>
-          {current.title}
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: isTimeout ? colors.danger : colors.success,
+            marginBottom: 6,
+          }}>
+            {current.title}
+          </div>
+          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Preimage and Hash display */}
       <Grid columns={2} gap={8}>
-        <DataBox
-          label="Хеш H = SHA-256(R)"
-          value={current.hashH}
-          variant="default"
-        />
-        <DataBox
-          label="Прообраз R"
-          value={current.preimageR}
-          variant={current.preimageR.includes('???') ? 'default' : 'highlight'}
-        />
+        <DiagramTooltip content="Хеш H -- публичный идентификатор платежа. Вычисляется как SHA-256 от секретного прообраза R. Знание H не позволяет вычислить R (односторонняя функция). H используется как хеш-лок во всех HTLC маршрута.">
+          <DataBox
+            label="Хеш H = SHA-256(R)"
+            value={current.hashH}
+            variant="default"
+          />
+        </DiagramTooltip>
+        <DiagramTooltip content="Прообраз R -- секрет, известный только получателю (Bob). Раскрытие R разблокирует HTLC и подтверждает получение платежа. R 'течёт' назад по маршруту от получателя к отправителю.">
+          <DataBox
+            label="Прообраз R"
+            value={current.preimageR}
+            variant={current.preimageR.includes('???') ? 'default' : 'highlight'}
+          />
+        </DiagramTooltip>
       </Grid>
 
       {/* Preimage flow arrow (when revealed) */}
@@ -634,95 +665,115 @@ export function HTLCMultiHopDiagram() {
 
       {/* Timelock explanation for step 2 */}
       {step === 2 && !showTimeout && (
+        <DiagramTooltip content="Убывающие таймлоки -- критический элемент безопасности мультихоп-платежей. Каждый промежуточный узел имеет меньший таймлок, чем предыдущий. Это гарантирует, что посредник успеет получить R и передать его дальше до истечения своего HTLC.">
+          <div style={{
+            marginTop: 12,
+            ...glassStyle,
+            padding: 10,
+            borderColor: `${colors.warning}30`,
+            fontSize: 11,
+            color: colors.textMuted,
+            lineHeight: 1.5,
+          }}>
+            <strong style={{ color: colors.warning }}>Почему таймлоки убывают?</strong>{' '}
+            Alice: 48ч, Carol: 24ч. Если Carol узнает R от Bob, у неё есть 24 часа чтобы передать R Alice (до истечения 48ч). Убывающие таймлоки гарантируют атомарность.
+          </div>
+        </DiagramTooltip>
+      )}
+
+      {/* Detail note */}
+      <DiagramTooltip content={current.detail}>
         <div style={{
           marginTop: 12,
-          ...glassStyle,
           padding: 10,
-          borderColor: `${colors.warning}30`,
+          ...glassStyle,
+          borderColor: 'rgba(255,255,255,0.08)',
           fontSize: 11,
           color: colors.textMuted,
           lineHeight: 1.5,
         }}>
-          <strong style={{ color: colors.warning }}>Почему таймлоки убывают?</strong>{' '}
-          Alice: 48ч, Carol: 24ч. Если Carol узнает R от Bob, у неё есть 24 часа чтобы передать R Alice (до истечения 48ч). Убывающие таймлоки гарантируют атомарность.
+          {current.detail}
         </div>
-      )}
-
-      {/* Detail note */}
-      <div style={{
-        marginTop: 12,
-        padding: 10,
-        ...glassStyle,
-        borderColor: 'rgba(255,255,255,0.08)',
-        fontSize: 11,
-        color: colors.textMuted,
-        lineHeight: 1.5,
-      }}>
-        {current.detail}
-      </div>
+      </DiagramTooltip>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handlePrev}
-          disabled={step <= 0 && !showTimeout}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: (step <= 0 && !showTimeout) ? 'default' : 'pointer',
-            fontSize: 12,
-            color: (step <= 0 && !showTimeout) ? colors.textMuted : colors.accent,
-            border: `1px solid ${(step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: (step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: (step <= 0 && !showTimeout) ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= HTLC_STEPS.length - 1 || showTimeout}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'default' : 'pointer',
-            fontSize: 12,
-            color: (step >= HTLC_STEPS.length - 1 || showTimeout) ? colors.textMuted : colors.success,
-            border: `1px solid ${(step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.1)' : colors.success}`,
-            background: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
-            opacity: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
-        <button
-          onClick={() => setShowTimeout(!showTimeout)}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: showTimeout ? colors.success : colors.danger,
-            border: `1px solid ${showTimeout ? colors.success : colors.danger}`,
-            background: `${showTimeout ? colors.success : colors.danger}15`,
-          }}
-        >
-          {showTimeout ? 'Назад к маршруту' : 'Таймаут'}
-        </button>
+        <DiagramTooltip content="Вернуться к первому шагу HTLC демонстрации.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleReset}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handlePrev}
+              disabled={step <= 0 && !showTimeout}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: (step <= 0 && !showTimeout) ? 'default' : 'pointer',
+                fontSize: 12,
+                color: (step <= 0 && !showTimeout) ? colors.textMuted : colors.accent,
+                border: `1px solid ${(step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                background: (step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                opacity: (step <= 0 && !showTimeout) ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу HTLC мультихоп-платежа.">
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={handleNext}
+              disabled={step >= HTLC_STEPS.length - 1 || showTimeout}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'default' : 'pointer',
+                fontSize: 12,
+                color: (step >= HTLC_STEPS.length - 1 || showTimeout) ? colors.textMuted : colors.success,
+                border: `1px solid ${(step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.1)' : colors.success}`,
+                background: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
+                opacity: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content={showTimeout ? "Вернуться к основному маршруту HTLC-платежа." : "Показать альтернативный сценарий: что происходит, если Bob не раскрывает прообраз R и все HTLC истекают по таймауту."}>
+          <div style={{ display: 'inline-block' }}>
+            <button
+              onClick={() => setShowTimeout(!showTimeout)}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: showTimeout ? colors.success : colors.danger,
+                border: `1px solid ${showTimeout ? colors.success : colors.danger}`,
+                background: `${showTimeout ? colors.success : colors.danger}15`,
+              }}
+            >
+              {showTimeout ? 'Назад к маршруту' : 'Таймаут'}
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
