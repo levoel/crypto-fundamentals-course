@@ -6,9 +6,9 @@
  * - DAOCategoriesDiagram: DAO landscape/categories grid with hover tooltips
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -120,51 +120,57 @@ export function DAOArchitectureDiagram() {
         gap: 12,
         marginBottom: 12,
       }}>
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          border: '1px solid rgba(239,68,68,0.2)',
-        }}>
+        <DiagramTooltip content="Традиционная организация управляется советом директоров и CEO. Решения принимаются за закрытыми дверями, акционеры голосуют редко. Прозрачность минимальна, NDA защищают информацию от публичного доступа.">
           <div style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#ef4444',
-            fontFamily: 'monospace',
-            marginBottom: 6,
+            ...glassStyle,
+            padding: 14,
+            border: '1px solid rgba(239,68,68,0.2)',
           }}>
-            Traditional Organization
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#ef4444',
+              fontFamily: 'monospace',
+              marginBottom: 6,
+            }}>
+              Traditional Organization
+            </div>
+            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+              Board of Directors decides. Shareholders vote rarely.
+              CEO executes decisions. Hierarchy, NDAs, closed meetings.
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
-            Board of Directors decides. Shareholders vote rarely.
-            CEO executes decisions. Hierarchy, NDAs, closed meetings.
-          </div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          border: '1px solid rgba(34,197,94,0.2)',
-        }}>
+        </DiagramTooltip>
+        <DiagramTooltip content="DAO -- децентрализованная автономная организация, где владельцы токенов предлагают и голосуют за решения. Смарт-контракт автоматически исполняет результат голосования. Всё прозрачно: код открыт, голоса на блокчейне, казна под контролем сообщества.">
           <div style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: '#22c55e',
-            fontFamily: 'monospace',
-            marginBottom: 6,
+            ...glassStyle,
+            padding: 14,
+            border: '1px solid rgba(34,197,94,0.2)',
           }}>
-            DAO (Decentralized Autonomous Organization)
+            <div style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#22c55e',
+              fontFamily: 'monospace',
+              marginBottom: 6,
+            }}>
+              DAO (Decentralized Autonomous Organization)
+            </div>
+            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+              Token holders propose and vote. Smart contract executes.
+              Open governance, transparent voting, code is law.
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
-            Token holders propose and vote. Smart contract executes.
-            Open governance, transparent voting, code is law.
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
-      <DataBox
-        label="DAO Architecture"
-        value="Token Holders -> Proposal -> Voting -> Timelock -> Execution. Все решения исполняются автоматически через смарт-контракты."
-        variant="highlight"
-      />
+      <DiagramTooltip content="Полный цикл DAO-governance: владельцы токенов создают предложение, сообщество голосует (For/Against/Abstain), после успешного голосования предложение проходит через timelock-задержку и автоматически исполняется on-chain. Это устраняет необходимость доверять центральному оператору.">
+        <DataBox
+          label="DAO Architecture"
+          value="Token Holders -> Proposal -> Voting -> Timelock -> Execution. Все решения исполняются автоматически через смарт-контракты."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -219,8 +225,6 @@ const DAO_CATEGORIES: DAOCategory[] = [
  * Color-coded: blue=protocol, green=investment, purple=social, orange=service.
  */
 export function DAOCategoriesDiagram() {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Категории DAO" color="purple">
       <div style={{
@@ -229,22 +233,27 @@ export function DAOCategoriesDiagram() {
         gap: 12,
         marginBottom: 12,
       }}>
-        {DAO_CATEGORIES.map((cat, i) => {
-          const isHovered = hoverIdx === i;
-          return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoverIdx(i)}
-              onMouseLeave={() => setHoverIdx(null)}
-              style={{
-                ...glassStyle,
-                padding: 16,
-                cursor: 'default',
-                border: `1px solid ${isHovered ? cat.color : 'rgba(255,255,255,0.08)'}`,
-                background: isHovered ? `${cat.color}10` : 'rgba(255,255,255,0.03)',
-                transition: 'all 0.2s',
-              }}
-            >
+        {DAO_CATEGORIES.map((cat, i) => (
+          <DiagramTooltip
+            key={i}
+            content={`${cat.nameRu}: ${cat.description}. Примеры: ${cat.examples.join(', ')}. ${
+              cat.name === 'Protocol DAOs'
+                ? 'Крупнейшие по казне -- Uniswap ($6B+), Aave, MakerDAO/Sky. Управляют параметрами протоколов, обновлениями и распределением средств.'
+                : cat.name === 'Investment DAOs'
+                  ? 'Участники объединяют капитал и совместно решают, куда инвестировать. Юридическая структура через обертки типа LAO (Limited Liability Autonomous Organization).'
+                  : cat.name === 'Social DAOs'
+                    ? 'Членство через владение токеном. Создают контент, проводят события, строят культуру вокруг Web3-сообщества.'
+                    : 'Кооперативы Web3-специалистов: разработчиков, юристов, дизайнеров. Распределение работы и оплаты через on-chain механизмы.'
+            }`}
+          >
+            <div style={{
+              ...glassStyle,
+              padding: 16,
+              cursor: 'default',
+              border: `1px solid rgba(255,255,255,0.08)`,
+              background: 'rgba(255,255,255,0.03)',
+              transition: 'all 0.2s',
+            }}>
               <div style={{
                 fontSize: 13,
                 fontWeight: 600,
@@ -265,45 +274,21 @@ export function DAOCategoriesDiagram() {
                 fontSize: 11,
                 color: colors.text,
                 lineHeight: 1.5,
-                marginBottom: 8,
               }}>
                 {cat.description}
               </div>
-              {/* Example DAOs (visible on hover) */}
-              <div style={{
-                maxHeight: isHovered ? 80 : 0,
-                overflow: 'hidden',
-                transition: 'max-height 0.3s',
-              }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4, fontFamily: 'monospace' }}>
-                  Examples:
-                </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {cat.examples.map((ex, j) => (
-                    <span key={j} style={{
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: `${cat.color}15`,
-                      color: cat.color,
-                      border: `1px solid ${cat.color}30`,
-                    }}>
-                      {ex}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
-      <DataBox
-        label="DAO Landscape"
-        value="Protocol DAOs управляют DeFi ($6B+ treasury Uniswap). Investment DAOs объединяют капитал. Social DAOs строят сообщества. Service DAOs -- Web3-кооперативы."
-        variant="highlight"
-      />
+      <DiagramTooltip content="Категоризация DAO помогает понять масштаб децентрализованного управления. Protocol DAOs контролируют миллиарды долларов в DeFi, Investment DAOs демократизируют доступ к венчурным инвестициям, Social DAOs создают новые формы сообществ, а Service DAOs формируют Web3-рынок труда.">
+        <DataBox
+          label="DAO Landscape"
+          value="Protocol DAOs управляют DeFi ($6B+ treasury Uniswap). Investment DAOs объединяют капитал. Social DAOs строят сообщества. Service DAOs -- Web3-кооперативы."
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

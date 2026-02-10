@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -144,48 +145,64 @@ export function DelegationFlowDiagram() {
         marginBottom: 12,
         border: '1px solid rgba(96,165,250,0.2)',
       }}>
-        <div style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: '#60a5fa',
-          fontFamily: 'monospace',
-          marginBottom: 4,
-        }}>
-          {current.title}
-        </div>
-        <div style={{ fontSize: 12, color: colors.text, marginBottom: 12 }}>
-          {current.description}
-        </div>
+        <DiagramTooltip content={
+          step === 0 ? 'mint() создает governance-токены. Но сами по себе токены НЕ дают права голоса -- это ключевое отличие ERC20Votes от обычного ERC20. Без вызова delegate() voting power остается нулевым, что защищает от flash loan атак.'
+          : step === 1 ? 'delegate(self) активирует voting power через создание checkpoint. Checkpoint фиксирует баланс в конкретный момент времени, что предотвращает манипуляцию голосами через flash loans.'
+          : step === 2 ? 'При transfer() токены перемещаются, но делегация НЕ переносится автоматически. Получатель должен сам вызвать delegate(), иначе его токены \"молчат\" в голосовании.'
+          : step === 3 ? 'Представительское делегирование позволяет Bob отдать свои голоса Alice, не передавая токены. Alice получает 1M votes (свои 500K + Bob 500K). Это основа liquid democracy в DAO.'
+          : 'Snapshot фиксирует voting power на момент создания proposal. Даже если после этого кто-то купит токены, они не смогут повлиять на уже существующее голосование. Это главная защита от flash loan governance атак.'
+        }>
+          <div>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#60a5fa',
+              fontFamily: 'monospace',
+              marginBottom: 4,
+            }}>
+              {current.title}
+            </div>
+            <div style={{ fontSize: 12, color: colors.text }}>
+              {current.description}
+            </div>
+          </div>
+        </DiagramTooltip>
 
         {/* Alice and Bob panels */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(96,165,250,0.15)' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#60a5fa', fontFamily: 'monospace', marginBottom: 8 }}>
-              Alice
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12, marginBottom: 12 }}>
+          <DiagramTooltip content="Alice -- основной участник в примере делегирования. Она получает токены через mint(), активирует voting power через delegate(self) и может получать делегированные голоса от других участников.">
+            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(96,165,250,0.15)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#60a5fa', fontFamily: 'monospace', marginBottom: 8 }}>
+                Alice
+              </div>
+              {renderBar('balanceOf', current.alice.balance, 1000000, '#60a5fa')}
+              {renderBar('getVotes', current.alice.votes, 1000000, '#22c55e')}
             </div>
-            {renderBar('balanceOf', current.alice.balance, 1000000, '#60a5fa')}
-            {renderBar('getVotes', current.alice.votes, 1000000, '#22c55e')}
-          </div>
-          <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(249,115,22,0.15)' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#f97316', fontFamily: 'monospace', marginBottom: 8 }}>
-              Bob
+          </DiagramTooltip>
+          <DiagramTooltip content="Bob -- получатель токенов через transfer(). Он имеет баланс, но если не вызовет delegate(), его voting power будет нулевым. Bob может делегировать голоса себе или представителю (Alice).">
+            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(249,115,22,0.15)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#f97316', fontFamily: 'monospace', marginBottom: 8 }}>
+                Bob
+              </div>
+              {renderBar('balanceOf', current.bob.balance, 1000000, '#f97316')}
+              {renderBar('getVotes', current.bob.votes, 1000000, '#22c55e')}
             </div>
-            {renderBar('balanceOf', current.bob.balance, 1000000, '#f97316')}
-            {renderBar('getVotes', current.bob.votes, 1000000, '#22c55e')}
-          </div>
+          </DiagramTooltip>
         </div>
 
         {/* Insight */}
-        <div style={{
-          padding: '8px 12px',
-          borderRadius: 6,
-          background: `${current.insightColor}10`,
-          border: `1px solid ${current.insightColor}30`,
-        }}>
-          <span style={{ fontSize: 11, color: current.insightColor, fontFamily: 'monospace', fontWeight: 600 }}>
-            {current.insight}
-          </span>
-        </div>
+        <DiagramTooltip content="Инсайт показывает ключевой вывод каждого шага. Обратите внимание, как voting power изменяется отдельно от баланса токенов -- это фундаментальное свойство ERC20Votes.">
+          <div style={{
+            padding: '8px 12px',
+            borderRadius: 6,
+            background: `${current.insightColor}10`,
+            border: `1px solid ${current.insightColor}30`,
+          }}>
+            <span style={{ fontSize: 11, color: current.insightColor, fontFamily: 'monospace', fontWeight: 600 }}>
+              {current.insight}
+            </span>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Navigation */}
@@ -250,7 +267,9 @@ export function VotingPowerDiagram() {
       {/* Slider */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Token Amount</span>
+          <DiagramTooltip content="Количество governance-токенов на балансе. В модели 1 token = 1 vote, больше токенов означает больше влияния. Однако некоторые DAO экспериментируют с квадратичным голосованием (quadratic voting), где влияние растет как корень из количества токенов.">
+            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Token Amount</span>
+          </DiagramTooltip>
           <span style={{ fontSize: 11, color: '#f97316', fontFamily: 'monospace', fontWeight: 600 }}>
             {amount.toLocaleString()}
           </span>
@@ -268,7 +287,9 @@ export function VotingPowerDiagram() {
 
       {/* Delegation toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Delegated?</span>
+        <DiagramTooltip content="Делегация -- обязательный шаг для активации voting power в ERC20Votes. Без вызова delegate() баланс токенов не конвертируется в голоса. Можно делегировать себе (self-delegate) или представителю. Это защита от flash loan атак: snapshot фиксирует голоса до начала голосования.">
+          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Delegated?</span>
+        </DiagramTooltip>
         <button
           onClick={() => setDelegated(!delegated)}
           style={{
@@ -341,34 +362,38 @@ export function VotingPowerDiagram() {
       </div>
 
       {/* Code snippet */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        marginBottom: 12,
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}>
+      <DiagramTooltip content="token.delegate(address(this)) -- Solidity-вызов для самоделегирования. address(this) в контексте контракта означает адрес самого контракта. Для EOA (обычного кошелька) используется token.delegate(msg.sender). После вызова создается checkpoint с текущим балансом как voting power.">
         <div style={{
-          fontSize: 10,
-          color: colors.textMuted,
-          fontFamily: 'monospace',
-          marginBottom: 4,
+          ...glassStyle,
+          padding: 12,
+          marginBottom: 12,
+          border: '1px solid rgba(255,255,255,0.08)',
         }}>
-          Активация voting power:
+          <div style={{
+            fontSize: 10,
+            color: colors.textMuted,
+            fontFamily: 'monospace',
+            marginBottom: 4,
+          }}>
+            Активация voting power:
+          </div>
+          <code style={{
+            fontSize: 11,
+            color: delegated ? '#22c55e' : '#f97316',
+            fontFamily: 'monospace',
+          }}>
+            token.delegate(address(this));
+          </code>
         </div>
-        <code style={{
-          fontSize: 11,
-          color: delegated ? '#22c55e' : '#f97316',
-          fontFamily: 'monospace',
-        }}>
-          token.delegate(address(this));
-        </code>
-      </div>
+      </DiagramTooltip>
 
-      <DataBox
-        label="CRITICAL"
-        value="ERC20Votes НЕ отслеживает voting power автоматически. balanceOf() может быть 1M, а getVotes() будет 0. Вызовите delegate(self) для активации!"
-        variant="highlight"
-      />
+      <DiagramTooltip content="Это критически важный паттерн ERC20Votes от OpenZeppelin. balanceOf() отвечает за владение токенами (ERC20), а getVotes() -- за voting power (ERC20Votes extension). Эти значения независимы. Без явного вызова delegate() voting power всегда будет 0, даже с миллионами токенов на балансе.">
+        <DataBox
+          label="CRITICAL"
+          value="ERC20Votes НЕ отслеживает voting power автоматически. balanceOf() может быть 1M, а getVotes() будет 0. Вызовите delegate(self) для активации!"
+          variant="highlight"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
