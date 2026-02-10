@@ -1,0 +1,715 @@
+{
+  "title": "Глоссарий криптографии и блокчейна",
+  "description": "Справочник ключевых терминов криптографии и блокчейна — от математических основ до ZK-proofs. Каждый термин содержит определение, примеры кода и ссылки на уроки курса.",
+  "categories": [
+    {
+      "id": "math-foundations",
+      "name": "Математические основы",
+      "terms": [
+        {
+          "term": "Модулярная арифметика",
+          "termEn": "Modular Arithmetic",
+          "definition": "Система арифметики, где числа «оборачиваются» при достижении модуля. Операция a mod n возвращает остаток от деления a на n. Фундамент криптографии: RSA, Диффи-Хеллман, эллиптические кривые — все строятся на модулярной арифметике.",
+          "example": "# Python: модулярная арифметика\n17 % 5        # → 2\npow(3, 7, 13) # → 3^7 mod 13 = 2187 mod 13 = 3\n\n# Модулярное обратное\npow(7, -1, 13) # → 2  (потому что 7 × 2 = 14 ≡ 1 mod 13)",
+          "relatedLessons": [
+            { "title": "Модулярная арифметика", "slug": "02-crypto-foundations/01-modular-arithmetic" },
+            { "title": "Числа и нотация", "slug": "01-math-refresher/01-numbers-notation" }
+          ]
+        },
+        {
+          "term": "Конечное поле",
+          "termEn": "Finite Field (Galois Field)",
+          "definition": "Множество конечного числа элементов с операциями сложения и умножения, удовлетворяющее аксиомам поля. Обозначается GF(p) или F_p для простого p. Все операции в эллиптических кривых выполняются в конечном поле.",
+          "example": "# GF(7): поле из 7 элементов {0,1,2,3,4,5,6}\n# Сложение: (5 + 4) mod 7 = 2\n# Умножение: (3 × 5) mod 7 = 1\n# Обратный к 3: 5 (потому что 3 × 5 = 15 ≡ 1 mod 7)",
+          "relatedLessons": [
+            { "title": "Группы и конечные поля", "slug": "02-crypto-foundations/02-groups-finite-fields" }
+          ]
+        },
+        {
+          "term": "Группа",
+          "termEn": "Group",
+          "definition": "Алгебраическая структура: множество элементов с одной операцией, удовлетворяющей замкнутости, ассоциативности, наличию нейтрального элемента и обратных. Криптография использует циклические группы, где g^k порождает все элементы.",
+          "example": "# Циклическая группа Z*_7 = {1,2,3,4,5,6}\n# Генератор g = 3:\n# 3^1=3, 3^2=2, 3^3=6, 3^4=4, 3^5=5, 3^6=1\n# Порядок группы: 6",
+          "relatedLessons": [
+            { "title": "Группы и конечные поля", "slug": "02-crypto-foundations/02-groups-finite-fields" }
+          ]
+        },
+        {
+          "term": "Простое число",
+          "termEn": "Prime Number",
+          "definition": "Натуральное число > 1, делимое только на 1 и на себя. Простые числа — основа RSA (произведение двух больших простых), конечных полей (GF(p)), и генерации параметров эллиптических кривых.",
+          "example": "# Тест простоты (пробное деление)\ndef is_prime(n):\n    if n < 2: return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0: return False\n    return True\n\n# RSA использует простые ~2048 бит\n# secp256k1 использует p = 2^256 - 2^32 - 977",
+          "relatedLessons": [
+            { "title": "Простые числа и делимость", "slug": "01-math-refresher/02-primes-divisibility" },
+            { "title": "RSA: математика и реализация", "slug": "02-crypto-foundations/08-rsa" }
+          ]
+        },
+        {
+          "term": "Дискретный логарифм",
+          "termEn": "Discrete Logarithm",
+          "definition": "Задача нахождения x по известным g, h и p, где g^x ≡ h (mod p). Вычислительно неразрешима для больших p — это основа безопасности Диффи-Хеллмана, DSA и криптографии на эллиптических кривых (ECDLP).",
+          "example": "# Легко: 3^5 mod 23 = 243 mod 23 = 13\n# Трудно: найти x, если 3^x ≡ 13 (mod 23)\n# Ответ: x = 5, но для больших чисел\n# перебор невозможен (~2^128 операций)",
+          "relatedLessons": [
+            { "title": "Группы и конечные поля", "slug": "02-crypto-foundations/02-groups-finite-fields" },
+            { "title": "Эллиптические кривые", "slug": "02-crypto-foundations/09-elliptic-curves" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hash-functions",
+      "name": "Хеш-функции",
+      "terms": [
+        {
+          "term": "Хеш-функция",
+          "termEn": "Hash Function",
+          "definition": "Функция, преобразующая вход произвольной длины в выход фиксированной длины (дайджест). Криптографические хеш-функции обладают тремя свойствами: устойчивость к прообразу, устойчивость ко второму прообразу, устойчивость к коллизиям.",
+          "example": "import hashlib\n\n# SHA-256: всегда 256 бит (32 байта)\nhashlib.sha256(b'Hello').hexdigest()\n# → '185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969'\n\n# Лавинный эффект: 1 бит изменения → ~50% битов меняются\nhashlib.sha256(b'hello').hexdigest()\n# → '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'",
+          "relatedLessons": [
+            { "title": "Хеш-функции: свойства и применение", "slug": "02-crypto-foundations/03-hash-functions" }
+          ]
+        },
+        {
+          "term": "SHA-256",
+          "termEn": "Secure Hash Algorithm 256-bit",
+          "definition": "Криптографическая хеш-функция из семейства SHA-2, выдающая 256-битный дайджест. Используется в Bitcoin (double SHA-256 для блоков, Merkle-деревьев), сертификатах TLS. 64 раунда с операциями сдвига, вращения и XOR.",
+          "example": "# Bitcoin double-SHA256\nimport hashlib\n\ndef double_sha256(data: bytes) -> bytes:\n    return hashlib.sha256(\n        hashlib.sha256(data).digest()\n    ).digest()\n\n# Заголовок блока хешируется дважды\nblock_hash = double_sha256(block_header)",
+          "relatedLessons": [
+            { "title": "Пошаговая визуализация SHA-256", "slug": "02-crypto-foundations/04-sha256-visualization" },
+            { "title": "Майнинг и Proof of Work", "slug": "03-bitcoin/06-mining-pow" }
+          ]
+        },
+        {
+          "term": "Keccak / SHA-3",
+          "termEn": "Keccak (SHA-3)",
+          "definition": "Хеш-функция, победившая конкурс NIST SHA-3. Построена на конструкции sponge (губка) вместо Merkle-Damgård. Ethereum использует Keccak-256 (до финализации NIST) для хеширования адресов, storage-слотов и Solidity-селекторов.",
+          "example": "# Ethereum использует Keccak-256\nfrom Crypto.Hash import keccak\n\nk = keccak.new(digest_bits=256)\nk.update(b'transfer(address,uint256)')\nk.hexdigest()[:8]  # → 'a9059cbb' (selector)\n\n# Адрес = последние 20 байт Keccak-256(pubkey)",
+          "relatedLessons": [
+            { "title": "Keccak и SHA-3", "slug": "02-crypto-foundations/05-keccak-sha3" },
+            { "title": "Архитектура Ethereum", "slug": "04-ethereum/01-ethereum-architecture" }
+          ]
+        },
+        {
+          "term": "Дерево Меркла",
+          "termEn": "Merkle Tree",
+          "definition": "Двоичное дерево хешей, где каждый листовой узел — хеш данных, а каждый внутренний узел — хеш конкатенации дочерних. Корень (Merkle root) фиксирует всё дерево. Позволяет эффективно доказывать включение элемента за O(log n).",
+          "example": "# Merkle Root из 4 транзакций\n#         Root\n#        /    \\\n#      H12    H34\n#     / \\    / \\\n#    H1  H2 H3  H4\n#    |   |   |   |\n#   tx1 tx2 tx3 tx4\n\n# Proof для tx3: [H4, H12]\n# Verify: H(H(H(tx3) + H4) + H12) == Root?",
+          "relatedLessons": [
+            { "title": "Деревья Меркла", "slug": "02-crypto-foundations/13-merkle-trees" },
+            { "title": "Merkle Proofs", "slug": "02-crypto-foundations/14-merkle-proofs" },
+            { "title": "Структура блока Bitcoin", "slug": "03-bitcoin/03-block-structure" }
+          ]
+        },
+        {
+          "term": "Лавинный эффект",
+          "termEn": "Avalanche Effect",
+          "definition": "Свойство криптографической хеш-функции: изменение одного бита входа приводит к изменению ~50% битов выхода. Критически важно для безопасности — предотвращает предсказание хеша по частичному знанию входа.",
+          "relatedLessons": [
+            { "title": "Хеш-функции: свойства и применение", "slug": "02-crypto-foundations/03-hash-functions" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "encryption",
+      "name": "Шифрование",
+      "terms": [
+        {
+          "term": "AES",
+          "termEn": "Advanced Encryption Standard",
+          "definition": "Симметричный блочный шифр с размером блока 128 бит и ключами 128/192/256 бит. Стандарт шифрования (NIST, 2001). 10/12/14 раундов подстановки-перестановки (SubBytes, ShiftRows, MixColumns, AddRoundKey).",
+          "example": "from Crypto.Cipher import AES\nimport os\n\nkey = os.urandom(32)   # AES-256\nnonce = os.urandom(12) # для GCM\n\ncipher = AES.new(key, AES.MODE_GCM, nonce=nonce)\nciphertext, tag = cipher.encrypt_and_digest(b'Secret')\n\n# Расшифровка\ndecipher = AES.new(key, AES.MODE_GCM, nonce=nonce)\nplaintext = decipher.decrypt_and_verify(ciphertext, tag)",
+          "relatedLessons": [
+            { "title": "Симметричное шифрование: AES", "slug": "02-crypto-foundations/06-symmetric-aes" },
+            { "title": "Режимы работы блочных шифров", "slug": "02-crypto-foundations/07-block-cipher-modes" }
+          ]
+        },
+        {
+          "term": "RSA",
+          "termEn": "Rivest-Shamir-Adleman",
+          "definition": "Асимметричный криптоалгоритм, безопасность которого основана на сложности факторизации произведения двух больших простых чисел. Используется для шифрования и цифровых подписей. Ключи: n = p × q, e (открытый), d (закрытый).",
+          "example": "# Упрощённый RSA (малые числа)\np, q = 61, 53\nn = p * q                 # 3233\nphi = (p-1) * (q-1)      # 3120\ne = 17                    # открытый экспонент\nd = pow(e, -1, phi)       # 2753 (закрытый)\n\n# Шифрование: c = m^e mod n\nc = pow(42, e, n)         # 2557\n# Расшифровка: m = c^d mod n\nm = pow(c, d, n)          # 42 ✓",
+          "relatedLessons": [
+            { "title": "RSA: математика и реализация", "slug": "02-crypto-foundations/08-rsa" }
+          ]
+        },
+        {
+          "term": "Режим CBC",
+          "termEn": "Cipher Block Chaining",
+          "definition": "Режим работы блочного шифра, где каждый блок открытого текста XOR-ится с предыдущим блоком шифротекста перед шифрованием. Первый блок XOR-ится с вектором инициализации (IV). Обеспечивает рассеивание, но уязвим к padding oracle атакам.",
+          "relatedLessons": [
+            { "title": "Режимы работы блочных шифров", "slug": "02-crypto-foundations/07-block-cipher-modes" }
+          ]
+        },
+        {
+          "term": "Режим GCM",
+          "termEn": "Galois/Counter Mode",
+          "definition": "Аутентифицированный режим шифрования, объединяющий CTR-шифрование с аутентификацией Galois MAC. Обеспечивает конфиденциальность и целостность. Стандартный режим для TLS 1.3 и современных протоколов.",
+          "relatedLessons": [
+            { "title": "Режимы работы блочных шифров", "slug": "02-crypto-foundations/07-block-cipher-modes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "digital-signatures",
+      "name": "Цифровые подписи и кривые",
+      "terms": [
+        {
+          "term": "Эллиптическая кривая",
+          "termEn": "Elliptic Curve",
+          "definition": "Кривая вида y² = x³ + ax + b над конечным полем. Точки на кривой образуют абелеву группу с операцией «сложения». Безопасность основана на задаче дискретного логарифма на эллиптической кривой (ECDLP). Ключи в 256 бит эквивалентны RSA-3072.",
+          "example": "# secp256k1 (Bitcoin/Ethereum)\n# y² = x³ + 7 (a=0, b=7)\n# p = 2²⁵⁶ - 2³² - 977\n# n = FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141\n# G = генераторная точка\n\n# Приватный ключ: k (случайное 256-бит число)\n# Публичный ключ: P = k × G (скалярное умножение)",
+          "relatedLessons": [
+            { "title": "Эллиптические кривые: математика", "slug": "02-crypto-foundations/09-elliptic-curves" },
+            { "title": "Кривые secp256k1 и Ed25519", "slug": "02-crypto-foundations/10-secp256k1-ed25519" }
+          ]
+        },
+        {
+          "term": "secp256k1",
+          "termEn": "secp256k1",
+          "definition": "Эллиптическая кривая, используемая в Bitcoin и Ethereum. Параметры: y² = x³ + 7 над полем F_p, где p = 2²⁵⁶ − 2³² − 977. Выбрана Сатоши Накамото. Эндоморфизм GLV позволяет ускорить верификацию подписей на ~33%.",
+          "relatedLessons": [
+            { "title": "Кривые secp256k1 и Ed25519", "slug": "02-crypto-foundations/10-secp256k1-ed25519" },
+            { "title": "Архитектура Bitcoin", "slug": "03-bitcoin/01-bitcoin-architecture" }
+          ]
+        },
+        {
+          "term": "Ed25519",
+          "termEn": "Ed25519",
+          "definition": "Схема подписи на кривой Curve25519 (Edwards form). Используется в Solana, Monero, SSH. Преимущества: детерминированные подписи (без случайного k), быстрая верификация, устойчивость к side-channel атакам.",
+          "relatedLessons": [
+            { "title": "Кривые secp256k1 и Ed25519", "slug": "02-crypto-foundations/10-secp256k1-ed25519" },
+            { "title": "EdDSA и подписи Шнорра", "slug": "02-crypto-foundations/12-eddsa-schnorr" },
+            { "title": "Архитектура Solana", "slug": "05-solana/01-solana-architecture" }
+          ]
+        },
+        {
+          "term": "ECDSA",
+          "termEn": "Elliptic Curve Digital Signature Algorithm",
+          "definition": "Алгоритм цифровой подписи на эллиптических кривых. Подпись (r, s): r = (k×G).x mod n, s = k⁻¹(hash + r×privKey) mod n. Используется в Bitcoin и Ethereum для авторизации транзакций.",
+          "example": "# Подпись транзакции (упрощённо)\nk = random(1, n-1)       # одноразовый nonce\nR = k × G                # точка на кривой\nr = R.x mod n             # первая часть подписи\ns = k⁻¹(z + r×d) mod n   # z = hash(msg), d = privkey\n# signature = (r, s)\n\n# КРИТИЧНО: повторное использование k → утечка privkey!",
+          "relatedLessons": [
+            { "title": "ECDSA: цифровая подпись", "slug": "02-crypto-foundations/11-ecdsa" },
+            { "title": "Типы транзакций Bitcoin", "slug": "03-bitcoin/05-transaction-types" }
+          ]
+        },
+        {
+          "term": "Подпись Шнорра",
+          "termEn": "Schnorr Signature",
+          "definition": "Простая и элегантная схема подписи: (s, e), где s = k − e×x, e = H(R ‖ M). Линейность позволяет агрегировать подписи (MuSig2). Добавлена в Bitcoin через Taproot (BIP 340).",
+          "relatedLessons": [
+            { "title": "EdDSA и подписи Шнорра", "slug": "02-crypto-foundations/12-eddsa-schnorr" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bitcoin",
+      "name": "Bitcoin",
+      "terms": [
+        {
+          "term": "UTXO",
+          "termEn": "Unspent Transaction Output",
+          "definition": "Неизрасходованный выход транзакции — базовая единица «владения» в Bitcoin. Каждый UTXO содержит сумму и скрипт блокировки (scriptPubKey). Транзакция потребляет UTXO (inputs) и создаёт новые (outputs). Баланс адреса = сумма всех его UTXO.",
+          "example": "# Алиса имеет UTXO на 1.5 BTC\n# Платит Бобу 1.0 BTC:\n# Input:  UTXO_alice (1.5 BTC)\n# Output1: Bob  (1.0 BTC)\n# Output2: Alice (0.4999 BTC) — сдача\n# Fee: 0.0001 BTC (inputs - outputs)",
+          "relatedLessons": [
+            { "title": "Модель UTXO", "slug": "03-bitcoin/02-utxo-model" },
+            { "title": "Архитектура Bitcoin", "slug": "03-bitcoin/01-bitcoin-architecture" }
+          ]
+        },
+        {
+          "term": "Bitcoin Script",
+          "termEn": "Bitcoin Script",
+          "definition": "Стековый язык программирования Bitcoin (не Тьюринг-полный). scriptPubKey блокирует UTXO, scriptSig — разблокирует. Отсутствие циклов — by design для предотвращения DoS. Основные типы: P2PKH, P2SH, P2WPKH (SegWit).",
+          "example": "# P2PKH: Pay to Public Key Hash\n# scriptPubKey:\n#   OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG\n# scriptSig:\n#   <sig> <pubKey>\n\n# Стек выполнения:\n# [sig, pubKey] → DUP → [sig, pubKey, pubKey]\n# → HASH160 → [sig, pubKey, hash]\n# → EQUALVERIFY → [sig, pubKey]\n# → CHECKSIG → [TRUE]",
+          "relatedLessons": [
+            { "title": "Bitcoin Script", "slug": "03-bitcoin/04-bitcoin-script" },
+            { "title": "Типы транзакций Bitcoin", "slug": "03-bitcoin/05-transaction-types" }
+          ]
+        },
+        {
+          "term": "Proof of Work",
+          "termEn": "Proof of Work (PoW)",
+          "definition": "Механизм консенсуса, где майнеры перебирают nonce, чтобы хеш блока был меньше target. Затраты энергии делают атаку 51% экономически невыгодной. Bitcoin: SHA-256 double hash, среднее время блока 10 минут, корректировка каждые 2016 блоков.",
+          "example": "# Майнинг (упрощённо)\nimport hashlib\n\ntarget = 2 ** (256 - difficulty_bits)\nnonce = 0\nwhile True:\n    header = f'{prev_hash}{merkle_root}{nonce}'\n    h = int(hashlib.sha256(\n        hashlib.sha256(header.encode()).digest()\n    ).hexdigest(), 16)\n    if h < target:\n        print(f'Block mined! nonce={nonce}')\n        break\n    nonce += 1",
+          "relatedLessons": [
+            { "title": "Майнинг и Proof of Work", "slug": "03-bitcoin/06-mining-pow" },
+            { "title": "Сложность и корректировка", "slug": "03-bitcoin/07-difficulty-adjustment" }
+          ]
+        },
+        {
+          "term": "Lightning Network",
+          "termEn": "Lightning Network",
+          "definition": "Протокол Layer 2 над Bitcoin для мгновенных микроплатежей. Использует payment channels (двусторонние каналы) и HTLC для маршрутизации через промежуточные узлы. Транзакции off-chain, settlement on-chain.",
+          "relatedLessons": [
+            { "title": "Lightning Network", "slug": "03-bitcoin/09-lightning-network" },
+            { "title": "Payment Channels и HTLC", "slug": "03-bitcoin/10-payment-channels-htlc" }
+          ]
+        },
+        {
+          "term": "HTLC",
+          "termEn": "Hash Time-Locked Contract",
+          "definition": "Контракт с двумя условиями разблокировки: предъявление прообраза хеша (hashlock) или истечение таймаута (timelock). Основа маршрутизации в Lightning Network — позволяет атомарные платежи через цепочку каналов.",
+          "relatedLessons": [
+            { "title": "Payment Channels и HTLC", "slug": "03-bitcoin/10-payment-channels-htlc" }
+          ]
+        },
+        {
+          "term": "Merkle Root",
+          "termEn": "Merkle Root",
+          "definition": "Корневой хеш дерева Меркла всех транзакций в блоке Bitcoin. Включается в заголовок блока. Позволяет SPV-нодам верифицировать транзакцию без скачивания всего блока — достаточно Merkle proof из O(log n) хешей.",
+          "relatedLessons": [
+            { "title": "Структура блока Bitcoin", "slug": "03-bitcoin/03-block-structure" },
+            { "title": "Деревья Меркла", "slug": "02-crypto-foundations/13-merkle-trees" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ethereum",
+      "name": "Ethereum и EVM",
+      "terms": [
+        {
+          "term": "EVM",
+          "termEn": "Ethereum Virtual Machine",
+          "definition": "Стековая виртуальная машина Ethereum для выполнения смарт-контрактов. 256-битные слова, ~140 opcodes. Три области памяти: stack (1024 элемента), memory (линейная, volatile), storage (key-value, persistent). Детерминированное выполнение на всех нодах.",
+          "example": "// EVM opcodes: PUSH1 0x60 + ADD\n// Stack trace:\n// PUSH1 0x0a  → [10]\n// PUSH1 0x14  → [10, 20]\n// ADD         → [30]\n// PUSH1 0x00  → [30, 0]\n// SSTORE      → []  (storage[0] = 30)",
+          "relatedLessons": [
+            { "title": "EVM: стек, память и хранилище", "slug": "04-ethereum/04-evm-stack-memory-storage" },
+            { "title": "Газ и выполнение транзакций", "slug": "04-ethereum/05-gas-execution" }
+          ]
+        },
+        {
+          "term": "Gas",
+          "termEn": "Gas",
+          "definition": "Единица измерения вычислительной работы в Ethereum. Каждый opcode имеет стоимость в gas. Транзакция задаёт gasLimit и gasPrice (или maxFeePerGas/maxPriorityFeePerGas после EIP-1559). Base fee сжигается, priority fee идёт валидатору.",
+          "example": "// Стоимость основных opcodes\n// ADD:     3 gas\n// MUL:     5 gas\n// SSTORE:  20000 gas (новый слот)\n// SLOAD:   2100 gas (cold) / 100 gas (warm)\n// CALL:    2600 gas (cold) + value transfer\n\n// EIP-1559: fee = baseFee + priorityFee\n// baseFee динамически корректируется",
+          "relatedLessons": [
+            { "title": "Газ и выполнение транзакций", "slug": "04-ethereum/05-gas-execution" }
+          ]
+        },
+        {
+          "term": "Solidity",
+          "termEn": "Solidity",
+          "definition": "Объектно-ориентированный язык для смарт-контрактов Ethereum. Компилируется в EVM bytecode. Типизированный, с наследованием, модификаторами, событиями. Версия 0.8+ имеет встроенную защиту от overflow.",
+          "example": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract SimpleStorage {\n    uint256 private value;\n\n    event ValueChanged(uint256 newValue);\n\n    function set(uint256 _value) external {\n        value = _value;\n        emit ValueChanged(_value);\n    }\n\n    function get() external view returns (uint256) {\n        return value;\n    }\n}",
+          "relatedLessons": [
+            { "title": "Основы Solidity", "slug": "04-ethereum/06-solidity-basics" },
+            { "title": "Паттерны Solidity", "slug": "04-ethereum/07-solidity-patterns-testing" }
+          ]
+        },
+        {
+          "term": "ERC-20",
+          "termEn": "ERC-20 Token Standard",
+          "definition": "Стандарт взаимозаменяемых токенов: transfer, approve, transferFrom, balanceOf, totalSupply, allowance. Интерфейс из 6 функций и 2 событий. Основа DeFi — все DEX, lending протоколы работают с ERC-20.",
+          "example": "// Ключевые функции ERC-20\ninterface IERC20 {\n    function totalSupply() external view returns (uint256);\n    function balanceOf(address) external view returns (uint256);\n    function transfer(address to, uint256 amount) external returns (bool);\n    function approve(address spender, uint256 amount) external returns (bool);\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\n    function allowance(address owner, address spender) external view returns (uint256);\n}",
+          "relatedLessons": [
+            { "title": "Стандарт ERC-20", "slug": "04-ethereum/08-erc20-standard" }
+          ]
+        },
+        {
+          "term": "ERC-721",
+          "termEn": "ERC-721 (NFT Standard)",
+          "definition": "Стандарт невзаимозаменяемых токенов (NFT). Каждый токен уникален (tokenId). Функции: ownerOf, safeTransferFrom, approve, getApproved. Metadata через tokenURI. Используется для цифрового искусства, игровых предметов, сертификатов.",
+          "relatedLessons": [
+            { "title": "ERC-721 и ERC-1155", "slug": "04-ethereum/09-erc721-erc1155" }
+          ]
+        },
+        {
+          "term": "Proof of Stake",
+          "termEn": "Proof of Stake (PoS)",
+          "definition": "Механизм консенсуса Ethereum (после The Merge, сентябрь 2022). Валидаторы стейкают 32 ETH и выбираются для предложения блоков пропорционально стейку. Экономические наказания (slashing) за нарушения вместо затрат энергии.",
+          "example": "// Beacon Chain параметры\n// Min stake: 32 ETH\n// Epoch: 32 slots × 12 sec = 6.4 min\n// Finality: 2 epochs (~12.8 min)\n// Slashing: min 1/32 стейка за двойную подпись\n// Rewards: ~4-5% APR (зависит от активных валидаторов)",
+          "relatedLessons": [
+            { "title": "Proof of Stake и Beacon Chain", "slug": "04-ethereum/10-proof-of-stake" },
+            { "title": "Валидаторы и Slashing", "slug": "04-ethereum/11-validators-slashing" }
+          ]
+        },
+        {
+          "term": "Account Abstraction",
+          "termEn": "Account Abstraction (ERC-4337)",
+          "definition": "Стандарт, позволяющий смарт-контрактам быть аккаунтами с произвольной логикой валидации. UserOperation вместо обычных транзакций. Bundler собирает операции, EntryPoint контракт исполняет. Поддерживает social recovery, газ-спонсорство, батч-транзакции.",
+          "relatedLessons": [
+            { "title": "Account Abstraction", "slug": "04-ethereum/12-account-abstraction" }
+          ]
+        },
+        {
+          "term": "MPT",
+          "termEn": "Modified Merkle Patricia Trie",
+          "definition": "Структура данных Ethereum для хранения состояния. Комбинация Patricia trie (prefix tree) и Merkle tree. Четыре типа узлов: leaf, extension, branch, null. State root в заголовке блока фиксирует всё состояние сети.",
+          "relatedLessons": [
+            { "title": "State Trie и MPT", "slug": "04-ethereum/03-state-trie-mpt" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "solana",
+      "name": "Solana",
+      "terms": [
+        {
+          "term": "Proof of History",
+          "termEn": "Proof of History (PoH)",
+          "definition": "Механизм упорядочивания событий в Solana через последовательную цепочку SHA-256 хешей. Не механизм консенсуса, а «криптографические часы» — каждая нода может верифицировать время между событиями. Позволяет Solana достигать ~400ms время блока.",
+          "relatedLessons": [
+            { "title": "Proof of History", "slug": "05-solana/02-proof-of-history" }
+          ]
+        },
+        {
+          "term": "Program (Solana)",
+          "termEn": "Program",
+          "definition": "Смарт-контракт в Solana — stateless исполняемый код. В отличие от Ethereum, программа не хранит данные: все данные в отдельных аккаунтах, передаваемых в инструкцию. Программы владеют аккаунтами через program-derived addresses (PDA).",
+          "relatedLessons": [
+            { "title": "Программы и инструкции", "slug": "05-solana/05-programs-instructions" },
+            { "title": "Модель аккаунтов Solana", "slug": "05-solana/04-account-model" }
+          ]
+        },
+        {
+          "term": "PDA",
+          "termEn": "Program Derived Address",
+          "definition": "Детерминированный адрес без приватного ключа, «принадлежащий» программе. Вычисляется из seeds и program_id. Bump seed гарантирует, что адрес не лежит на кривой Ed25519. PDA позволяет программам подписывать CPI-вызовы.",
+          "example": "// Anchor: PDA из seeds\n#[account(\n    init,\n    payer = user,\n    space = 8 + 32 + 8,\n    seeds = [b\"vault\", user.key().as_ref()],\n    bump\n)]\npub vault: Account<'info, Vault>,\n\n// JS: findProgramAddress\nconst [pda, bump] = PublicKey.findProgramAddressSync(\n    [Buffer.from('vault'), user.toBuffer()],\n    programId\n);",
+          "relatedLessons": [
+            { "title": "Модель аккаунтов Solana", "slug": "05-solana/04-account-model" },
+            { "title": "Anchor: основы", "slug": "05-solana/06-anchor-basics" }
+          ]
+        },
+        {
+          "term": "Anchor",
+          "termEn": "Anchor Framework",
+          "definition": "Фреймворк для разработки Solana-программ на Rust. Абстрагирует сериализацию/десериализацию, проверки аккаунтов, PDA-деривацию. Макросы #[program], #[derive(Accounts)], #[account]. Аналог Hardhat/Foundry для Solana.",
+          "relatedLessons": [
+            { "title": "Anchor: основы фреймворка", "slug": "05-solana/06-anchor-basics" },
+            { "title": "Разработка на Anchor", "slug": "05-solana/07-anchor-development" },
+            { "title": "Тестирование Solana-программ", "slug": "05-solana/08-testing-solana" }
+          ]
+        },
+        {
+          "term": "Tower BFT",
+          "termEn": "Tower BFT",
+          "definition": "Вариант PBFT-консенсуса в Solana, оптимизированный с помощью Proof of History. Валидаторы голосуют за слоты; каждый голос удваивает lockout (2^k слотов). Финализация через 32 последовательных подтверждения (~12.8 сек).",
+          "relatedLessons": [
+            { "title": "Tower BFT", "slug": "05-solana/03-tower-bft" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "defi",
+      "name": "DeFi",
+      "terms": [
+        {
+          "term": "AMM",
+          "termEn": "Automated Market Maker",
+          "definition": "Децентрализованный механизм обмена токенов через пулы ликвидности вместо книги ордеров. Цена определяется математической формулой (x·y = k для Uniswap V2). Ликвидность предоставляют LP (liquidity providers), получающие комиссии.",
+          "example": "# Uniswap V2: x · y = k\n# Pool: 1000 ETH × 2,000,000 USDC = 2B (k)\n# Цена ETH = 2,000,000 / 1000 = $2000\n\n# Покупка 10 ETH:\n# Новый y = k / (x - 10) = 2B / 990 ≈ 2,020,202 USDC\n# Стоимость = 2,020,202 - 2,000,000 = $20,202\n# Средняя цена = $2020.2 (slippage: 1.01%)",
+          "relatedLessons": [
+            { "title": "AMM: Автоматический маркет-мейкер", "slug": "06-defi/02-amm-concept" },
+            { "title": "Математика Uniswap V2", "slug": "06-defi/03-uniswap-v2-math" }
+          ]
+        },
+        {
+          "term": "Impermanent Loss",
+          "termEn": "Impermanent Loss (IL)",
+          "definition": "Потери LP по сравнению с простым холдингом токенов. При изменении цены в пуле арбитражёры перебалансируют пул. IL = 2√r/(1+r) − 1, где r = новая/старая цена. При 2x цены IL ≈ 5.7%, при 5x ≈ 25.5%. «Непостоянные», пока позиция открыта.",
+          "relatedLessons": [
+            { "title": "Ликвидность и Impermanent Loss", "slug": "06-defi/05-liquidity-impermanent-loss" }
+          ]
+        },
+        {
+          "term": "Concentrated Liquidity",
+          "termEn": "Concentrated Liquidity",
+          "definition": "Механизм Uniswap V3: LP размещают ликвидность в выбранном ценовом диапазоне [p_a, p_b] вместо (0, ∞). Капитал-эффективность в 4000x при узком диапазоне. Позиция представлена как NFT (ERC-721).",
+          "relatedLessons": [
+            { "title": "Uniswap V3: Concentrated Liquidity", "slug": "06-defi/04-uniswap-v3-concentrated" }
+          ]
+        },
+        {
+          "term": "Oracle",
+          "termEn": "Oracle",
+          "definition": "Система доставки off-chain данных (цены, погода, рандом) в смарт-контракты. Chainlink — ведущая сеть оракулов с децентрализованными потоками данных. TWAP (Time-Weighted Average Price) — on-chain оракул Uniswap.",
+          "relatedLessons": [
+            { "title": "Оракулы и Chainlink", "slug": "06-defi/08-oracles-chainlink" },
+            { "title": "Интеграция оракулов", "slug": "06-defi/09-oracle-integration" }
+          ]
+        },
+        {
+          "term": "Flash Loan",
+          "termEn": "Flash Loan",
+          "definition": "Беззалоговый заём, который берётся и возвращается в одной транзакции. Если заём не возвращён — вся транзакция откатывается. Применение: арбитраж, ликвидации, рефинансирование залогов. Используются и для атак (oracle manipulation).",
+          "relatedLessons": [
+            { "title": "Flash Loan Attacks", "slug": "07-security/08-flash-loans-attacks" },
+            { "title": "Lending протоколы", "slug": "06-defi/06-lending-protocols" }
+          ]
+        },
+        {
+          "term": "Ликвидация",
+          "termEn": "Liquidation",
+          "definition": "Принудительное закрытие undercollateralized позиции в lending протоколе. Health Factor < 1 → ликвидатор погашает часть долга и получает залог со скидкой (liquidation bonus, ~5-10%). Критически важный механизм для устойчивости DeFi.",
+          "relatedLessons": [
+            { "title": "Ликвидации", "slug": "06-defi/07-liquidations" }
+          ]
+        },
+        {
+          "term": "Стейблкоин",
+          "termEn": "Stablecoin",
+          "definition": "Токен с привязкой к стабильному активу (обычно $1 USD). Типы: фиатный (USDC, USDT — резервы в банке), крипто-обеспеченный (DAI — overcollateralized), алгоритмический (нестабильные, крах UST). Основа DeFi-экономики.",
+          "relatedLessons": [
+            { "title": "Стейблкоины", "slug": "06-defi/10-stablecoins" }
+          ]
+        },
+        {
+          "term": "Токеномика",
+          "termEn": "Tokenomics",
+          "definition": "Экономический дизайн токена: распределение (team, investors, community), вестинг, механизмы инфляции/дефляции, utility (governance, fees, staking rewards). Влияет на долгосрочную устойчивость и стоимость проекта.",
+          "relatedLessons": [
+            { "title": "Токеномика", "slug": "06-defi/12-tokenomics" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Безопасность",
+      "terms": [
+        {
+          "term": "Reentrancy",
+          "termEn": "Reentrancy Attack",
+          "definition": "Атака, при которой вредоносный контракт повторно вызывает функцию жертвы до обновления состояния. Причина взлома The DAO (2016, $60M). Защита: паттерн checks-effects-interactions, модификатор nonReentrant, transfer вместо call.",
+          "example": "// Уязвимый код:\nfunction withdraw() external {\n    uint bal = balances[msg.sender];\n    (bool ok,) = msg.sender.call{value: bal}(\"\");\n    require(ok);\n    balances[msg.sender] = 0; // ← слишком поздно!\n}\n\n// Безопасный (checks-effects-interactions):\nfunction withdraw() external {\n    uint bal = balances[msg.sender];\n    balances[msg.sender] = 0; // ← сначала обновляем\n    (bool ok,) = msg.sender.call{value: bal}(\"\");\n    require(ok);\n}",
+          "relatedLessons": [
+            { "title": "Reentrancy атаки", "slug": "07-security/02-reentrancy-attacks" },
+            { "title": "Обзор уязвимостей", "slug": "07-security/01-vulnerability-overview" }
+          ]
+        },
+        {
+          "term": "MEV",
+          "termEn": "Maximum Extractable Value",
+          "definition": "Прибыль, которую валидатор/builder может извлечь через переупорядочивание, вставку или цензурирование транзакций в блоке. Типы: арбитраж (полезный), frontrunning (вредный), sandwich attacks, ликвидации. PBS (Proposer-Builder Separation) разделяет роли.",
+          "relatedLessons": [
+            { "title": "MEV: Maximum Extractable Value", "slug": "07-security/05-mev-concepts" },
+            { "title": "Frontrunning и Sandwich Attacks", "slug": "07-security/06-frontrunning-sandwiching" },
+            { "title": "Flashbots Protect", "slug": "07-security/07-flashbots" }
+          ]
+        },
+        {
+          "term": "Integer Overflow",
+          "termEn": "Integer Overflow/Underflow",
+          "definition": "Переполнение целого числа: uint8(255) + 1 = 0 (overflow), uint8(0) - 1 = 255 (underflow). До Solidity 0.8 — молчаливое переполнение, использовалось для кражи токенов. С 0.8+ — автоматический revert. Unchecked{} отключает проверку для оптимизации gas.",
+          "relatedLessons": [
+            { "title": "Integer Overflow и Underflow", "slug": "07-security/03-integer-overflow-underflow" }
+          ]
+        },
+        {
+          "term": "Slashing",
+          "termEn": "Slashing",
+          "definition": "Наказание валидатора в PoS за нарушение протокола: двойная подпись (proposer equivocation), двойное голосование (attester equivocation), surround voting. Минимальный штраф: 1/32 стейка. Коррелированные нарушения усиливают штраф (до 100% стейка).",
+          "relatedLessons": [
+            { "title": "Валидаторы и Slashing", "slug": "04-ethereum/11-validators-slashing" }
+          ]
+        },
+        {
+          "term": "Аудит смарт-контрактов",
+          "termEn": "Smart Contract Audit",
+          "definition": "Систематический анализ кода на уязвимости: ручной review + автоматические инструменты (Slither — статический анализ, Mythril — symbolic execution). Методология: scope → automated scan → manual review → findings report → remediation.",
+          "relatedLessons": [
+            { "title": "Audit Methodology", "slug": "07-security/09-audit-methodology" },
+            { "title": "Инструменты аудита", "slug": "07-security/10-audit-tools" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "governance-scalability",
+      "name": "Governance и масштабирование",
+      "terms": [
+        {
+          "term": "DAO",
+          "termEn": "Decentralized Autonomous Organization",
+          "definition": "Организация, управляемая смарт-контрактами и голосованием держателей токенов. Proposal → голосование → timelock → исполнение. OpenZeppelin Governor — стандартная реализация. Примеры: Uniswap DAO, Aave DAO, MakerDAO.",
+          "relatedLessons": [
+            { "title": "Концепции DAO", "slug": "08-governance/01-dao-concepts" },
+            { "title": "OpenZeppelin Governor", "slug": "08-governance/05-openzeppelin-governor" }
+          ]
+        },
+        {
+          "term": "Governance Token",
+          "termEn": "Governance Token",
+          "definition": "ERC-20 токен с функцией delegate() для участия в голосовании. Voting power = количество делегированных токенов. ERC-20Votes (OZ) — расширение с checkpoints для снимков voting power на момент создания proposal.",
+          "relatedLessons": [
+            { "title": "Governance Tokens", "slug": "08-governance/02-governance-tokens" },
+            { "title": "Механизмы голосования", "slug": "08-governance/03-voting-mechanisms" }
+          ]
+        },
+        {
+          "term": "Timelock",
+          "termEn": "Timelock",
+          "definition": "Контракт-задержка между одобрением proposal и его исполнением. Даёт участникам время на exit (продажу токенов, вывод ликвидности) перед потенциально опасным изменением. OZ TimelockController: минимальная задержка 24-48 часов.",
+          "relatedLessons": [
+            { "title": "Timelock и исполнение", "slug": "08-governance/04-timelock-execution" }
+          ]
+        },
+        {
+          "term": "Optimistic Rollup",
+          "termEn": "Optimistic Rollup",
+          "definition": "Решение Layer 2: транзакции выполняются off-chain, данные публикуются on-chain. «Оптимистичный» — транзакции считаются валидными по умолчанию. Challenge period (~7 дней) для fraud proof. Примеры: Optimism (OP Stack), Arbitrum (Nitro).",
+          "relatedLessons": [
+            { "title": "Optimistic Rollups", "slug": "09-scalability/05-optimistic-rollups" },
+            { "title": "Optimism и Arbitrum", "slug": "09-scalability/06-optimism-arbitrum" }
+          ]
+        },
+        {
+          "term": "ZK Rollup",
+          "termEn": "ZK Rollup",
+          "definition": "Решение Layer 2 с криптографическими доказательствами валидности (validity proofs). Каждый batch транзакций сопровождается ZK-proof, верифицируемым on-chain. Мгновенная финальность (без challenge period). Примеры: zkSync Era, StarkNet, Scroll.",
+          "relatedLessons": [
+            { "title": "ZK Rollups: концепции", "slug": "09-scalability/07-zk-rollups-concepts" },
+            { "title": "zkSync Era и StarkNet", "slug": "09-scalability/08-zksync-starknet" }
+          ]
+        },
+        {
+          "term": "Трилемма блокчейна",
+          "termEn": "Blockchain Trilemma",
+          "definition": "Гипотеза (Виталик Бутерин): невозможно одновременно достичь decentralization + security + scalability. Bitcoin/Ethereum жертвуют масштабируемостью. Solana жертвует децентрализацией. Layer 2 — попытка обойти трилемму.",
+          "relatedLessons": [
+            { "title": "Проблема масштабируемости", "slug": "09-scalability/01-scalability-problem" }
+          ]
+        },
+        {
+          "term": "Bridge",
+          "termEn": "Cross-chain Bridge",
+          "definition": "Протокол передачи активов и данных между блокчейнами. Типы: lock-and-mint, burn-and-mint, atomic swaps. Мосты — крупнейший вектор атак в крипто ($2B+ потерь). Верификация: мультисиг, light clients, ZK proofs.",
+          "relatedLessons": [
+            { "title": "Cross-chain концепции", "slug": "09-scalability/09-cross-chain-concepts" },
+            { "title": "Мосты и интероперабельность", "slug": "09-scalability/10-bridges-interoperability" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero-knowledge",
+      "name": "Zero-Knowledge Proofs",
+      "terms": [
+        {
+          "term": "Zero-Knowledge Proof",
+          "termEn": "Zero-Knowledge Proof (ZKP)",
+          "definition": "Криптографическое доказательство, позволяющее Prover убедить Verifier в истинности утверждения, не раскрывая никакой дополнительной информации. Три свойства: completeness (честный prover убедит), soundness (нечестный не обманет), zero-knowledge (verifier ничего не узнает).",
+          "relatedLessons": [
+            { "title": "Концепции Zero-Knowledge", "slug": "10-zero-knowledge/01-zk-concepts" }
+          ]
+        },
+        {
+          "term": "zk-SNARK",
+          "termEn": "Zero-Knowledge Succinct Non-Interactive Argument of Knowledge",
+          "definition": "ZK-proof с постоянным размером (~200 байт) и быстрой верификацией (~мс) независимо от сложности вычисления. Non-interactive: prover отправляет одно сообщение. Требует trusted setup (Groth16) или universal setup (PLONK).",
+          "relatedLessons": [
+            { "title": "zk-SNARKs: от вычисления к доказательству", "slug": "10-zero-knowledge/04-zk-snarks-concepts" },
+            { "title": "Groth16 и Trusted Setup", "slug": "10-zero-knowledge/05-groth16-trusted-setup" }
+          ]
+        },
+        {
+          "term": "zk-STARK",
+          "termEn": "Zero-Knowledge Scalable Transparent Argument of Knowledge",
+          "definition": "ZK-proof без trusted setup (transparent). Использует FRI protocol и Reed-Solomon коды. Доказательства больше (~50-100KB), но quantum-resistant и не требуют «церемонии доверия». StarkNet/StarkEx построены на STARKs.",
+          "relatedLessons": [
+            { "title": "zk-STARKs и FRI Protocol", "slug": "10-zero-knowledge/06-zk-starks" }
+          ]
+        },
+        {
+          "term": "R1CS",
+          "termEn": "Rank-1 Constraint System",
+          "definition": "Система ограничений вида A·w ⊙ B·w = C·w, куда преобразуется арифметическая схема для ZK-proof. Каждый constraint: (линейная_комбинация) × (линейная_комбинация) = (линейная_комбинация). Circom компилирует circuit → R1CS → QAP → Groth16 proof.",
+          "relatedLessons": [
+            { "title": "zk-SNARKs: от вычисления к доказательству", "slug": "10-zero-knowledge/04-zk-snarks-concepts" }
+          ]
+        },
+        {
+          "term": "Trusted Setup",
+          "termEn": "Trusted Setup (Ceremony)",
+          "definition": "Процедура генерации публичных параметров для zk-SNARK (Groth16). Создаёт «токсичные отходы» (tau), которые должны быть уничтожены. Powers of Tau: n участников, достаточно 1 честного. Zcash Sapling, Hermez — примеры масштабных церемоний.",
+          "relatedLessons": [
+            { "title": "Groth16 и Trusted Setup", "slug": "10-zero-knowledge/05-groth16-trusted-setup" }
+          ]
+        },
+        {
+          "term": "Circom",
+          "termEn": "Circom",
+          "definition": "DSL для описания арифметических схем (circuits) для zk-SNARK. Компилирует в R1CS + witness generator (WASM/C++). Библиотека circomlib содержит готовые шаблоны: Poseidon hash, comparators, binary operations. Используется с snarkjs для генерации proof.",
+          "example": "// circom 2.0: простой multiplier circuit\npragma circom 2.0.0;\n\ntemplate Multiplier() {\n    signal input a;\n    signal input b;\n    signal output c;\n    c <== a * b;  // constraint: a × b = c\n}\n\ncomponent main = Multiplier();",
+          "relatedLessons": [
+            { "title": "Circom: язык ZK circuits", "slug": "10-zero-knowledge/07-circom-basics" },
+            { "title": "Пишем ZK circuits", "slug": "10-zero-knowledge/08-writing-zk-circuits" }
+          ]
+        },
+        {
+          "term": "Commitment Scheme",
+          "termEn": "Commitment Scheme",
+          "definition": "Двухфазный протокол: commit (фиксация значения в «конверте») и reveal (открытие). Свойства: hiding (нельзя узнать значение до reveal), binding (нельзя изменить после commit). Pedersen commitment: C = v·G + r·H.",
+          "relatedLessons": [
+            { "title": "Commitment Schemes", "slug": "10-zero-knowledge/02-commitment-schemes" }
+          ]
+        },
+        {
+          "term": "Эвристика Фиата-Шамира",
+          "termEn": "Fiat-Shamir Heuristic",
+          "definition": "Трансформация интерактивного протокола в неинтерактивный: challenge от verifier заменяется хешем transcript (e = H(commitment ‖ message)). Безопасность в модели случайного оракула. Основа всех non-interactive ZK-proof систем.",
+          "relatedLessons": [
+            { "title": "Interactive Proofs и Fiat-Shamir", "slug": "10-zero-knowledge/03-interactive-proofs" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "indexing",
+      "name": "Индексация и данные",
+      "terms": [
+        {
+          "term": "Индексация блокчейна",
+          "termEn": "Blockchain Indexing",
+          "definition": "Процесс извлечения, трансформации и хранения on-chain данных в базу для быстрых запросов. Прямые RPC-вызовы медленны и ограничены. Индексаторы (The Graph, Subsquid) обрабатывают блоки, декодируют события и строят queryable API.",
+          "relatedLessons": [
+            { "title": "Зачем индексировать блокчейн?", "slug": "11-data-indexing/01-why-indexing" }
+          ]
+        },
+        {
+          "term": "GraphQL",
+          "termEn": "GraphQL",
+          "definition": "Язык запросов для API: клиент запрашивает ровно те поля, которые нужны. Нет over-fetching/under-fetching. The Graph и Subsquid предоставляют GraphQL endpoint для запроса индексированных данных. Schema-first подход.",
+          "example": "# Запрос ERC-20 трансферов\nquery {\n  transfers(\n    orderBy: blockNumber_DESC\n    limit: 10\n    where: { from_eq: \"0xAlice...\" }\n  ) {\n    id\n    from\n    to\n    value\n    blockNumber\n    timestamp\n  }\n}",
+          "relatedLessons": [
+            { "title": "GraphQL для блокчейн-данных", "slug": "11-data-indexing/02-graphql-blockchain" }
+          ]
+        },
+        {
+          "term": "Subgraph",
+          "termEn": "Subgraph (The Graph)",
+          "definition": "Единица индексации в The Graph: manifest (subgraph.yaml) + schema (GraphQL) + mappings (AssemblyScript handlers). Graph Node обрабатывает события и заполняет хранилище. Deploy в Subgraph Studio или self-hosted ноду.",
+          "relatedLessons": [
+            { "title": "The Graph: subgraphs и AssemblyScript", "slug": "11-data-indexing/07-the-graph-subgraphs" },
+            { "title": "Deploy и сравнение инструментов", "slug": "11-data-indexing/08-deploy-and-compare" }
+          ]
+        },
+        {
+          "term": "Subsquid",
+          "termEn": "Subsquid",
+          "definition": "Модульная платформа индексации: Subsquid Network (P2P данные) + squid processor (TypeScript ETL) + GraphQL сервер. Batch-обработка до 50000 блоков/сек. TypeORM для PostgreSQL-хранилища. Поддержка EVM, Substrate, Solana.",
+          "relatedLessons": [
+            { "title": "Subsquid: архитектура", "slug": "11-data-indexing/03-subsquid-architecture" },
+            { "title": "Subsquid: ERC-20 индексатор", "slug": "11-data-indexing/04-subsquid-erc20-indexer" }
+          ]
+        },
+        {
+          "term": "Event Log",
+          "termEn": "Event Log (Ethereum)",
+          "definition": "Записи, генерируемые инструкцией LOG0..LOG4 в EVM. Topics (indexed параметры, до 3) + data (non-indexed). Bloom filter в заголовке блока позволяет быстро фильтровать блоки по наличию события. Основа для индексации.",
+          "example": "// Solidity event\nevent Transfer(\n    address indexed from,   // topic[1]\n    address indexed to,     // topic[2]\n    uint256 value            // data\n);\n// topic[0] = keccak256(\"Transfer(address,address,uint256)\")\n// = 0xddf252ad...",
+          "relatedLessons": [
+            { "title": "Зачем индексировать блокчейн?", "slug": "11-data-indexing/01-why-indexing" },
+            { "title": "Основы Solidity", "slug": "04-ethereum/06-solidity-basics" }
+          ]
+        }
+      ]
+    }
+  ]
+}
