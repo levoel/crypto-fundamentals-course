@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -22,6 +23,7 @@ interface PipelineStep {
   command: string;
   color: string;
   icon: string;
+  tooltip: string;
 }
 
 const PIPELINE_STEPS: PipelineStep[] = [
@@ -32,6 +34,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'vim circuit.circom',
     color: '#3b82f6',
     icon: '.circom',
+    tooltip: 'Описание вычисления на языке Circom: определение сигналов (input/output/intermediate) и ограничений (constraints) в виде template. Каждое constraint — квадратичное уравнение A*B = C.',
   },
   {
     title: 'COMPILE',
@@ -40,6 +43,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'circom circuit.circom --r1cs --wasm --sym',
     color: '#8b5cf6',
     icon: 'R1CS',
+    tooltip: 'Компиляция Circom-кода в R1CS-представление и WASM/C++ witness calculator. Команда: `circom circuit.circom --r1cs --wasm --sym`. R1CS — Rank-1 Constraint System.',
   },
   {
     title: 'DOWNLOAD PTAU',
@@ -48,6 +52,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'wget https://storage.googleapis.com/.../ptau14.ptau',
     color: '#6366f1',
     icon: 'PTAU',
+    tooltip: 'Powers of Tau — универсальный trusted setup (Phase 1). Результат MPC-ceremony с сотнями участников. Безопасен, если хотя бы один участник уничтожил свой секрет.',
   },
   {
     title: 'GROTH16 SETUP',
@@ -56,6 +61,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'snarkjs groth16 setup circuit.r1cs ptau14.ptau circuit_0.zkey',
     color: '#10b981',
     icon: 'ZKEY',
+    tooltip: 'Trusted setup (Phase 2): генерация proving key и verification key через ceremony, специфичную для данного circuit. Для Groth16 обязательна; для PLONK — универсальная.',
   },
   {
     title: 'CONTRIBUTE RANDOMNESS',
@@ -64,6 +70,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'snarkjs zkey contribute circuit_0.zkey circuit.zkey --name="dev"',
     color: '#f59e0b',
     icon: 'RNG',
+    tooltip: 'Добавление случайности в Phase 2 trusted setup. В production это MPC с множеством участников — безопасно, если хотя бы один честен. В dev — single contributor.',
   },
   {
     title: 'EXPORT VERIFICATION KEY',
@@ -72,6 +79,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'snarkjs zkey export verificationkey circuit.zkey vkey.json',
     color: '#3b82f6',
     icon: 'VKEY',
+    tooltip: 'Извлечение verification key из proving key. Verification key публикуется и используется для проверки доказательств. Малый размер (~1 KB JSON) позволяет on-chain верификацию.',
   },
   {
     title: 'GENERATE PROOF',
@@ -80,6 +88,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'snarkjs groth16 fullprove input.json circuit.wasm circuit.zkey proof.json public.json',
     color: '#8b5cf6',
     icon: 'PROOF',
+    tooltip: 'Prover вычисляет ZK-доказательство из witness и proving key. Выход: proof.json (доказательство) + public.json (публичные сигналы). Время зависит от числа constraints.',
   },
   {
     title: 'VERIFY',
@@ -88,6 +97,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     command: 'snarkjs groth16 verify vkey.json public.json proof.json',
     color: '#10b981',
     icon: 'OK',
+    tooltip: 'Верификация доказательства через verification key. Можно также экспортировать Solidity-контракт: `snarkjs zkey export solidityverifier`. Контракт деплоится в Ethereum для on-chain верификации.',
   },
 ];
 
@@ -137,23 +147,25 @@ export function ProofPipelineDiagram() {
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
         {PIPELINE_STEPS.map((st, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 8,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: i <= current ? '#fff' : colors.textMuted,
-              background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.3s',
-            }}>
-              {st.icon}
-            </div>
+            <DiagramTooltip content={st.tooltip}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 8,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: i <= current ? '#fff' : colors.textMuted,
+                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.3s',
+              }}>
+                {st.icon}
+              </div>
+            </DiagramTooltip>
             {i < PIPELINE_STEPS.length - 1 && (
               <div style={{
                 width: 12,
@@ -167,80 +179,88 @@ export function ProofPipelineDiagram() {
       </div>
 
       {/* Current step detail */}
-      <div style={{
-        ...glassStyle,
-        padding: 16,
-        marginBottom: 8,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
-          }}>
-            {s.label}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
-            {s.title}
-          </span>
-        </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-          {s.description}
-        </div>
-        {/* Command */}
+      <DiagramTooltip content={s.tooltip}>
         <div style={{
-          padding: '6px 10px',
-          borderRadius: 4,
-          background: 'rgba(0,0,0,0.3)',
-          fontSize: 10,
-          fontFamily: 'monospace',
-          color: '#10b981',
-          overflowX: 'auto',
+          ...glassStyle,
+          padding: 16,
+          marginBottom: 8,
+          border: `1px solid ${s.color}30`,
+          background: `${s.color}08`,
+          borderRadius: 8,
         }}>
-          $ {s.command}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{
+              fontSize: 9,
+              fontFamily: 'monospace',
+              color: s.color,
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: `${s.color}15`,
+              border: `1px solid ${s.color}30`,
+            }}>
+              {s.label}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+              {s.title}
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+            {s.description}
+          </div>
+          {/* Command */}
+          <DiagramTooltip content={`CLI-команда для этого шага pipeline. Выполняется в терминале проекта с установленным circom и snarkjs.`}>
+            <div style={{
+              padding: '6px 10px',
+              borderRadius: 4,
+              background: 'rgba(0,0,0,0.3)',
+              fontSize: 10,
+              fontFamily: 'monospace',
+              color: '#10b981',
+              overflowX: 'auto',
+            }}>
+              $ {s.command}
+            </div>
+          </DiagramTooltip>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
-          { label: `Step ${current + 1}/${PIPELINE_STEPS.length}`, action: step, disabled: current >= PIPELINE_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
-        ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={btn.disabled}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
-            }}
-          >
-            {btn.label}
-          </button>
-        ))}
-      </div>
+      <DiagramTooltip content="Навигация по 8 шагам Circom/snarkjs pipeline: от написания circuit до верификации proof. Каждый шаг — отдельная CLI-команда.">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          {[
+            { label: 'Back', action: back, disabled: history.length <= 1 },
+            { label: `Step ${current + 1}/${PIPELINE_STEPS.length}`, action: step, disabled: current >= PIPELINE_STEPS.length - 1 },
+            { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              onClick={btn.action}
+              disabled={btn.disabled}
+              style={{
+                ...glassStyle,
+                padding: '6px 14px',
+                cursor: btn.disabled ? 'default' : 'pointer',
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 6,
+                opacity: btn.disabled ? 0.5 : 1,
+              }}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      </DiagramTooltip>
 
-      <DataBox
-        label="Pipeline summary"
-        value=".circom -> compile (R1CS + WASM) -> ptau -> setup (.zkey) -> contribute -> export vkey -> prove (proof.json) -> verify. В Docker lab: 3 скрипта (setup.sh, prove.sh, verify.sh) автоматизируют весь процесс."
-        variant="info"
-      />
+      <DiagramTooltip content="Полный pipeline Circom/snarkjs: от DSL-описания circuit (.circom) через компиляцию, trusted setup и генерацию proof до верификации. В Docker lab автоматизирован тремя скриптами.">
+        <DataBox
+          label="Pipeline summary"
+          value=".circom -> compile (R1CS + WASM) -> ptau -> setup (.zkey) -> contribute -> export vkey -> prove (proof.json) -> verify. В Docker lab: 3 скрипта (setup.sh, prove.sh, verify.sh) автоматизируют весь процесс."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -256,6 +276,7 @@ interface CircuitLevel {
   color: string;
   file: string;
   difficulty: string;
+  tooltip: string;
 }
 
 const CIRCUIT_LEVELS: CircuitLevel[] = [
@@ -266,6 +287,7 @@ const CIRCUIT_LEVELS: CircuitLevel[] = [
     color: '#10b981',
     file: 'multiplier.circom',
     difficulty: 'Beginner',
+    tooltip: 'Базовые схемы: простые арифметические проверки (x^2 = y). Несколько ограничений, подходят для обучения основам Circom и понимания constraint-системы.',
   },
   {
     name: 'Hash Preimage',
@@ -274,6 +296,7 @@ const CIRCUIT_LEVELS: CircuitLevel[] = [
     color: '#3b82f6',
     file: 'hash_preimage.circom',
     difficulty: 'Intermediate',
+    tooltip: 'Промежуточные схемы: хеш-функции (Poseidon, MiMC), Merkle-tree включение. Десятки-сотни ограничений, используются в DeFi протоколах для приватных операций.',
   },
   {
     name: 'Range Proof',
@@ -282,6 +305,7 @@ const CIRCUIT_LEVELS: CircuitLevel[] = [
     color: '#f59e0b',
     file: 'range_proof.circom',
     difficulty: 'Intermediate',
+    tooltip: 'Продвинутые схемы: range proofs, сравнение значений, bit decomposition. Сотни ограничений, требуют понимания circomlib компонентов и оптимизации constraints.',
   },
   {
     name: 'Age Check',
@@ -290,6 +314,7 @@ const CIRCUIT_LEVELS: CircuitLevel[] = [
     color: '#8b5cf6',
     file: 'age_check.circom',
     difficulty: 'Capstone',
+    tooltip: 'Экспертные схемы: комбинация множества circomlib компонентов для реальных use cases (KYC, compliance). Capstone проект демонстрирует полный workflow от design до on-chain verification.',
   },
 ];
 
@@ -306,68 +331,70 @@ export function CircuitComplexityDiagram() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {CIRCUIT_LEVELS.map((level, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 180 }}>
-            <div style={{
-              ...glassStyle,
-              padding: 14,
-              borderRadius: 8,
-              border: `1px solid ${level.color}30`,
-              background: `${level.color}06`,
-              flex: 1,
-            }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: level.color,
+            <DiagramTooltip content={level.tooltip}>
+              <div style={{
+                ...glassStyle,
+                padding: 14,
+                borderRadius: 8,
+                border: `1px solid ${level.color}30`,
+                background: `${level.color}06`,
+                flex: 1,
+              }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: level.color,
+                    fontFamily: 'monospace',
+                  }}>
+                    {level.name}
+                  </span>
+                  <span style={{
+                    fontSize: 9,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    color: level.color,
+                    background: `${level.color}15`,
+                    border: `1px solid ${level.color}30`,
+                    fontFamily: 'monospace',
+                  }}>
+                    {level.difficulty}
+                  </span>
+                </div>
+
+                {/* Constraints */}
+                <div style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: colors.text,
                   fontFamily: 'monospace',
+                  marginBottom: 6,
                 }}>
-                  {level.name}
-                </span>
-                <span style={{
+                  {level.constraints}
+                </div>
+
+                {/* Description */}
+                <div style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  lineHeight: 1.5,
+                  marginBottom: 6,
+                }}>
+                  {level.description}
+                </div>
+
+                {/* File reference */}
+                <div style={{
                   fontSize: 9,
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  color: level.color,
-                  background: `${level.color}15`,
-                  border: `1px solid ${level.color}30`,
+                  color: colors.textMuted,
                   fontFamily: 'monospace',
+                  fontStyle: 'italic',
                 }}>
-                  {level.difficulty}
-                </span>
+                  {level.file}
+                </div>
               </div>
-
-              {/* Constraints */}
-              <div style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: colors.text,
-                fontFamily: 'monospace',
-                marginBottom: 6,
-              }}>
-                {level.constraints}
-              </div>
-
-              {/* Description */}
-              <div style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                lineHeight: 1.5,
-                marginBottom: 6,
-              }}>
-                {level.description}
-              </div>
-
-              {/* File reference */}
-              <div style={{
-                fontSize: 9,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                fontStyle: 'italic',
-              }}>
-                {level.file}
-              </div>
-            </div>
+            </DiagramTooltip>
 
             {/* Arrow between levels */}
             {i < CIRCUIT_LEVELS.length - 1 && (
@@ -383,11 +410,13 @@ export function CircuitComplexityDiagram() {
         ))}
       </div>
 
-      <DataBox
-        label="Подход"
-        value="От простого к сложному: начинаем с 1-constraint Multiplier, заканчиваем capstone Age Check с circomlib. Каждый circuit -- полный workflow: write -> compile -> setup -> prove -> verify."
-        variant="info"
-      />
+      <DiagramTooltip content="Прогрессия сложности circuit: от простейшего Multiplier2 (1 constraint) через hash preimage и range proof к capstone Age Check. Каждый circuit проходит полный workflow: write -> compile -> setup -> prove -> verify.">
+        <DataBox
+          label="Подход"
+          value="От простого к сложному: начинаем с 1-constraint Multiplier, заканчиваем capstone Age Check с circomlib. Каждый circuit -- полный workflow: write -> compile -> setup -> prove -> verify."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
