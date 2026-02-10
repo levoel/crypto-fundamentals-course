@@ -3,13 +3,14 @@
  *
  * Exports:
  * - L2ClassificationDiagram: Interactive expand/collapse tree of L2 scaling solutions
- * - DASpectrumDiagram: Data availability spectrum (rollup -> validium -> sidechain) with hover
+ * - DASpectrumDiagram: Data availability spectrum (rollup -> validium -> sidechain)
  * - L2TVLDiagram: Static horizontal bar chart of L2 TVL distribution (2025)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -100,6 +101,19 @@ const CLASSIFICATION_TREE: TreeNode = {
   ],
 };
 
+const TREE_TOOLTIPS: Record<string, string> = {
+  root: 'Масштабирование Ethereum включает on-chain (шардинг) и off-chain (Layer 2) подходы. Off-chain решения переносят вычисления с L1, сохраняя безопасность.',
+  onchain: 'On-chain масштабирование увеличивает пропускную способность самого L1. Danksharding разделит данные между валидаторами.',
+  offchain: 'Off-chain решения выполняют транзакции за пределами L1, периодически публикуя данные на Ethereum. Наследуют безопасность L1 в разной степени.',
+  channels: 'State Channels позволяют двум сторонам обмениваться транзакциями без публикации каждой на L1. Подходят для платежей, не для общих вычислений.',
+  plasma: 'Plasma создает дочерние цепи с периодической публикацией Merkle roots на L1. Ограничен: не поддерживает произвольные smart contracts.',
+  rollups: 'Rollups -- доминирующий подход к масштабированию. Выполняют транзакции off-chain, но публикуют все данные на L1 для верификации.',
+  optimistic: 'Optimistic rollups считают транзакции валидными по умолчанию. 7-дневный challenge period для fraud proofs.',
+  zk: 'ZK rollups генерируют математические доказательства (validity proofs) корректности каждого batch. Мгновенная финализация после верификации proof.',
+  validiums: 'Validiums используют validity proofs как ZK rollups, но хранят данные off-chain (DAC). Дешевле, но слабее гарантии доступности данных.',
+  sidechains: 'Сайдчейны -- НЕ Layer 2. Они имеют собственных валидаторов и не наследуют безопасность Ethereum.',
+};
+
 function TreeNodeComponent({ node, depth, expanded, onToggle }: {
   node: TreeNode;
   depth: number;
@@ -114,43 +128,53 @@ function TreeNodeComponent({ node, depth, expanded, onToggle }: {
   const depthColors = ['#6366f1', '#10b981', '#f59e0b', '#a78bfa', '#f43f5e', '#2563eb'];
   const nodeColor = isSidechain ? '#f43f5e' : depthColors[depth % depthColors.length];
 
+  const tooltipContent = TREE_TOOLTIPS[node.id];
+
+  const nodeElement = (
+    <div
+      onClick={() => hasChildren ? onToggle(node.id) : undefined}
+      style={{
+        ...glassStyle,
+        padding: '6px 10px',
+        marginBottom: 4,
+        cursor: hasChildren ? 'pointer' : 'default',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        border: `1px solid ${isExpanded ? nodeColor + '40' : 'rgba(255,255,255,0.06)'}`,
+        background: isExpanded ? `${nodeColor}08` : 'rgba(255,255,255,0.02)',
+        transition: 'all 0.2s',
+      }}
+    >
+      {hasChildren && (
+        <span style={{ fontSize: 10, color: nodeColor, fontFamily: 'monospace', width: 12, textAlign: 'center' }}>
+          {isExpanded ? '-' : '+'}
+        </span>
+      )}
+      {isLeaf && <span style={{ width: 12 }} />}
+      <span style={{
+        fontSize: 11,
+        fontWeight: hasChildren ? 600 : 400,
+        color: hasChildren ? nodeColor : colors.text,
+        fontFamily: 'monospace',
+      }}>
+        {node.label}
+      </span>
+      {node.detail && isLeaf && (
+        <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginLeft: 'auto' }}>
+          {node.detail}
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ marginLeft: depth * 16 }}>
-      <div
-        onClick={() => hasChildren ? onToggle(node.id) : undefined}
-        style={{
-          ...glassStyle,
-          padding: '6px 10px',
-          marginBottom: 4,
-          cursor: hasChildren ? 'pointer' : 'default',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          border: `1px solid ${isExpanded ? nodeColor + '40' : 'rgba(255,255,255,0.06)'}`,
-          background: isExpanded ? `${nodeColor}08` : 'rgba(255,255,255,0.02)',
-          transition: 'all 0.2s',
-        }}
-      >
-        {hasChildren && (
-          <span style={{ fontSize: 10, color: nodeColor, fontFamily: 'monospace', width: 12, textAlign: 'center' }}>
-            {isExpanded ? '-' : '+'}
-          </span>
-        )}
-        {isLeaf && <span style={{ width: 12 }} />}
-        <span style={{
-          fontSize: 11,
-          fontWeight: hasChildren ? 600 : 400,
-          color: hasChildren ? nodeColor : colors.text,
-          fontFamily: 'monospace',
-        }}>
-          {node.label}
-        </span>
-        {node.detail && isLeaf && (
-          <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginLeft: 'auto' }}>
-            {node.detail}
-          </span>
-        )}
-      </div>
+      {tooltipContent ? (
+        <DiagramTooltip content={tooltipContent}>
+          {nodeElement}
+        </DiagramTooltip>
+      ) : nodeElement}
 
       {/* Leaf detail row */}
       {isLeaf && isExpanded && node.da && (
@@ -217,12 +241,20 @@ export function L2ClassificationDiagram() {
     <DiagramContainer title="Классификация решений масштабирования" color="blue">
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={expandAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
-          Развернуть все
-        </button>
-        <button onClick={collapseAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
-          Свернуть все
-        </button>
+        <DiagramTooltip content="Развернуть все узлы дерева для полного обзора классификации решений масштабирования.">
+          <div style={{ display: 'inline-block' }}>
+            <button onClick={expandAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
+              Развернуть все
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Свернуть дерево до корневого узла.">
+          <div style={{ display: 'inline-block' }}>
+            <button onClick={collapseAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
+              Свернуть все
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       <TreeNodeComponent node={CLASSIFICATION_TREE} depth={0} expanded={expanded} onToggle={onToggle} />
@@ -286,36 +318,44 @@ const DA_ZONES: DAZone[] = [
  * DASpectrumDiagram
  *
  * Data availability spectrum: most secure (left, rollups) to least secure (right, sidechains).
- * Hover on each zone for details.
+ * DiagramTooltip on each zone for details.
  */
 export function DASpectrumDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
-  const hovered = hoveredIdx !== null ? DA_ZONES[hoveredIdx] : null;
-
   return (
     <DiagramContainer title="Спектр доступности данных (Data Availability)" color="orange">
       {/* Spectrum bar */}
       <div style={{ display: 'flex', marginBottom: 8, borderRadius: 6, overflow: 'hidden' }}>
         {DA_ZONES.map((zone, i) => (
-          <div
+          <DiagramTooltip
             key={i}
-            onMouseEnter={() => setHoveredIdx(i)}
-            onMouseLeave={() => setHoveredIdx(null)}
-            style={{
-              width: `${zone.width}%`,
-              padding: '12px 8px',
-              background: hoveredIdx === i ? `${zone.color}25` : `${zone.color}12`,
-              borderRight: i < DA_ZONES.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-              cursor: 'pointer',
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
+            content={
+              <>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{zone.label}</div>
+                <div style={{ marginBottom: 6 }}>{zone.description}</div>
+                <div style={{ fontSize: 12 }}>
+                  <div><span style={{ opacity: 0.7 }}>Examples:</span> {zone.examples}</div>
+                  <div><span style={{ opacity: 0.7 }}>Security:</span> {zone.security}</div>
+                  <div><span style={{ opacity: 0.7 }}>Cost:</span> {zone.cost}</div>
+                </div>
+              </>
+            }
           >
-            <div style={{ fontSize: 10, fontWeight: 600, color: zone.color, fontFamily: 'monospace', lineHeight: 1.4 }}>
-              {zone.label}
+            <div
+              style={{
+                width: `${zone.width}%`,
+                padding: '12px 8px',
+                background: `${zone.color}12`,
+                borderRight: i < DA_ZONES.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                cursor: 'pointer',
+                textAlign: 'center',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 600, color: zone.color, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                {zone.label}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -332,37 +372,6 @@ export function DASpectrumDiagram() {
           <span style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace' }}>LOW</span>
         </div>
       </div>
-
-      {/* Hover detail */}
-      {hovered && (
-        <div style={{
-          ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${hovered.color}30`,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: hovered.color, fontFamily: 'monospace', marginBottom: 6 }}>
-            {hovered.label}
-          </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-            {hovered.description}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace' }}>
-              <span style={{ color: colors.textMuted }}>Examples: </span>
-              <span style={{ color: colors.text }}>{hovered.examples}</span>
-            </div>
-            <div style={{ fontSize: 10, fontFamily: 'monospace' }}>
-              <span style={{ color: colors.textMuted }}>Security: </span>
-              <span style={{ color: hovered.color }}>{hovered.security}</span>
-            </div>
-            <div style={{ fontSize: 10, fontFamily: 'monospace' }}>
-              <span style={{ color: colors.textMuted }}>Cost: </span>
-              <span style={{ color: hovered.color }}>{hovered.cost}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       <DataBox
         label="EIP-4844 (Proto-Danksharding)"
@@ -384,25 +393,25 @@ interface TVLEntry {
   share: string;
   color: string;
   note?: string;
+  tooltipRu: string;
 }
 
 const TVL_DATA: TVLEntry[] = [
-  { name: 'Base', tvl: 12, tvlLabel: '~$12B', share: '~47%', color: '#2563eb', note: 'Coinbase, OP Stack' },
-  { name: 'Arbitrum One', tvl: 8, tvlLabel: '~$8B', share: '~31%', color: '#f59e0b' },
-  { name: 'Optimism', tvl: 2.5, tvlLabel: '~$2.5B', share: '~10%', color: '#ef4444' },
-  { name: 'zkSync Era', tvl: 0.8, tvlLabel: '~$0.8B', share: '~3%', color: '#a78bfa' },
-  { name: 'StarkNet', tvl: 0.5, tvlLabel: '~$0.5B', share: '~2%', color: '#8b5cf6' },
-  { name: 'Others', tvl: 2, tvlLabel: '~$2B', share: '~7%', color: '#6b7280' },
+  { name: 'Base', tvl: 12, tvlLabel: '~$12B', share: '~47%', color: '#2563eb', note: 'Coinbase, OP Stack', tooltipRu: 'Base (Coinbase) -- крупнейший L2 по TVL. Построен на OP Stack, часть Superchain. Рост обусловлен интеграцией с Coinbase и низкими комиссиями.' },
+  { name: 'Arbitrum One', tvl: 8, tvlLabel: '~$8B', share: '~31%', color: '#f59e0b', tooltipRu: 'Arbitrum One -- лидер по собственному TVL среди rollups. Nitro архитектура с interactive fraud proofs и Stylus WASM VM.' },
+  { name: 'Optimism', tvl: 2.5, tvlLabel: '~$2.5B', share: '~10%', color: '#ef4444', tooltipRu: 'Optimism Mainnet -- пионер optimistic rollups. OP Stack framework позволил запуск Superchain (Base, Zora, Mode).' },
+  { name: 'zkSync Era', tvl: 0.8, tvlLabel: '~$0.8B', share: '~3%', color: '#a78bfa', tooltipRu: 'zkSync Era -- Type 4 zkEVM с native Account Abstraction. Использует SNARKs для validity proofs. Быстрая финализация.' },
+  { name: 'StarkNet', tvl: 0.5, tvlLabel: '~$0.5B', share: '~2%', color: '#8b5cf6', tooltipRu: 'StarkNet -- ZK rollup на базе STARKs. Собственный язык Cairo. Quantum-resistant доказательства, transparent setup.' },
+  { name: 'Others', tvl: 2, tvlLabel: '~$2B', share: '~7%', color: '#6b7280', tooltipRu: 'Включает Scroll, Linea, Polygon zkEVM, Manta, Blast и другие rollups. Экосистема активно растет.' },
 ];
 
 /**
  * L2TVLDiagram
  *
  * Static horizontal bar chart showing L2 TVL distribution (2025).
+ * SVG bars with HTML tooltip legend below.
  */
 export function L2TVLDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   const maxTVL = Math.max(...TVL_DATA.map((d) => d.tvl));
 
   const svgW = 440;
@@ -420,23 +429,16 @@ export function L2TVLDiagram() {
           {TVL_DATA.map((entry, i) => {
             const y = i * (barH + gap) + 4;
             const w = (entry.tvl / maxTVL) * chartW;
-            const isHovered = hoveredIdx === i;
 
             return (
-              <g
-                key={i}
-                onMouseEnter={() => setHoveredIdx(i)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                style={{ cursor: 'default' }}
-              >
+              <g key={i}>
                 <text
                   x={padL - 8}
                   y={y + barH / 2 + 4}
-                  fill={isHovered ? entry.color : colors.text}
+                  fill={colors.text}
                   fontSize={10}
                   textAnchor="end"
                   fontFamily="monospace"
-                  fontWeight={isHovered ? 600 : 400}
                 >
                   {entry.name}
                 </text>
@@ -446,7 +448,7 @@ export function L2TVLDiagram() {
                   width={Math.max(w, 8)}
                   height={barH}
                   fill={entry.color}
-                  opacity={isHovered ? 0.9 : 0.6}
+                  opacity={0.6}
                   rx={4}
                 />
                 <text
@@ -474,6 +476,28 @@ export function L2TVLDiagram() {
             );
           })}
         </svg>
+      </div>
+
+      {/* HTML tooltip legend */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, justifyContent: 'center' }}>
+        {TVL_DATA.map((entry) => (
+          <DiagramTooltip key={entry.name} content={entry.tooltipRu}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              borderRadius: 4,
+              border: `1px solid ${entry.color}30`,
+              background: `${entry.color}08`,
+              cursor: 'pointer',
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color }} />
+              <span style={{ fontSize: 10, color: entry.color, fontFamily: 'monospace' }}>{entry.name}</span>
+              <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>{entry.tvlLabel}</span>
+            </div>
+          </DiagramTooltip>
+        ))}
       </div>
 
       <div style={{

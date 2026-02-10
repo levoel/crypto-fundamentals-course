@@ -3,13 +3,14 @@
  *
  * Exports:
  * - ZKArchitectureDiagram: Step-through ZK rollup architecture (5 steps, history array)
- * - SNARKvsSTARKDiagram: HTML comparison table with 8 rows (hover)
+ * - SNARKvsSTARKDiagram: HTML comparison table with 8 rows
  * - ZkEVMSpectrumDiagram: Horizontal spectrum bar Type 1-4 with arrows
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -68,6 +69,14 @@ const ZK_STEPS: ZKStep[] = [
   },
 ];
 
+const ZK_STEP_TOOLTIPS = [
+  'Секвенсер принимает транзакции и формирует batch. Централизованный оператор обеспечивает быстрое упорядочивание, но не может подделать состояние благодаря validity proofs.',
+  'Prover -- вычислительно самый дорогой компонент. Генерация ZK proof требует специализированного оборудования (GPU/FPGA/ASIC). Это основной bottleneck ZK rollups.',
+  'Публикация данных на L1 обеспечивает data availability: любой может восстановить полное состояние rollup из on-chain данных.',
+  'On-chain верификация proof стоит ~300K gas (доли цента). Это ключевое преимущество ZK: дорого доказать, дешево проверить.',
+  'В отличие от optimistic rollups (7-дневное ожидание), ZK rollups финализируют состояние сразу после верификации proof. Вывод средств за часы, не за неделю.',
+];
+
 /**
  * ZKArchitectureDiagram
  *
@@ -114,23 +123,25 @@ export function ZKArchitectureDiagram() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
         {ZK_STEPS.map((st, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: i <= current ? '#fff' : colors.textMuted,
-              background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.3s',
-            }}>
-              {st.icon}
-            </div>
+            <DiagramTooltip content={ZK_STEP_TOOLTIPS[i]}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: i <= current ? '#fff' : colors.textMuted,
+                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.3s',
+              }}>
+                {st.icon}
+              </div>
+            </DiagramTooltip>
             {i < ZK_STEPS.length - 1 && (
               <div style={{
                 width: 20,
@@ -224,28 +235,27 @@ interface ComparisonRow {
   stark: string;
   snarkAdvantage: boolean;
   starkAdvantage: boolean;
+  tooltipRu: string;
 }
 
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { category: 'Full Name', snark: 'Succinct Non-interactive ARgument of Knowledge', stark: 'Scalable Transparent ARgument of Knowledge', snarkAdvantage: false, starkAdvantage: false },
-  { category: 'Trusted Setup', snark: 'Required (ceremony, toxic waste)', stark: 'Not required (transparent)', snarkAdvantage: false, starkAdvantage: true },
-  { category: 'Proof Size', snark: '~288 bytes (small)', stark: '~45-200 KB (larger)', snarkAdvantage: true, starkAdvantage: false },
-  { category: 'Verification Time', snark: 'Fast (~ms)', stark: 'Fast (~ms, slightly slower)', snarkAdvantage: true, starkAdvantage: false },
-  { category: 'Prover Time', snark: 'Fast', stark: 'Faster for large computations', snarkAdvantage: false, starkAdvantage: true },
-  { category: 'Quantum Resistance', snark: 'No (elliptic curves)', stark: 'Yes (hash functions only)', snarkAdvantage: false, starkAdvantage: true },
-  { category: 'Maturity', snark: 'More mature, widely deployed', stark: 'Newer, growing adoption', snarkAdvantage: true, starkAdvantage: false },
-  { category: 'Used By', snark: 'zkSync Era, Polygon zkEVM, Scroll', stark: 'StarkNet, StarkEx', snarkAdvantage: false, starkAdvantage: false },
+  { category: 'Full Name', snark: 'Succinct Non-interactive ARgument of Knowledge', stark: 'Scalable Transparent ARgument of Knowledge', snarkAdvantage: false, starkAdvantage: false, tooltipRu: 'Названия отражают ключевые свойства: SNARK -- лаконичность и неинтерактивность, STARK -- масштабируемость и прозрачность (без trusted setup).' },
+  { category: 'Trusted Setup', snark: 'Required (ceremony, toxic waste)', stark: 'Not required (transparent)', snarkAdvantage: false, starkAdvantage: true, tooltipRu: 'Trusted setup -- церемония генерации параметров. "Toxic waste" (секретные значения) должен быть уничтожен. Если хоть один участник нечестен -- система скомпрометирована.' },
+  { category: 'Proof Size', snark: '~288 bytes (small)', stark: '~45-200 KB (larger)', snarkAdvantage: true, starkAdvantage: false, tooltipRu: 'Размер proof влияет на стоимость on-chain верификации. Маленький SNARK proof = дешевле публиковать на L1. STARK proof в 100-700x больше.' },
+  { category: 'Verification Time', snark: 'Fast (~ms)', stark: 'Fast (~ms, slightly slower)', snarkAdvantage: true, starkAdvantage: false, tooltipRu: 'Обе системы верифицируются за миллисекунды. SNARK чуть быстрее из-за меньшего размера proof. Разница незначительна для практических применений.' },
+  { category: 'Prover Time', snark: 'Fast', stark: 'Faster for large computations', snarkAdvantage: false, starkAdvantage: true, tooltipRu: 'STARK prover масштабируется quasi-линейно O(n log n), а SNARK -- квадратично для больших вычислений. Для миллионов операций STARK значительно быстрее.' },
+  { category: 'Quantum Resistance', snark: 'No (elliptic curves)', stark: 'Yes (hash functions only)', snarkAdvantage: false, starkAdvantage: true, tooltipRu: 'SNARK основан на задачах дискретного логарифма (эллиптические кривые) -- уязвим для алгоритма Шора. STARK использует только хеш-функции -- квантово-устойчив.' },
+  { category: 'Maturity', snark: 'More mature, widely deployed', stark: 'Newer, growing adoption', snarkAdvantage: true, starkAdvantage: false, tooltipRu: 'SNARK разработан в 2012, широко используется с 2016 (Zcash). STARK появился в 2018. Больше аудитов, больше production deployments у SNARK.' },
+  { category: 'Used By', snark: 'zkSync Era, Polygon zkEVM, Scroll', stark: 'StarkNet, StarkEx', snarkAdvantage: false, starkAdvantage: false, tooltipRu: 'SNARK доминирует по количеству проектов. STARK используется StarkWare (StarkNet + StarkEx обслуживают dYdX, Immutable X, Sorare).' },
 ];
 
 /**
  * SNARKvsSTARKDiagram
  *
  * HTML comparison table: SNARKs vs STARKs across 8 dimensions.
- * Advantages color-coded green. Hover rows for emphasis.
+ * Advantages color-coded green. DiagramTooltip on first column.
  */
 export function SNARKvsSTARKDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="SNARKs vs STARKs: сравнение" color="orange">
       <div style={{ overflowX: 'auto' }}>
@@ -292,50 +302,46 @@ export function SNARKvsSTARKDiagram() {
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_ROWS.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <td style={{
-                    padding: '7px 10px',
-                    color: isHovered ? colors.text : colors.textMuted,
-                    fontWeight: 600,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    {row.category}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: row.snarkAdvantage ? colors.success : colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                    fontWeight: row.snarkAdvantage ? 600 : 400,
-                  }}>
-                    {row.snark}
-                  </td>
-                  <td style={{
-                    padding: '7px 10px',
-                    color: row.starkAdvantage ? colors.success : colors.text,
-                    fontSize: 11,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
-                    fontWeight: row.starkAdvantage ? 600 : 400,
-                  }}>
-                    {row.stark}
-                  </td>
-                </tr>
-              );
-            })}
+            {COMPARISON_ROWS.map((row, i) => (
+              <tr
+                key={i}
+                style={{
+                  transition: 'background 0.15s',
+                }}
+              >
+                <td style={{
+                  padding: '7px 10px',
+                  color: colors.textMuted,
+                  fontWeight: 600,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                  <DiagramTooltip content={row.tooltipRu}>
+                    <span style={{ borderBottom: '1px dotted rgba(255,255,255,0.3)', cursor: 'help' }}>{row.category}</span>
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: row.snarkAdvantage ? colors.success : colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                  fontWeight: row.snarkAdvantage ? 600 : 400,
+                }}>
+                  {row.snark}
+                </td>
+                <td style={{
+                  padding: '7px 10px',
+                  color: row.starkAdvantage ? colors.success : colors.text,
+                  fontSize: 11,
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  lineHeight: 1.4,
+                  fontWeight: row.starkAdvantage ? 600 : 400,
+                }}>
+                  {row.stark}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -364,6 +370,7 @@ interface ZkEVMType {
   label: string;
   description: string;
   example: string;
+  tooltipRu: string;
 }
 
 const ZKEVM_TYPES: ZkEVMType[] = [
@@ -373,6 +380,7 @@ const ZKEVM_TYPES: ZkEVMType[] = [
     label: 'Full Ethereum equivalence',
     description: 'Proves Ethereum execution directly. Slowest proving. Best compatibility.',
     example: 'Taiko',
+    tooltipRu: 'Type 1 zkEVM доказывает исполнение Ethereum напрямую, без модификаций. Максимальная совместимость: любой контракт, любой тул. Но proving крайне медленный -- часы на один блок.',
   },
   {
     type: 'Type 2',
@@ -380,6 +388,7 @@ const ZKEVM_TYPES: ZkEVMType[] = [
     label: 'EVM equivalent',
     description: 'Slight state/block differences. Good compatibility.',
     example: 'Polygon zkEVM, Scroll, Linea',
+    tooltipRu: 'Type 2 zkEVM вносит минимальные изменения в state layout и структуру блока для ускорения proving. 99% контрактов работают без изменений. Оптимальный баланс совместимости и производительности.',
   },
   {
     type: 'Type 3',
@@ -387,6 +396,7 @@ const ZKEVM_TYPES: ZkEVMType[] = [
     label: 'Almost EVM equivalent',
     description: 'Some opcodes differ. Most contracts work. Transitional state.',
     example: '(transitional)',
+    tooltipRu: 'Type 3 -- переходный тип. Некоторые opcodes отличаются от Ethereum. Большинство контрактов работают, но могут потребоваться минимальные изменения. Многие проекты начинали как Type 3 и мигрировали к Type 2.',
   },
   {
     type: 'Type 4',
@@ -394,6 +404,7 @@ const ZKEVM_TYPES: ZkEVMType[] = [
     label: 'High-level language equivalent',
     description: 'Compile Solidity to custom VM. Fastest proving. Least compatible.',
     example: 'zkSync Era, StarkNet (Cairo)',
+    tooltipRu: 'Type 4 компилирует Solidity (или Cairo) в собственную VM. Самый быстрый proving, но наименьшая совместимость: precompiles, opcodes, deployment процесс отличаются. zkSync Era использует LLVM compiler для Solidity->ZK.',
   },
 ];
 
@@ -402,80 +413,58 @@ const ZKEVM_TYPES: ZkEVMType[] = [
  *
  * Horizontal spectrum bar with 4 positions (Type 1-4).
  * Two arrows below: Compatibility (High->Low), Performance (Low->High).
- * Hover for details.
+ * DiagramTooltip for details.
  */
 export function ZkEVMSpectrumDiagram() {
-  const [hoveredType, setHoveredType] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="zkEVM: спектр совместимости (Type 1-4)" color="blue">
       {/* Spectrum bar */}
       <div style={{
         display: 'flex',
         gap: 3,
-        marginBottom: 8,
+        marginBottom: 14,
       }}>
         {ZKEVM_TYPES.map((t, i) => (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredType(i)}
-            onMouseLeave={() => setHoveredType(null)}
-            style={{
-              flex: 1,
-              padding: 12,
-              borderRadius: 6,
-              cursor: 'pointer',
-              background: hoveredType === i ? `${t.color}15` : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${hoveredType === i ? `${t.color}50` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.2s',
-            }}
-          >
-            <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: t.color,
-              fontFamily: 'monospace',
-              marginBottom: 4,
-            }}>
-              {t.type}
+          <DiagramTooltip key={i} content={t.tooltipRu}>
+            <div
+              style={{
+                flex: 1,
+                padding: 12,
+                borderRadius: 6,
+                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid rgba(255,255,255,0.08)`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: t.color,
+                fontFamily: 'monospace',
+                marginBottom: 4,
+              }}>
+                {t.type}
+              </div>
+              <div style={{
+                fontSize: 10,
+                color: colors.text,
+                lineHeight: 1.4,
+                marginBottom: 4,
+              }}>
+                {t.label}
+              </div>
+              <div style={{
+                fontSize: 9,
+                color: colors.textMuted,
+                fontFamily: 'monospace',
+              }}>
+                {t.example}
+              </div>
             </div>
-            <div style={{
-              fontSize: 10,
-              color: colors.text,
-              lineHeight: 1.4,
-              marginBottom: 4,
-            }}>
-              {t.label}
-            </div>
-            <div style={{
-              fontSize: 9,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-            }}>
-              {t.example}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
-
-      {/* Expanded detail on hover */}
-      {hoveredType !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginBottom: 10,
-          borderRadius: 6,
-          border: `1px solid ${ZKEVM_TYPES[hoveredType].color}30`,
-          background: `${ZKEVM_TYPES[hoveredType].color}08`,
-        }}>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 700, color: ZKEVM_TYPES[hoveredType].color }}>
-              {ZKEVM_TYPES[hoveredType].type}:
-            </span>{' '}
-            {ZKEVM_TYPES[hoveredType].description}
-          </div>
-        </div>
-      )}
 
       {/* Arrows */}
       <div style={{ marginBottom: 14 }}>

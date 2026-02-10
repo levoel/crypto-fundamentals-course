@@ -3,13 +3,14 @@
  *
  * Exports:
  * - BridgeArchitectureDiagram: Step-through lock-and-mint bridge with attack surfaces (5 steps, history array)
- * - BridgeHacksTimelineDiagram: Horizontal timeline of 5 major bridge hacks (static)
+ * - BridgeHacksTimelineDiagram: Horizontal timeline of 5 major bridge hacks
  * - InteropComparisonDiagram: HTML table comparing LayerZero, Wormhole, Axelar, Native Bridges (8 rows)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -68,6 +69,14 @@ const BRIDGE_STEPS: BridgeStep[] = [
   },
 ];
 
+const BRIDGE_STEP_TOOLTIPS = [
+  'Lock -- первый шаг bridge: активы блокируются в smart contract на source chain. Уязвимость в lock logic может позволить повторный lock/unlock или обход проверок.',
+  'Relay -- передача информации между цепями. Компрометация приватных ключей валидаторов (Ronin: 5/9 ключей) позволяет подделать attestation.',
+  'Verify -- проверка attestation на destination chain. Баги в верификации подписей (Wormhole) или proof verifier (BNB Bridge) -- самые дорогие уязвимости.',
+  'Mint -- создание wrapped токенов на destination chain. Несанкционированный mint или replay attack позволяют создать токены без реальной блокировки на source chain.',
+  'Bridge объединяет все attack surfaces: contract bugs, key compromise, verification bypass, replay. Это делает мосты самой уязвимой инфраструктурой в crypto.',
+];
+
 /**
  * BridgeArchitectureDiagram
  *
@@ -115,23 +124,25 @@ export function BridgeArchitectureDiagram() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
         {BRIDGE_STEPS.map((st, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 46,
-              height: 46,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: i <= current ? '#fff' : colors.textMuted,
-              background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.3s',
-            }}>
-              {st.icon}
-            </div>
+            <DiagramTooltip content={BRIDGE_STEP_TOOLTIPS[i]}>
+              <div style={{
+                width: 46,
+                height: 46,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: i <= current ? '#fff' : colors.textMuted,
+                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.3s',
+              }}>
+                {st.icon}
+              </div>
+            </DiagramTooltip>
             {i < BRIDGE_STEPS.length - 1 && (
               <div style={{
                 width: 18,
@@ -266,6 +277,7 @@ interface BridgeHack {
   mechanismTag: string;
   tagColor: string;
   detail: string;
+  tooltipRu: string;
 }
 
 const BRIDGE_HACKS: BridgeHack[] = [
@@ -278,6 +290,7 @@ const BRIDGE_HACKS: BridgeHack[] = [
     mechanismTag: 'Verification Bug',
     tagColor: '#f59e0b',
     detail: 'Solana-side vulnerability. Attacker bypassed signature verification.',
+    tooltipRu: 'Wormhole (Feb 2022): $326M. Уязвимость в верификации подписей на стороне Solana. Атакующий обошел проверку guardian signatures и сминтил 120K wETH без реальной блокировки.',
   },
   {
     name: 'Ronin Bridge',
@@ -288,6 +301,7 @@ const BRIDGE_HACKS: BridgeHack[] = [
     mechanismTag: 'Key Compromise',
     tagColor: '#f43f5e',
     detail: 'Lazarus Group (North Korea). Went undetected for 6 DAYS.',
+    tooltipRu: 'Ronin Bridge (Mar 2022): $624M. Lazarus Group (КНДР) скомпрометировала 5 из 9 приватных ключей валидаторов. Атака не обнаружена 6 ДНЕЙ. Самый дорогой bridge hack в истории.',
   },
   {
     name: 'Harmony Horizon',
@@ -298,6 +312,7 @@ const BRIDGE_HACKS: BridgeHack[] = [
     mechanismTag: 'Key Compromise',
     tagColor: '#f43f5e',
     detail: 'Low threshold multisig = insufficient security.',
+    tooltipRu: 'Harmony Horizon (Jun 2022): $100M. Multisig 2/5 -- слишком низкий порог. Компрометация всего 2 ключей дала полный контроль. Урок: threshold должен быть значительно выше.',
   },
   {
     name: 'Nomad',
@@ -308,6 +323,7 @@ const BRIDGE_HACKS: BridgeHack[] = [
     mechanismTag: 'Logic Flaw',
     tagColor: '#8b5cf6',
     detail: 'Copy-paste exploit. ANY user could drain funds. Most "democratic" hack.',
+    tooltipRu: 'Nomad (Aug 2022): $190M. Баг в верификации сообщений позволил ЛЮБОМУ пользователю дренить фонды через copy-paste транзакции. Самый "демократичный" хак: сотни адресов участвовали.',
   },
   {
     name: 'BNB Bridge',
@@ -318,6 +334,7 @@ const BRIDGE_HACKS: BridgeHack[] = [
     mechanismTag: 'Verification Bug',
     tagColor: '#f59e0b',
     detail: 'Attacker forged proofs to mint BNB.',
+    tooltipRu: 'BNB Bridge (Oct 2022): $570M. Баг в proof verifier позволил подделать доказательства и сминтить BNB. Binance заморозил цепь для ограничения ущерба -- спорное решение с точки зрения децентрализации.',
   },
 ];
 
@@ -325,10 +342,9 @@ const BRIDGE_HACKS: BridgeHack[] = [
  * BridgeHacksTimelineDiagram
  *
  * Horizontal timeline of 5 major bridge hacks.
- * Color-coded by attack type. Total losses DataBox.
+ * Color-coded by attack type. DiagramTooltip on each hack card. Total losses DataBox.
  */
 export function BridgeHacksTimelineDiagram() {
-  const [hoveredHack, setHoveredHack] = useState<string | null>(null);
   const totalLoss = BRIDGE_HACKS.reduce((sum, h) => sum + h.lossNum, 0);
 
   return (
@@ -348,13 +364,9 @@ export function BridgeHacksTimelineDiagram() {
 
         {/* Hack entries */}
         <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
-          {BRIDGE_HACKS.map((hack) => {
-            const isHovered = hoveredHack === hack.name;
-            return (
+          {BRIDGE_HACKS.map((hack) => (
+            <DiagramTooltip key={hack.name} content={hack.tooltipRu}>
               <div
-                key={hack.name}
-                onMouseEnter={() => setHoveredHack(hack.name)}
-                onMouseLeave={() => setHoveredHack(null)}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -378,7 +390,7 @@ export function BridgeHacksTimelineDiagram() {
                   width: 12,
                   height: 12,
                   borderRadius: '50%',
-                  background: isHovered ? hack.tagColor : `${hack.tagColor}60`,
+                  background: `${hack.tagColor}60`,
                   border: `2px solid ${hack.tagColor}`,
                   marginBottom: 8,
                   transition: 'all 0.2s',
@@ -389,8 +401,6 @@ export function BridgeHacksTimelineDiagram() {
                   textAlign: 'center',
                   padding: '6px 4px',
                   borderRadius: 4,
-                  background: isHovered ? `${hack.tagColor}10` : 'transparent',
-                  transition: 'background 0.2s',
                   minWidth: 60,
                 }}>
                   <div style={{
@@ -423,58 +433,31 @@ export function BridgeHacksTimelineDiagram() {
                   </span>
                 </div>
               </div>
-            );
-          })}
+            </DiagramTooltip>
+          ))}
         </div>
       </div>
-
-      {/* Hovered detail */}
-      {hoveredHack && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          marginBottom: 12,
-          borderRadius: 6,
-          border: `1px solid ${BRIDGE_HACKS.find((h) => h.name === hoveredHack)!.tagColor}30`,
-          background: `${BRIDGE_HACKS.find((h) => h.name === hoveredHack)!.tagColor}08`,
-        }}>
-          {(() => {
-            const hack = BRIDGE_HACKS.find((h) => h.name === hoveredHack)!;
-            return (
-              <>
-                <div style={{ fontSize: 11, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
-                  {hack.name} ({hack.date}) -- {hack.loss}
-                </div>
-                <div style={{ fontSize: 11, color: '#f43f5e', marginBottom: 4 }}>
-                  Mechanism: {hack.mechanism}
-                </div>
-                <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
-                  {hack.detail}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      )}
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         {[
-          { tag: 'Key Compromise', color: '#f43f5e' },
-          { tag: 'Verification Bug', color: '#f59e0b' },
-          { tag: 'Logic Flaw', color: '#8b5cf6' },
+          { tag: 'Key Compromise', color: '#f43f5e', tooltipRu: 'Компрометация приватных ключей валидаторов/multisig. Самый разрушительный тип атаки: полный контроль над bridge.' },
+          { tag: 'Verification Bug', color: '#f59e0b', tooltipRu: 'Баги в верификации подписей или proof. Позволяют обойти проверки и подделать сообщения/доказательства.' },
+          { tag: 'Logic Flaw', color: '#8b5cf6', tooltipRu: 'Логические ошибки в обработке сообщений. Позволяют несанкционированные операции (mint, transfer) без корректных условий.' },
         ].map((item) => (
-          <div key={item.tag} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: item.color,
-            }} />
-            <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
-              {item.tag}
-            </span>
-          </div>
+          <DiagramTooltip key={item.tag} content={item.tooltipRu}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <div style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: item.color,
+              }} />
+              <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
+                {item.tag}
+              </span>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -497,17 +480,18 @@ interface InteropRow {
   wormhole: string;
   axelar: string;
   native: string;
+  tooltipRu: string;
 }
 
 const INTEROP_ROWS: InteropRow[] = [
-  { category: 'Architecture', layerzero: 'Ultra-Light Nodes (ULNs)', wormhole: 'Guardian Network (19)', axelar: 'Proof of Stake validators', native: 'Rollup-specific' },
-  { category: 'Trust Model', layerzero: 'Configurable (DVNs)', wormhole: 'Externally verified', axelar: 'Externally verified', native: 'Natively verified' },
-  { category: 'Supported Chains', layerzero: '80+', wormhole: '30+', axelar: '60+', native: 'L1 <-> specific L2' },
-  { category: 'Message Type', layerzero: 'Arbitrary messages', wormhole: 'Arbitrary messages', axelar: 'General message passing', native: 'Deposits / withdrawals' },
-  { category: 'Speed', layerzero: 'Minutes', wormhole: 'Minutes', axelar: 'Minutes', native: 'Min (deposit) / 7d (withdrawal)' },
-  { category: 'Market Share', layerzero: '~75% cross-chain volume', wormhole: '~10%', axelar: '~5%', native: 'N/A' },
-  { category: 'Security Model', layerzero: 'Decentralized Verification Networks', wormhole: '19 guardians', axelar: 'PoS validators', native: 'L1 security inheritance' },
-  { category: 'Key Risk', layerzero: 'DVN collusion', wormhole: 'Guardian compromise', axelar: 'Validator compromise', native: 'Smart contract bugs' },
+  { category: 'Architecture', layerzero: 'Ultra-Light Nodes (ULNs)', wormhole: 'Guardian Network (19)', axelar: 'Proof of Stake validators', native: 'Rollup-specific', tooltipRu: 'Архитектура определяет trust model: LayerZero использует configurable DVNs, Wormhole -- фиксированный набор guardians, Axelar -- PoS валидаторов, native bridges -- механизмы самого rollup.' },
+  { category: 'Trust Model', layerzero: 'Configurable (DVNs)', wormhole: 'Externally verified', axelar: 'Externally verified', native: 'Natively verified', tooltipRu: 'Trust model: кому вы доверяете. Native bridges наследуют безопасность L1 (natively verified). Остальные требуют доверия к внешним валидаторам (externally verified).' },
+  { category: 'Supported Chains', layerzero: '80+', wormhole: '30+', axelar: '60+', native: 'L1 <-> specific L2', tooltipRu: 'Количество поддерживаемых цепей. LayerZero лидирует по охвату (80+). Native bridges ограничены конкретной парой L1-L2.' },
+  { category: 'Message Type', layerzero: 'Arbitrary messages', wormhole: 'Arbitrary messages', axelar: 'General message passing', native: 'Deposits / withdrawals', tooltipRu: 'Тип сообщений: arbitrary messages позволяют вызывать контракты cross-chain (composability). Native bridges обычно ограничены переводами активов.' },
+  { category: 'Speed', layerzero: 'Minutes', wormhole: 'Minutes', axelar: 'Minutes', native: 'Min (deposit) / 7d (withdrawal)', tooltipRu: 'Скорость: cross-chain протоколы работают за минуты. Native bridges: депозит за минуты, но вывод из optimistic rollup -- 7 дней (challenge period).' },
+  { category: 'Market Share', layerzero: '~75% cross-chain volume', wormhole: '~10%', axelar: '~5%', native: 'N/A', tooltipRu: 'LayerZero доминирует с ~75% объемов cross-chain messaging. Wormhole восстанавливается после хака $326M. Рынок быстро консолидируется.' },
+  { category: 'Security Model', layerzero: 'Decentralized Verification Networks', wormhole: '19 guardians', axelar: 'PoS validators', native: 'L1 security inheritance', tooltipRu: 'Security model: LayerZero DVNs -- configurable верификация (пользователь выбирает DVN провайдеров). Wormhole: 13/19 guardians. Native bridges: максимальная безопасность через L1.' },
+  { category: 'Key Risk', layerzero: 'DVN collusion', wormhole: 'Guardian compromise', axelar: 'Validator compromise', native: 'Smart contract bugs', tooltipRu: 'Ключевой риск: для externally verified протоколов -- компрометация валидаторов. Для native bridges -- баги в smart contracts (но безопасность наследуется от L1).' },
 ];
 
 const PROTOCOL_COLORS: Record<string, string> = {
@@ -521,11 +505,9 @@ const PROTOCOL_COLORS: Record<string, string> = {
  * InteropComparisonDiagram
  *
  * HTML comparison table: LayerZero vs Wormhole vs Axelar vs Native Bridges.
- * 8 rows. Hover for emphasis. Market leader highlighted.
+ * 8 rows. DiagramTooltip on first column. Market leader highlighted.
  */
 export function InteropComparisonDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   const headers = ['LayerZero', 'Wormhole', 'Axelar', 'Native Bridges'] as const;
 
   return (
@@ -566,26 +548,24 @@ export function InteropComparisonDiagram() {
           </thead>
           <tbody>
             {INTEROP_ROWS.map((row, i) => {
-              const isHovered = hoveredRow === i;
               const isMarketShare = row.category === 'Market Share';
               return (
                 <tr
                   key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
                   style={{
-                    background: isHovered ? 'rgba(255,255,255,0.04)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
                 >
                   <td style={{
                     padding: '7px 10px',
-                    color: isHovered ? colors.text : colors.textMuted,
+                    color: colors.textMuted,
                     fontWeight: 600,
                     fontSize: 10,
                     borderBottom: '1px solid rgba(255,255,255,0.05)',
                   }}>
-                    {row.category}
+                    <DiagramTooltip content={row.tooltipRu}>
+                      <span style={{ borderBottom: '1px dotted rgba(255,255,255,0.3)', cursor: 'help' }}>{row.category}</span>
+                    </DiagramTooltip>
                   </td>
                   <td style={{
                     padding: '7px 10px',
