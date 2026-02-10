@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -121,23 +122,25 @@ export function TrustedSetupDiagram() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
         {SETUP_STEPS.map((st, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: i <= current ? '#fff' : colors.textMuted,
-              background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-              transition: 'all 0.3s',
-            }}>
-              {st.icon}
-            </div>
+            <DiagramTooltip content={st.detail}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: i <= current ? '#fff' : colors.textMuted,
+                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                transition: 'all 0.3s',
+              }}>
+                {st.icon}
+              </div>
+            </DiagramTooltip>
             {i < SETUP_STEPS.length - 1 && (
               <div style={{
                 width: 16,
@@ -175,9 +178,11 @@ export function TrustedSetupDiagram() {
             {s.title}
           </span>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-          {s.description}
-        </div>
+        <DiagramTooltip content={s.description}>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+            {s.description}
+          </div>
+        </DiagramTooltip>
         <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', fontStyle: 'italic', lineHeight: 1.5 }}>
           {s.detail}
         </div>
@@ -186,37 +191,42 @@ export function TrustedSetupDiagram() {
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
-          { label: `Step ${current + 1}/${SETUP_STEPS.length}`, action: step, disabled: current >= SETUP_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу trusted setup ceremony.' },
+          { label: `Step ${current + 1}/${SETUP_STEPS.length}`, action: step, disabled: current >= SETUP_STEPS.length - 1, tooltip: 'Перейти к следующему шагу. Ceremony проходит от Powers of Tau до генерации ключей.' },
+          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать просмотр trusted setup ceremony с начала.' },
         ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={btn.disabled}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
-            }}
-          >
-            {btn.label}
-          </button>
+          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+            <div>
+              <button
+                onClick={btn.action}
+                disabled={btn.disabled}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: btn.disabled ? 'default' : 'pointer',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  opacity: btn.disabled ? 0.5 : 1,
+                }}
+              >
+                {btn.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Key takeaway */}
-      <DataBox
-        label="Главная гарантия MPC"
-        value="Если ХОТЯ БЫ ОДИН из 141,416 участников Ethereum KZG ceremony честно уничтожил свой секрет -- вся система безопасна. Вероятность, что ВСЕ участники сговорились, практически нулевая."
-        variant="info"
-      />
+      <DiagramTooltip content="1-of-N trust assumption: безопасность MPC ceremony гарантируется, если хотя бы один участник честен. Это делает крупные ceremony (100K+ участников) практически неуязвимыми к сговору.">
+        <DataBox
+          label="Главная гарантия MPC"
+          value="Если ХОТЯ БЫ ОДИН из 141,416 участников Ethereum KZG ceremony честно уничтожил свой секрет -- вся система безопасна. Вероятность, что ВСЕ участники сговорились, практически нулевая."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -271,9 +281,20 @@ const LIFECYCLE_PHASES: LifecyclePhase[] = [
  * Static flow: Setup -> Prover -> Proof -> Verifier.
  * Bilinear pairing explanation box.
  */
-export function Groth16LifecycleDiagram() {
-  const [hoveredPhase, setHoveredPhase] = useState<number | null>(null);
+const LIFECYCLE_TOOLTIPS = [
+  'Фаза генерации CRS (Common Reference String): доверенная церемония создает proving key и verification key. Токсичные параметры (tau) должны быть уничтожены -- их утечка позволяет создавать ложные доказательства.',
+  'Доказывающий (prover) использует proving key, witness и публичные входы для вычисления доказательства Groth16: три элемента эллиптической кривой (A, B, C). Время O(n log n), где n -- число ограничений.',
+  'Верификатор проверяет доказательство за константное время: одна проверка спаривания (pairing check) e(A,B) = e(alpha,beta) * e(L,gamma) * e(C,delta). Доказательство занимает всего 128 байт.',
+];
 
+const PROOF_SIZE_TOOLTIPS: Record<string, string> = {
+  'Groth16': 'Groth16: ~128 байт (3 group elements). Самый компактный proof, но требует per-circuit trusted setup. Используется в zkSync Era, Zcash, Tornado Cash.',
+  'PLONK': 'PLONK: ~400 байт. Universal trusted setup (одна ceremony для всех circuits). Используется в Polygon zkEVM, Scroll. Баланс между размером proof и гибкостью setup.',
+  'Bulletproofs': 'Bulletproofs: ~1.3 KB. Не требуют trusted setup, но верификация O(n). Используются в Monero для range proofs. Не подходят для on-chain верификации из-за медленной проверки.',
+  'STARK': 'STARK: ~45-200 KB. Самый большой proof, но полная прозрачность (no setup), квантовая устойчивость и быстрый prover. Используется в StarkNet, dYdX, RISC Zero.',
+};
+
+export function Groth16LifecycleDiagram() {
   return (
     <DiagramContainer title="Groth16: lifecycle от witness до verification" color="purple">
       {/* Main flow */}
@@ -286,60 +307,60 @@ export function Groth16LifecycleDiagram() {
       }}>
         {LIFECYCLE_PHASES.map((phase, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div
-              onMouseEnter={() => setHoveredPhase(i)}
-              onMouseLeave={() => setHoveredPhase(null)}
-              style={{
-                ...glassStyle,
-                padding: 14,
-                borderRadius: 8,
-                border: `1px solid ${hoveredPhase === i ? `${phase.color}60` : `${phase.color}25`}`,
-                background: hoveredPhase === i ? `${phase.color}12` : `${phase.color}06`,
-                minWidth: 140,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {/* Icon + name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: phase.color,
-                  fontFamily: 'monospace',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: `${phase.color}15`,
-                  border: `1px solid ${phase.color}30`,
-                }}>
-                  {phase.icon}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>
-                  {phase.nameRu}
-                </span>
-              </div>
-              {/* Where */}
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-                {phase.where}
-              </div>
-              {/* Description */}
-              <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-                {phase.description}
-              </div>
-              {/* Details */}
-              <div style={{ marginTop: 8 }}>
-                {phase.details.map((d, di) => (
-                  <div key={di} style={{
-                    fontSize: 9,
-                    color: colors.textMuted,
+            <DiagramTooltip content={LIFECYCLE_TOOLTIPS[i]}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: 14,
+                  borderRadius: 8,
+                  border: `1px solid ${phase.color}25`,
+                  background: `${phase.color}06`,
+                  minWidth: 140,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {/* Icon + name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: phase.color,
                     fontFamily: 'monospace',
-                    lineHeight: 1.6,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: `${phase.color}15`,
+                    border: `1px solid ${phase.color}30`,
                   }}>
-                    {'\u2022'} {d}
-                  </div>
-                ))}
+                    {phase.icon}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>
+                    {phase.nameRu}
+                  </span>
+                </div>
+                {/* Where */}
+                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                  {phase.where}
+                </div>
+                {/* Description */}
+                <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+                  {phase.description}
+                </div>
+                {/* Details */}
+                <div style={{ marginTop: 8 }}>
+                  {phase.details.map((d, di) => (
+                    <div key={di} style={{
+                      fontSize: 9,
+                      color: colors.textMuted,
+                      fontFamily: 'monospace',
+                      lineHeight: 1.6,
+                    }}>
+                      {'\u2022'} {d}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
             {/* Arrow */}
             {i < LIFECYCLE_PHASES.length - 1 && (
               <div style={{
@@ -361,33 +382,35 @@ export function Groth16LifecycleDiagram() {
       </div>
 
       {/* Bilinear pairing explanation */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        borderRadius: 8,
-        marginBottom: 12,
-        border: '1px solid #6366f130',
-        background: '#6366f108',
-      }}>
+      <DiagramTooltip content="Bilinear pairing -- математическая операция e: G1 x G2 -> GT, которая позволяет проверить произведение двух секретных значений без их раскрытия. Это фундамент succinct verification: вместо пересчета всего вычисления, verifier проверяет одно уравнение спаривания.">
         <div style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: '#6366f1',
-          fontFamily: 'monospace',
-          marginBottom: 6,
+          ...glassStyle,
+          padding: 14,
+          borderRadius: 8,
+          marginBottom: 12,
+          border: '1px solid #6366f130',
+          background: '#6366f108',
         }}>
-          Bilinear Pairing (magic function)
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#6366f1',
+            fontFamily: 'monospace',
+            marginBottom: 6,
+          }}>
+            Bilinear Pairing (magic function)
+          </div>
+          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+            e(aG, bH) = e(G, H)^(ab). Input: две точки на кривых G1, G2. Output: элемент GT.
+            Позволяет проверить "произведение" без знания множителей.
+            Verifier проверяет e(A, B) = e(alpha, beta) * e(L, gamma) * e(C, delta) --
+            одно уравнение вместо пересчета всей computation.
+          </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            Groth16 verification: 3 pairing operations, ~200-300K gas on Ethereum
+          </div>
         </div>
-        <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
-          e(aG, bH) = e(G, H)^(ab). Input: две точки на кривых G1, G2. Output: элемент GT.
-          Позволяет проверить "произведение" без знания множителей.
-          Verifier проверяет e(A, B) = e(alpha, beta) * e(L, gamma) * e(C, delta) --
-          одно уравнение вместо пересчета всей computation.
-        </div>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-          Groth16 verification: 3 pairing operations, ~200-300K gas on Ethereum
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Proof size comparison */}
       <div style={{
@@ -413,38 +436,42 @@ export function Groth16LifecycleDiagram() {
             { name: 'Bulletproofs', size: '~1.3 KB', color: '#f59e0b', width: '35%' },
             { name: 'STARK', size: '~45-200 KB', color: '#ef4444', width: '100%' },
           ].map((p) => (
-            <div key={p.name} style={{ flex: 1, minWidth: 100 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontSize: 9, color: p.color, fontFamily: 'monospace', fontWeight: 600 }}>
-                  {p.name}
-                </span>
-                <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
-                  {p.size}
-                </span>
-              </div>
-              <div style={{
-                height: 4,
-                borderRadius: 2,
-                background: 'rgba(255,255,255,0.06)',
-                overflow: 'hidden',
-              }}>
+            <DiagramTooltip key={p.name} content={PROOF_SIZE_TOOLTIPS[p.name]}>
+              <div style={{ flex: 1, minWidth: 100 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 9, color: p.color, fontFamily: 'monospace', fontWeight: 600 }}>
+                    {p.name}
+                  </span>
+                  <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
+                    {p.size}
+                  </span>
+                </div>
                 <div style={{
-                  height: '100%',
-                  width: p.width,
-                  background: `${p.color}60`,
+                  height: 4,
                   borderRadius: 2,
-                }} />
+                  background: 'rgba(255,255,255,0.06)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: p.width,
+                    background: `${p.color}60`,
+                    borderRadius: 2,
+                  }} />
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
           ))}
         </div>
       </div>
 
-      <DataBox
-        label="Groth16 trade-off"
-        value="Самый компактный proof (~128 bytes, 3 group elements), но требует trusted setup для КАЖДОЙ circuit. PLONK: universal setup (одна ceremony для всех circuits), но proof больше (~400 bytes). Выбор зависит от приложения."
-        variant="info"
-      />
+      <DiagramTooltip content="Грот16 предлагает минимальный размер proof (128 байт), но ценой per-circuit trusted setup. PLONK решает это universal setup, жертвуя размером proof. Выбор proof system зависит от требований: on-chain gas cost vs гибкость circuit изменений.">
+        <DataBox
+          label="Groth16 trade-off"
+          value="Самый компактный proof (~128 bytes, 3 group elements), но требует trusted setup для КАЖДОЙ circuit. PLONK: universal setup (одна ceremony для всех circuits), но proof больше (~400 bytes). Выбор зависит от приложения."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

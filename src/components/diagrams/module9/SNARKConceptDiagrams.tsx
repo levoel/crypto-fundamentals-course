@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
@@ -50,13 +51,17 @@ export function ArithmeticCircuitDiagram() {
   return (
     <DiagramContainer title="Арифметическая схема: x^3 + x + 5 = 35" color="purple">
       {/* Input slider */}
-      <InteractiveValue
-        value={x}
-        onChange={setX}
-        min={1}
-        max={10}
-        label={`x = ${x}`}
-      />
+      <DiagramTooltip content="Входная переменная x — приватный вход (witness) арифметической схемы. Prover знает значение x, verifier видит только результат вычисления. Измените значение, чтобы увидеть, как меняется trace.">
+        <div>
+          <InteractiveValue
+            value={x}
+            onChange={setX}
+            min={1}
+            max={10}
+            label={`x = ${x}`}
+          />
+        </div>
+      </DiagramTooltip>
 
       {/* Circuit DAG */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '16px 0' }}>
@@ -100,18 +105,26 @@ export function ArithmeticCircuitDiagram() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {/* Op badge */}
-                  <span style={{
-                    fontSize: 9,
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    color: gate.color,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    background: `${gate.color}15`,
-                    border: `1px solid ${gate.color}30`,
-                  }}>
-                    {gate.op}
-                  </span>
+                  <DiagramTooltip content={
+                    gate.op === 'MUL'
+                      ? 'Вентиль умножения -- единственная нелинейная операция в R1CS. Каждое R1CS-ограничение имеет форму A * B = C, где умножение определяет структуру доказательства.'
+                      : gate.op === 'ADD'
+                        ? 'Вентиль сложения вычисляет сумму входных сигналов. В арифметических схемах это соответствует линейной комбинации в R1CS-ограничении.'
+                        : 'Входной сигнал арифметической схемы. Значение x — приватный witness, который знает только prover.'
+                  }>
+                    <span style={{
+                      fontSize: 9,
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      color: gate.color,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: `${gate.color}15`,
+                      border: `1px solid ${gate.color}30`,
+                    }}>
+                      {gate.op}
+                    </span>
+                  </DiagramTooltip>
                   {/* Gate label */}
                   <span style={{
                     fontSize: 12,
@@ -141,34 +154,38 @@ export function ArithmeticCircuitDiagram() {
       </div>
 
       {/* Trace summary */}
-      <div style={{
-        ...glassStyle,
-        padding: 10,
-        borderRadius: 6,
-        marginBottom: 12,
-        border: `1px solid ${isValid ? '#10b98130' : '#ef444430'}`,
-        background: isValid ? '#10b98108' : '#ef444408',
-      }}>
+      <DiagramTooltip content="Execution trace — последовательность всех промежуточных значений вычисления. Этот trace становится witness vector в R1CS: s = [1, x, v1, v2, out]. Prover должен знать весь trace, чтобы построить доказательство.">
         <div style={{
-          fontSize: 11,
-          fontFamily: 'monospace',
-          color: colors.text,
-          textAlign: 'center',
+          ...glassStyle,
+          padding: 10,
+          borderRadius: 6,
+          marginBottom: 12,
+          border: `1px solid ${isValid ? '#10b98130' : '#ef444430'}`,
+          background: isValid ? '#10b98108' : '#ef444408',
         }}>
-          {x} {'\u2192'} {values[1]} {'\u2192'} {values[2]} {'\u2192'} {values[3]} {'\u2192'} {output}
-          {isValid
-            ? <span style={{ color: '#10b981', fontWeight: 700 }}> = 35 (valid witness)</span>
-            : <span style={{ color: '#ef4444', fontWeight: 700 }}> {'\u2260'} 35 (invalid)</span>
-          }
+          <div style={{
+            fontSize: 11,
+            fontFamily: 'monospace',
+            color: colors.text,
+            textAlign: 'center',
+          }}>
+            {x} {'\u2192'} {values[1]} {'\u2192'} {values[2]} {'\u2192'} {values[3]} {'\u2192'} {output}
+            {isValid
+              ? <span style={{ color: '#10b981', fontWeight: 700 }}> = 35 (valid witness)</span>
+              : <span style={{ color: '#ef4444', fontWeight: 700 }}> {'\u2260'} 35 (invalid)</span>
+            }
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Flattening explanation */}
-      <DataBox
-        label="Flattening"
-        value="Только умножение двух переменных допускается в R1CS. x^3 НЕЛЬЗЯ напрямую -- нужно разбить: v1 = x*x, v2 = v1*x. Каждый gate = одна constraint. Это связано с Circom: non-quadratic constraint error возникает при попытке x*x*x."
-        variant="info"
-      />
+      <DiagramTooltip content="Flattening — преобразование сложных выражений в элементарные операции, каждая из которых становится одним R1CS-ограничением. R1CS допускает только умножение двух линейных комбинаций: (A . s) * (B . s) = (C . s).">
+        <DataBox
+          label="Flattening"
+          value="Только умножение двух переменных допускается в R1CS. x^3 НЕЛЬЗЯ напрямую -- нужно разбить: v1 = x*x, v2 = v1*x. Каждый gate = одна constraint. Это связано с Circom: non-quadratic constraint error возникает при попытке x*x*x."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -385,65 +402,71 @@ export function R1CSMatrixDiagram() {
           </span>
         </div>
 
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
-          {s.description}
-        </div>
+        <DiagramTooltip content={s.description}>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
+            {s.description}
+          </div>
+        </DiagramTooltip>
 
         {/* Witness vector */}
         {s.witness && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-              s = [{WITNESS_LABELS.join(', ')}] = [{s.witness.join(', ')}]
-            </div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {s.witness.map((val, i) => (
-                <div key={i} style={{
-                  ...glassStyle,
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  textAlign: 'center',
-                  minWidth: 36,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}>
-                  <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
-                    {WITNESS_LABELS[i]}
+          <DiagramTooltip content="Witness vector s содержит все значения вычисления: константу 1, приватный вход x, промежуточные значения и выход. Prover должен знать весь witness, чтобы построить доказательство. Verifier видит только публичные входы/выходы.">
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                s = [{WITNESS_LABELS.join(', ')}] = [{s.witness.join(', ')}]
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {s.witness.map((val, i) => (
+                  <div key={i} style={{
+                    ...glassStyle,
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    textAlign: 'center',
+                    minWidth: 36,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                    <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                      {WITNESS_LABELS[i]}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: s.color, fontFamily: 'monospace' }}>
+                      {val}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: s.color, fontFamily: 'monospace' }}>
-                    {val}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         )}
 
         {/* Matrices */}
         {s.matrices && (
-          <div style={{ overflowX: 'auto', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <MatrixDisplay name="A" data={s.matrices.A} color="#8b5cf6" />
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: 16,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-              padding: '0 2px',
-            }}>
-              {'\u00B7'}
-            </span>
-            <MatrixDisplay name="B" data={s.matrices.B} color="#3b82f6" />
-            <span style={{
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: 16,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-              padding: '0 2px',
-            }}>
-              =
-            </span>
-            <MatrixDisplay name="C" data={s.matrices.C} color="#10b981" />
-          </div>
+          <DiagramTooltip content="Матрицы A, B, C кодируют коэффициенты линейных комбинаций для каждого ограничения. Для каждой строки i: (Ai . s) * (Bi . s) = (Ci . s). Ненулевые элементы указывают, какие переменные участвуют в данном ограничении.">
+            <div style={{ overflowX: 'auto', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <MatrixDisplay name="A" data={s.matrices.A} color="#8b5cf6" />
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: 16,
+                color: colors.textMuted,
+                fontFamily: 'monospace',
+                padding: '0 2px',
+              }}>
+                {'\u00B7'}
+              </span>
+              <MatrixDisplay name="B" data={s.matrices.B} color="#3b82f6" />
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: 16,
+                color: colors.textMuted,
+                fontFamily: 'monospace',
+                padding: '0 2px',
+              }}>
+                =
+              </span>
+              <MatrixDisplay name="C" data={s.matrices.C} color="#10b981" />
+            </div>
+          </DiagramTooltip>
         )}
 
         {/* Check */}
@@ -465,28 +488,31 @@ export function R1CSMatrixDiagram() {
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8 }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
-          { label: `Step ${current + 1}/${R1CS_STEPS.length}`, action: step, disabled: current >= R1CS_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу построения R1CS.' },
+          { label: `Step ${current + 1}/${R1CS_STEPS.length}`, action: step, disabled: current >= R1CS_STEPS.length - 1, tooltip: 'Перейти к следующему шагу. Каждый шаг добавляет новое ограничение в систему R1CS.' },
+          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать построение R1CS с первого шага.' },
         ].map((btn) => (
-          <button
-            key={btn.label}
-            onClick={btn.action}
-            disabled={btn.disabled}
-            style={{
-              ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
-            }}
-          >
-            {btn.label}
-          </button>
+          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+            <div>
+              <button
+                onClick={btn.action}
+                disabled={btn.disabled}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 14px',
+                  cursor: btn.disabled ? 'default' : 'pointer',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  opacity: btn.disabled ? 0.5 : 1,
+                }}
+              >
+                {btn.label}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
     </DiagramContainer>
@@ -563,9 +589,16 @@ const PIPELINE_STAGES: PipelineStage[] = [
  * Horizontal pipeline showing 6 stages from computation to proof.
  * Static flow with size annotations.
  */
-export function ComputationToProofDiagram() {
-  const [hoveredStage, setHoveredStage] = useState<number | null>(null);
+const PIPELINE_TOOLTIPS = [
+  'Исходное вычисление (программа/функция) записывается в виде арифметической схемы -- DAG из операций сложения и умножения над конечным полем.',
+  'Флаттенинг преобразует вложенные выражения в набор элементарных R1CS-ограничений вида a * b = c, вводя промежуточные переменные.',
+  'Rank-1 Constraint System -- система ограничений в матричной форме (A, B, C). Каждое ограничение проверяет корректность одного умножения в схеме.',
+  'Quadratic Arithmetic Program преобразует R1CS в полиномиальную форму через интерполяцию Лагранжа. Это позволяет проверить все ограничения одновременно через полиномиальное тождество.',
+  'Доказывающий (prover) вычисляет полиномиальные обязательства и использует эллиптическую кривую для создания компактного доказательства (zk-SNARK proof).',
+  'Верификатор проверяет доказательство за O(1) операций спаривания (pairing) на эллиптической кривой, не зная приватных входных данных.',
+];
 
+export function ComputationToProofDiagram() {
   return (
     <DiagramContainer title="От вычисления к proof: полный pipeline" color="green">
       {/* Pipeline flow */}
@@ -579,49 +612,49 @@ export function ComputationToProofDiagram() {
       }}>
         {PIPELINE_STAGES.map((stage, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <div
-              onMouseEnter={() => setHoveredStage(i)}
-              onMouseLeave={() => setHoveredStage(null)}
-              style={{
-                ...glassStyle,
-                padding: '10px 10px',
-                borderRadius: 8,
-                border: `1px solid ${hoveredStage === i ? `${stage.color}60` : `${stage.color}25`}`,
-                background: hoveredStage === i ? `${stage.color}12` : `${stage.color}06`,
-                minWidth: 90,
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {/* Icon */}
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: stage.color,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-              }}>
-                {stage.icon}
+            <DiagramTooltip content={PIPELINE_TOOLTIPS[i]}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '10px 10px',
+                  borderRadius: 8,
+                  border: `1px solid ${stage.color}25`,
+                  background: `${stage.color}06`,
+                  minWidth: 90,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {/* Icon */}
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: stage.color,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}>
+                  {stage.icon}
+                </div>
+                {/* Name */}
+                <div style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: colors.text,
+                  marginBottom: 2,
+                }}>
+                  {stage.nameRu}
+                </div>
+                {/* Size */}
+                <div style={{
+                  fontSize: 8,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                }}>
+                  {stage.size}
+                </div>
               </div>
-              {/* Name */}
-              <div style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: colors.text,
-                marginBottom: 2,
-              }}>
-                {stage.nameRu}
-              </div>
-              {/* Size */}
-              <div style={{
-                fontSize: 8,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-              }}>
-                {stage.size}
-              </div>
-            </div>
+            </DiagramTooltip>
             {/* Arrow */}
             {i < PIPELINE_STAGES.length - 1 && (
               <div style={{
@@ -636,31 +669,14 @@ export function ComputationToProofDiagram() {
         ))}
       </div>
 
-      {/* Hovered detail */}
-      {hoveredStage !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          borderRadius: 6,
-          marginBottom: 12,
-          border: `1px solid ${PIPELINE_STAGES[hoveredStage].color}30`,
-          background: `${PIPELINE_STAGES[hoveredStage].color}08`,
-        }}>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 700, color: PIPELINE_STAGES[hoveredStage].color }}>
-              {PIPELINE_STAGES[hoveredStage].name}:
-            </span>{' '}
-            {PIPELINE_STAGES[hoveredStage].description}
-          </div>
-        </div>
-      )}
-
       {/* Key insight */}
-      <DataBox
-        label="Ключевое свойство"
-        value="Размер proof ПОСТОЯНЕН (~128 bytes для Groth16), независимо от сложности исходного вычисления. Это свойство succinct: proof маленький, а verification быстрая -- O(1)."
-        variant="info"
-      />
+      <DiagramTooltip content="Succinctness -- ключевое свойство zk-SNARKs: размер доказательства и время верификации не зависят от сложности исходного вычисления. Groth16 proof всегда 128 байт, верификация всегда 3 pairing операции.">
+        <DataBox
+          label="Ключевое свойство"
+          value="Размер proof ПОСТОЯНЕН (~128 bytes для Groth16), независимо от сложности исходного вычисления. Это свойство succinct: proof маленький, а verification быстрая -- O(1)."
+          variant="info"
+        />
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
