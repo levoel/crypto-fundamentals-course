@@ -2,12 +2,13 @@
  * ERC-721 & ERC-1155 Diagrams (ETH-09)
  *
  * Exports:
- * - ERC721OwnershipDiagram: NFT ownership model (static with hover)
- * - ERCComparisonDiagram: ERC-20 vs ERC-721 vs ERC-1155 comparison (static with hover)
+ * - ERC721OwnershipDiagram: NFT ownership model (static with DiagramTooltip)
+ * - ERCComparisonDiagram: ERC-20 vs ERC-721 vs ERC-1155 comparison (static with DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -39,34 +40,29 @@ NFT_COLLECTION.forEach((nft) => {
  * ERC721OwnershipDiagram
  *
  * Shows a collection of 5 NFTs with different owners.
- * Hover reveals metadata URI, owner, and mapping details.
+ * DiagramTooltip reveals metadata URI, owner, and mapping details.
  * Contrasts with ERC-20: each token is UNIQUE (tokenId).
  */
 export function ERC721OwnershipDiagram() {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [showMappings, setShowMappings] = useState(false);
-
-  const hoveredNFT = hoveredId !== null ? NFT_COLLECTION[hoveredId] : null;
 
   return (
     <DiagramContainer title="ERC-721: уникальные токены (NFT)" color="purple">
       {/* NFT cards grid */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 }}>
-        {NFT_COLLECTION.map((nft) => {
-          const isHovered = hoveredId === nft.tokenId;
-
-          return (
+        {NFT_COLLECTION.map((nft) => (
+          <DiagramTooltip
+            key={nft.tokenId}
+            content={`Token ID #${nft.tokenId}: уникальный non-fungible токен. Владелец: ${nft.owner}. В отличие от ERC-20, каждый токен уникален и неделим. ownerOf(tokenId) возвращает текущего владельца.`}
+          >
             <div
-              key={nft.tokenId}
-              onMouseEnter={() => setHoveredId(nft.tokenId)}
-              onMouseLeave={() => setHoveredId(null)}
               style={{
                 ...glassStyle,
                 padding: 12,
                 minWidth: 100,
                 textAlign: 'center',
-                background: isHovered ? `${nft.color}20` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isHovered ? nft.color : 'rgba(255,255,255,0.08)'}`,
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid rgba(255,255,255,0.08)`,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -84,32 +80,14 @@ export function ERC721OwnershipDiagram() {
               <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
                 {nft.owner}
               </div>
-              {isHovered && (
-                <div style={{ marginTop: 8, fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-                  <div>{nft.ownerShort}</div>
-                  <div style={{ color: nft.color, marginTop: 2 }}>{nft.uri}</div>
-                </div>
-              )}
+              <div style={{ marginTop: 8, fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <div>{nft.ownerShort}</div>
+                <div style={{ color: nft.color, marginTop: 2 }}>{nft.uri}</div>
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
-
-      {/* Hovered detail */}
-      {hoveredNFT && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          background: `${hoveredNFT.color}08`,
-          border: `1px solid ${hoveredNFT.color}30`,
-        }}>
-          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text, lineHeight: 1.8 }}>
-            <div><span style={{ color: colors.textMuted }}>ownerOf({hoveredNFT.tokenId})</span> = <span style={{ color: hoveredNFT.color }}>{hoveredNFT.owner} ({hoveredNFT.ownerShort})</span></div>
-            <div><span style={{ color: colors.textMuted }}>tokenURI({hoveredNFT.tokenId})</span> = <span style={{ color: hoveredNFT.color }}>{hoveredNFT.uri}</span></div>
-          </div>
-        </div>
-      )}
 
       {/* Mappings toggle */}
       <button
@@ -178,6 +156,7 @@ interface ComparisonRow {
   erc20: string;
   erc721: string;
   erc1155: string;
+  tooltipRu: string;
 }
 
 const COMPARISON_DATA: ComparisonRow[] = [
@@ -186,48 +165,56 @@ const COMPARISON_DATA: ComparisonRow[] = [
     erc20: 'Fungible',
     erc721: 'Non-fungible',
     erc1155: 'Оба типа',
+    tooltipRu: 'ERC-20: fungible (взаимозаменяемые). ERC-721: non-fungible (уникальные). ERC-1155: both (один контракт для fungible и non-fungible).',
   },
   {
     label: 'Баланс',
     erc20: 'Одно число',
     erc721: 'Набор tokenId',
     erc1155: 'mapping(id => кол-во)',
+    tooltipRu: 'ERC-20: uint256 balance. ERC-721: набор tokenId через _owners mapping. ERC-1155: mapping(id => amount) для каждого токена.',
   },
   {
     label: 'Перевод',
     erc20: 'transfer(to, amount)',
     erc721: 'transferFrom(from, to, tokenId)',
     erc1155: 'safeTransferFrom(from, to, id, amount, data)',
+    tooltipRu: 'ERC-20: transfer(to, amount). ERC-721: safeTransferFrom(from, to, tokenId). ERC-1155: safeTransferFrom с id + amount.',
   },
   {
     label: 'Batch',
     erc20: 'Нет',
     erc721: 'Нет',
     erc1155: 'safeBatchTransferFrom',
+    tooltipRu: 'ERC-20: нет native batch. ERC-721: нет native batch. ERC-1155: safeBatchTransferFrom -- одна транзакция для множества токенов, экономия gas.',
   },
   {
     label: 'Одобрение (approve)',
     erc20: 'approve(spender, amount)',
     erc721: 'approve(to, tokenId)',
     erc1155: 'setApprovalForAll(op, bool)',
+    tooltipRu: 'ERC-20: approve per-amount. ERC-721: approve per-tokenId или setApprovalForAll. ERC-1155: только setApprovalForAll (all-or-nothing).',
   },
   {
     label: 'Метаданные',
     erc20: 'name(), symbol()',
     erc721: 'tokenURI(tokenId)',
     erc1155: 'uri(id) с {id}',
+    tooltipRu: 'ERC-20: name() и symbol() на уровне контракта. ERC-721: tokenURI per-token. ERC-1155: uri(id) с шаблоном {id} для всех токенов.',
   },
   {
     label: 'Gas (batch 10)',
     erc20: '10x single',
     erc721: '10x single',
     erc1155: '~1x batch (~90% экономия)',
+    tooltipRu: 'При 10 переводах ERC-20/721 нужны 10 транзакций. ERC-1155 safeBatchTransferFrom делает всё за одну транзакцию с ~90% экономией gas.',
   },
   {
     label: 'Применение',
     erc20: 'Валюты, governance',
     erc721: 'Арт, сертификаты',
     erc1155: 'Игровые предметы, коллекции',
+    tooltipRu: 'ERC-20: DeFi токены, governance (UNI, AAVE). ERC-721: NFT арт, сертификаты, домены (ENS). ERC-1155: игровые предметы (Enjin), SFT.',
   },
 ];
 
@@ -243,8 +230,6 @@ const COL_COLORS = {
  * Three-column comparison: ERC-20 vs ERC-721 vs ERC-1155.
  */
 export function ERCComparisonDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="ERC-20 vs ERC-721 vs ERC-1155" color="blue">
       {/* Header */}
@@ -300,68 +285,64 @@ export function ERCComparisonDiagram() {
       </div>
 
       {/* Rows */}
-      {COMPARISON_DATA.map((row, i) => {
-        const isHovered = hoveredRow === i;
-
-        return (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredRow(i)}
-            onMouseLeave={() => setHoveredRow(null)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '130px 1fr 1fr 1fr',
-              gap: 2,
-              marginBottom: 2,
-            }}
-          >
-            <div style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 11,
-              color: isHovered ? colors.text : colors.textMuted,
-              fontFamily: 'monospace',
-              background: isHovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {row.label}
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 10,
-              color: isHovered ? COL_COLORS.erc20 : colors.text,
-              fontFamily: 'monospace',
-              background: isHovered ? `${COL_COLORS.erc20}10` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {row.erc20}
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 10,
-              color: isHovered ? COL_COLORS.erc721 : colors.text,
-              fontFamily: 'monospace',
-              background: isHovered ? `${COL_COLORS.erc721}10` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {row.erc721}
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 10,
-              color: isHovered ? COL_COLORS.erc1155 : colors.text,
-              fontFamily: 'monospace',
-              background: isHovered ? `${COL_COLORS.erc1155}10` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {row.erc1155}
-            </div>
+      {COMPARISON_DATA.map((row, i) => (
+        <div
+          key={i}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '130px 1fr 1fr 1fr',
+            gap: 2,
+            marginBottom: 2,
+          }}
+        >
+          <div style={{
+            ...glassStyle,
+            padding: '8px 10px',
+            fontSize: 11,
+            color: colors.textMuted,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+            transition: 'all 0.15s',
+          }}>
+            <DiagramTooltip content={row.tooltipRu}>
+              <span>{row.label}</span>
+            </DiagramTooltip>
           </div>
-        );
-      })}
+          <div style={{
+            ...glassStyle,
+            padding: '8px 10px',
+            fontSize: 10,
+            color: colors.text,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+            transition: 'all 0.15s',
+          }}>
+            {row.erc20}
+          </div>
+          <div style={{
+            ...glassStyle,
+            padding: '8px 10px',
+            fontSize: 10,
+            color: colors.text,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+            transition: 'all 0.15s',
+          }}>
+            {row.erc721}
+          </div>
+          <div style={{
+            ...glassStyle,
+            padding: '8px 10px',
+            fontSize: 10,
+            color: colors.text,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+            transition: 'all 0.15s',
+          }}>
+            {row.erc1155}
+          </div>
+        </div>
+      ))}
 
       <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
         ERC-1155 объединяет преимущества обоих стандартов: fungible токены (как GOLD) и non-fungible (как BADGE)

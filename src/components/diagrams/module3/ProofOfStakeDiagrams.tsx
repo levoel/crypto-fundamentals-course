@@ -2,13 +2,13 @@
  * Proof of Stake Diagrams (ETH-10)
  *
  * Exports:
- * - PoWvsPoSDiagram: PoW vs PoS comparison table (static with hover/tooltips), 8 rows
+ * - PoWvsPoSDiagram: PoW vs PoS comparison table (static with DiagramTooltip), 8 rows
  * - BeaconChainDiagram: Slot/epoch timeline visualization (static, shows 32 slots)
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -74,8 +74,6 @@ const POW_VS_POS_DATA: ComparisonRow[] = [
 ];
 
 export function PoWvsPoSDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Proof of Work vs Proof of Stake" color="green">
       <div style={{ overflowX: 'auto' }}>
@@ -118,10 +116,8 @@ export function PoWvsPoSDiagram() {
             {POW_VS_POS_DATA.map((row, i) => (
               <tr
                 key={i}
-                onMouseEnter={() => setHoveredRow(i)}
-                onMouseLeave={() => setHoveredRow(null)}
                 style={{
-                  background: hoveredRow === i ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  background: 'transparent',
                   transition: 'background 0.2s',
                   cursor: 'default',
                 }}
@@ -133,7 +129,9 @@ export function PoWvsPoSDiagram() {
                   borderBottom: `1px solid ${colors.border}`,
                   verticalAlign: 'top',
                 }}>
-                  {row.aspect}
+                  <DiagramTooltip content={row.tooltip}>
+                    <span>{row.aspect}</span>
+                  </DiagramTooltip>
                 </td>
                 <td style={{
                   padding: '8px 12px',
@@ -159,24 +157,6 @@ export function PoWvsPoSDiagram() {
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Tooltip area */}
-      <div style={{
-        marginTop: 12,
-        minHeight: 48,
-        ...glassStyle,
-        padding: '10px 14px',
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-        transition: 'opacity 0.2s',
-        opacity: hoveredRow !== null ? 1 : 0.5,
-      }}>
-        {hoveredRow !== null
-          ? POW_VS_POS_DATA[hoveredRow].tooltip
-          : 'Наведите на строку для подробностей'
-        }
       </div>
 
       {/* Summary */}
@@ -231,8 +211,6 @@ function generateSlots(): SlotData[] {
 const EPOCH_SLOTS = generateSlots();
 
 export function BeaconChainDiagram() {
-  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
-
   const slotSize = 22;
   const gap = 3;
   const cols = 16;
@@ -289,15 +267,8 @@ export function BeaconChainDiagram() {
                 strokeColor = colors.primary;
               }
 
-              const isHovered = hoveredSlot === i;
-
               return (
-                <g
-                  key={i}
-                  onMouseEnter={() => setHoveredSlot(i)}
-                  onMouseLeave={() => setHoveredSlot(null)}
-                  style={{ cursor: 'default' }}
-                >
+                <g key={i} style={{ cursor: 'default' }}>
                   <rect
                     x={x}
                     y={y}
@@ -305,9 +276,8 @@ export function BeaconChainDiagram() {
                     height={slotSize}
                     fill={fillColor}
                     stroke={strokeColor}
-                    strokeWidth={isHovered ? 2 : 1}
+                    strokeWidth={1}
                     rx={4}
-                    style={{ transition: 'stroke-width 0.15s' }}
                   />
                   <text
                     x={x + slotSize / 2}
@@ -338,24 +308,44 @@ export function BeaconChainDiagram() {
             {/* Arrow under time markers */}
             <line x1={20} y1={106} x2={svgWidth - 20} y2={106} stroke={colors.border} strokeWidth={1} />
             <polygon points={`${svgWidth - 20},106 ${svgWidth - 26},103 ${svgWidth - 26},109`} fill={colors.border} />
-
-            {/* Slot detail box */}
-            <rect
-              x={20}
-              y={116}
-              width={svgWidth - 40}
-              height={30}
-              fill="rgba(255,255,255,0.03)"
-              stroke={colors.border}
-              rx={6}
-            />
-            <text x={svgWidth / 2} y={135} fill={colors.textMuted} fontSize={11} textAnchor="middle">
-              {hoveredSlot !== null
-                ? `Слот ${hoveredSlot}: ${EPOCH_SLOTS[hoveredSlot].isMissed ? 'пропущен (proposer offline)' : EPOCH_SLOTS[hoveredSlot].isFinalized ? 'финализирован (Casper FFG)' : 'предложен (ожидает финализации)'} | время: ${hoveredSlot * 12}с`
-                : 'Наведите на слот для подробностей | Каждый слот = 12 секунд'
-              }
-            </text>
           </svg>
+        </div>
+
+        {/* Slot detail cards below SVG */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <DiagramTooltip content="Slot: 12-секундный интервал. Случайно выбранный proposer предлагает блок. Комитет из ~128 валидаторов аттестует блок. 32 слота = 1 epoch.">
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 11,
+              color: colors.text,
+              fontFamily: 'monospace',
+            }}>
+              Слот = 12 сек
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Epoch: 32 слота (~6.4 минуты). Контрольная точка для finality. Два finalized epochs подряд = economic finality.">
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 11,
+              color: colors.text,
+              fontFamily: 'monospace',
+            }}>
+              Эпоха = 32 слота
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Casper FFG + LMD GHOST: Casper обеспечивает финальность через checkpoint каждую эпоху. GHOST выбирает каноническую цепочку по весу аттестаций.">
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 11,
+              color: colors.text,
+              fontFamily: 'monospace',
+            }}>
+              Финальность = 2 эпохи
+            </div>
+          </DiagramTooltip>
         </div>
 
         {/* Key metrics */}

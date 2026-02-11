@@ -4,12 +4,13 @@
  * Exports:
  * - ValidatorLifecycleDiagram: Step-through interactive (history array, 6 steps)
  *   Includes Pectra changes: EIP-7251, EIP-6110, EIP-7002, reduced slashing penalty
- * - SlashingConditionsDiagram: 4 slashing conditions (static with visual illustrations)
+ * - SlashingConditionsDiagram: 4 slashing conditions (static with DiagramTooltip)
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -123,7 +124,6 @@ export function ValidatorLifecycleDiagram() {
       {/* Step indicators */}
       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
         {LIFECYCLE_STEPS.map((s, i) => {
-          const isSlashing = i === 5;
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {i === 5 && (
@@ -137,26 +137,28 @@ export function ValidatorLifecycleDiagram() {
                   ALT
                 </div>
               )}
-              <div
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  background: i <= step ? `${LIFECYCLE_STEPS[i].statusColor}30` : 'rgba(255,255,255,0.05)',
-                  border: `2px solid ${i <= step ? LIFECYCLE_STEPS[i].statusColor : 'rgba(255,255,255,0.1)'}`,
-                  color: i <= step ? LIFECYCLE_STEPS[i].statusColor : colors.textMuted,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                }}
-                onClick={() => setStep(i)}
-              >
-                {i + 1}
-              </div>
+              <DiagramTooltip content={LIFECYCLE_STEPS[i].description}>
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: i <= step ? `${LIFECYCLE_STEPS[i].statusColor}30` : 'rgba(255,255,255,0.05)',
+                    border: `2px solid ${i <= step ? LIFECYCLE_STEPS[i].statusColor : 'rgba(255,255,255,0.1)'}`,
+                    color: i <= step ? LIFECYCLE_STEPS[i].statusColor : colors.textMuted,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                  }}
+                  onClick={() => setStep(i)}
+                >
+                  {i + 1}
+                </div>
+              </DiagramTooltip>
               {i < 4 && (
                 <div style={{
                   width: 12,
@@ -408,23 +410,17 @@ const SLASHING_CONDITIONS: SlashingCondition[] = [
 ];
 
 export function SlashingConditionsDiagram() {
-  const [hoveredCondition, setHoveredCondition] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="4 условия слешинга (Slashing Conditions)" color="red">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {SLASHING_CONDITIONS.map((cond, i) => {
-          const isHovered = hoveredCondition === i;
-          return (
+        {SLASHING_CONDITIONS.map((cond, i) => (
+          <DiagramTooltip key={i} content={cond.description}>
             <div
-              key={i}
-              onMouseEnter={() => setHoveredCondition(i)}
-              onMouseLeave={() => setHoveredCondition(null)}
               style={{
                 ...glassStyle,
                 padding: 14,
-                borderColor: isHovered ? `${cond.color}60` : `${cond.color}20`,
-                background: isHovered ? `${cond.color}08` : 'rgba(255,255,255,0.02)',
+                borderColor: `${cond.color}20`,
+                background: 'rgba(255,255,255,0.02)',
                 transition: 'all 0.2s',
                 cursor: 'default',
               }}
@@ -473,22 +469,20 @@ export function SlashingConditionsDiagram() {
                 {cond.visual}
               </div>
 
-              {/* Expanded details on hover */}
-              {isHovered && (
-                <div style={{
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  lineHeight: 1.5,
-                  paddingTop: 6,
-                  borderTop: `1px solid ${cond.color}15`,
-                }}>
-                  <div><strong style={{ color: colors.text }}>Пример:</strong> {cond.example}</div>
-                  <div style={{ marginTop: 4 }}><strong style={{ color: cond.color }}>Наказание:</strong> {cond.severity}</div>
-                </div>
-              )}
+              {/* Always-visible details */}
+              <div style={{
+                fontSize: 11,
+                color: colors.textMuted,
+                lineHeight: 1.5,
+                paddingTop: 6,
+                borderTop: `1px solid ${cond.color}15`,
+              }}>
+                <div><strong style={{ color: colors.text }}>Пример:</strong> {cond.example}</div>
+                <div style={{ marginTop: 4 }}><strong style={{ color: cond.color }}>Наказание:</strong> {cond.severity}</div>
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* Penalty mechanics summary */}

@@ -2,14 +2,15 @@
  * ERC-20 Token Diagrams (ETH-08)
  *
  * Exports:
- * - ERC20TransferDiagram: Simple transfer flow (static with hover)
+ * - ERC20TransferDiagram: Simple transfer flow (static with DiagramTooltip)
  * - ApproveTransferFromDiagram: Approve/TransferFrom two-step pattern (step-through)
- * - TokenSupplyDiagram: Token supply visualization (static with hover)
+ * - TokenSupplyDiagram: Token supply visualization (static with DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -23,8 +24,6 @@ import { colors, glassStyle } from '@primitives/shared';
  * Alice balance decreases, Bob balance increases. Transfer event emitted.
  */
 export function ERC20TransferDiagram() {
-  const [hovered, setHovered] = useState<'alice' | 'bob' | 'event' | null>(null);
-
   const aliceBefore = 500;
   const bobBefore = 200;
   const amount = 100;
@@ -47,33 +46,28 @@ export function ERC20TransferDiagram() {
       {/* Two account boxes */}
       <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
         {/* Alice */}
-        <div
-          onMouseEnter={() => setHovered('alice')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...glassStyle,
-            padding: 16,
-            minWidth: 160,
-            background: hovered === 'alice' ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${hovered === 'alice' ? colors.success : 'rgba(255,255,255,0.08)'}`,
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
-            Alice (msg.sender)
-          </div>
-          <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
-            До: <span style={{ color: colors.textMuted }}>{aliceBefore} CRST</span>
-          </div>
-          <div style={{ fontSize: 14, fontFamily: 'monospace', color: hovered === 'alice' ? '#f43f5e' : colors.text, fontWeight: 600 }}>
-            После: {aliceAfter} CRST
-          </div>
-          {hovered === 'alice' && (
-            <div style={{ fontSize: 11, color: '#f43f5e', marginTop: 6, fontFamily: 'monospace' }}>
-              -{amount} (отправлено)
+        <DiagramTooltip content="Отправитель вызывает transfer(to, amount). EVM проверяет balance >= amount, вычитает из sender, добавляет к receiver. Атомарная операция.">
+          <div
+            style={{
+              ...glassStyle,
+              padding: 16,
+              minWidth: 160,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              transition: 'all 0.2s',
+            }}
+          >
+            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+              Alice (msg.sender)
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
+              До: <span style={{ color: colors.textMuted }}>{aliceBefore} CRST</span>
+            </div>
+            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text, fontWeight: 600 }}>
+              После: {aliceAfter} CRST
+            </div>
+          </div>
+        </DiagramTooltip>
 
         {/* Arrow */}
         <div style={{ fontSize: 24, color: colors.success }}>
@@ -81,60 +75,50 @@ export function ERC20TransferDiagram() {
         </div>
 
         {/* Bob */}
-        <div
-          onMouseEnter={() => setHovered('bob')}
-          onMouseLeave={() => setHovered(null)}
-          style={{
-            ...glassStyle,
-            padding: 16,
-            minWidth: 160,
-            background: hovered === 'bob' ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${hovered === 'bob' ? colors.success : 'rgba(255,255,255,0.08)'}`,
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
-            Bob (to)
-          </div>
-          <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
-            До: <span style={{ color: colors.textMuted }}>{bobBefore} CRST</span>
-          </div>
-          <div style={{ fontSize: 14, fontFamily: 'monospace', color: hovered === 'bob' ? colors.success : colors.text, fontWeight: 600 }}>
-            После: {bobAfter} CRST
-          </div>
-          {hovered === 'bob' && (
-            <div style={{ fontSize: 11, color: colors.success, marginTop: 6, fontFamily: 'monospace' }}>
-              +{amount} (получено)
+        <DiagramTooltip content="Получатель автоматически получает токены. Не требует подтверждения. Transfer event эмитится для off-chain tracking.">
+          <div
+            style={{
+              ...glassStyle,
+              padding: 16,
+              minWidth: 160,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              transition: 'all 0.2s',
+            }}
+          >
+            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+              Bob (to)
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
+              До: <span style={{ color: colors.textMuted }}>{bobBefore} CRST</span>
+            </div>
+            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text, fontWeight: 600 }}>
+              После: {bobAfter} CRST
+            </div>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Event log */}
-      <div
-        onMouseEnter={() => setHovered('event')}
-        onMouseLeave={() => setHovered(null)}
-        style={{
-          ...glassStyle,
-          marginTop: 16,
-          padding: 12,
-          background: hovered === 'event' ? `${colors.accent}10` : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${hovered === 'event' ? colors.accent + '40' : 'rgba(255,255,255,0.06)'}`,
-          transition: 'all 0.2s',
-        }}
-      >
-        <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, fontFamily: 'monospace' }}>
-          Event:
-        </div>
-        <div style={{ fontSize: 12, fontFamily: 'monospace', color: hovered === 'event' ? colors.accent : colors.text }}>
-          Transfer(Alice, Bob, {amount})
-        </div>
-        {hovered === 'event' && (
-          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 6 }}>
-            Каждый transfer() генерирует событие Transfer. Это позволяет индексаторам (Etherscan, The Graph) отслеживать переводы.
+      <DiagramTooltip content="Transfer(from, to, amount): событие ERC-20. Индексируется нодами для отслеживания балансов. Используется The Graph и Etherscan.">
+        <div
+          style={{
+            ...glassStyle,
+            marginTop: 16,
+            padding: 12,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            transition: 'all 0.2s',
+          }}
+        >
+          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, fontFamily: 'monospace' }}>
+            Event:
           </div>
-        )}
-      </div>
+          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
+            Transfer(Alice, Bob, {amount})
+          </div>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -262,15 +246,17 @@ export function ApproveTransferFromDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 12,
-        fontFamily: 'monospace',
-      }}>
-        {state.title}
-      </div>
+      <DiagramTooltip content={state.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 12,
+          fontFamily: 'monospace',
+        }}>
+          {state.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Actors row */}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -427,11 +413,9 @@ const TOTAL_SUPPLY = SUPPLY_SEGMENTS.reduce((sum, s) => sum + s.amount, 0);
  * TokenSupplyDiagram
  *
  * Shows total supply as a bar chart: deployer, circulating, burned.
- * Hover shows: mint increases totalSupply, burn decreases, transfer doesn't change.
+ * DiagramTooltip on legend items shows: mint increases totalSupply, burn decreases, transfer doesn't change.
  */
 export function TokenSupplyDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Эмиссия токена ERC-20" color="blue">
       {/* Total supply label */}
@@ -448,55 +432,48 @@ export function TokenSupplyDiagram() {
       <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 32, marginBottom: 16 }}>
         {SUPPLY_SEGMENTS.map((seg, i) => {
           const widthPercent = (seg.amount / TOTAL_SUPPLY) * 100;
-          const isHovered = hoveredIdx === i;
 
           return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                width: `${widthPercent}%`,
-                background: isHovered ? seg.color : `${seg.color}80`,
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span style={{
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: '#fff',
-                fontWeight: 600,
-                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-              }}>
-                {widthPercent.toFixed(0)}%
-              </span>
-            </div>
+            <DiagramTooltip key={i} content={seg.description}>
+              <div
+                style={{
+                  width: `${widthPercent}%`,
+                  background: `${seg.color}80`,
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span style={{
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: '#fff',
+                  fontWeight: 600,
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                }}>
+                  {widthPercent.toFixed(0)}%
+                </span>
+              </div>
+            </DiagramTooltip>
           );
         })}
       </div>
 
       {/* Legend */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {SUPPLY_SEGMENTS.map((seg, i) => {
-          const isHovered = hoveredIdx === i;
-
-          return (
+        {SUPPLY_SEGMENTS.map((seg, i) => (
+          <DiagramTooltip key={i} content={seg.description}>
             <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
               style={{
                 ...glassStyle,
                 padding: '10px 14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                background: isHovered ? `${seg.color}12` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isHovered ? seg.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -512,20 +489,15 @@ export function TokenSupplyDiagram() {
                 <div style={{
                   fontSize: 13,
                   fontFamily: 'monospace',
-                  color: isHovered ? seg.color : colors.text,
+                  color: colors.text,
                   fontWeight: 600,
                 }}>
                   {seg.label}: {seg.amount.toLocaleString()}
                 </div>
-                {isHovered && (
-                  <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, lineHeight: 1.5 }}>
-                    {seg.description}
-                  </div>
-                )}
               </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* Mint/Burn/Transfer explanation */}
