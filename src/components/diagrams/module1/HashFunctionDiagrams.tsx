@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { Grid } from '@primitives/Grid';
@@ -144,25 +145,33 @@ export function HashFunctionOverview() {
               flexWrap: 'wrap',
             }}
           >
+            <DiagramTooltip content="Вход хеш-функции: произвольные данные любой длины (текст, файл, блок транзакций). Даже 1 бит изменения полностью меняет выход.">
             <FlowNode variant="primary" size="sm">
               {ex.input} ({ex.size})
             </FlowNode>
+            </DiagramTooltip>
             <Arrow direction="right" />
+            <DiagramTooltip content="SHA-256: криптографическая хеш-функция с 64 раундами Merkle-Damgard. Используется в Bitcoin для блоков и адресов. NIST стандарт с 2001 года.">
             <FlowNode variant="accent" size="sm">
               SHA-256
             </FlowNode>
+            </DiagramTooltip>
             <Arrow direction="right" />
+            <DiagramTooltip content="Выход (дайджест): фиксированная длина (256 бит для SHA-256). Детерминированный -- одинаковый вход всегда даёт одинаковый выход.">
             <FlowNode variant="success" size="sm">
               256 бит (32 байта)
             </FlowNode>
+            </DiagramTooltip>
           </div>
         ))}
 
+        <DiagramTooltip content="Свойство фиксированного выхода -- основа для Merkle деревьев, цифровых подписей и Proof-of-Work. Без него невозможно эффективно сравнивать данные.">
         <DataBox
           label="Ключевое свойство"
           value="Независимо от размера входных данных (1 байт или 4 ГБ), выход SHA-256 всегда ровно 256 бит (64 hex символа)"
           variant="highlight"
         />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -264,6 +273,7 @@ export function AvalancheEffectDemo() {
         </div>
 
         {/* Hash output 1 */}
+        <DiagramTooltip content="Хеш первого входа. Зелёные символы совпадают со вторым хешем, красные -- отличаются. Даже минимальное изменение входа ('H' -> 'h') полностью перемешивает выход.">
         <div style={{ ...glassStyle, padding: 12 }}>
           <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             SHA-256("{input1}")
@@ -272,8 +282,10 @@ export function AvalancheEffectDemo() {
             {renderHashDiff(hash1, hash2)}
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Hash output 2 */}
+        <DiagramTooltip content="Хеш второго входа. Сравните с первым -- при хорошей хеш-функции ~50% бит отличаются. Это свойство называется лавинный эффект (avalanche effect).">
         <div style={{ ...glassStyle, padding: 12 }}>
           <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             SHA-256("{input2}")
@@ -282,21 +294,26 @@ export function AvalancheEffectDemo() {
             {renderHashDiff(hash2, hash1)}
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Statistics */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <DiagramTooltip content="Количество бит, отличающихся между двумя хешами. Идеальное значение -- около 128 из 256 (50%). Это гарантирует, что похожие входы дают совершенно разные хеши.">
           <DataBox
             label="Отличающихся бит"
             value={`${diffBits} / 256`}
             variant="highlight"
             style={{ flex: 1, minWidth: 140 }}
           />
+          </DiagramTooltip>
+          <DiagramTooltip content="Процент изменённых бит. Значение близкое к 50% подтверждает лавинный эффект -- ключевое свойство криптографических хеш-функций.">
           <DataBox
             label="Процент изменений"
             value={`${pct}%`}
             variant="highlight"
             style={{ flex: 1, minWidth: 140 }}
           />
+          </DiagramTooltip>
         </div>
 
         <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
@@ -319,6 +336,7 @@ interface HashProperty {
   analogy: string;
   difficulty: string;
   icon: string;
+  tooltip: string;
 }
 
 const HASH_PROPERTIES: HashProperty[] = [
@@ -328,6 +346,7 @@ const HASH_PROPERTIES: HashProperty[] = [
     analogy: 'Как пепел: видишь результат сгорания, но восстановить документ невозможно',
     difficulty: 'Сложность: 2^256 операций',
     icon: '1',
+    tooltip: 'Устойчивость к нахождению прообраза: зная H(x), невозможно найти x. Это основа Proof-of-Work и commitment schemes.',
   },
   {
     name: 'Стойкость к второму прообразу',
@@ -335,6 +354,7 @@ const HASH_PROPERTIES: HashProperty[] = [
     analogy: 'Как отпечаток пальца: найти другого человека с таким же отпечатком практически невозможно',
     difficulty: 'Сложность: 2^256 операций',
     icon: '2',
+    tooltip: 'Устойчивость ко второму прообразу: зная x, невозможно найти y != x такой что H(x) = H(y). Защита целостности данных.',
   },
   {
     name: 'Стойкость к коллизиям',
@@ -342,6 +362,7 @@ const HASH_PROPERTIES: HashProperty[] = [
     analogy: 'Как найти любых двух людей с одинаковыми отпечатками в толпе (парадокс дней рождения)',
     difficulty: 'Сложность: 2^128 операций (парадокс дней рождения)',
     icon: '3',
+    tooltip: 'Устойчивость к коллизиям: невозможно найти любые x и y (x != y) где H(x) = H(y). Ключевое свойство для цифровых подписей и Merkle деревьев.',
   },
 ];
 
@@ -356,8 +377,8 @@ export function HashPropertyComparison() {
     >
       <Grid columns={3} gap={12}>
         {HASH_PROPERTIES.map((prop, i) => (
+          <DiagramTooltip key={i} content={prop.tooltip}>
           <div
-            key={i}
             style={{
               ...glassStyle,
               padding: 16,
@@ -423,6 +444,7 @@ export function HashPropertyComparison() {
               {prop.difficulty}
             </div>
           </div>
+          </DiagramTooltip>
         ))}
       </Grid>
     </DiagramContainer>

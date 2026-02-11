@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -67,6 +68,7 @@ export function ClockDiagram() {
         label="Модуль N"
       />
 
+      <DiagramTooltip content="Модулярная арифметика: числа 'оборачиваются' после достижения модуля, как часы после 12. Операция a mod n даёт остаток от деления a на n. Нажмите на два числа, чтобы увидеть их сумму по модулю N.">
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
         <svg width={280} height={280} viewBox="0 0 280 280">
           {/* Outer circle */}
@@ -154,16 +156,19 @@ export function ClockDiagram() {
           </text>
         </svg>
       </div>
+      </DiagramTooltip>
 
       <div style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: colors.textMuted }}>
         {selectedA === null && 'Нажмите на число, чтобы выбрать a'}
         {selectedA !== null && selectedB === null && `a = ${selectedA}. Теперь выберите b`}
         {selectedA !== null && selectedB !== null && result !== null && (
+          <DiagramTooltip content="Результат сложения по модулю N: сумма 'оборачивается' если превышает N. Этот принцип лежит в основе конечных полей и криптографических групп.">
           <DataBox
             label="Результат"
             value={`${selectedA} + ${selectedB} = ${selectedA + selectedB} = ${result} (mod ${n})`}
             variant="highlight"
           />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>
@@ -253,6 +258,14 @@ export function ModularCalculator() {
     inverse: '^ (-1)',
   };
 
+  const opTooltips: Record<Operation, string> = {
+    '+': 'Сложение по модулю: (a + b) mod n. Результат всегда в диапазоне [0, n-1]. Основа групповых операций в криптографии.',
+    '-': 'Вычитание по модулю: (a - b) mod n. Отрицательные результаты корректируются прибавлением n. Эквивалент сложения с обратным элементом.',
+    '*': 'Умножение по модулю: (a * b) mod n. Коммутативно и ассоциативно. Основа RSA и протокола Диффи-Хеллмана.',
+    pow: 'Возведение в степень по модулю: a^b mod n. Вычисляется за O(log b) через fast exponentiation. Основа RSA и дискретного логарифма.',
+    inverse: 'Мультипликативный обратный: a^(-1) mod n. Существует только если gcd(a, n) = 1. Вычисляется расширенным алгоритмом Евклида.',
+  };
+
   return (
     <DiagramContainer
       title="Модулярный калькулятор"
@@ -267,8 +280,9 @@ export function ModularCalculator() {
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {(['+'  , '-', '*', 'pow', 'inverse'] as Operation[]).map((o) => (
+            <DiagramTooltip key={o} content={opTooltips[o]}>
+            <div style={{ display: 'inline-block' }}>
             <button
-              key={o}
               onClick={() => setOp(o)}
               style={{
                 ...glassStyle,
@@ -283,12 +297,17 @@ export function ModularCalculator() {
             >
               {o}
             </button>
+            </div>
+            </DiagramTooltip>
           ))}
         </div>
 
         {error ? (
+          <DiagramTooltip content="Ошибка вычисления: обратный элемент не существует, если gcd(a, n) != 1. Проверьте, что a и n взаимно просты.">
           <DataBox label="Ошибка" value={error} variant="default" />
+          </DiagramTooltip>
         ) : (
+          <DiagramTooltip content={`Результат операции ${opLabels[op]} по модулю ${n}. Все вычисления выполняются в кольце целых чисел по модулю n -- фундамент асимметричной криптографии.`}>
           <DataBox
             label="Вычисление"
             value={
@@ -298,6 +317,7 @@ export function ModularCalculator() {
             }
             variant="highlight"
           />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>
@@ -371,6 +391,7 @@ export function ModularExponentiationSteps() {
         <InteractiveValue value={mod} onChange={(v) => { setMod(v); setCurrentStep(0); }} min={2} max={100} label="Модуль" />
 
         {/* Binary representation */}
+        <DiagramTooltip content="Square-and-multiply: алгоритм быстрого возведения в степень. Разбивает экспоненту на биты и выполняет O(log n) умножений вместо O(n). Каждый бит определяет: квадрат (всегда) + умножение (если бит = 1).">
         <div style={{ ...glassStyle, padding: 12 }}>
           <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
             Двоичное представление показателя {exp}:
@@ -392,6 +413,7 @@ export function ModularExponentiationSteps() {
             ))}
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Steps display */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -423,6 +445,8 @@ export function ModularExponentiationSteps() {
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          <DiagramTooltip content="Сброс: вернуться к первому биту экспоненты и начать вычисление заново.">
+          <div style={{ display: 'inline-block' }}>
           <button
             onClick={() => setCurrentStep(0)}
             style={{
@@ -435,6 +459,10 @@ export function ModularExponentiationSteps() {
           >
             Сброс
           </button>
+          </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Назад: вернуться к предыдущему биту. Отменяет последнюю операцию квадрата/умножения.">
+          <div style={{ display: 'inline-block' }}>
           <button
             onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
             disabled={currentStep === 0}
@@ -449,6 +477,10 @@ export function ModularExponentiationSteps() {
           >
             Назад
           </button>
+          </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Далее: обработать следующий бит экспоненты. Выполняется квадрат текущего значения, и если бит = 1 -- дополнительное умножение на основание.">
+          <div style={{ display: 'inline-block' }}>
           <button
             onClick={() => setCurrentStep((s) => Math.min(steps.length - 1, s + 1))}
             disabled={currentStep >= steps.length - 1}
@@ -463,15 +495,19 @@ export function ModularExponentiationSteps() {
           >
             Далее
           </button>
+          </div>
+          </DiagramTooltip>
         </div>
 
         {/* Final result */}
         {currentStep >= steps.length - 1 && (
+          <DiagramTooltip content={`Быстрое возведение в степень: ${base}^${exp} mod ${mod} вычислено за ${steps.length} шагов вместо ${exp}. Этот алгоритм используется в RSA, Диффи-Хеллмане и протоколах на эллиптических кривых.`}>
           <DataBox
             label="Финальный результат"
             value={`${base}^${exp} mod ${mod} = ${steps[steps.length - 1].value}`}
             variant="highlight"
           />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>

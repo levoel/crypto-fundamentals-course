@@ -8,6 +8,7 @@
 
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { colors, glassStyle } from '@primitives/shared';
@@ -25,13 +26,16 @@ export function SpongeConstructionDiagram() {
     <DiagramContainer title='Конструкция губки (Sponge)' color="blue">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* State explanation */}
+        <DiagramTooltip content="Состояние Keccak: 1600 бит организованы в матрицу 5x5 из 64-битных слов. Размер state фиксирован и не зависит от длины входа или выхода.">
         <DataBox
           label="Состояние Keccak"
           value="1600 бит = rate (r) + capacity (c). Для Keccak-256: r=1088, c=512. Для SHA-3-256: r=1088, c=512, но другой padding."
           variant="default"
         />
+        </DiagramTooltip>
 
         {/* State bar visualization */}
+        <DiagramTooltip content="Rate (r): часть state, взаимодействующая с входом/выходом. Больше rate = быстрее, но менее безопасно. Capacity (c): скрытая часть, определяющая security level. Для SHA3-256: c = 512 бит (256-bit security).">
         <div style={{ display: 'flex', alignItems: 'stretch', height: 50, borderRadius: 8, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
           <div style={{
             flex: 1088,
@@ -61,8 +65,10 @@ export function SpongeConstructionDiagram() {
             capacity (c) = 512 бит
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Absorb Phase */}
+        <DiagramTooltip content="Фаза абсорбции: входные данные XOR-ятся с частью state (rate portion) и пропускаются через permutation f. Повторяется для каждого блока входа. Capacity не затрагивается.">
         <div style={{ ...glassStyle, padding: 16 }}>
           <div style={{
             fontSize: 13,
@@ -124,8 +130,10 @@ export function SpongeConstructionDiagram() {
             </div>
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Squeeze Phase */}
+        <DiagramTooltip content="Фаза выжимания: выходные биты извлекаются из rate portion state. Если нужно больше выхода, применяется ещё одна permutation f. Для SHA3-256 хватает одного выжимания (256 < 1088).">
         <div style={{ ...glassStyle, padding: 16 }}>
           <div style={{
             fontSize: 13,
@@ -162,12 +170,15 @@ export function SpongeConstructionDiagram() {
             </div>
           </div>
         </div>
+        </DiagramTooltip>
 
+        <DiagramTooltip content="Permutation f (Keccak-f[1600]): 24 раунда из 5 операций (theta, rho, pi, chi, iota). Обрабатывает весь state (1600 бит). Capacity никогда не выдаётся наружу -- атакующий не имеет доступа к полному состоянию.">
         <DataBox
           label="Ключевое отличие от Merkle-Damgard"
           value="В конструкции губки capacity (c) никогда не XOR-ится с входом и не читается напрямую. Это обеспечивает безопасность: атакующий не имеет доступа к полному состоянию."
           variant="highlight"
         />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -186,6 +197,7 @@ export function MerkleDamgardVsSponge() {
     <DiagramContainer title="Merkle-Damgard vs Конструкция губки" color="purple">
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {/* Merkle-Damgard (SHA-256) */}
+        <DiagramTooltip content="Merkle-Damgard: последовательная обработка блоков через compression function. Используется в SHA-1, SHA-256, MD5. Уязвим к length extension attack.">
         <div style={{ ...glassStyle, padding: 16, flex: 1, minWidth: 280 }}>
           <div style={{
             fontSize: 14,
@@ -231,8 +243,10 @@ export function MerkleDamgardVsSponge() {
             Последовательная обработка блоков. Уязвима к length extension attack.
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Sponge (Keccak/SHA-3) */}
+        <DiagramTooltip content="Sponge: absorb-squeeze architecture. Используется в SHA-3/Keccak. Immune к length extension attack. Может генерировать произвольно длинный выход (XOF).">
         <div style={{ ...glassStyle, padding: 16, flex: 1, minWidth: 280 }}>
           <div style={{
             fontSize: 14,
@@ -274,10 +288,11 @@ export function MerkleDamgardVsSponge() {
           </div>
 
           <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 12, lineHeight: 1.5 }}>
-            Большое внутреннее состояние (1600 бит) &gt; размер выхода.
+            Большое внутреннее состояние (1600 бит) {'>'} размер выхода.
             Capacity защищает от length extension. Нет уязвимости к этой атаке.
           </div>
         </div>
+        </DiagramTooltip>
       </div>
 
       {/* Comparison table */}
