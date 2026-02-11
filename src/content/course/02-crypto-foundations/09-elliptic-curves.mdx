@@ -43,7 +43,7 @@ Bitcoin и Ethereum используют эллиптическую кривую
 
 Главная операция на эллиптической кривой — **сложение точек**. Это геометрическая конструкция:
 
-<PointAdditionAnimation client:load />
+<PointAdditionAnimation client:visible />
 
 ### Алгоритм сложения P + Q
 
@@ -75,7 +75,7 @@ y_3 = lambda * (x_1 - x_3) - y_1
 
 nP = P + P + ... + P (n раз)
 
-<ScalarMultiplicationDiagram client:load />
+<ScalarMultiplicationDiagram client:visible />
 
 ### Алгоритм double-and-add
 
@@ -204,7 +204,7 @@ print(f"2P = {Q}")
 
 В криптографии мы работаем не над вещественными числами, а над конечными полями GF(p). Визуально это выглядит совершенно по-другому:
 
-<FiniteFieldCurveDiagram client:load />
+<FiniteFieldCurveDiagram client:visible />
 
 Вспомните конечные поля GF(p) из урока 2. Те же правила сложения точек работают, но:
 - Координаты — целые числа от 0 до p-1

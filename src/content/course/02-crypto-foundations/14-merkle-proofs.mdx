@@ -44,7 +44,7 @@ Merkle Proof для листа с индексом `i` -- это список п
 
 ## Верификация proof
 
-<MerkleProofVerificationDiagram client:load />
+<MerkleProofVerificationDiagram client:visible />
 
 ### Алгоритм верификации
 
@@ -59,7 +59,7 @@ Merkle Proof для листа с индексом `i` -- это список п
 
 ## Эффективность: O(log n) vs O(n)
 
-<MerkleProofEfficiencyDiagram client:load />
+<MerkleProofEfficiencyDiagram client:visible />
 
 Ключевое наблюдение: на каждом уровне дерева нам нужен только **один** соседний хеш. Уровней всего `log2(n)`, поэтому размер proof логарифмически растет с количеством данных.
 

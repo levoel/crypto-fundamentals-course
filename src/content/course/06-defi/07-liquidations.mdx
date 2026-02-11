@@ -118,7 +118,7 @@ Collateral * 0.825 < Debt
 
 Разберем реалистичный сценарий от начала до конца: Bob вносит 10 ETH, занимает USDC, цена падает, происходит ликвидация.
 
-<LiquidationStepThroughDiagram client:load />
+<LiquidationStepThroughDiagram client:visible />
 
 ### Хронология в числах
 
@@ -165,7 +165,7 @@ Collateral Received = Debt Repaid * (1 + Liquidation Bonus) / Collateral Price
 
 ### Прибыль ликвидатора
 
-<LiquidatorProfitDiagram client:load />
+<LiquidatorProfitDiagram client:visible />
 
 ### Разбор profit
 
@@ -213,7 +213,7 @@ Net Profit: $6,300 - $6,000 - $30 = $270
 
 Ликвидации создают **самоусиливающийся цикл**:
 
-<LiquidationCascadeDiagram client:load />
+<LiquidationCascadeDiagram client:visible />
 
 ### Механизм каскада
 

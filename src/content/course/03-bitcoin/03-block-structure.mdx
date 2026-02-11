@@ -103,7 +103,7 @@ print(f"\nДата Genesis Block: {dt} UTC")  # 2009-01-03 18:15:05
 
 Поле Previous Hash создаёт **однонаправленную связь** между блоками. Наведите на блок, чтобы увидеть, как изменение одного блока влияет на всю цепочку:
 
-<BlockChainLinkDiagram client:load />
+<BlockChainLinkDiagram client:visible />
 
 ### Почему цепочку нельзя подделать?
 
@@ -121,7 +121,7 @@ print(f"\nДата Genesis Block: {dt} UTC")  # 2009-01-03 18:15:05
 
 Merkle Root в заголовке блока -- это корень дерева Меркла, построенного из txid всех транзакций. Помните деревья Меркла из CRYPTO-13/14? Вот где они применяются:
 
-<MerkleInBlockDiagram client:load />
+<MerkleInBlockDiagram client:visible />
 
 ### Зачем Merkle Root в заголовке?
 

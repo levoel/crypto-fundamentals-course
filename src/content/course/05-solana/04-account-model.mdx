@@ -99,7 +99,7 @@ from solders.rpc.responses import GetMinimumBalanceForRentExemptionResp
 
 Это самый важный концептуальный сдвиг при переходе от Ethereum к Solana.
 
-<EthVsSolanaStateDiagram client:load />
+<EthVsSolanaStateDiagram client:visible />
 
 ### Сравнение моделей
 
@@ -187,7 +187,7 @@ PDA -- это адреса, которые **не лежат на кривой E
 
 PDA вычисляется из произвольных seeds и program_id. Bump перебирается с 255 вниз, пока результат хеширования не окажется ВНЕ кривой Ed25519.
 
-<PDADerivationDiagram client:load />
+<PDADerivationDiagram client:visible />
 
 Пройдите все шаги:
 1. Определите seeds (произвольные байтовые массивы)

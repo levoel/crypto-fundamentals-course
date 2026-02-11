@@ -91,7 +91,7 @@ token.transferFrom(Alice, Bob, 50);
 // balances[Bob] += 50
 ```
 
-<ApproveTransferFromDiagram client:load />
+<ApproveTransferFromDiagram client:visible />
 
 ### Гонка allowance (Allowance Race Condition)
 
@@ -101,7 +101,7 @@ token.transferFrom(Alice, Bob, 50);
 
 ## Эмиссия и сжигание
 
-<TokenSupplyDiagram client:load />
+<TokenSupplyDiagram client:visible />
 
 Функции `_mint()` и `_burn()` -- внутренние (internal). Они не являются частью стандарта ERC-20, но реализованы в OpenZeppelin:
 

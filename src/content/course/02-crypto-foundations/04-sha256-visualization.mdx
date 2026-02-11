@@ -37,7 +37,7 @@ SHA-256 (Secure Hash Algorithm, 256-bit) определен в стандарт�
 
 Пройдите все шаги интерактивно:
 
-<SHA256PaddingDiagram client:load />
+<SHA256PaddingDiagram client:visible />
 
 ### Почему именно такое дополнение?
 
@@ -57,7 +57,7 @@ W[t] = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16]
 - `sigma0(x) = ROTR(x, 7) XOR ROTR(x, 18) XOR SHR(x, 3)`
 - `sigma1(x) = ROTR(x, 17) XOR ROTR(x, 19) XOR SHR(x, 10)`
 
-<SHA256MessageSchedule client:load />
+<SHA256MessageSchedule client:visible />
 
 ## Шаг 3: 64 раунда сжатия
 
@@ -93,7 +93,7 @@ a = T1 + T2
 
 Пройдите через все 64 раунда шаг за шагом. Обратите внимание, как переменные "прокручиваются" вниз (b=a, c=b, ...), а `a` и `e` получают новые вычисленные значения:
 
-<SHA256RoundAnimation client:load />
+<SHA256RoundAnimation client:visible />
 
 ### Начальные значения (FIPS 180-4)
 

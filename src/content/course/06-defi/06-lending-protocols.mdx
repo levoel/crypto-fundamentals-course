@@ -118,7 +118,7 @@ R_supply = R_borrow * U * (1 - Reserve Factor)
 
 Рассмотрим пошаговый пример: Alice вносит 10 ETH как залог и занимает USDC.
 
-<SupplyBorrowFlowDiagram client:load />
+<SupplyBorrowFlowDiagram client:visible />
 
 ### Полный flow в коде
 
@@ -159,7 +159,7 @@ await aavePool.write.borrow([
 
 Когда вы депонируете актив в Aave, вы получаете **aToken** -- "расписку" (receipt), баланс которой **автоматически растет** с начислением процентов. aWETH, aUSDC, aDAI -- это ERC-20 токены, которые можно трансферить, использовать как залог в других протоколах и т.д.
 
-<ATokenGrowthDiagram client:load />
+<ATokenGrowthDiagram client:visible />
 
 ### Механизм Rebasing
 

@@ -80,7 +80,7 @@ fee = inputs_total - output_bob - output_change  # 0.0001 BTC
 
 Каждый полный узел Bitcoin поддерживает **UTXO Set** -- глобальное множество всех неизрасходованных выходов. На момент 2024 года это ~100 миллионов записей.
 
-<UTXOSetVisualization client:load />
+<UTXOSetVisualization client:visible />
 
 ### Зачем узлам UTXO Set?
 
@@ -112,7 +112,7 @@ def validate_input(txid, vout, signature):
 
 Адреса сдачи -- важный элемент приватности Bitcoin. Почему сдача идёт на *новый* адрес, а не на исходный?
 
-<ChangeAddressDiagram client:load />
+<ChangeAddressDiagram client:visible />
 
 ### HD-кошельки и адреса
 

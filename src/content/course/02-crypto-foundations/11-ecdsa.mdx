@@ -59,7 +59,7 @@ import { RefresherCallout } from '../../../components/diagrams/shared/RefresherC
 
 Любой, зная публичный ключ Q и сообщение, может проверить подпись:
 
-<ECDSAVerificationDiagram client:load />
+<ECDSAVerificationDiagram client:visible />
 
 ### Алгоритм верификации
 
@@ -133,7 +133,7 @@ print("Подпись верифицирована!")
 
 Nonce k -- **самое уязвимое место ECDSA**. Если атакующий узнает k или если k повторяется -- приватный ключ мгновенно раскрывается.
 
-<NonceReuseAttackDiagram client:load />
+<NonceReuseAttackDiagram client:visible />
 
 ### Атака повторного использования nonce
 

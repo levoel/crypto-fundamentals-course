@@ -151,7 +151,7 @@ COMPUTE_UNIT_LIMIT = 200_000      # по умолчанию (можно увел
 
 Sealevel -- это runtime Solana для параллельного выполнения транзакций. Его ключевая идея: транзакции **объявляют** свои зависимости (read/write accounts) **до выполнения**.
 
-<TransactionExecutionDiagram client:load />
+<TransactionExecutionDiagram client:visible />
 
 Пройдите все шаги:
 1. Транзакции прибывают к валидатору
@@ -225,7 +225,7 @@ def schedule_transactions(transactions: list[Transaction]) -> list[list[Transact
 
 Программы Solana могут вызывать друг друга через CPI. Это аналог `CALL` в EVM, но с важными отличиями.
 
-<CPIFlowDiagram client:load />
+<CPIFlowDiagram client:visible />
 
 ### invoke: обычный CPI
 

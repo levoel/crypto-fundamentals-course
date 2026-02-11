@@ -77,7 +77,7 @@ EVM состоит из шести основных компонентов. На
 
 Это **ключевая** интерактивная диаграмма урока. Выберите последовательность байткода и пройдите через каждый опкод, наблюдая изменения стека, хранилища и газа:
 
-<OpcodeExecutionDiagram client:load />
+<OpcodeExecutionDiagram client:visible />
 
 ### Формальная запись: PUSH1 + SSTORE
 
@@ -110,7 +110,7 @@ Storage:           slot[0] = 0x2A
 3. **Mapping** -- base slot содержит ничего; значение `mapping[key]` хранится в слоте `keccak256(key . slot_number)`
 4. **Dynamic arrays** -- длина в base slot; данные начинаются с `keccak256(slot_number)`
 
-<StorageLayoutDiagram client:load />
+<StorageLayoutDiagram client:visible />
 
 ### Зачем это знать?
 
@@ -159,7 +159,7 @@ memory_cost = words * 3 + words^2 / 512
 | 100 | 3200 | 319 | Квадратичность заметна |
 | 1000 | 32000 | 4953 | Дорого |
 
-<MemoryExpansionDiagram client:load />
+<MemoryExpansionDiagram client:visible />
 
 ### Free Memory Pointer
 

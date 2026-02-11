@@ -51,7 +51,7 @@ import { RefresherCallout } from '../../../components/diagrams/shared/RefresherC
 
 ## Структура дерева
 
-<MerkleTreeStructureDiagram client:load />
+<MerkleTreeStructureDiagram client:visible />
 
 Обратите внимание на цветовую кодировку:
 - **Зеленые** -- листья (хеши исходных данных)
@@ -62,7 +62,7 @@ import { RefresherCallout } from '../../../components/diagrams/shared/RefresherC
 
 Merkle Root -- это **обязательство** (commitment) по отношению ко всем данным в дереве. Изменение любого листа неизбежно меняет корень:
 
-<MerkleRootCommitmentDiagram client:load />
+<MerkleRootCommitmentDiagram client:visible />
 
 Это свойство делает Merkle Root идеальным для заголовка блока: невозможно подменить транзакцию, не изменив корень, а значит, и заголовок блока, и всю цепочку.
 

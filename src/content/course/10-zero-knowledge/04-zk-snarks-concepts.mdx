@@ -43,7 +43,7 @@ Arithmetic circuit -- это "схема" из двух типов gates: **ум
 
 Наш пример: `x^3 + x + 5 = 35` для x = 3.
 
-<ArithmeticCircuitDiagram client:load />
+<ArithmeticCircuitDiagram client:visible />
 
 ### Flattening: почему x^3 нельзя напрямую
 
@@ -93,7 +93,7 @@ R1CS -- это "система уравнений" для нашей circuit. К
 
 **Аналогия:** R1CS -- это как заполнить таблицу: для каждой операции указываем, какие входы слева (A), какие справа (B), и какой результат (C). Verifier проверяет: "левый вход * правый вход = выход" для каждой строки.
 
-<R1CSMatrixDiagram client:load />
+<R1CSMatrixDiagram client:visible />
 
 ### Конструкция R1CS для x^3 + x + 5 = 35
 

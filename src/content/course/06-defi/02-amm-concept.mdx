@@ -52,7 +52,7 @@ AMM Pool -- это смарт-контракт, который хранит дв
 
 Разберем конкретный пример: обмен 10 ETH на USDC в пуле с 1000 ETH и 2,000,000 USDC.
 
-<SwapStepThroughDiagram client:load />
+<SwapStepThroughDiagram client:visible />
 
 ### Полный расчет
 
@@ -156,7 +156,7 @@ dy = 2,000,000 * 10 * 997 / (1000 * 1000 + 10 * 997)
 
 Price impact -- это разница между спотовой ценой и эффективной ценой сделки. Чем больше сделка **относительно пула**, тем хуже цена.
 
-<PriceImpactDiagram client:load />
+<PriceImpactDiagram client:visible />
 
 ### Формула price impact
 
@@ -194,7 +194,7 @@ function swap(uint amountIn, uint amountOutMin) external {
 
 Комиссия 0.3% вычитается **до** расчета, но все токены остаются в пуле. Это означает, что после каждого свопа k **растет**:
 
-<FeeAccumulationDiagram client:load />
+<FeeAccumulationDiagram client:visible />
 
 ### Механизм
 

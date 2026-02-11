@@ -39,7 +39,7 @@ Ethereum keystore файлы используют AES-128-**CTR**. Почему 
 
 **CBC (Cipher Block Chaining)** решает проблему ECB, связывая каждый блок с предыдущим через XOR.
 
-<CBCModeDiagram client:load />
+<CBCModeDiagram client:visible />
 
 ### Как работает CBC
 
@@ -80,7 +80,7 @@ print(f"Шифротекст: {ct.hex()[:32]}...")
 
 **CTR (Counter)** превращает блочный шифр в потоковый шифр. Вместо шифрования данных напрямую, CTR шифрует последовательность счетчиков и XOR-ит результат с открытым текстом.
 
-<CTRModeDiagram client:load />
+<CTRModeDiagram client:visible />
 
 ### Как работает CTR
 
@@ -128,7 +128,7 @@ print(f"Шифротекст: {ct.hex()[:32]}...")
 
 **GCM (Galois/Counter Mode)** — это CTR + аутентификация. Помимо шифрования, GCM вычисляет **тег аутентификации** (authentication tag), который гарантирует целостность данных.
 
-<GCMModeDiagram client:load />
+<GCMModeDiagram client:visible />
 
 ### Зачем нужна аутентификация?
 

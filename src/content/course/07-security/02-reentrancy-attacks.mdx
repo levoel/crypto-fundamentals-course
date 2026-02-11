@@ -126,7 +126,7 @@ function test_reentrancyExploit() public {
 
 Атакующий вызывает **другую функцию** того же контракта через callback. CEI в одной функции недостаточно, если другая функция использует **общий state**.
 
-<CrossFunctionReentrancyDiagram client:load />
+<CrossFunctionReentrancyDiagram client:visible />
 
 ### Пример
 
@@ -178,7 +178,7 @@ contract VulnerableBank {
 
 Самый коварный вариант. Атакующий использует callback для чтения **view-функции**, которая возвращает неконсистентные данные.
 
-<ReadOnlyReentrancyDiagram client:load />
+<ReadOnlyReentrancyDiagram client:visible />
 
 ### Почему это опасно?
 
