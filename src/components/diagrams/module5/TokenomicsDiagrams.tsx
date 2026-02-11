@@ -2,13 +2,14 @@
  * Tokenomics Diagrams (DEFI-12)
  *
  * Exports:
- * - TokenDistributionDiagram: Interactive pie chart with protocol toggle (UNI/AAVE/CRV/COMP)
- * - VestingScheduleDiagram: Vesting timeline with cliff and linear vesting (static with hover)
+ * - TokenDistributionDiagram: Interactive pie chart with protocol toggle (UNI/AAVE/CRV/COMP), DiagramTooltip on legend
+ * - VestingScheduleDiagram: Vesting timeline with cliff and linear vesting (DiagramTooltip on period cards)
  */
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -21,6 +22,7 @@ interface TokenAllocation {
   color: string;
   amount: string;
   vesting: string;
+  tooltipRu: string;
 }
 
 interface ProtocolTokenomics {
@@ -40,10 +42,10 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
     vestingDuration: '4 years',
     governance: 'Simple voting (1 UNI = 1 vote), delegation supported',
     allocations: [
-      { category: 'Community', percentage: 60, color: colors.success, amount: '600M UNI', vesting: '4 years (governance treasury + LP mining)' },
-      { category: 'Team', percentage: 21.27, color: colors.primary, amount: '212.7M UNI', vesting: '4-year vesting with 1-year cliff' },
-      { category: 'Investors', percentage: 18.04, color: '#a78bfa', amount: '180.4M UNI', vesting: '4-year vesting with 1-year cliff' },
-      { category: 'Advisors', percentage: 0.69, color: '#f59e0b', amount: '6.9M UNI', vesting: '4-year vesting with 1-year cliff' },
+      { category: 'Community', percentage: 60, color: colors.success, amount: '600M UNI', vesting: '4 years (governance treasury + LP mining)', tooltipRu: 'Community/Ecosystem (60%): treasury, grants, LP mining. Контролируется DAO governance. Основной источник protocol growth. Uniswap выделил рекордные 60% community.' },
+      { category: 'Team', percentage: 21.27, color: colors.primary, amount: '212.7M UNI', vesting: '4-year vesting with 1-year cliff', tooltipRu: 'Team/Founders (21.27%): allocation для команды Uniswap. 4 года vesting с 1-год cliff. Стандартный подход для выравнивания стимулов команды с long-term успехом протокола.' },
+      { category: 'Investors', percentage: 18.04, color: '#a78bfa', amount: '180.4M UNI', vesting: '4-year vesting with 1-year cliff', tooltipRu: 'Investors (18.04%): seed, Series A round allocations. 4 года vesting с 1-год cliff. Paradigm, a16z, USV -- ранние инвесторы Uniswap.' },
+      { category: 'Advisors', percentage: 0.69, color: '#f59e0b', amount: '6.9M UNI', vesting: '4-year vesting with 1-year cliff', tooltipRu: 'Advisors (0.69%): минимальная allocation для советников. 4 года vesting. Маленький процент -- хороший знак (меньше sell pressure).' },
     ],
   },
   {
@@ -53,9 +55,9 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
     vestingDuration: 'Fixed supply (migrated from LEND)',
     governance: 'Governance + Safety Module staking (stkAAVE)',
     allocations: [
-      { category: 'Token Holders', percentage: 77, color: colors.success, amount: '12.32M AAVE', vesting: 'Migrated from LEND (100:1 ratio)' },
-      { category: 'Safety Module', percentage: 13, color: colors.primary, amount: '2.08M AAVE', vesting: 'Ecosystem reserve for insurance' },
-      { category: 'Team & Founders', percentage: 10, color: '#a78bfa', amount: '1.6M AAVE', vesting: '3-year vesting' },
+      { category: 'Token Holders', percentage: 77, color: colors.success, amount: '12.32M AAVE', vesting: 'Migrated from LEND (100:1 ratio)', tooltipRu: 'Token Holders (77%): мигрировано из LEND токена в ratio 100:1. Крупнейшая community allocation среди DeFi протоколов. Полностью разблокированы.' },
+      { category: 'Safety Module', percentage: 13, color: colors.primary, amount: '2.08M AAVE', vesting: 'Ecosystem reserve for insurance', tooltipRu: 'Safety Module (13%): экосистемный резерв для страхования. Stakers получают stkAAVE и защищают протокол от bad debt. 10-day unstaking cooldown.' },
+      { category: 'Team & Founders', percentage: 10, color: '#a78bfa', amount: '1.6M AAVE', vesting: '3-year vesting', tooltipRu: 'Team & Founders (10%): минимальная team allocation. 3 года vesting. Stani Kulechov (основатель) -- один из немногих с <15% team allocation.' },
     ],
   },
   {
@@ -65,11 +67,11 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
     vestingDuration: 'Inflationary (reducing emissions)',
     governance: 'Vote-escrow (veCRV): lock CRV 1-4 years for voting power',
     allocations: [
-      { category: 'Community (LP rewards)', percentage: 62, color: colors.success, amount: '1.88B CRV', vesting: 'Continuous emissions to LPs' },
-      { category: 'Team & Founders', percentage: 23.08, color: colors.primary, amount: '700M CRV', vesting: '2-year vesting' },
-      { category: 'Investors', percentage: 5.71, color: '#a78bfa', amount: '173M CRV', vesting: 'Various vesting schedules' },
-      { category: 'Employees', percentage: 3.68, color: '#f59e0b', amount: '111M CRV', vesting: '2-year vesting' },
-      { category: 'Reserve', percentage: 5.53, color: '#ef4444', amount: '168M CRV', vesting: 'Community reserve' },
+      { category: 'Community (LP rewards)', percentage: 62, color: colors.success, amount: '1.88B CRV', vesting: 'Continuous emissions to LPs', tooltipRu: 'Community LP rewards (62%): continuous emissions для LP в Curve pools. Уменьшаются каждый год. veCRV holders голосуют за распределение emissions между пулами (gauge voting).' },
+      { category: 'Team & Founders', percentage: 23.08, color: colors.primary, amount: '700M CRV', vesting: '2-year vesting', tooltipRu: 'Team & Founders (23.08%): allocation для команды Curve. 2 года vesting. Включает Michael Egorov (основатель) -- крупнейший veCRV holder.' },
+      { category: 'Investors', percentage: 5.71, color: '#a78bfa', amount: '173M CRV', vesting: 'Various vesting schedules', tooltipRu: 'Investors (5.71%): относительно маленькая investor allocation. Разные vesting schedules для разных раундов. Curve привлёк меньше VC денег чем другие DeFi.' },
+      { category: 'Employees', percentage: 3.68, color: '#f59e0b', amount: '111M CRV', vesting: '2-year vesting', tooltipRu: 'Employees (3.68%): allocation для сотрудников. 2 года vesting. Отдельно от team/founders allocation.' },
+      { category: 'Reserve', percentage: 5.53, color: '#ef4444', amount: '168M CRV', vesting: 'Community reserve', tooltipRu: 'Reserve (5.53%): community reserve для будущих инициатив. Контролируется governance. Используется для грантов и партнёрств.' },
     ],
   },
   {
@@ -79,11 +81,11 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
     vestingDuration: '4 years',
     governance: 'Simple voting (1 COMP = 1 vote), delegation, timelock',
     allocations: [
-      { category: 'Protocol Users', percentage: 42.3, color: colors.success, amount: '4.23M COMP', vesting: 'Distribution to lenders/borrowers over 4 years' },
-      { category: 'Shareholders', percentage: 23.96, color: colors.primary, amount: '2.4M COMP', vesting: '4-year vesting' },
-      { category: 'Founders & Team', percentage: 22.25, color: '#a78bfa', amount: '2.23M COMP', vesting: '4-year vesting' },
-      { category: 'Governance Reserve', percentage: 7.75, color: '#f59e0b', amount: '775K COMP', vesting: 'Governance-controlled' },
-      { category: 'Future Team', percentage: 3.74, color: '#ef4444', amount: '374K COMP', vesting: 'Reserved for future hires' },
+      { category: 'Protocol Users', percentage: 42.3, color: colors.success, amount: '4.23M COMP', vesting: 'Distribution to lenders/borrowers over 4 years', tooltipRu: 'Protocol Users (42.3%): распределение lenders и borrowers в течение 4 лет. Liquidity mining -- пользователи получают COMP пропорционально использованию протокола.' },
+      { category: 'Shareholders', percentage: 23.96, color: colors.primary, amount: '2.4M COMP', vesting: '4-year vesting', tooltipRu: 'Shareholders (23.96%): Compound Labs shareholders. 4 года vesting. Включает a16z, Bain Capital, Polychain -- крупные VC фонды.' },
+      { category: 'Founders & Team', percentage: 22.25, color: '#a78bfa', amount: '2.23M COMP', vesting: '4-year vesting', tooltipRu: 'Founders & Team (22.25%): Robert Leshner и команда. 4 года vesting. Относительно высокая team allocation (>20%) -- типично для ранних DeFi протоколов.' },
+      { category: 'Governance Reserve', percentage: 7.75, color: '#f59e0b', amount: '775K COMP', vesting: 'Governance-controlled', tooltipRu: 'Governance Reserve (7.75%): контролируется governance. Используется для грантов, protocol improvements, partnerships. Требует on-chain голосования.' },
+      { category: 'Future Team', percentage: 3.74, color: '#ef4444', amount: '374K COMP', vesting: 'Reserved for future hires', tooltipRu: 'Future Team (3.74%): зарезервировано для будущих сотрудников. Стандартная практика -- stock option pool equivalent в crypto.' },
     ],
   },
 ];
@@ -92,11 +94,10 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
  * TokenDistributionDiagram
  *
  * Interactive pie chart with clickable protocol toggle (UNI/AAVE/CRV/COMP).
- * Clickable sectors show allocation details on hover.
+ * Legend items wrapped with DiagramTooltip (SVG path hover removed).
  */
 export function TokenDistributionDiagram() {
   const [protocolIdx, setProtocolIdx] = useState(0);
-  const [hoveredSector, setHoveredSector] = useState<number | null>(null);
 
   const protocol = PROTOCOL_DATA[protocolIdx];
 
@@ -148,7 +149,7 @@ export function TokenDistributionDiagram() {
         {PROTOCOL_DATA.map((p, i) => (
           <button
             key={i}
-            onClick={() => { setProtocolIdx(i); setHoveredSector(null); }}
+            onClick={() => setProtocolIdx(i)}
             style={{
               ...glassStyle,
               padding: '8px 16px',
@@ -172,22 +173,16 @@ export function TokenDistributionDiagram() {
         <div style={{ ...glassStyle, padding: 12, minWidth: 280 }}>
           <svg width="260" height="260" viewBox="0 0 260 260">
             {sectors.map((s) => {
-              const isHovered = hoveredSector === s.index;
               const midAngle = (s.startAngle + s.endAngle) / 2;
-              const offset = isHovered ? 6 : 0;
-              const dx = Math.cos(midAngle) * offset;
-              const dy = Math.sin(midAngle) * offset;
 
               return (
-                <g key={s.index} transform={`translate(${dx},${dy})`}>
+                <g key={s.index}>
                   <path
                     d={sectorPath(s.startAngle, s.endAngle, innerR, outerR)}
-                    fill={isHovered ? s.allocation.color : `${s.allocation.color}80`}
+                    fill={`${s.allocation.color}80`}
                     stroke="rgba(0,0,0,0.3)"
                     strokeWidth={1}
-                    style={{ cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseEnter={() => setHoveredSector(s.index)}
-                    onMouseLeave={() => setHoveredSector(null)}
+                    style={{ transition: 'all 0.2s' }}
                   />
                   {/* Percentage label */}
                   {s.allocation.percentage > 5 && (
@@ -220,37 +215,34 @@ export function TokenDistributionDiagram() {
         {/* Legend + details */}
         <div style={{ flex: 1, minWidth: 200 }}>
           {/* Protocol info */}
-          <div style={{
-            ...glassStyle,
-            padding: 10,
-            marginBottom: 10,
-            background: `${colors.success}05`,
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: colors.text, marginBottom: 4 }}>
-              {protocol.name} ({protocol.symbol})
+          <DiagramTooltip content={`${protocol.name} (${protocol.symbol}): Total Supply ${protocol.totalSupply}. ${protocol.governance}. Vesting: ${protocol.vestingDuration}.`}>
+            <div style={{
+              ...glassStyle,
+              padding: 10,
+              marginBottom: 10,
+              background: `${colors.success}05`,
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: colors.text, marginBottom: 4 }}>
+                {protocol.name} ({protocol.symbol})
+              </div>
+              <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+                Total Supply: {protocol.totalSupply}<br />
+                Vesting: {protocol.vestingDuration}<br />
+                Governance: {protocol.governance}
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
-              Total Supply: {protocol.totalSupply}<br />
-              Vesting: {protocol.vestingDuration}<br />
-              Governance: {protocol.governance}
-            </div>
-          </div>
+          </DiagramTooltip>
 
-          {/* Allocation legend */}
+          {/* Allocation legend -- DiagramTooltip replaces hoveredSector */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {protocol.allocations.map((alloc, i) => {
-              const isHovered = hoveredSector === i;
-              return (
+            {protocol.allocations.map((alloc, i) => (
+              <DiagramTooltip key={i} content={alloc.tooltipRu}>
                 <div
-                  key={i}
-                  onMouseEnter={() => setHoveredSector(i)}
-                  onMouseLeave={() => setHoveredSector(null)}
                   style={{
                     ...glassStyle,
                     padding: '8px 10px',
-                    background: isHovered ? `${alloc.color}12` : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isHovered ? `${alloc.color}40` : 'rgba(255,255,255,0.06)'}`,
-                    cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                     transition: 'all 0.2s',
                   }}
                 >
@@ -266,7 +258,7 @@ export function TokenDistributionDiagram() {
                       fontSize: 12,
                       fontFamily: 'monospace',
                       fontWeight: 600,
-                      color: isHovered ? alloc.color : colors.text,
+                      color: colors.text,
                       flex: 1,
                     }}>
                       {alloc.category}
@@ -275,26 +267,24 @@ export function TokenDistributionDiagram() {
                       fontSize: 12,
                       fontFamily: 'monospace',
                       fontWeight: 600,
-                      color: isHovered ? alloc.color : colors.textMuted,
+                      color: colors.textMuted,
                     }}>
                       {alloc.percentage}%
                     </span>
                   </div>
-                  {isHovered && (
-                    <div style={{
-                      fontSize: 11,
-                      color: colors.textMuted,
-                      marginTop: 6,
-                      marginLeft: 18,
-                      lineHeight: 1.5,
-                    }}>
-                      Amount: {alloc.amount}<br />
-                      Vesting: {alloc.vesting}
-                    </div>
-                  )}
+                  <div style={{
+                    fontSize: 11,
+                    color: colors.textMuted,
+                    marginTop: 6,
+                    marginLeft: 18,
+                    lineHeight: 1.5,
+                  }}>
+                    Amount: {alloc.amount}<br />
+                    Vesting: {alloc.vesting}
+                  </div>
                 </div>
-              );
-            })}
+              </DiagramTooltip>
+            ))}
           </div>
         </div>
       </div>
@@ -366,11 +356,9 @@ const TOTAL_MONTHS = 48;
  * VestingScheduleDiagram
  *
  * 4-year vesting timeline with cliff and linear vesting.
- * Hover on each period to see explanation.
+ * DiagramTooltip on each period card (replaces hoveredIdx).
  */
 export function VestingScheduleDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   // Calculate cumulative unlock percentages at each month
   const monthlyUnlocks = useMemo(() => {
     const unlocks: number[] = Array(TOTAL_MONTHS + 1).fill(0);
@@ -478,21 +466,16 @@ export function VestingScheduleDiagram() {
         </svg>
       </div>
 
-      {/* Period cards */}
+      {/* Period cards -- DiagramTooltip replaces hoveredIdx */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-        {VESTING_PERIODS.map((period, i) => {
-          const isHovered = hoveredIdx === i;
-          return (
+        {VESTING_PERIODS.map((period, i) => (
+          <DiagramTooltip key={i} content={period.detail}>
             <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
               style={{
                 ...glassStyle,
                 padding: '10px 14px',
-                background: isHovered ? `${period.color}10` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isHovered ? `${period.color}40` : 'rgba(255,255,255,0.06)'}`,
-                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 transition: 'all 0.2s',
               }}
             >
@@ -509,7 +492,7 @@ export function VestingScheduleDiagram() {
                     fontSize: 12,
                     fontWeight: 600,
                     fontFamily: 'monospace',
-                    color: isHovered ? period.color : colors.text,
+                    color: colors.text,
                   }}>
                     {period.label}
                   </span>
@@ -524,26 +507,24 @@ export function VestingScheduleDiagram() {
                     fontSize: 11,
                     fontFamily: 'monospace',
                     fontWeight: 600,
-                    color: isHovered ? period.color : colors.textMuted,
+                    color: colors.textMuted,
                   }}>
                     {period.percentage > 0 ? `${period.percentage}%` : 'Locked'}
                   </span>
                 </div>
               </div>
-              {isHovered && (
-                <div style={{
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  marginTop: 8,
-                  marginLeft: 16,
-                  lineHeight: 1.6,
-                }}>
-                  {period.detail}
-                </div>
-              )}
+              <div style={{
+                fontSize: 11,
+                color: colors.textMuted,
+                marginTop: 6,
+                marginLeft: 16,
+                lineHeight: 1.6,
+              }}>
+                {period.description}
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* Key insight */}

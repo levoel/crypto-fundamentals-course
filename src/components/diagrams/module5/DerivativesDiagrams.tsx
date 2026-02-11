@@ -2,13 +2,14 @@
  * Derivatives Diagrams (DEFI-11)
  *
  * Exports:
- * - FundingRateDiagram: Perpetual funding rate mechanism (static with hover)
- * - LeverageLiquidationDiagram: Leverage and margin liquidation scenario (static with hover)
+ * - FundingRateDiagram: Perpetual funding rate mechanism (DiagramTooltip on HTML legend, SVG circle hover removed)
+ * - LeverageLiquidationDiagram: Leverage and margin liquidation scenario (DiagramTooltip on steps)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -58,10 +59,10 @@ const TIMELINE_HOURS = [0, 8, 16, 24, 32, 40, 48];
  *
  * Shows perpetual funding rate mechanism: how periodic payments
  * between longs and shorts keep perp price anchored to spot.
+ * SVG circle hover removed, HTML data legend with DiagramTooltip.
  */
 export function FundingRateDiagram() {
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [hoveredHour, setHoveredHour] = useState<number | null>(null);
 
   const scenario = FUNDING_SCENARIOS[selectedIdx];
   const fr = ((scenario.perpPrice - scenario.spotPrice) / scenario.spotPrice) * 100;
@@ -125,40 +126,48 @@ export function FundingRateDiagram() {
         gap: 8,
         marginBottom: 16,
       }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Spot Price</div>
-          <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: colors.success }}>
-            ${scenario.spotPrice}
+        <DiagramTooltip content="Spot Price: текущая рыночная цена актива на спотовых биржах. Это реальная цена для немедленной покупки/продажи.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Spot Price</div>
+            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: colors.success }}>
+              ${scenario.spotPrice}
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Perp Price</div>
-          <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#a78bfa' }}>
-            ${scenario.perpPrice}
+        </DiagramTooltip>
+        <DiagramTooltip content="Perp Price: цена perpetual futures контракта. Может отклоняться от спота из-за дисбаланса лонгов/шортов. Funding rate корректирует отклонение.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Perp Price</div>
+            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#a78bfa' }}>
+              ${scenario.perpPrice}
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Funding Rate (8h)</div>
-          <div style={{
-            fontSize: 16,
-            fontWeight: 700,
-            fontFamily: 'monospace',
-            color: fr > 0 ? '#ef4444' : fr < 0 ? colors.success : colors.textMuted,
-          }}>
-            {fr > 0 ? '+' : ''}{fr.toFixed(3)}%
+        </DiagramTooltip>
+        <DiagramTooltip content="Funding Rate: механизм привязки perpetual futures к spot price. Выплаты каждые 8 часов (Binance) или continuous (dYdX). Rate = clamp((perp_price - spot_price) / spot_price, max).">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Funding Rate (8h)</div>
+            <div style={{
+              fontSize: 16,
+              fontWeight: 700,
+              fontFamily: 'monospace',
+              color: fr > 0 ? '#ef4444' : fr < 0 ? colors.success : colors.textMuted,
+            }}>
+              {fr > 0 ? '+' : ''}{fr.toFixed(3)}%
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Направление</div>
-          <div style={{
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: 'monospace',
-            color: scenario.direction === 'longs_pay' ? '#ef4444' : colors.success,
-          }}>
-            {scenario.description}
+        </DiagramTooltip>
+        <DiagramTooltip content={fr > 0 ? 'Positive funding rate: longs платят shorts. Рынок bullish (больше лонгов чем шортов). Perpetual цена > spot цена. Арбитраж: short perp + long spot.' : fr < 0 ? 'Negative funding rate: shorts платят longs. Рынок bearish. Perpetual цена < spot цена. Арбитраж: long perp + short spot.' : 'Funding rate ~ 0: система в равновесии. Perp цена = spot цена. Никто никому не платит.'}>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Направление</div>
+            <div style={{
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'monospace',
+              color: scenario.direction === 'longs_pay' ? '#ef4444' : colors.success,
+            }}>
+              {scenario.description}
+            </div>
           </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Price convergence chart */}
@@ -191,17 +200,14 @@ export function FundingRateDiagram() {
           {/* Perp line (solid purple) */}
           <path d={perpPath} fill="none" stroke="#a78bfa" strokeWidth={2} />
 
-          {/* Data points */}
+          {/* Data points (no hover handlers) */}
           {convergencePoints.map((p, i) => (
             <g key={i}>
               <circle
                 cx={toX(i)}
                 cy={toY(p.perp)}
-                r={hoveredHour === i ? 5 : 3}
+                r={3}
                 fill="#a78bfa"
-                style={{ cursor: 'pointer', transition: 'r 0.2s' }}
-                onMouseEnter={() => setHoveredHour(i)}
-                onMouseLeave={() => setHoveredHour(null)}
               />
               <circle cx={toX(i)} cy={toY(p.spot)} r={3} fill={colors.success} />
             </g>
@@ -242,31 +248,6 @@ export function FundingRateDiagram() {
           <text x={padL + 35} y={padT - 1} fill="#a78bfa" fontSize={10} fontFamily="monospace">Perp</text>
           <line x1={padL + 90} x2={padL + 110} y1={padT - 5} y2={padT - 5} stroke={colors.success} strokeWidth={2} strokeDasharray="6,4" />
           <text x={padL + 115} y={padT - 1} fill={colors.success} fontSize={10} fontFamily="monospace">Spot</text>
-
-          {/* Hover tooltip */}
-          {hoveredHour !== null && (
-            <g>
-              <rect
-                x={toX(hoveredHour) - 50}
-                y={toY(convergencePoints[hoveredHour].perp) - 35}
-                width={100}
-                height={26}
-                rx={4}
-                fill="rgba(0,0,0,0.8)"
-                stroke="rgba(255,255,255,0.1)"
-              />
-              <text
-                x={toX(hoveredHour)}
-                y={toY(convergencePoints[hoveredHour].perp) - 17}
-                textAnchor="middle"
-                fill="white"
-                fontSize={10}
-                fontFamily="monospace"
-              >
-                Perp: ${convergencePoints[hoveredHour].perp.toFixed(0)} | Spot: ${convergencePoints[hoveredHour].spot}
-              </text>
-            </g>
-          )}
         </svg>
       </div>
 
@@ -305,6 +286,7 @@ interface LeverageStep {
   marginRemaining: number;
   status: 'safe' | 'warning' | 'danger' | 'liquidated';
   description: string;
+  tooltipRu: string;
 }
 
 const INITIAL_MARGIN = 1000;
@@ -324,6 +306,7 @@ const LEVERAGE_STEPS: LeverageStep[] = [
     marginRemaining: 1000,
     status: 'safe',
     description: 'Entry: 10x leverage. $1,000 margin controls $10,000 position (5 ETH).',
+    tooltipRu: 'Открытие позиции: margin = collateral ($1000). Leverage = position_size / margin = 10x. $100 margin контролирует $1000 позицию. Начальный margin ratio = 10%.',
   },
   {
     priceChange: -3,
@@ -333,6 +316,7 @@ const LEVERAGE_STEPS: LeverageStep[] = [
     marginRemaining: 700,
     status: 'safe',
     description: 'ETH -3%: PnL = -$300. Margin $700 > maintenance $500. Safe.',
+    tooltipRu: 'Движение mark price: PnL = position_size * price_change%. 10x long: -3% цены = -30% от margin = -$300. Margin $700 > maintenance $500, позиция безопасна.',
   },
   {
     priceChange: -5,
@@ -342,6 +326,7 @@ const LEVERAGE_STEPS: LeverageStep[] = [
     marginRemaining: 500,
     status: 'warning',
     description: 'ETH -5%: PnL = -$500. Margin = maintenance ($500). Margin call!',
+    tooltipRu: 'Margin call: margin ($500) = maintenance margin ($500). Биржа предупреждает о необходимости пополнить margin. Если не пополнить -- следующее движение вниз вызовет ликвидацию.',
   },
   {
     priceChange: -8,
@@ -351,6 +336,7 @@ const LEVERAGE_STEPS: LeverageStep[] = [
     marginRemaining: 200,
     status: 'danger',
     description: 'ETH -8%: PnL = -$800. Margin $200 < maintenance $500. Ликвидация неминуема.',
+    tooltipRu: 'Partial liquidation: часть позиции закрывается для восстановления margin ratio. Margin $200 < maintenance $500. Ликвидационный движок начинает закрывать позицию.',
   },
   {
     priceChange: -10,
@@ -360,6 +346,7 @@ const LEVERAGE_STEPS: LeverageStep[] = [
     marginRemaining: 0,
     status: 'liquidated',
     description: 'ETH -10%: PnL = -$1,000 = ENTIRE margin. Позиция ликвидирована. 100% loss.',
+    tooltipRu: 'Ликвидация: когда unrealized_loss >= margin. Для 10x: ликвидация при ~10% движении against позиции. Liquidation engine закрывает позицию. Insurance fund покрывает bad debt.',
   },
 ];
 
@@ -374,11 +361,9 @@ const STATUS_COLORS: Record<string, string> = {
  * LeverageLiquidationDiagram
  *
  * Shows how 10x leverage amplifies losses: a 10% move = 100% margin loss.
- * Static with hover details for each price step.
+ * DiagramTooltip on each price step (replaces hoveredStep).
  */
 export function LeverageLiquidationDiagram() {
-  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
-
   const maxMargin = INITIAL_MARGIN;
 
   return (
@@ -391,19 +376,21 @@ export function LeverageLiquidationDiagram() {
         marginBottom: 16,
       }}>
         {[
-          { label: 'Leverage', value: '10x', color: '#a78bfa' },
-          { label: 'Margin', value: '$1,000', color: colors.text },
-          { label: 'Position', value: '$10,000', color: colors.primary },
-          { label: 'Entry Price', value: '$2,000', color: colors.text },
-          { label: 'ETH Amount', value: '5 ETH', color: colors.primary },
-          { label: 'Maintenance', value: '$500 (5%)', color: '#eab308' },
+          { label: 'Leverage', value: '10x', color: '#a78bfa', tooltipRu: 'Leverage (плечо): множитель позиции. 10x = позиция в 10 раз больше margin. Увеличивает как прибыль, так и убытки пропорционально.' },
+          { label: 'Margin', value: '$1,000', color: colors.text, tooltipRu: 'Margin (маржа): залог трейдера. $1000 initial margin. При убытках margin уменьшается, при прибыли -- увеличивается.' },
+          { label: 'Position', value: '$10,000', color: colors.primary, tooltipRu: 'Position size: margin * leverage = $1000 * 10 = $10,000. Это реальный размер позиции на рынке.' },
+          { label: 'Entry Price', value: '$2,000', color: colors.text, tooltipRu: 'Entry price: цена входа в позицию. Для long: прибыль если цена растёт, убыток если падает.' },
+          { label: 'ETH Amount', value: '5 ETH', color: colors.primary, tooltipRu: 'Количество ETH: $10,000 / $2,000 = 5 ETH. Это сколько ETH контролирует позиция.' },
+          { label: 'Maintenance', value: '$500 (5%)', color: '#eab308', tooltipRu: 'Maintenance margin: минимальный margin для удержания позиции. 5% от position size = $500. Если margin падает ниже -- ликвидация.' },
         ].map((item, i) => (
-          <div key={i} style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>{item.label}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: item.color }}>
-              {item.value}
+          <DiagramTooltip key={i} content={item.tooltipRu}>
+            <div style={{ ...glassStyle, padding: 10 }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: item.color }}>
+                {item.value}
+              </div>
             </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -419,99 +406,88 @@ export function LeverageLiquidationDiagram() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {LEVERAGE_STEPS.map((step, i) => {
-            const isHovered = hoveredStep === i;
             const barWidth = Math.max(0, (step.marginRemaining / maxMargin) * 100);
             const statusColor = STATUS_COLORS[step.status];
             const maintenanceLine = (MAINTENANCE_MARGIN / maxMargin) * 100;
 
             return (
-              <div
-                key={i}
-                onMouseEnter={() => setHoveredStep(i)}
-                onMouseLeave={() => setHoveredStep(null)}
-                style={{
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 4,
-                }}>
-                  {/* Price change label */}
+              <DiagramTooltip key={i} content={step.tooltipRu}>
+                <div
+                  style={{
+                    transition: 'all 0.2s',
+                  }}
+                >
                   <div style={{
-                    width: 70,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    color: isHovered ? statusColor : colors.textMuted,
-                    textAlign: 'right',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginBottom: 4,
                   }}>
-                    {step.priceChange === 0 ? 'Entry' : `${step.priceChange}%`}
-                  </div>
-
-                  {/* Bar container */}
-                  <div style={{
-                    flex: 1,
-                    height: 20,
-                    borderRadius: 4,
-                    background: 'rgba(255,255,255,0.05)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}>
-                    {/* Margin bar */}
+                    {/* Price change label */}
                     <div style={{
-                      width: `${barWidth}%`,
-                      height: '100%',
+                      width: 70,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      color: colors.textMuted,
+                      textAlign: 'right',
+                    }}>
+                      {step.priceChange === 0 ? 'Entry' : `${step.priceChange}%`}
+                    </div>
+
+                    {/* Bar container */}
+                    <div style={{
+                      flex: 1,
+                      height: 20,
                       borderRadius: 4,
-                      background: isHovered ? statusColor : `${statusColor}80`,
-                      transition: 'all 0.3s',
-                    }} />
-                    {/* Maintenance margin line */}
+                      background: 'rgba(255,255,255,0.05)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}>
+                      {/* Margin bar */}
+                      <div style={{
+                        width: `${barWidth}%`,
+                        height: '100%',
+                        borderRadius: 4,
+                        background: `${statusColor}80`,
+                        transition: 'all 0.3s',
+                      }} />
+                      {/* Maintenance margin line */}
+                      <div style={{
+                        position: 'absolute',
+                        left: `${maintenanceLine}%`,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        background: '#eab308',
+                        opacity: 0.6,
+                      }} />
+                    </div>
+
+                    {/* Margin value */}
                     <div style={{
-                      position: 'absolute',
-                      left: `${maintenanceLine}%`,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      background: '#eab308',
-                      opacity: 0.6,
-                    }} />
+                      width: 60,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      color: statusColor,
+                      textAlign: 'right',
+                    }}>
+                      ${step.marginRemaining}
+                    </div>
                   </div>
 
-                  {/* Margin value */}
+                  {/* Always-visible description */}
                   <div style={{
-                    width: 60,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    color: statusColor,
-                    textAlign: 'right',
+                    fontSize: 11,
+                    color: colors.textMuted,
+                    marginLeft: 80,
+                    lineHeight: 1.4,
                   }}>
-                    ${step.marginRemaining}
+                    {step.description}
                   </div>
                 </div>
-
-                {/* Hover detail */}
-                {isHovered && (
-                  <div style={{
-                    ...glassStyle,
-                    padding: 10,
-                    marginLeft: 80,
-                    marginBottom: 4,
-                    background: `${statusColor}08`,
-                    border: `1px solid ${statusColor}30`,
-                    fontSize: 11,
-                    color: colors.text,
-                    lineHeight: 1.5,
-                  }}>
-                    <div>ETH: ${step.ethPrice} | Position: ${step.positionValue.toLocaleString()} | PnL: {step.pnl >= 0 ? '+' : ''}{step.pnl.toLocaleString()}</div>
-                    <div style={{ marginTop: 4, color: colors.textMuted }}>{step.description}</div>
-                  </div>
-                )}
-              </div>
+              </DiagramTooltip>
             );
           })}
         </div>
