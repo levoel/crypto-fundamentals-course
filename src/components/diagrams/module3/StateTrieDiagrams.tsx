@@ -3,12 +3,13 @@
  *
  * Exports:
  * - MPTVisualizationDiagram: Interactive MPT with account insertion (history array, step-through)
- * - FourTriesDiagram: Relationship between 4 tries (static with hover/tooltips)
+ * - FourTriesDiagram: Relationship between 4 tries (static with DiagramTooltip)
  */
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -208,42 +209,44 @@ function findNode(nodes: MPTNode[], id: string): MPTNode | undefined {
 
 export function MPTVisualizationDiagram() {
   const [step, setStep] = useState(0);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   const current = MPT_STEPS[step];
-  const hoveredDetail = current.nodes.find((n) => n.id === hoveredNode);
 
   return (
     <DiagramContainer title="Modified Merkle Patricia Trie" color="green">
       {/* Step info */}
-      <div style={{
-        ...glassStyle,
-        padding: '10px 14px',
-        marginBottom: 12,
-        borderLeft: `3px solid ${colors.success}`,
-      }}>
-        <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
-          {current.title}
+      <DiagramTooltip content={current.description}>
+        <div style={{
+          ...glassStyle,
+          padding: '10px 14px',
+          marginBottom: 12,
+          borderLeft: `3px solid ${colors.success}`,
+        }}>
+          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+            {current.title}
+          </div>
+          <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.5 }}>
+            {current.description}
+          </div>
         </div>
-        <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.5 }}>
-          {current.description}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 8, fontSize: 11 }}>
         {[
-          { type: 'branch', label: 'Branch (16 детей + value)', color: NODE_COLORS.branch },
-          { type: 'extension', label: 'Extension (общий префикс)', color: NODE_COLORS.extension },
-          { type: 'leaf', label: 'Leaf (ключ + значение)', color: NODE_COLORS.leaf },
+          { type: 'branch', label: 'Branch (16 детей + value)', color: NODE_COLORS.branch, tooltip: 'Branch node: 17 элементов (16 children для hex nibbles 0-F + value). Развилка в trie. Путь определяется hex-encoded key.' },
+          { type: 'extension', label: 'Extension (общий префикс)', color: NODE_COLORS.extension, tooltip: 'Extension node: сжатие общего prefix. Содержит shared nibbles + ссылку на следующий node. Оптимизация: уменьшает глубину дерева.' },
+          { type: 'leaf', label: 'Leaf (ключ + значение)', color: NODE_COLORS.leaf, tooltip: 'Leaf node: конечный узел с оставшимся key suffix + value. Содержит account data (nonce, balance, storageRoot, codeHash).' },
         ].map((item) => (
-          <div key={item.type} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: 3,
-              background: item.color + '30', border: `1.5px solid ${item.color}`,
-            }} />
-            <span style={{ color: colors.textMuted, fontFamily: 'monospace' }}>{item.label}</span>
-          </div>
+          <DiagramTooltip key={item.type} content={item.tooltip}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <div style={{
+                width: 10, height: 10, borderRadius: 3,
+                background: item.color + '30', border: `1.5px solid ${item.color}`,
+              }} />
+              <span style={{ color: colors.textMuted, fontFamily: 'monospace' }}>{item.label}</span>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -294,20 +297,17 @@ export function MPTVisualizationDiagram() {
             );
           })}
 
-          {/* Nodes */}
+          {/* Nodes (no hover handlers) */}
           {current.nodes.map((node) => {
             const nodeColor = NODE_COLORS[node.type];
-            const isHovered = hoveredNode === node.id;
             const opacity = node.dimmed ? 0.25 : 1;
-            const strokeW = node.highlighted ? 2.5 : isHovered ? 2 : 1;
-            const fillOpacity = node.highlighted ? '30' : isHovered ? '20' : '10';
+            const strokeW = node.highlighted ? 2.5 : 1;
+            const fillOpacity = node.highlighted ? '30' : '10';
 
             return (
               <g
                 key={node.id}
-                onMouseEnter={() => setHoveredNode(node.id)}
-                onMouseLeave={() => setHoveredNode(null)}
-                style={{ cursor: 'pointer', transition: 'opacity 300ms ease' }}
+                style={{ transition: 'opacity 300ms ease' }}
                 opacity={opacity}
               >
                 <rect
@@ -337,15 +337,6 @@ export function MPTVisualizationDiagram() {
           })}
         </svg>
       </div>
-
-      {/* Node detail on hover */}
-      {hoveredDetail ? (
-        <DataBox label={hoveredDetail.label} value={hoveredDetail.detail} variant="highlight" />
-      ) : (
-        <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 4 }}>
-          Наведите на узел, чтобы увидеть подробности
-        </div>
-      )}
 
       {/* State root */}
       <div style={{
@@ -465,10 +456,6 @@ const FOUR_TRIES: TrieInfo[] = [
 ];
 
 export function FourTriesDiagram() {
-  const [hoveredTrie, setHoveredTrie] = useState<string | null>(null);
-
-  const hovered = FOUR_TRIES.find((t) => t.id === hoveredTrie);
-
   return (
     <DiagramContainer title="Четыре дерева Ethereum" color="blue">
       {/* Block header */}
@@ -522,33 +509,27 @@ export function FourTriesDiagram() {
             storageRoot
           </text>
 
-          {/* Trie boxes */}
+          {/* Trie boxes (no hover handlers) */}
           {FOUR_TRIES.map((trie) => {
-            const isHovered = hoveredTrie === trie.id;
             const bw = 110;
             const bh = 55;
             return (
-              <g
-                key={trie.id}
-                onMouseEnter={() => setHoveredTrie(trie.id)}
-                onMouseLeave={() => setHoveredTrie(null)}
-                style={{ cursor: 'pointer' }}
-              >
+              <g key={trie.id}>
                 <rect
                   x={trie.x - bw / 2}
                   y={trie.y - bh / 2}
                   width={bw}
                   height={bh}
                   rx={8}
-                  fill={isHovered ? trie.color + '20' : 'rgba(255,255,255,0.05)'}
-                  stroke={isHovered ? trie.color : colors.border}
-                  strokeWidth={isHovered ? 2 : 1}
+                  fill="rgba(255,255,255,0.05)"
+                  stroke={colors.border}
+                  strokeWidth={1}
                 />
                 <text
                   x={trie.x}
                   y={trie.y - 6}
                   textAnchor="middle"
-                  fill={isHovered ? trie.color : colors.text}
+                  fill={colors.text}
                   fontSize={11}
                   fontFamily="monospace"
                   fontWeight={600}
@@ -585,39 +566,31 @@ export function FourTriesDiagram() {
         </svg>
       </div>
 
-      {/* Detail panel */}
-      {hovered ? (
-        <div style={{
-          ...glassStyle,
-          padding: '12px 14px',
-          borderLeft: `3px solid ${hovered.color}`,
-        }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: hovered.color, marginBottom: 6 }}>
-            {hovered.name}
-          </div>
-          <div style={{ fontSize: 12, color: colors.text, marginBottom: 8, lineHeight: 1.5 }}>
-            {hovered.description}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, fontFamily: 'monospace' }}>
-            <div>
-              <span style={{ color: colors.textMuted }}>Key: </span>
-              <span style={{ color: colors.text }}>{hovered.key}</span>
+      {/* HTML trie cards below SVG with DiagramTooltip */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+        gap: 8,
+      }}>
+        {FOUR_TRIES.map((trie) => (
+          <DiagramTooltip key={trie.id} content={trie.description}>
+            <div style={{
+              ...glassStyle,
+              padding: '10px 12px',
+              borderLeft: `3px solid ${trie.color}`,
+              cursor: 'pointer',
+            }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: trie.color, marginBottom: 4 }}>
+                {trie.name}
+              </div>
+              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
+                <div>Key: {trie.key}</div>
+                <div>Root: {trie.rootField}</div>
+              </div>
             </div>
-            <div>
-              <span style={{ color: colors.textMuted }}>Value: </span>
-              <span style={{ color: colors.text }}>{hovered.value}</span>
-            </div>
-            <div>
-              <span style={{ color: colors.textMuted }}>Root field: </span>
-              <span style={{ color: hovered.color }}>{hovered.rootField}</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
-          Наведите на дерево, чтобы увидеть подробности
-        </div>
-      )}
+          </DiagramTooltip>
+        ))}
+      </div>
     </DiagramContainer>
   );
 }

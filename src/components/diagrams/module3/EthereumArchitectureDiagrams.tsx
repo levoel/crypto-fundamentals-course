@@ -2,13 +2,12 @@
  * Ethereum Architecture Diagrams (ETH-01)
  *
  * Exports:
- * - EthVsBitcoinDiagram: Side-by-side comparison table (static with hover/tooltips)
+ * - EthVsBitcoinDiagram: Side-by-side comparison table (static with DiagramTooltip)
  * - NodeArchitectureDiagram: Ethereum node two-layer architecture (EL + CL)
  */
 
-import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
-import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -84,10 +83,6 @@ const cellStyle: React.CSSProperties = {
 };
 
 export function EthVsBitcoinDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
-  const hoveredData = hoveredRow !== null ? COMPARISON_DATA[hoveredRow] : null;
-
   return (
     <DiagramContainer title="Bitcoin vs Ethereum: модели данных" color="purple">
       <div style={{ overflowX: 'auto' }}>
@@ -100,57 +95,37 @@ export function EthVsBitcoinDiagram() {
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_DATA.map((row, i) => {
-              const isHovered = hoveredRow === i;
-              return (
-                <tr
-                  key={i}
-                  onMouseEnter={() => setHoveredRow(i)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  style={{ cursor: 'default' }}
-                >
-                  <td style={{
-                    ...cellStyle,
-                    fontWeight: 600,
-                    color: isHovered ? colors.primary : colors.text,
-                    background: isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.aspect}
-                  </td>
-                  <td style={{
-                    ...cellStyle,
-                    color: colors.textMuted,
-                    background: isHovered ? 'rgba(243,156,18,0.08)' : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.bitcoin}
-                  </td>
-                  <td style={{
-                    ...cellStyle,
-                    color: colors.text,
-                    background: isHovered ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.03)',
-                  }}>
-                    {row.ethereum}
-                  </td>
-                </tr>
-              );
-            })}
+            {COMPARISON_DATA.map((row, i) => (
+              <tr key={i} style={{ cursor: 'default' }}>
+                <td style={{
+                  ...cellStyle,
+                  fontWeight: 600,
+                  color: colors.text,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  <DiagramTooltip content={row.tooltip}>
+                    <span>{row.aspect}</span>
+                  </DiagramTooltip>
+                </td>
+                <td style={{
+                  ...cellStyle,
+                  color: colors.textMuted,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  {row.bitcoin}
+                </td>
+                <td style={{
+                  ...cellStyle,
+                  color: colors.text,
+                  background: 'rgba(255,255,255,0.03)',
+                }}>
+                  {row.ethereum}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-
-      {hoveredData ? (
-        <div style={{ marginTop: 12 }}>
-          <DataBox
-            label={hoveredData.aspect}
-            value={hoveredData.tooltip}
-            variant="highlight"
-          />
-        </div>
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 12 }}>
-          Наведите на строку, чтобы увидеть подробное сравнение
-        </div>
-      )}
     </DiagramContainer>
   );
 }
@@ -257,10 +232,6 @@ function getCompCenter(comp: NodeComponent): { cx: number; cy: number } {
 }
 
 export function NodeArchitectureDiagram() {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
-  const hoveredComp = ETH_NODE_COMPONENTS.find((c) => c.id === hoveredId);
-
   return (
     <DiagramContainer title="Архитектура узла Ethereum (EL + CL)" color="blue">
       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -325,55 +296,72 @@ export function NodeArchitectureDiagram() {
             );
           })}
 
-          {/* Components */}
-          {ETH_NODE_COMPONENTS.map((comp) => {
-            const isHovered = hoveredId === comp.id;
-            return (
-              <g
-                key={comp.id}
-                onMouseEnter={() => setHoveredId(comp.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                style={{ cursor: 'pointer' }}
+          {/* Components (no hover handlers) */}
+          {ETH_NODE_COMPONENTS.map((comp) => (
+            <g key={comp.id}>
+              <rect
+                x={comp.x}
+                y={comp.y}
+                width={comp.width}
+                height={comp.height}
+                rx={8}
+                fill="rgba(255,255,255,0.05)"
+                stroke={colors.border}
+                strokeWidth={1}
+              />
+              <text
+                x={comp.x + comp.width / 2}
+                y={comp.y + comp.height / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={colors.text}
+                fontSize={12}
+                fontFamily="monospace"
+                fontWeight={400}
               >
-                <rect
-                  x={comp.x}
-                  y={comp.y}
-                  width={comp.width}
-                  height={comp.height}
-                  rx={8}
-                  fill={isHovered ? comp.color + '25' : 'rgba(255,255,255,0.05)'}
-                  stroke={isHovered ? comp.color : colors.border}
-                  strokeWidth={isHovered ? 2 : 1}
-                />
-                <text
-                  x={comp.x + comp.width / 2}
-                  y={comp.y + comp.height / 2}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill={isHovered ? comp.color : colors.text}
-                  fontSize={12}
-                  fontFamily="monospace"
-                  fontWeight={isHovered ? 600 : 400}
-                >
-                  {comp.label}
-                </text>
-              </g>
-            );
-          })}
+                {comp.label}
+              </text>
+            </g>
+          ))}
         </svg>
       </div>
 
-      {hoveredComp ? (
-        <DataBox
-          label={hoveredComp.label}
-          value={hoveredComp.description}
-          variant="highlight"
-        />
-      ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 8 }}>
-          Наведите на компонент, чтобы узнать подробности
-        </div>
-      )}
+      {/* HTML component cards below SVG with DiagramTooltip */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 8,
+        marginTop: 8,
+      }}>
+        {ETH_NODE_COMPONENTS.map((comp) => (
+          <DiagramTooltip key={comp.id} content={comp.description}>
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}>
+              <div style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: comp.color,
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: comp.color,
+                fontWeight: 600,
+              }}>
+                {comp.label}
+              </span>
+            </div>
+          </DiagramTooltip>
+        ))}
+      </div>
     </DiagramContainer>
   );
 }
