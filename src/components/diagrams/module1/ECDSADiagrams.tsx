@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
@@ -213,27 +214,28 @@ export function ECDSASigningAnimation() {
       {/* Step indicators */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
         {SIGNING_STEPS.map((s, i) => (
-          <div
-            key={i}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 600,
-              background: i <= step ? `${SIGNING_STEPS[i].color}30` : 'rgba(255,255,255,0.05)',
-              border: `2px solid ${i <= step ? SIGNING_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
-              color: i <= step ? SIGNING_STEPS[i].color : colors.textMuted,
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-            }}
-            onClick={() => setStep(i)}
-          >
-            {i}
-          </div>
+          <DiagramTooltip key={i} content={s.description}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 600,
+                background: i <= step ? `${SIGNING_STEPS[i].color}30` : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${i <= step ? SIGNING_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
+                color: i <= step ? SIGNING_STEPS[i].color : colors.textMuted,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+              }}
+              onClick={() => setStep(i)}
+            >
+              {i}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -245,47 +247,53 @@ export function ECDSASigningAnimation() {
         marginBottom: 16,
         transition: 'border-color 0.3s',
       }}>
-        <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.color,
-          marginBottom: 8,
-        }}>
-          {current.title}
-        </div>
+        <DiagramTooltip content={current.description}>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: current.color,
+            marginBottom: 8,
+          }}>
+            {current.title}
+          </div>
+        </DiagramTooltip>
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 1.6 }}>
           {current.description}
         </div>
 
         {/* Warning if present */}
         {current.warning && (
-          <div style={{
-            padding: '8px 12px',
-            background: `${colors.danger}15`,
-            border: `1px solid ${colors.danger}40`,
-            borderRadius: 8,
-            marginBottom: 12,
-            fontSize: 12,
-            fontWeight: 600,
-            color: colors.danger,
-            lineHeight: 1.5,
-          }}>
-            {current.warning}
-          </div>
+          <DiagramTooltip content="Nonce reuse -- критическая уязвимость ECDSA. Именно так были украдены Bitcoin с Android кошельков в 2013 и взломана PS3 в 2010.">
+            <div style={{
+              padding: '8px 12px',
+              background: `${colors.danger}15`,
+              border: `1px solid ${colors.danger}40`,
+              borderRadius: 8,
+              marginBottom: 12,
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.danger,
+              lineHeight: 1.5,
+            }}>
+              {current.warning}
+            </div>
+          </DiagramTooltip>
         )}
 
         {/* Formula */}
-        <div style={{
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: colors.text,
-          padding: '8px 12px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
-          marginBottom: 12,
-        }}>
-          {current.formula}
-        </div>
+        <DiagramTooltip content={step === 3 ? 'r -- x-координата точки k*G на кривой. Случайный nonce k определяет точку, из которой берётся r.' : step === 4 ? 's вычисляется из хеша сообщения z, r, и приватного ключа d. Знание (r, s) не раскрывает d (ECDLP).' : current.description}>
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            color: colors.text,
+            padding: '8px 12px',
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: 6,
+            marginBottom: 12,
+          }}>
+            {current.formula}
+          </div>
+        </DiagramTooltip>
 
         {/* Result */}
         <DataBox
@@ -304,109 +312,135 @@ export function ECDSASigningAnimation() {
         flexWrap: 'wrap',
         marginBottom: 16,
       }}>
-        <FlowNode variant="primary" size="sm">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 9, opacity: 0.7 }}>d, h</div>
-            <div style={{ fontSize: 11, fontWeight: 700 }}>Входы</div>
-          </div>
-        </FlowNode>
+        <DiagramTooltip content="Входные данные: приватный ключ d (256 бит) и хеш сообщения h = SHA-256(m). Оба значения необходимы для создания подписи.">
+          <FlowNode variant="primary" size="sm">
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 9, opacity: 0.7 }}>d, h</div>
+              <div style={{ fontSize: 11, fontWeight: 700 }}>Входы</div>
+            </div>
+          </FlowNode>
+        </DiagramTooltip>
         <Arrow direction="right" />
-        <FlowNode variant={step >= 1 ? 'accent' : undefined} size="sm">
-          <div style={{ textAlign: 'center', opacity: step >= 1 ? 1 : 0.3 }}>
-            <div style={{ fontSize: 9, opacity: 0.7 }}>k</div>
-            <div style={{ fontSize: 11, fontWeight: 700 }}>Nonce</div>
-          </div>
-        </FlowNode>
+        <DiagramTooltip content="Случайный nonce k -- самый критичный элемент ECDSA. Должен быть криптографически случайным и уникальным. Повторное использование k раскрывает приватный ключ!">
+          <FlowNode variant={step >= 1 ? 'accent' : undefined} size="sm">
+            <div style={{ textAlign: 'center', opacity: step >= 1 ? 1 : 0.3 }}>
+              <div style={{ fontSize: 9, opacity: 0.7 }}>k</div>
+              <div style={{ fontSize: 11, fontWeight: 700 }}>Nonce</div>
+            </div>
+          </FlowNode>
+        </DiagramTooltip>
         <Arrow direction="right" />
-        <FlowNode variant={step >= 2 ? 'accent' : undefined} size="sm">
-          <div style={{ textAlign: 'center', opacity: step >= 2 ? 1 : 0.3 }}>
-            <div style={{ fontSize: 9, opacity: 0.7 }}>R=kG</div>
-            <div style={{ fontSize: 11, fontWeight: 700 }}>Точка</div>
-          </div>
-        </FlowNode>
+        <DiagramTooltip content="Точка R = k*G -- результат скалярного умножения nonce на генератор кривой. Та же операция, что при генерации публичного ключа Q = d*G.">
+          <FlowNode variant={step >= 2 ? 'accent' : undefined} size="sm">
+            <div style={{ textAlign: 'center', opacity: step >= 2 ? 1 : 0.3 }}>
+              <div style={{ fontSize: 9, opacity: 0.7 }}>R=kG</div>
+              <div style={{ fontSize: 11, fontWeight: 700 }}>Точка</div>
+            </div>
+          </FlowNode>
+        </DiagramTooltip>
         <Arrow direction="right" />
-        <FlowNode variant={step >= 3 ? 'success' : undefined} size="sm">
-          <div style={{ textAlign: 'center', opacity: step >= 3 ? 1 : 0.3 }}>
-            <div style={{ fontSize: 9, opacity: 0.7 }}>r=R.x</div>
-            <div style={{ fontSize: 11, fontWeight: 700 }}>r</div>
-          </div>
-        </FlowNode>
+        <DiagramTooltip content="r -- x-координата точки R по модулю n. Первая компонента подписи. Если r = 0, нужно выбрать другое k.">
+          <FlowNode variant={step >= 3 ? 'success' : undefined} size="sm">
+            <div style={{ textAlign: 'center', opacity: step >= 3 ? 1 : 0.3 }}>
+              <div style={{ fontSize: 9, opacity: 0.7 }}>r=R.x</div>
+              <div style={{ fontSize: 11, fontWeight: 700 }}>r</div>
+            </div>
+          </FlowNode>
+        </DiagramTooltip>
         <Arrow direction="right" />
-        <FlowNode variant={step >= 5 ? 'success' : undefined} size="sm">
-          <div style={{ textAlign: 'center', opacity: step >= 4 ? 1 : 0.3 }}>
-            <div style={{ fontSize: 9, opacity: 0.7 }}>(r, s)</div>
-            <div style={{ fontSize: 11, fontWeight: 700 }}>Подпись</div>
-          </div>
-        </FlowNode>
+        <DiagramTooltip content="Финальная подпись (r, s) -- 64 байта. Вместе с сообщением и публичным ключом Q позволяет любому верифицировать подлинность без знания d или k.">
+          <FlowNode variant={step >= 5 ? 'success' : undefined} size="sm">
+            <div style={{ textAlign: 'center', opacity: step >= 4 ? 1 : 0.3 }}>
+              <div style={{ fontSize: 9, opacity: 0.7 }}>(r, s)</div>
+              <div style={{ fontSize: 11, fontWeight: 700 }}>Подпись</div>
+            </div>
+          </FlowNode>
+        </DiagramTooltip>
       </div>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handlePrev}
-          disabled={step <= 0}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step <= 0 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step <= 0 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step <= 0 ? 0.5 : 1,
-          }}
-        >
-          Назад
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= SIGNING_STEPS.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= SIGNING_STEPS.length - 1 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= SIGNING_STEPS.length - 1 ? colors.textMuted : colors.primary,
-            border: `1px solid ${step >= SIGNING_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
-            background: step >= SIGNING_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
-            opacity: step >= SIGNING_STEPS.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Далее
-        </button>
-        <button
-          onClick={() => {
-            if (step >= SIGNING_STEPS.length - 1) {
-              setStep(0);
-            }
-            setAutoPlay(!autoPlay);
-          }}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: autoPlay ? colors.warning : colors.success,
-            border: `1px solid ${autoPlay ? colors.warning : colors.success}`,
-            background: `${autoPlay ? colors.warning : colors.success}15`,
-          }}
-        >
-          {autoPlay ? 'Стоп' : 'Авто'}
-        </button>
+        <DiagramTooltip content="Вернуться к начальному шагу подписи ECDSA.">
+          <div>
+            <button
+              onClick={handleReset}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вернуться к предыдущему шагу.">
+          <div>
+            <button
+              onClick={handlePrev}
+              disabled={step <= 0}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step <= 0 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step <= 0 ? colors.textMuted : colors.accent,
+                border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                opacity: step <= 0 ? 0.5 : 1,
+              }}
+            >
+              Назад
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Перейти к следующему шагу подписи.">
+          <div>
+            <button
+              onClick={handleNext}
+              disabled={step >= SIGNING_STEPS.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= SIGNING_STEPS.length - 1 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step >= SIGNING_STEPS.length - 1 ? colors.textMuted : colors.primary,
+                border: `1px solid ${step >= SIGNING_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
+                background: step >= SIGNING_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
+                opacity: step >= SIGNING_STEPS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Далее
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Автоматическое пошаговое воспроизведение процесса подписи ECDSA.">
+          <div>
+            <button
+              onClick={() => {
+                if (step >= SIGNING_STEPS.length - 1) {
+                  setStep(0);
+                }
+                setAutoPlay(!autoPlay);
+              }}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: autoPlay ? colors.warning : colors.success,
+                border: `1px solid ${autoPlay ? colors.warning : colors.success}`,
+                background: `${autoPlay ? colors.warning : colors.success}15`,
+              }}
+            >
+              {autoPlay ? 'Стоп' : 'Авто'}
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -434,9 +468,15 @@ export function ECDSAVerificationDiagram() {
         Входные данные верификации
       </div>
       <Grid columns={3} gap={8}>
-        <DataBox label="Подпись (r, s)" value={`r = ${EXAMPLE.r}\ns = ${EXAMPLE.s}`} variant="default" />
-        <DataBox label="Хеш сообщения h" value={EXAMPLE.h} variant="default" />
-        <DataBox label="Публичный ключ Q" value="Q = d * G" variant="default" />
+        <DiagramTooltip content="Подпись (r, s) -- 64 байта. r = x-координата случайной точки R = kG. s = k^(-1)(h + rd) mod n. Обе компоненты необходимы для верификации.">
+          <DataBox label="Подпись (r, s)" value={`r = ${EXAMPLE.r}\ns = ${EXAMPLE.s}`} variant="default" />
+        </DiagramTooltip>
+        <DiagramTooltip content="Хеш сообщения h = SHA-256(m). Верификатор хеширует сообщение самостоятельно и сравнивает с подписью.">
+          <DataBox label="Хеш сообщения h" value={EXAMPLE.h} variant="default" />
+        </DiagramTooltip>
+        <DiagramTooltip content="Публичный ключ Q = d*G. Верификатор знает Q (из блокчейна) и G (параметр кривой). Без d подделать подпись невозможно.">
+          <DataBox label="Публичный ключ Q" value="Q = d * G" variant="default" />
+        </DiagramTooltip>
       </Grid>
 
       {/* Arrow down */}
@@ -456,106 +496,112 @@ export function ECDSAVerificationDiagram() {
       </div>
 
       {/* Step 1: compute s_inv */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        borderColor: `${colors.accent}30`,
-        marginBottom: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            background: `${colors.accent}30`,
-            border: `2px solid ${colors.accent}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            color: colors.accent,
-            flexShrink: 0,
-          }}>
-            1
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
-              s_inv = s<sup>-1</sup> mod n
+      <DiagramTooltip content="Модулярный обратный s^(-1) вычисляется с помощью расширенного алгоритма Евклида. Это первый шаг верификации -- необходим для вычисления u1 и u2.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          borderColor: `${colors.accent}30`,
+          marginBottom: 8,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: `${colors.accent}30`,
+              border: `2px solid ${colors.accent}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              color: colors.accent,
+              flexShrink: 0,
+            }}>
+              1
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-              Модулярный обратный к s
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
+                s_inv = s<sup>-1</sup> mod n
+              </div>
+              <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                Модулярный обратный к s
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Step 2: compute u1, u2 */}
       <Grid columns={2} gap={8}>
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          borderColor: `${colors.primary}30`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              background: `${colors.primary}30`,
-              border: `2px solid ${colors.primary}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 700,
-              color: colors.primary,
-              flexShrink: 0,
-            }}>
-              2a
-            </div>
-            <div>
-              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.primary }}>
-                u1 = h * s_inv mod n
+        <DiagramTooltip content="u1 = h * s^(-1) mod n. Скалярный множитель для генератора G. Зависит от хеша сообщения -- связывает подпись с конкретным сообщением.">
+          <div style={{
+            ...glassStyle,
+            padding: 12,
+            borderColor: `${colors.primary}30`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: `${colors.primary}30`,
+                border: `2px solid ${colors.primary}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: colors.primary,
+                flexShrink: 0,
+              }}>
+                2a
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-                u1 = {EXAMPLE.u1}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          borderColor: `${colors.secondary}30`,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              background: `${colors.secondary}30`,
-              border: `2px solid ${colors.secondary}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 700,
-              color: colors.secondary,
-              flexShrink: 0,
-            }}>
-              2b
-            </div>
-            <div>
-              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.secondary }}>
-                u2 = r * s_inv mod n
-              </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-                u2 = {EXAMPLE.u2}
+              <div>
+                <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.primary }}>
+                  u1 = h * s_inv mod n
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                  u1 = {EXAMPLE.u1}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="u2 = r * s^(-1) mod n. Скалярный множитель для публичного ключа Q. Связывает подпись с конкретным ключом подписанта.">
+          <div style={{
+            ...glassStyle,
+            padding: 12,
+            borderColor: `${colors.secondary}30`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: `${colors.secondary}30`,
+                border: `2px solid ${colors.secondary}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                color: colors.secondary,
+                flexShrink: 0,
+              }}>
+                2b
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.secondary }}>
+                  u2 = r * s_inv mod n
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                  u2 = {EXAMPLE.u2}
+                </div>
+              </div>
+            </div>
+          </div>
+        </DiagramTooltip>
       </Grid>
 
       {/* Arrow down */}
@@ -564,39 +610,41 @@ export function ECDSAVerificationDiagram() {
       </div>
 
       {/* Step 3: compute P */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        borderColor: `${colors.success}30`,
-        marginBottom: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            background: `${colors.success}30`,
-            border: `2px solid ${colors.success}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            color: colors.success,
-            flexShrink: 0,
-          }}>
-            3
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.success }}>
-              P = u1 * G + u2 * Q
+      <DiagramTooltip content="P = u1*G + u2*Q -- ключевое вычисление верификации. Требует два скалярных умножения на кривой и одно сложение точек. Самая затратная операция.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          borderColor: `${colors.success}30`,
+          marginBottom: 8,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: `${colors.success}30`,
+              border: `2px solid ${colors.success}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              color: colors.success,
+              flexShrink: 0,
+            }}>
+              3
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-              Две операции скалярного умножения + сложение точек
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.success }}>
+                P = u1 * G + u2 * Q
+              </div>
+              <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                Две операции скалярного умножения + сложение точек
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Arrow down */}
       <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0' }}>
@@ -604,42 +652,46 @@ export function ECDSAVerificationDiagram() {
       </div>
 
       {/* Step 4: final check */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        borderColor: `${colors.success}50`,
-        textAlign: 'center',
-        background: `${colors.success}10`,
-      }}>
+      <DiagramTooltip content="Верификация: вычислить u1 = z*s^(-1) mod n и u2 = r*s^(-1) mod n. Точка P = u1*G + u2*Q. Если P.x mod n == r -- подпись валидна.">
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          fontFamily: 'monospace',
-          color: colors.success,
-          marginBottom: 6,
+          ...glassStyle,
+          padding: 14,
+          borderColor: `${colors.success}50`,
+          textAlign: 'center',
+          background: `${colors.success}10`,
         }}>
-          Проверка: P.x mod n == r ?
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            fontFamily: 'monospace',
+            color: colors.success,
+            marginBottom: 6,
+          }}>
+            Проверка: P.x mod n == r ?
+          </div>
+          <div style={{ fontSize: 12, color: colors.textMuted }}>
+            Если равны -- подпись валидна. Если нет -- подпись отклонена.
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.textMuted }}>
-          Если равны -- подпись валидна. Если нет -- подпись отклонена.
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Why it works note */}
-      <div style={{
-        marginTop: 12,
-        padding: 10,
-        ...glassStyle,
-        borderColor: `${colors.info}20`,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-      }}>
-        <strong style={{ color: colors.info }}>Почему это работает:</strong>{' '}
-        P = u1*G + u2*Q = u1*G + u2*d*G = (u1 + u2*d)*G.
-        Подставляя u1 = h/s и u2 = r/s: P = (h + r*d)/s * G = (h + r*d) / (k<sup>-1</sup>(h+r*d)) * G = k*G = R.
-        Значит P.x = R.x = r.
-      </div>
+      <DiagramTooltip content="Безопасность ECDSA основана на задаче дискретного логарифма на эллиптических кривых (ECDLP). Зная Q = d*G, найти d вычислительно невозможно (~2^128 операций для 256-бит кривых).">
+        <div style={{
+          marginTop: 12,
+          padding: 10,
+          ...glassStyle,
+          borderColor: `${colors.info}20`,
+          fontSize: 12,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+        }}>
+          <strong style={{ color: colors.info }}>Почему это работает:</strong>{' '}
+          P = u1*G + u2*Q = u1*G + u2*d*G = (u1 + u2*d)*G.
+          Подставляя u1 = h/s и u2 = r/s: P = (h + r*d)/s * G = (h + r*d) / (k<sup>-1</sup>(h+r*d)) * G = k*G = R.
+          Значит P.x = R.x = r.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -721,50 +773,53 @@ export function NonceReuseAttackDiagram() {
   return (
     <DiagramContainer title="Атака повторного использования nonce" color="red">
       {/* DANGER header */}
-      <div style={{
-        padding: '8px 12px',
-        background: `${colors.danger}15`,
-        border: `1px solid ${colors.danger}40`,
-        borderRadius: 8,
-        marginBottom: 16,
-        textAlign: 'center',
-        fontSize: 13,
-        fontWeight: 700,
-        color: colors.danger,
-      }}>
-        ВНИМАНИЕ: Использование одного nonce k дважды раскрывает приватный ключ!
-      </div>
+      <DiagramTooltip content="Атака nonce reuse -- одна из самых опасных уязвимостей ECDSA. Реальные примеры: PS3 взлом (2010, Sony использовала k=4 как константу), Android Bitcoin кошельки (2013, слабый ГПСЧ).">
+        <div style={{
+          padding: '8px 12px',
+          background: `${colors.danger}15`,
+          border: `1px solid ${colors.danger}40`,
+          borderRadius: 8,
+          marginBottom: 16,
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 700,
+          color: colors.danger,
+        }}>
+          ВНИМАНИЕ: Использование одного nonce k дважды раскрывает приватный ключ!
+        </div>
+      </DiagramTooltip>
 
       {/* Step indicators */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
         {ATTACK_STEPS.map((s, i) => (
-          <div
-            key={i}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 600,
-              background: i <= step
-                ? (ATTACK_STEPS[i].isDanger ? `${colors.danger}30` : `${colors.warning}30`)
-                : 'rgba(255,255,255,0.05)',
-              border: `2px solid ${i <= step
-                ? (ATTACK_STEPS[i].isDanger ? colors.danger : colors.warning)
-                : 'rgba(255,255,255,0.1)'}`,
-              color: i <= step
-                ? (ATTACK_STEPS[i].isDanger ? colors.danger : colors.warning)
-                : colors.textMuted,
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-            }}
-            onClick={() => setStep(i)}
-          >
-            {i}
-          </div>
+          <DiagramTooltip key={i} content={s.description}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 600,
+                background: i <= step
+                  ? (ATTACK_STEPS[i].isDanger ? `${colors.danger}30` : `${colors.warning}30`)
+                  : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${i <= step
+                  ? (ATTACK_STEPS[i].isDanger ? colors.danger : colors.warning)
+                  : 'rgba(255,255,255,0.1)'}`,
+                color: i <= step
+                  ? (ATTACK_STEPS[i].isDanger ? colors.danger : colors.warning)
+                  : colors.textMuted,
+                cursor: 'pointer',
+                transition: 'all 0.3s',
+              }}
+              onClick={() => setStep(i)}
+            >
+              {i}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -777,33 +832,37 @@ export function NonceReuseAttackDiagram() {
         background: current.isDanger ? `${colors.danger}08` : undefined,
         transition: 'all 0.3s',
       }}>
-        <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.color,
-          marginBottom: 8,
-        }}>
-          {current.title}
-        </div>
+        <DiagramTooltip content={current.description}>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: current.color,
+            marginBottom: 8,
+          }}>
+            {current.title}
+          </div>
+        </DiagramTooltip>
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 1.6 }}>
           {current.description}
         </div>
 
         {/* Formula */}
-        <div style={{
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: current.isDanger ? colors.danger : colors.text,
-          padding: '8px 12px',
-          background: current.isDanger ? `${colors.danger}10` : 'rgba(255,255,255,0.03)',
-          border: current.isDanger ? `1px solid ${colors.danger}30` : 'none',
-          borderRadius: 6,
-          marginBottom: 12,
-          whiteSpace: 'pre-wrap',
-          fontWeight: current.isDanger ? 600 : 400,
-        }}>
-          {current.formula}
-        </div>
+        <DiagramTooltip content={step === 2 ? 'Из двух уравнений s1 и s2 с одинаковым k можно вычислить k, исключив d. Это элементарная алгебра -- не требует взлома криптографии.' : step === 3 ? 'Если k повторяется для двух подписей: d = (s*k - h) * r^(-1) mod n. Приватный ключ полностью раскрыт! Именно так были украдены Bitcoin с Android кошельков в 2013.' : current.description}>
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            color: current.isDanger ? colors.danger : colors.text,
+            padding: '8px 12px',
+            background: current.isDanger ? `${colors.danger}10` : 'rgba(255,255,255,0.03)',
+            border: current.isDanger ? `1px solid ${colors.danger}30` : 'none',
+            borderRadius: 6,
+            marginBottom: 12,
+            whiteSpace: 'pre-wrap',
+            fontWeight: current.isDanger ? 600 : 400,
+          }}>
+            {current.formula}
+          </div>
+        </DiagramTooltip>
 
         {/* Result */}
         <div style={{
@@ -855,54 +914,64 @@ export function NonceReuseAttackDiagram() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= ATTACK_STEPS.length - 1}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= ATTACK_STEPS.length - 1 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= ATTACK_STEPS.length - 1 ? colors.textMuted : colors.danger,
-            border: `1px solid ${step >= ATTACK_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.danger}`,
-            background: step >= ATTACK_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.danger}15`,
-            opacity: step >= ATTACK_STEPS.length - 1 ? 0.5 : 1,
-          }}
-        >
-          Следующий шаг
-        </button>
+        <DiagramTooltip content="Вернуться к началу демонстрации атаки.">
+          <div>
+            <button
+              onClick={handleReset}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Следующий шаг атаки nonce reuse.">
+          <div>
+            <button
+              onClick={handleNext}
+              disabled={step >= ATTACK_STEPS.length - 1}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= ATTACK_STEPS.length - 1 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step >= ATTACK_STEPS.length - 1 ? colors.textMuted : colors.danger,
+                border: `1px solid ${step >= ATTACK_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.danger}`,
+                background: step >= ATTACK_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.danger}15`,
+                opacity: step >= ATTACK_STEPS.length - 1 ? 0.5 : 1,
+              }}
+            >
+              Следующий шаг
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Bottom warning */}
-      <div style={{
-        marginTop: 16,
-        padding: 10,
-        ...glassStyle,
-        borderColor: `${colors.danger}30`,
-        background: `${colors.danger}08`,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-        textAlign: 'center',
-      }}>
-        <strong style={{ color: colors.danger }}>Защита:</strong>{' '}
-        Используйте RFC 6979 (детерминированный nonce) или EdDSA (встроенный детерминированный nonce).
-        Никогда не генерируйте k вручную.
-      </div>
+      <DiagramTooltip content="RFC 6979: nonce k вычисляется детерминированно из приватного ключа d и хеша h через HMAC-DRBG. Для одинаковых (d, h) всегда один k -- но разные сообщения дают разные k. EdDSA (Ed25519) делает это по умолчанию.">
+        <div style={{
+          marginTop: 16,
+          padding: 10,
+          ...glassStyle,
+          borderColor: `${colors.danger}30`,
+          background: `${colors.danger}08`,
+          fontSize: 12,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+          textAlign: 'center',
+        }}>
+          <strong style={{ color: colors.danger }}>Защита:</strong>{' '}
+          Используйте RFC 6979 (детерминированный nonce) или EdDSA (встроенный детерминированный nonce).
+          Никогда не генерируйте k вручную.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
