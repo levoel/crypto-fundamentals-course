@@ -4,13 +4,14 @@
  * Exports:
  * - ILCalculatorDiagram: Interactive IL calculator with slider (r = 0.1 to 10)
  * - ILFormulaDerivationDiagram: Step-through IL formula derivation (6 steps, history array)
- * - FeeVsILBreakevenDiagram: Fee revenue vs IL break-even chart (static with hover)
- * - PositionManagementFlowDiagram: LP position management flow (static with hover)
+ * - FeeVsILBreakevenDiagram: Fee revenue vs IL break-even chart (DiagramTooltip on HTML legend)
+ * - PositionManagementFlowDiagram: LP position management flow (DiagramTooltip on steps)
  */
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -122,9 +123,11 @@ export function ILCalculatorDiagram() {
       {/* Slider */}
       <div style={{ marginBottom: 16, padding: '0 8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
-            Price ratio (r):
-          </span>
+          <DiagramTooltip content="Price ratio: отношение текущей цены к цене при deposit. ratio = 2 означает цена удвоилась. IL зависит ТОЛЬКО от price ratio, не от направления.">
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+              Price ratio (r):
+            </span>
+          </DiagramTooltip>
           <span style={{ fontSize: 13, fontWeight: 600, color: ilColor, fontFamily: 'monospace' }}>
             {r.toFixed(2)}x (ETH: ${finalETHPrice.toFixed(0)})
           </span>
@@ -147,19 +150,21 @@ export function ILCalculatorDiagram() {
 
       {/* Values */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: `${ilColor}08`,
-          border: `1px solid ${ilColor}30`,
-        }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Impermanent Loss
+        <DiagramTooltip content="Impermanent Loss: разница между стоимостью LP позиции и HODL. Всегда <= 0%. Становится 'permanent' только при выводе ликвидности из пула.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: `${ilColor}08`,
+            border: `1px solid ${ilColor}30`,
+          }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Impermanent Loss
+            </div>
+            <div style={{ fontSize: 16, color: ilColor, fontFamily: 'monospace', fontWeight: 700 }}>
+              {ilPercent}%
+            </div>
           </div>
-          <div style={{ fontSize: 16, color: ilColor, fontFamily: 'monospace', fontWeight: 700 }}>
-            {ilPercent}%
-          </div>
-        </div>
+        </DiagramTooltip>
         <div style={{ ...glassStyle, padding: 10 }}>
           <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
             Price ratio
@@ -168,42 +173,48 @@ export function ILCalculatorDiagram() {
             r = {r.toFixed(2)}
           </div>
         </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            HODL value
+        <DiagramTooltip content="HODL value: стоимость, если бы просто держали оба токена без предоставления ликвидности. V_hodl = x * P_new + y.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              HODL value
+            </div>
+            <div style={{ fontSize: 13, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>
+              ${hodlValue.toFixed(0)}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>
-            ${hodlValue.toFixed(0)}
+        </DiagramTooltip>
+        <DiagramTooltip content="LP value (до комиссий): стоимость позиции в пуле. V_lp = 2*sqrt(k*P). Разница с HODL = impermanent loss. Комиссии могут компенсировать IL.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              LP value (before fees)
+            </div>
+            <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>
+              ${lpValue.toFixed(0)}
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            LP value (before fees)
-          </div>
-          <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>
-            ${lpValue.toFixed(0)}
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       {/* Reference table */}
-      <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-          Референсные значения:
+      <DiagramTooltip content="IL формула: IL = 2*sqrt(price_ratio) / (1 + price_ratio) - 1. При 2x цене: IL = -5.7%. При 5x: IL = -25.5%. IL = 0% только если цена вернулась к исходной.">
+        <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+            Референсные значения:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {IL_REFERENCE.map((ref) => {
+              const refIL = calcIL(ref.r);
+              const refColor = Math.abs(refIL) < 0.02 ? colors.success : Math.abs(refIL) < 0.10 ? '#eab308' : '#f43f5e';
+              return (
+                <div key={ref.label} style={{ fontSize: 10, fontFamily: 'monospace' }}>
+                  <span style={{ color: colors.textMuted }}>{ref.label}:</span>{' '}
+                  <span style={{ color: refColor, fontWeight: 600 }}>{(refIL * 100).toFixed(1)}%</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {IL_REFERENCE.map((ref) => {
-            const refIL = calcIL(ref.r);
-            const refColor = Math.abs(refIL) < 0.02 ? colors.success : Math.abs(refIL) < 0.10 ? '#eab308' : '#f43f5e';
-            return (
-              <div key={ref.label} style={{ fontSize: 10, fontFamily: 'monospace' }}>
-                <span style={{ color: colors.textMuted }}>{ref.label}:</span>{' '}
-                <span style={{ color: refColor, fontWeight: 600 }}>{(refIL * 100).toFixed(1)}%</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="Формула"
@@ -223,6 +234,7 @@ interface DerivationStep {
   description: string;
   formula: string;
   detail: string;
+  tooltipRu: string;
 }
 
 const DERIVATION_STEPS: DerivationStep[] = [
@@ -231,36 +243,42 @@ const DERIVATION_STEPS: DerivationStep[] = [
     description: 'LP вносит равную стоимость: x токенов A и y токенов B. Начальная цена P = y/x (1 A = P единиц B). Общая стоимость позиции = 2*x*P.',
     formula: 'V_initial = x * P + y = 2 * x * P  (так как y = x * P)',
     detail: 'Пример: 1 ETH ($2000) + 2000 USDC = $4000',
+    tooltipRu: 'Начальные условия: LP вносит равную стоимость обоих токенов. V_initial = 2*x*P. Это базовая точка для расчёта IL.',
   },
   {
     title: 'Шаг 1: Цена меняется на r',
     description: 'Цена A меняется: P_new = r * P (ratio r = P_new / P). Арбитражеры выравнивают пул с рыночной ценой. Инвариант xy = k сохраняется.',
     formula: 'r = P_new / P,   x * y = k (constant)',
     detail: 'r = 2.0 означает цена ETH удвоилась: $2000 -> $4000',
+    tooltipRu: 'Изменение цены: арбитражеры выравнивают пул с рыночной ценой. Инвариант xy = k (constant product) сохраняется всегда.',
   },
   {
     title: 'Шаг 2: Ребалансировка пула',
     description: 'После арбитража резервы пула изменились. Из xy = k и price = y/x = P*r выводим новые резервы.',
     formula: 'x_new = x / sqrt(r),   y_new = y * sqrt(r)',
     detail: 'При r=2: x_new = 1/1.414 = 0.707 ETH, y_new = 2000*1.414 = 2828 USDC',
+    tooltipRu: 'Ребалансировка: из xy = k и price = y/x = P*r выводим новые резервы. x_new уменьшается, y_new увеличивается при росте цены.',
   },
   {
     title: 'Шаг 3: Стоимость LP vs HODL',
     description: 'Сравниваем стоимость позиции в пуле (V_lp) со стоимостью простого хранения (V_hodl).',
     formula: 'V_lp = x_new * P_new + y_new = x*P*2*sqrt(r)\nV_hodl = x * P_new + y = x*P*(1+r)',
     detail: 'V_lp = 2*2000*1.414 = $5657, V_hodl = 4000 + 2000 = $6000',
+    tooltipRu: 'Сравнение стоимости: V_lp (позиция в пуле) vs V_hodl (просто хранение). Разница = impermanent loss.',
   },
   {
     title: 'Шаг 4: Формула IL',
     description: 'IL = V_lp / V_hodl - 1. Подставляем и упрощаем:',
     formula: 'IL = V_lp/V_hodl - 1 = 2*sqrt(r)/(1+r) - 1',
     detail: 'IL = 2*1.414/3 - 1 = 2.828/3 - 1 = 0.943 - 1 = -0.057 = -5.7%',
+    tooltipRu: 'Вывод IL: сравниваем V_pool (стоимость LP позиции) с V_hold (стоимость если бы просто держали). V_pool = 2*sqrt(k*P) где k = x*y, P = price. V_hold = x_0*P + y_0.',
   },
   {
     title: 'Шаг 5: Ключевые свойства',
     description: 'IL всегда <= 0 (это потеря). IL = 0 только при r = 1 (цена не изменилась). IL симметричен: r = 2 и r = 0.5 дают одинаковый IL (-5.7%).',
     formula: 'IL(r) = 2*sqrt(r)/(1+r) - 1 <= 0 для всех r > 0\nIL(r) = IL(1/r)  (симметрия)',
     detail: 'IL -- это не потеря депозита, а упущенная выгода vs HODL. Становится "permanent" только при выводе.',
+    tooltipRu: 'Ключевые свойства: IL всегда <= 0, IL = 0 только при r = 1, IL симметричен (IL(r) = IL(1/r)). IL -- упущенная выгода vs HODL.',
   },
 ];
 
@@ -294,9 +312,11 @@ export function ILFormulaDerivationDiagram() {
       </div>
 
       {/* Title */}
-      <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 8, fontFamily: 'monospace' }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={step.tooltipRu}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 8, fontFamily: 'monospace' }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
@@ -385,11 +405,9 @@ export function ILFormulaDerivationDiagram() {
  * FeeVsILBreakevenDiagram
  *
  * Static chart: IL curve (red) vs fee revenue line (green).
- * Shaded profitable/loss zones. Hover for details.
+ * Shaded profitable/loss zones. HTML legend with DiagramTooltip.
  */
 export function FeeVsILBreakevenDiagram() {
-  const [hoveredZone, setHoveredZone] = useState<'profit' | 'loss' | null>(null);
-
   const svgW = 320;
   const svgH = 180;
   const padL = 44;
@@ -462,9 +480,6 @@ export function FeeVsILBreakevenDiagram() {
           <polygon
             points={profitZone}
             fill="rgba(34,197,94,0.1)"
-            onMouseEnter={() => setHoveredZone('profit')}
-            onMouseLeave={() => setHoveredZone(null)}
-            style={{ cursor: 'pointer' }}
           />
 
           {/* IL curve (red) */}
@@ -504,50 +519,81 @@ export function FeeVsILBreakevenDiagram() {
         </svg>
       </div>
 
-      {/* Hover detail */}
-      {hoveredZone && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          background: `${colors.success}08`,
-          border: `1px solid ${colors.success}30`,
-          transition: 'all 0.2s',
-        }}>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-            <strong style={{ color: colors.success }}>Зона прибыли:</strong> Пока годовая доходность от комиссий превышает |IL|, LP в прибыли. При fee APR = 5% LP остается прибыльным при ценовых изменениях до ~1.7x-2x.
+      {/* HTML Zone Legend with DiagramTooltip (replaces SVG polygon hover) */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <DiagramTooltip content="Зона прибыли: fee income > IL. LP зарабатывает. Характерно для высокообъёмных пар (ETH/USDC) с узкой волатильностью.">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{ width: 12, height: 12, borderRadius: 2, background: 'rgba(34,197,94,0.3)', flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: colors.success, fontWeight: 600 }}>Зона прибыли</span>
           </div>
-        </div>
-      )}
+        </DiagramTooltip>
+        <DiagramTooltip content="Зона убытка: IL > fee income. LP теряет деньги vs holding. Характерно для волатильных пар с низким объёмом торгов.">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{ width: 12, height: 12, borderRadius: 2, background: 'rgba(244,63,94,0.3)', flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#f43f5e', fontWeight: 600 }}>Зона убытка</span>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Точка безубыточности: fee income = IL. Зависит от объёма торгов, волатильности и размера пула.">
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{ width: 12, height: 2, background: '#eab308', flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#eab308', fontWeight: 600 }}>Breakeven</span>
+          </div>
+        </DiagramTooltip>
+      </div>
 
       {/* Key insight */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: 'rgba(34,197,94,0.06)',
-          border: '1px solid rgba(34,197,94,0.2)',
-        }}>
-          <div style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', marginBottom: 4 }}>
-            Идеальные пулы для LP
+        <DiagramTooltip content="Стейблкоин-пары (USDC/DAI): волатильность ~0.1%, IL минимальный. Комиссии стабильны. Идеально для консервативных LP.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: 'rgba(34,197,94,0.06)',
+            border: '1px solid rgba(34,197,94,0.2)',
+          }}>
+            <div style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', marginBottom: 4 }}>
+              Идеальные пулы для LP
+            </div>
+            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
+              Стейблкоины (USDC/DAI): низкий IL, стабильные комиссии
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
-            Стейблкоины (USDC/DAI): низкий IL, стабильные комиссии
+        </DiagramTooltip>
+        <DiagramTooltip content="Мем-токены и новые проекты: волатильность может превышать 50-100% за день. IL легко превышает комиссии. Высокий APR не компенсирует потерь.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: 'rgba(244,63,94,0.06)',
+            border: '1px solid rgba(244,63,94,0.2)',
+          }}>
+            <div style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4 }}>
+              Рискованные пулы
+            </div>
+            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
+              Мем-токены: высокая волатильность, IL может превысить комиссии
+            </div>
           </div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: 'rgba(244,63,94,0.06)',
-          border: '1px solid rgba(244,63,94,0.2)',
-        }}>
-          <div style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4 }}>
-            Рискованные пулы
-          </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
-            Мем-токены: высокая волатильность, IL может превысить комиссии
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       <DataBox
@@ -569,6 +615,7 @@ interface FlowStep {
   description: string;
   type: 'action' | 'decision' | 'outcome';
   color: string;
+  tooltipRu: string;
 }
 
 const FLOW_STEPS: FlowStep[] = [
@@ -578,6 +625,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'V2: полный диапазон (авто). V3: выбрать [tick_lower, tick_upper]. Узже диапазон = больше комиссий, но выше IL и риск выхода.',
     type: 'action',
     color: colors.primary,
+    tooltipRu: 'Выбор диапазона: V2 -- полный диапазон (0, infinity). V3 -- concentrated liquidity в выбранном range. Узкий range = выше capital efficiency, но выше IL и риск out-of-range.',
   },
   {
     id: 'deposit',
@@ -585,6 +633,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'Депозит обоих токенов в пропорции текущей цены. V2: получаете ERC-20 LP токен. V3: получаете NFT (уникальная позиция).',
     type: 'action',
     color: colors.primary,
+    tooltipRu: 'Депозит: вносите оба токена в пропорции текущей цены пула. V2 -- ERC-20 LP token (fungible). V3 -- NFT позиция (unique range). Slippage tolerance учитывать.',
   },
   {
     id: 'monitor',
@@ -592,6 +641,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'Отслеживать: текущая цена vs диапазон, accumulated fees, IL vs fees, TVL изменения.',
     type: 'action',
     color: colors.accent,
+    tooltipRu: 'Мониторинг позиции: отслеживать price ratio, accumulated fees, current IL. Инструменты: Revert Finance, DeBank, Zerion.',
   },
   {
     id: 'check',
@@ -599,6 +649,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'V2: всегда в диапазоне (full range). V3: проверить, не вышла ли цена за tick_lower/tick_upper.',
     type: 'decision',
     color: '#eab308',
+    tooltipRu: 'Проверка диапазона: V2 -- всегда в диапазоне. V3 -- если цена вышла за tick boundaries, позиция inactive. Комиссии не начисляются пока цена вне диапазона.',
   },
   {
     id: 'earning',
@@ -606,6 +657,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'Позиция активна. Каждый своп через ваш ценовой диапазон начисляет пропорциональную долю 0.3% комиссии.',
     type: 'outcome',
     color: colors.success,
+    tooltipRu: 'Активная позиция: каждый своп через ваш ценовой диапазон начисляет комиссию пропорционально вашей доле ликвидности. V3: concentrated = больше комиссий на доллар.',
   },
   {
     id: 'inactive',
@@ -613,6 +665,7 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'V3: позиция стала 100% одного токена. Комиссии не начисляются. Варианты: ждать возврата цены, ребалансировать, вывести.',
     type: 'outcome',
     color: '#f43f5e',
+    tooltipRu: 'Out of range (V3): позиция 100% одного токена, комиссии не начисляются. Решение: ждать возврата цены, ребалансировать, или вывести ликвидность.',
   },
   {
     id: 'rebalance',
@@ -620,23 +673,21 @@ const FLOW_STEPS: FlowStep[] = [
     description: 'Вывести ликвидность, установить новый диапазон, внести заново. Учитывать: gas costs, IL при выводе, новый диапазон. Автоменеджеры: Arrakis, Gamma.',
     type: 'action',
     color: colors.accent,
+    tooltipRu: 'Ребалансировка: при значительном price shift -- withdraw + re-deposit в новый range. Для V3: переместить concentrated liquidity. Gas costs учитывать.',
   },
 ];
 
 /**
  * PositionManagementFlowDiagram
  *
- * Static flow diagram with hover on each step.
+ * Static flow diagram with DiagramTooltip on each step.
  */
 export function PositionManagementFlowDiagram() {
-  const [hoveredStep, setHoveredStep] = useState<string | null>(null);
-
   return (
     <DiagramContainer title="Управление LP позицией" color="blue">
       {/* Flow diagram */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {FLOW_STEPS.map((step, i) => {
-          const isHovered = hoveredStep === step.id;
           const isDecision = step.type === 'decision';
 
           return (
@@ -648,53 +699,49 @@ export function PositionManagementFlowDiagram() {
                 </div>
               )}
 
-              <div
-                onMouseEnter={() => setHoveredStep(step.id)}
-                onMouseLeave={() => setHoveredStep(null)}
-                style={{
-                  ...glassStyle,
-                  padding: isHovered ? 14 : 10,
-                  cursor: 'pointer',
-                  background: isHovered ? `${step.color}0a` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isHovered ? `${step.color}40` : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: isDecision ? 8 : 6,
-                  transition: 'all 0.2s',
-                  transform: isDecision ? 'rotate(0deg)' : undefined,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                    color: step.color,
-                    padding: '2px 6px',
-                    background: `${step.color}15`,
-                    borderRadius: 3,
-                    fontWeight: 600,
-                  }}>
-                    {step.type === 'decision' ? '?' : step.type === 'outcome' ? (step.id === 'earning' ? 'OK' : '!!') : (i + 1).toString()}
-                  </span>
-                  <span style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: step.color,
-                    fontFamily: 'monospace',
-                  }}>
-                    {step.label}
-                  </span>
-                </div>
+              <DiagramTooltip content={step.tooltipRu}>
+                <div
+                  style={{
+                    ...glassStyle,
+                    padding: 10,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: isDecision ? 8 : 6,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      color: step.color,
+                      padding: '2px 6px',
+                      background: `${step.color}15`,
+                      borderRadius: 3,
+                      fontWeight: 600,
+                    }}>
+                      {step.type === 'decision' ? '?' : step.type === 'outcome' ? (step.id === 'earning' ? 'OK' : '!!') : (i + 1).toString()}
+                    </span>
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: step.color,
+                      fontFamily: 'monospace',
+                    }}>
+                      {step.label}
+                    </span>
+                  </div>
 
-                {isHovered && (
                   <div style={{
                     fontSize: 12,
-                    color: colors.text,
+                    color: colors.textMuted,
                     lineHeight: 1.5,
-                    marginTop: 8,
+                    marginTop: 6,
                   }}>
                     {step.description}
                   </div>
-                )}
-              </div>
+                </div>
+              </DiagramTooltip>
             </div>
           );
         })}

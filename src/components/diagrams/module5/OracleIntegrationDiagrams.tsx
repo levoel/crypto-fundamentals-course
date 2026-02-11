@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -70,21 +71,23 @@ export function StalenessCheckFlowDiagram() {
   return (
     <DiagramContainer title="Проверка свежести: decision tree" color="purple">
       {/* Entry point */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        marginBottom: 12,
-        textAlign: 'center',
-        background: `${colors.primary}08`,
-        border: `1px solid ${colors.primary}20`,
-      }}>
-        <div style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: colors.primary }}>
-          latestRoundData()
+      <DiagramTooltip content="Вызов latestRoundData() у Chainlink price feed. Возвращает answer (цена), updatedAt (timestamp), roundId. Точка входа для всех проверок свежести данных.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          marginBottom: 12,
+          textAlign: 'center',
+          background: `${colors.primary}08`,
+          border: `1px solid ${colors.primary}20`,
+        }}>
+          <div style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: colors.primary }}>
+            latestRoundData()
+          </div>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted, marginTop: 4 }}>
+            (roundId, price, startedAt, updatedAt, answeredInRound)
+          </div>
         </div>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted, marginTop: 4 }}>
-          (roundId, price, startedAt, updatedAt, answeredInRound)
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Check steps */}
       {CHECK_STEPS.map((step, i) => {
@@ -98,6 +101,7 @@ export function StalenessCheckFlowDiagram() {
             </div>
 
             {/* Check box */}
+            <DiagramTooltip content={step.detail}>
             <div
               onClick={() => setSelectedCheck(isSelected ? null : i)}
               style={{
@@ -191,6 +195,7 @@ export function StalenessCheckFlowDiagram() {
                 </div>
               )}
             </div>
+            </DiagramTooltip>
           </div>
         );
       })}
@@ -199,30 +204,33 @@ export function StalenessCheckFlowDiagram() {
       <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 14, marginBottom: 4 }}>
         |
       </div>
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        textAlign: 'center',
-        background: `${colors.success}10`,
-        border: `1px solid ${colors.success}30`,
-        marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: colors.success, fontFamily: 'monospace' }}>
-          All checks passed -- Use price
+      <DiagramTooltip content="Использование цены: масштабировать до нужных decimals. Chainlink возвращает цену с feed.decimals() знаков. ETH/USD: 8 decimals, ERC-20: 18.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          textAlign: 'center',
+          background: `${colors.success}10`,
+          border: `1px solid ${colors.success}30`,
+          marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.success, fontFamily: 'monospace' }}>
+            All checks passed -- Use price
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Complete Solidity snippet */}
-      <div style={{
-        ...glassStyle,
-        padding: 12,
-        background: 'rgba(0,0,0,0.3)',
-        marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
-          Complete validation pattern:
-        </div>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+      <DiagramTooltip content="Полный паттерн валидации Chainlink. Три require -- минимальный стандарт безопасности. Копируйте этот шаблон в каждый контракт, использующий оракулы.">
+        <div style={{
+          ...glassStyle,
+          padding: 12,
+          background: 'rgba(0,0,0,0.3)',
+          marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+            Complete validation pattern:
+          </div>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
 {`(uint80 roundId, int256 price,,
  uint256 updatedAt,
  uint80 answeredInRound) = feed.latestRoundData();
@@ -230,25 +238,28 @@ export function StalenessCheckFlowDiagram() {
 require(price > 0, "Invalid price");
 require(answeredInRound >= roundId, "Stale round");
 require(block.timestamp - updatedAt < 3600, "Stale price");`}
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* L2 Note */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        background: '#f59e0b08',
-        border: '1px solid #f59e0b20',
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 6 }}>
-          L2 Sequencer Uptime Feed
+      <DiagramTooltip content="L2 Sequencer Uptime Feed: дополнительная проверка для L2 сетей. Если секвенсор был offline, после восстановления цены могут быть устаревшими. Grace period предотвращает использование stale data.">
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          background: '#f59e0b08',
+          border: '1px solid #f59e0b20',
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 6 }}>
+            L2 Sequencer Uptime Feed
+          </div>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+            На L2 (Optimism, Arbitrum) секвенсор может упасть. Когда он восстанавливается, накопившиеся транзакции исполняются с потенциально устаревшими ценами.
+            Решение: проверяйте Sequencer Uptime Feed перед использованием ценового фида. Добавьте grace period (обычно 3600s) после восстановления секвенсора.
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
-          На L2 (Optimism, Arbitrum) секвенсор может упасть. Когда он восстанавливается, накопившиеся транзакции исполняются с потенциально устаревшими ценами.
-          Решение: проверяйте Sequencer Uptime Feed перед использованием ценового фида. Добавьте grace period (обычно 3600s) после восстановления секвенсора.
-        </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="Самая частая ошибка"

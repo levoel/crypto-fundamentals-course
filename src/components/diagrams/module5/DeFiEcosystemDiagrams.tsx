@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -123,49 +124,50 @@ export function DeFiCategoryMapDiagram() {
           const isSelected = selectedIdx === i;
 
           return (
-            <div
-              key={i}
-              onClick={() => setSelectedIdx(isSelected ? null : i)}
-              style={{
-                ...glassStyle,
-                padding: 14,
-                cursor: 'pointer',
-                background: isSelected ? `${cat.color}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isSelected ? cat.color : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ fontSize: 20, marginBottom: 6 }}>{cat.icon}</div>
-              <div style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: isSelected ? cat.color : colors.text,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-              }}>
-                {cat.name}
+            <DiagramTooltip key={i} content={cat.detail}>
+              <div
+                onClick={() => setSelectedIdx(isSelected ? null : i)}
+                style={{
+                  ...glassStyle,
+                  padding: 14,
+                  cursor: 'pointer',
+                  background: isSelected ? `${cat.color}15` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isSelected ? cat.color : 'rgba(255,255,255,0.08)'}`,
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 6 }}>{cat.icon}</div>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isSelected ? cat.color : colors.text,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}>
+                  {cat.name}
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, lineHeight: 1.4 }}>
+                  {cat.description}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {cat.protocols.map((p, j) => (
+                    <span
+                      key={j}
+                      style={{
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        background: `${cat.color}15`,
+                        color: cat.color,
+                      }}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, lineHeight: 1.4 }}>
-                {cat.description}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {cat.protocols.map((p, j) => (
-                  <span
-                    key={j}
-                    style={{
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: `${cat.color}15`,
-                      color: cat.color,
-                    }}
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -200,6 +202,7 @@ export function DeFiCategoryMapDiagram() {
       )}
 
       {/* Composability arrows */}
+      <DiagramTooltip content="Композируемость (DeFi Legos): протоколы комбинируются как строительные блоки. Один протокол использует выходы другого. Это фундаментальное свойство DeFi на одном блокчейне.">
       <div style={{
         ...glassStyle,
         padding: 12,
@@ -230,6 +233,7 @@ export function DeFiCategoryMapDiagram() {
           Протоколы комбинируются как Lego: депозит в Aave дает aToken, который можно использовать как залог в MakerDAO, а полученный DAI -- инвестировать в Yearn для максимальной доходности.
         </div>
       </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -307,83 +311,65 @@ const MAX_TVL = Math.max(...TVL_PROTOCOLS.map((p) => p.tvl));
  * Hover shows: category, main chain, brief description.
  */
 export function TVLComparisonDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="TVL: капитал в DeFi протоколах" color="green">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
         {TVL_PROTOCOLS.map((protocol, i) => {
-          const isHovered = hoveredIdx === i;
           const widthPercent = (protocol.tvl / MAX_TVL) * 100;
 
           return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                ...glassStyle,
-                padding: '10px 14px',
-                background: isHovered ? `${protocol.color}12` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${isHovered ? protocol.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {/* Protocol name and TVL */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: 'monospace',
-                  color: isHovered ? protocol.color : colors.text,
-                }}>
-                  {protocol.name}
-                </span>
-                <span style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: 'monospace',
-                  color: isHovered ? protocol.color : colors.textMuted,
-                }}>
-                  ~${protocol.tvl}B
-                </span>
-              </div>
-
-              {/* Bar */}
-              <div style={{
-                height: 6,
-                borderRadius: 3,
-                background: 'rgba(255,255,255,0.05)',
-                overflow: 'hidden',
-              }}>
+            <DiagramTooltip key={i} content={`${protocol.category} (${protocol.chain}). ${protocol.description}`}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {/* Protocol name and TVL */}
                 <div style={{
-                  width: `${widthPercent}%`,
-                  height: '100%',
-                  borderRadius: 3,
-                  background: isHovered ? protocol.color : `${protocol.color}80`,
-                  transition: 'all 0.3s',
-                }} />
-              </div>
-
-              {/* Hover detail */}
-              {isHovered && (
-                <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
-                  <div>
-                    <span style={{ color: protocol.color }}>Категория:</span> {protocol.category}
-                  </div>
-                  <div>
-                    <span style={{ color: protocol.color }}>Сеть:</span> {protocol.chain}
-                  </div>
-                  <div style={{ marginTop: 4 }}>{protocol.description}</div>
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    color: colors.text,
+                  }}>
+                    {protocol.name}
+                  </span>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    color: colors.textMuted,
+                  }}>
+                    ~${protocol.tvl}B
+                  </span>
                 </div>
-              )}
-            </div>
+
+                {/* Bar */}
+                <div style={{
+                  height: 6,
+                  borderRadius: 3,
+                  background: 'rgba(255,255,255,0.05)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: `${widthPercent}%`,
+                    height: '100%',
+                    borderRadius: 3,
+                    background: `${protocol.color}80`,
+                    transition: 'all 0.3s',
+                  }} />
+                </div>
+              </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -470,8 +456,6 @@ const COMPARISON_ROWS: ComparisonRow[] = [
  * Follows established HTML comparison table pattern.
  */
 export function AMMvsOrderbookDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="AMM vs Order Book: сравнение моделей" color="purple">
       {/* Table header */}
@@ -516,79 +500,53 @@ export function AMMvsOrderbookDiagram() {
       </div>
 
       {/* Table rows */}
-      {COMPARISON_ROWS.map((row, i) => {
-        const isHovered = hoveredRow === i;
-
-        return (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredRow(i)}
-            onMouseLeave={() => setHoveredRow(null)}
-            style={{ marginBottom: 1 }}
-          >
+      {COMPARISON_ROWS.map((row, i) => (
+        <div
+          key={i}
+          style={{ marginBottom: 1 }}
+        >
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: 1,
+          }}>
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: 1,
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: colors.text,
+              fontFamily: 'monospace',
+              display: 'flex',
+              alignItems: 'center',
             }}>
-              <div style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                fontSize: 12,
-                fontWeight: 600,
-                color: isHovered ? colors.primary : colors.text,
-                fontFamily: 'monospace',
-                display: 'flex',
-                alignItems: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}>
-                {row.criterion}
-              </div>
-              <div style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                fontSize: 11,
-                color: isHovered ? '#eab308' : colors.textMuted,
-                background: isHovered ? '#eab30808' : 'rgba(255,255,255,0.02)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                lineHeight: 1.4,
-              }}>
-                {row.orderbook}
-              </div>
-              <div style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                fontSize: 11,
-                color: isHovered ? colors.success : colors.textMuted,
-                background: isHovered ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                lineHeight: 1.4,
-              }}>
-                {row.amm}
-              </div>
+              <DiagramTooltip content={row.detail}>
+                <span>{row.criterion}</span>
+              </DiagramTooltip>
             </div>
-
-            {/* Hover detail row */}
-            {isHovered && (
-              <div style={{
-                ...glassStyle,
-                padding: '8px 12px',
-                fontSize: 11,
-                color: colors.textMuted,
-                lineHeight: 1.5,
-                background: `${colors.primary}05`,
-                borderTop: 'none',
-                transition: 'all 0.2s',
-              }}>
-                {row.detail}
-              </div>
-            )}
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 11,
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
+              lineHeight: 1.4,
+            }}>
+              {row.orderbook}
+            </div>
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 11,
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
+              lineHeight: 1.4,
+            }}>
+              {row.amm}
+            </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </DiagramContainer>
   );
 }

@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
 
 /* ================================================================== */
@@ -374,29 +375,32 @@ export function MerkleTreeBuildAnimation() {
     <DiagramContainer title="Построение дерева Меркла" color="blue">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Step description */}
-        <DataBox
-          label={`Шаг ${step} / ${maxStep}`}
-          value={STEP_DESCRIPTIONS[step] || ''}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Шаг 1: каждый элемент данных (транзакция) хешируется индивидуально. Шаг 2+: пары хешей конкатенируются и хешируются вверх до корня.">
+          <DataBox
+            label={`Шаг ${step} / ${maxStep}`}
+            value={STEP_DESCRIPTIONS[step] || ''}
+            variant="highlight"
+          />
+        </DiagramTooltip>
 
         {/* Raw transaction display when step == 0 */}
         {step === 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {BUILD_TX_LABELS.map((tx, i) => (
-              <div
-                key={i}
-                style={{
-                  ...glassStyle,
-                  padding: '8px 14px',
-                  fontSize: 13,
-                  fontFamily: 'monospace',
-                  color: colors.accent,
-                  border: `1px solid ${colors.accent}40`,
-                }}
-              >
-                {tx}
-              </div>
+              <DiagramTooltip key={i} content={`Транзакция ${tx}: исходные данные, которые будут захешированы для создания листа дерева Меркла.`}>
+                <div
+                  style={{
+                    ...glassStyle,
+                    padding: '8px 14px',
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    color: colors.accent,
+                    border: `1px solid ${colors.accent}40`,
+                  }}
+                >
+                  {tx}
+                </div>
+              </DiagramTooltip>
             ))}
           </div>
         )}
@@ -412,35 +416,53 @@ export function MerkleTreeBuildAnimation() {
 
         {/* Computation hint */}
         {getComputationHint() && (
-          <div style={{
-            ...glassStyle,
-            padding: '8px 12px',
-            fontSize: 12,
-            fontFamily: 'monospace',
-            color: colors.accent,
-            textAlign: 'center',
-          }}>
-            {getComputationHint()}
-          </div>
+          <DiagramTooltip content="Пары хешей конкатенируются и хешируются: H(H(tx1) || H(tx2)). Процесс повторяется вверх до корня.">
+            <div style={{
+              ...glassStyle,
+              padding: '8px 12px',
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: colors.accent,
+              textAlign: 'center',
+            }}>
+              {getComputationHint()}
+            </div>
+          </DiagramTooltip>
         )}
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={reset} style={btnStyle(true, colors.text)}>
-            Сброс
-          </button>
-          <button onClick={goBack} style={btnStyle(step > 0, colors.text)}>
-            Назад
-          </button>
-          <button onClick={advance} style={btnStyle(step < maxStep, colors.primary)}>
-            Далее
-          </button>
-          <button
-            onClick={toggleAutoplay}
-            style={btnStyle(true, isPlaying ? colors.warning : colors.accent)}
-          >
-            {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
-          </button>
+          <DiagramTooltip content="Вернуться к исходным транзакциям.">
+            <div>
+              <button onClick={reset} style={btnStyle(true, colors.text)}>
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Перейти к предыдущему уровню дерева.">
+            <div>
+              <button onClick={goBack} style={btnStyle(step > 0, colors.text)}>
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Вычислить следующий уровень дерева Меркла.">
+            <div>
+              <button onClick={advance} style={btnStyle(step < maxStep, colors.primary)}>
+                Далее
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Автоматически построить дерево Меркла по шагам.">
+            <div>
+              <button
+                onClick={toggleAutoplay}
+                style={btnStyle(true, isPlaying ? colors.warning : colors.accent)}
+              >
+                {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -488,23 +510,32 @@ export function MerkleTreeStructureDiagram() {
             const c = lvlNum === 0 ? colors.success
               : lvlNum === STRUCT_TREE.length - 1 ? '#a855f7'
               : colors.primary;
+            const tooltipContent = lvlNum === 0
+              ? 'Лист (leaf): H(data). Хеш одного элемента данных. В Bitcoin -- хеш транзакции.'
+              : lvlNum === STRUCT_TREE.length - 1
+              ? 'Merkle Root: единственный хеш, представляющий все данные дерева. Изменение любого листа меняет root. В Bitcoin хранится в заголовке блока.'
+              : 'Внутренний узел: H(left_child || right_child). Каждый уровень дерева уменьшает количество хешей вдвое.';
             return (
-              <div key={lvl} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{
-                  width: 12, height: 12, borderRadius: 3,
-                  background: c + '30', border: `1px solid ${c}`,
-                }} />
-                <span style={{ fontSize: 12, color: colors.textMuted }}>{label}</span>
-              </div>
+              <DiagramTooltip key={lvl} content={tooltipContent}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{
+                    width: 12, height: 12, borderRadius: 3,
+                    background: c + '30', border: `1px solid ${c}`,
+                  }} />
+                  <span style={{ fontSize: 12, color: colors.textMuted }}>{label}</span>
+                </div>
+              </DiagramTooltip>
             );
           })}
         </div>
 
-        <DataBox
-          label="Свойства"
-          value={`8 листьев -> высота ${STRUCT_TREE.length - 1} (log2(8) = 3). Всего узлов: ${STRUCT_TREE.reduce((s, l) => s + l.length, 0)} (2n - 1 для n листьев).`}
-          variant="default"
-        />
+        <DiagramTooltip content="Полное бинарное дерево: n листьев дают высоту log2(n) и всего 2n - 1 узлов. Эффективность Merkle proof напрямую зависит от высоты.">
+          <DataBox
+            label="Свойства"
+            value={`8 листьев -> высота ${STRUCT_TREE.length - 1} (log2(8) = 3). Всего узлов: ${STRUCT_TREE.reduce((s, l) => s + l.length, 0)} (2n - 1 для n листьев).`}
+            variant="default"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
@@ -544,21 +575,25 @@ export function MerkleRootCommitmentDiagram() {
   return (
     <DiagramContainer title="Изменение одного листа меняет корень" color="green">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
-          Изменяем <span style={{ color: colors.danger, fontWeight: 600 }}>tx3</span> на{' '}
-          <span style={{ color: colors.danger, fontWeight: 600 }}>tx3*</span>.
-          Все узлы на пути от листа к корню (красные) пересчитываются.
-        </div>
+        <DiagramTooltip content="Merkle root как commitment: публикуя root, вы фиксируете набор данных. Позже можно доказать принадлежность любого элемента без раскрытия остальных (Merkle proof).">
+          <div style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
+            Изменяем <span style={{ color: colors.danger, fontWeight: 600 }}>tx3</span> на{' '}
+            <span style={{ color: colors.danger, fontWeight: 600 }}>tx3*</span>.
+            Все узлы на пути от листа к корню (красные) пересчитываются.
+          </div>
+        </DiagramTooltip>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {/* Original tree */}
           <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{
-              fontSize: 12, color: colors.success, textAlign: 'center',
-              marginBottom: 6, fontWeight: 600,
-            }}>
-              Оригинальное дерево
-            </div>
+            <DiagramTooltip content="Оригинальное дерево с неизмененными данными. Merkle Root вычислен из всех 4 транзакций.">
+              <div style={{
+                fontSize: 12, color: colors.success, textAlign: 'center',
+                marginBottom: 6, fontWeight: 600,
+              }}>
+                Оригинальное дерево
+              </div>
+            </DiagramTooltip>
             <div style={{ ...glassStyle, padding: 8 }}>
               <SVGTreeRenderer
                 levels={COMMIT_TREE_ORIG}
@@ -577,12 +612,14 @@ export function MerkleRootCommitmentDiagram() {
 
           {/* Modified tree */}
           <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{
-              fontSize: 12, color: colors.danger, textAlign: 'center',
-              marginBottom: 6, fontWeight: 600,
-            }}>
-              Измененное дерево (tx3 -&gt; tx3*)
-            </div>
+            <DiagramTooltip content="Измененное дерево: tx3 заменена на tx3*. Красные узлы -- все пересчитанные хеши на пути от измененного листа к корню.">
+              <div style={{
+                fontSize: 12, color: colors.danger, textAlign: 'center',
+                marginBottom: 6, fontWeight: 600,
+              }}>
+                Измененное дерево (tx3 -&gt; tx3*)
+              </div>
+            </DiagramTooltip>
             <div style={{ ...glassStyle, padding: 8 }}>
               <SVGTreeRenderer
                 levels={COMMIT_TREE_MOD}
@@ -603,11 +640,13 @@ export function MerkleRootCommitmentDiagram() {
           </div>
         </div>
 
-        <DataBox
-          label="Свойство обязательства (Commitment)"
-          value="Merkle Root фиксирует ВСЕ данные в дереве. Изменение любого листа неизбежно меняет корень. Невозможно подменить транзакцию, не изменив Merkle Root в заголовке блока."
-          variant="highlight"
-        />
+        <DiagramTooltip content="Это свойство -- основа целостности блокчейна. Merkle Root в заголовке блока Bitcoin фиксирует все ~2000 транзакций одним 32-байтным хешем.">
+          <DataBox
+            label="Свойство обязательства (Commitment)"
+            value="Merkle Root фиксирует ВСЕ данные в дереве. Изменение любого листа неизбежно меняет корень. Невозможно подменить транзакцию, не изменив Merkle Root в заголовке блока."
+            variant="highlight"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );

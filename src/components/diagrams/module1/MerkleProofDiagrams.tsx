@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { Grid } from '@primitives/Grid';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -331,32 +332,37 @@ export function MerkleProofAnimation() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, color: colors.textMuted }}>Доказать лист:</span>
           {PROOF_TX.map((tx, i) => (
-            <button
-              key={i}
-              onClick={() => handleLeafChange(i)}
-              style={{
-                ...glassStyle,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontFamily: 'monospace',
-                cursor: 'pointer',
-                color: i === targetLeaf ? colors.success : colors.textMuted,
-                border: `1px solid ${i === targetLeaf ? colors.success + '60' : colors.border}`,
-                background: i === targetLeaf ? colors.success + '15' : 'transparent',
-                borderRadius: 6,
-              }}
-            >
-              {tx}
-            </button>
+            <DiagramTooltip key={i} content={`Целевой лист: ${tx}. Элемент, включение которого в дерево нужно доказать.`}>
+              <div>
+                <button
+                  onClick={() => handleLeafChange(i)}
+                  style={{
+                    ...glassStyle,
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    cursor: 'pointer',
+                    color: i === targetLeaf ? colors.success : colors.textMuted,
+                    border: `1px solid ${i === targetLeaf ? colors.success + '60' : colors.border}`,
+                    background: i === targetLeaf ? colors.success + '15' : 'transparent',
+                    borderRadius: 6,
+                  }}
+                >
+                  {tx}
+                </button>
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
 
         {/* Step description */}
-        <DataBox
-          label={`Шаг ${step} / ${maxStep}`}
-          value={stepDescriptions[step] || 'Proof построен!'}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Merkle proof: для доказательства включения листа нужны только sibling hashes на пути от листа до корня. Верификатор пересчитывает root и сравнивает.">
+          <DataBox
+            label={`Шаг ${step} / ${maxStep}`}
+            value={stepDescriptions[step] || 'Proof построен!'}
+            variant="highlight"
+          />
+        </DiagramTooltip>
 
         {/* Tree with proof highlighting */}
         <ProofTreeSVG
@@ -375,20 +381,21 @@ export function MerkleProofAnimation() {
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {proof.slice(0, step).map((elem, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    background: colors.warning + '15',
-                    border: `1px solid ${colors.warning}40`,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: colors.warning,
-                  }}
-                >
-                  ({elem.hash.slice(0, 8)}, "{elem.direction}")
-                </div>
+                <DiagramTooltip key={i} content={`Sibling hash: хеш соседнего узла (${elem.direction === 'right' ? 'справа' : 'слева'}), необходимый для пересчёта родительского хеша. Предоставляется prover'ом.`}>
+                  <div
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: 4,
+                      background: colors.warning + '15',
+                      border: `1px solid ${colors.warning}40`,
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: colors.warning,
+                    }}
+                  >
+                    ({elem.hash.slice(0, 8)}, "{elem.direction}")
+                  </div>
+                </DiagramTooltip>
               ))}
             </div>
           </div>
@@ -396,21 +403,33 @@ export function MerkleProofAnimation() {
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
-            Сброс
-          </button>
-          <button
-            onClick={() => setStep(s => Math.max(0, s - 1))}
-            style={btnStyle(step > 0, colors.text)}
-          >
-            Назад
-          </button>
-          <button
-            onClick={() => setStep(s => Math.min(maxStep, s + 1))}
-            style={btnStyle(step < maxStep, colors.primary)}
-          >
-            Далее
-          </button>
+          <DiagramTooltip content="Вернуться к выбору целевого листа.">
+            <div>
+              <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Убрать последний собранный sibling hash.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.max(0, s - 1))}
+                style={btnStyle(step > 0, colors.text)}
+              >
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Собрать следующий sibling hash для proof.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.min(maxStep, s + 1))}
+                style={btnStyle(step < maxStep, colors.primary)}
+              >
+                Далее
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -485,94 +504,118 @@ export function MerkleProofVerificationDiagram() {
   return (
     <DiagramContainer title="Верификация Merkle Proof" color="blue">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <DataBox
-          label={`Шаг ${step} / ${totalSteps}`}
-          value={currentComp.label}
-          variant="highlight"
-        />
+        <DiagramTooltip content="Шаг верификации: H(proof_element || current_hash) или H(current_hash || proof_element), в зависимости от позиции (left/right). Повторяется до root.">
+          <DataBox
+            label={`Шаг ${step} / ${totalSteps}`}
+            value={currentComp.label}
+            variant="highlight"
+          />
+        </DiagramTooltip>
 
         {/* Computation visualization */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {computations.slice(0, step + 1).map((comp, i) => (
-            <div
+            <DiagramTooltip
               key={i}
-              style={{
-                ...glassStyle,
-                padding: 10,
-                border: `1px solid ${i === step ? colors.primary + '50' : colors.border}`,
-                opacity: i === step ? 1 : 0.6,
-                transition: 'opacity 300ms ease',
-              }}
+              content={
+                i === 0
+                  ? 'Начальный хеш листа -- точка старта верификации. Верификатор знает данные элемента и хеширует их.'
+                  : i === computations.length - 1
+                  ? 'Если пересчитанный root совпадает с известным root -- элемент точно включён в дерево. Если нет -- proof невалиден.'
+                  : `Конкатенация текущего хеша с proof element (${comp.direction === 'right' ? 'справа' : 'слева'}) и хеширование. Порядок определяется позицией в дереве.`
+              }
             >
-              {i === 0 && (
-                <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                  <span style={{ color: colors.textMuted }}>leaf hash = </span>
-                  <span style={{ color: colors.success }}>{comp.current}</span>
-                </div>
-              )}
-              {comp.proofElem && (
-                <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                  {comp.direction === 'right' ? (
-                    <>
-                      <span style={{ color: colors.textMuted }}>H(</span>
-                      <span style={{ color: colors.success }}>{comp.current.slice(0, 8)}</span>
-                      <span style={{ color: colors.textMuted }}> || </span>
-                      <span style={{ color: colors.warning }}>{comp.proofElem.slice(0, 8)}</span>
-                      <span style={{ color: colors.textMuted }}>) = </span>
-                      <span style={{ color: colors.accent }}>{comp.result?.slice(0, 8)}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: colors.textMuted }}>H(</span>
-                      <span style={{ color: colors.warning }}>{comp.proofElem.slice(0, 8)}</span>
-                      <span style={{ color: colors.textMuted }}> || </span>
-                      <span style={{ color: colors.success }}>{comp.current.slice(0, 8)}</span>
-                      <span style={{ color: colors.textMuted }}>) = </span>
-                      <span style={{ color: colors.accent }}>{comp.result?.slice(0, 8)}</span>
-                    </>
-                  )}
-                </div>
-              )}
-              {i === computations.length - 1 && i <= step && (
-                <div style={{ fontFamily: 'monospace', fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div>
-                    <span style={{ color: colors.textMuted }}>Вычисленный: </span>
-                    <span style={{ color: colors.accent }}>{comp.current}</span>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: 10,
+                  border: `1px solid ${i === step ? colors.primary + '50' : colors.border}`,
+                  opacity: i === step ? 1 : 0.6,
+                  transition: 'opacity 300ms ease',
+                }}
+              >
+                {i === 0 && (
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                    <span style={{ color: colors.textMuted }}>leaf hash = </span>
+                    <span style={{ color: colors.success }}>{comp.current}</span>
                   </div>
-                  <div>
-                    <span style={{ color: colors.textMuted }}>Известный:   </span>
-                    <span style={{ color: '#a855f7' }}>{PROOF_ROOT}</span>
+                )}
+                {comp.proofElem && (
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                    {comp.direction === 'right' ? (
+                      <>
+                        <span style={{ color: colors.textMuted }}>H(</span>
+                        <span style={{ color: colors.success }}>{comp.current.slice(0, 8)}</span>
+                        <span style={{ color: colors.textMuted }}> || </span>
+                        <span style={{ color: colors.warning }}>{comp.proofElem.slice(0, 8)}</span>
+                        <span style={{ color: colors.textMuted }}>) = </span>
+                        <span style={{ color: colors.accent }}>{comp.result?.slice(0, 8)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: colors.textMuted }}>H(</span>
+                        <span style={{ color: colors.warning }}>{comp.proofElem.slice(0, 8)}</span>
+                        <span style={{ color: colors.textMuted }}> || </span>
+                        <span style={{ color: colors.success }}>{comp.current.slice(0, 8)}</span>
+                        <span style={{ color: colors.textMuted }}>) = </span>
+                        <span style={{ color: colors.accent }}>{comp.result?.slice(0, 8)}</span>
+                      </>
+                    )}
                   </div>
-                  <div style={{
-                    color: comp.result === 'VALID' ? colors.success : colors.danger,
-                    fontWeight: 600,
-                    marginTop: 4,
-                  }}>
-                    {comp.result === 'VALID' ? 'Proof валиден! Корни совпадают.' : 'Proof невалиден! Корни НЕ совпадают.'}
+                )}
+                {i === computations.length - 1 && i <= step && (
+                  <div style={{ fontFamily: 'monospace', fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div>
+                      <span style={{ color: colors.textMuted }}>Вычисленный: </span>
+                      <span style={{ color: colors.accent }}>{comp.current}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: colors.textMuted }}>Известный:   </span>
+                      <span style={{ color: '#a855f7' }}>{PROOF_ROOT}</span>
+                    </div>
+                    <div style={{
+                      color: comp.result === 'VALID' ? colors.success : colors.danger,
+                      fontWeight: 600,
+                      marginTop: 4,
+                    }}>
+                      {comp.result === 'VALID' ? 'Proof валиден! Корни совпадают.' : 'Proof невалиден! Корни НЕ совпадают.'}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
-            Сброс
-          </button>
-          <button
-            onClick={() => setStep(s => Math.max(0, s - 1))}
-            style={btnStyle(step > 0, colors.text)}
-          >
-            Назад
-          </button>
-          <button
-            onClick={() => setStep(s => Math.min(totalSteps, s + 1))}
-            style={btnStyle(step < totalSteps, colors.primary)}
-          >
-            Далее
-          </button>
+          <DiagramTooltip content="Начать верификацию заново с хеша листа.">
+            <div>
+              <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Вернуться к предыдущему шагу верификации.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.max(0, s - 1))}
+                style={btnStyle(step > 0, colors.text)}
+              >
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Выполнить следующий шаг хеширования.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.min(totalSteps, s + 1))}
+                style={btnStyle(step < totalSteps, colors.primary)}
+              >
+                Далее
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -610,39 +653,41 @@ export function MerkleProofEfficiencyDiagram() {
     <DiagramContainer title="Эффективность Merkle Proof: O(log n)" color="green">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Comparison table */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, textAlign: 'left' }}>Данные</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Полная проверка (O(n))</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Merkle Proof (O(log n))</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Экономия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {EFFICIENCY_DATA.map((row, i) => {
-                const saving = ((1 - row.proof / row.full) * 100).toFixed(1);
-                return (
-                  <tr key={i}>
-                    <td style={{ ...tdStyle, color: colors.text, fontWeight: i === 2 ? 600 : 400 }}>
-                      {row.label}
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.danger, textAlign: 'right', fontFamily: 'monospace' }}>
-                      {row.full.toLocaleString()} хешей
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.success, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                      {row.proof} хешей
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.accent, textAlign: 'right', fontFamily: 'monospace' }}>
-                      {saving}%
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DiagramTooltip content="Эффективность Merkle proof: O(log2 n) хешей для дерева из n листьев. Для 1 миллиона транзакций -- всего ~20 хешей. Это ключ к масштабируемости light clients.">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>Данные</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Полная проверка (O(n))</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Merkle Proof (O(log n))</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Экономия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EFFICIENCY_DATA.map((row, i) => {
+                  const saving = ((1 - row.proof / row.full) * 100).toFixed(1);
+                  return (
+                    <tr key={i}>
+                      <td style={{ ...tdStyle, color: colors.text, fontWeight: i === 2 ? 600 : 400 }}>
+                        {row.label}
+                      </td>
+                      <td style={{ ...tdStyle, color: colors.danger, textAlign: 'right', fontFamily: 'monospace' }}>
+                        {row.full.toLocaleString()} хешей
+                      </td>
+                      <td style={{ ...tdStyle, color: colors.success, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                        {row.proof} хешей
+                      </td>
+                      <td style={{ ...tdStyle, color: colors.accent, textAlign: 'right', fontFamily: 'monospace' }}>
+                        {saving}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </DiagramTooltip>
 
         {/* Bar chart comparison */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -650,61 +695,67 @@ export function MerkleProofEfficiencyDiagram() {
             // Log scale for visual: we show proof bar proportional and full bar at 100%
             const proofPct = Math.max(2, (row.proof / row.full) * 100);
             return (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 11, color: colors.textMuted }}>
-                  {row.label} (n = {row.n.toLocaleString()})
+              <DiagramTooltip key={i} content={`Naive проверка: ${row.full.toLocaleString()} хешей (проверить все данные). Merkle proof: ${row.proof} хешей (только путь от листа к корню). Экономия: ${((1 - row.proof / row.full) * 100).toFixed(1)}%.`}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 11, color: colors.textMuted }}>
+                    {row.label} (n = {row.n.toLocaleString()})
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, color: colors.danger, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                      O(n)
+                    </span>
+                    <div style={{
+                      height: 14,
+                      width: '100%',
+                      borderRadius: 4,
+                      background: colors.danger + '30',
+                      border: `1px solid ${colors.danger}40`,
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, color: colors.success, width: 70, textAlign: 'right', flexShrink: 0 }}>
+                      O(log n)
+                    </span>
+                    <div style={{
+                      height: 14,
+                      width: `${proofPct}%`,
+                      minWidth: 8,
+                      borderRadius: 4,
+                      background: colors.success + '50',
+                      border: `1px solid ${colors.success}60`,
+                    }} />
+                    <span style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', flexShrink: 0 }}>
+                      {row.proof}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, color: colors.danger, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                    O(n)
-                  </span>
-                  <div style={{
-                    height: 14,
-                    width: '100%',
-                    borderRadius: 4,
-                    background: colors.danger + '30',
-                    border: `1px solid ${colors.danger}40`,
-                  }} />
-                </div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, color: colors.success, width: 70, textAlign: 'right', flexShrink: 0 }}>
-                    O(log n)
-                  </span>
-                  <div style={{
-                    height: 14,
-                    width: `${proofPct}%`,
-                    minWidth: 8,
-                    borderRadius: 4,
-                    background: colors.success + '50',
-                    border: `1px solid ${colors.success}60`,
-                  }} />
-                  <span style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', flexShrink: 0 }}>
-                    {row.proof}
-                  </span>
-                </div>
-              </div>
+              </DiagramTooltip>
             );
           })}
         </div>
 
         {/* Bitcoin practical example */}
-        <div style={{ ...glassStyle, padding: 12, border: `1px solid ${colors.warning}30` }}>
-          <div style={{ fontSize: 12, color: colors.warning, fontWeight: 600, marginBottom: 6 }}>
-            Практический пример: Bitcoin SPV
+        <DiagramTooltip content="SPV (Simplified Payment Verification) -- концепция из Bitcoin whitepaper. Позволяет мобильным кошелькам верифицировать транзакции без скачивания всего блокчейна (~500 ГБ).">
+          <div style={{ ...glassStyle, padding: 12, border: `1px solid ${colors.warning}30` }}>
+            <div style={{ fontSize: 12, color: colors.warning, fontWeight: 600, marginBottom: 6 }}>
+              Практический пример: Bitcoin SPV
+            </div>
+            <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+              Средний блок Bitcoin содержит ~2000 транзакций. SPV кошелек скачивает только заголовки блоков (80 байт каждый)
+              и для проверки одной транзакции запрашивает Merkle Proof из <span style={{ color: colors.success, fontWeight: 600 }}>11 хешей</span> (по 32 байта = 352 байта)
+              вместо скачивания всего блока (~1.5 МБ). Это экономит 99.98% трафика.
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-            Средний блок Bitcoin содержит ~2000 транзакций. SPV кошелек скачивает только заголовки блоков (80 байт каждый)
-            и для проверки одной транзакции запрашивает Merkle Proof из <span style={{ color: colors.success, fontWeight: 600 }}>11 хешей</span> (по 32 байта = 352 байта)
-            вместо скачивания всего блока (~1.5 МБ). Это экономит 99.98% трафика.
-          </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Formula */}
-        <DataBox
-          label="Формула"
-          value="Размер Merkle Proof = ceil(log2(n)) хешей. Для n = 2000: ceil(log2(2000)) = 11 хешей."
-          variant="default"
-        />
+        <DiagramTooltip content="Логарифмическая зависимость -- фундаментальное свойство бинарных деревьев. Каждый уровень дерева удваивает количество покрываемых листьев.">
+          <DataBox
+            label="Формула"
+            value="Размер Merkle Proof = ceil(log2(n)) хешей. Для n = 2000: ceil(log2(2000)) = 11 хешей."
+            variant="default"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );

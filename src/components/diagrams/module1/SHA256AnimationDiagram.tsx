@@ -11,6 +11,7 @@
 import { useState, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { Grid } from '@primitives/Grid';
@@ -179,64 +180,82 @@ export function SHA256PaddingDiagram() {
   return (
     <DiagramContainer title="SHA-256: дополнение сообщения (padding)" color="blue">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <DataBox label={data.label} value={data.desc} variant="highlight" />
+        <DiagramTooltip content="SHA-256 padding: сообщение дополняется до кратного 512 бит. Добавляется бит '1', нули, и 64-бит длина исходного сообщения.">
+          <DataBox label={data.label} value={data.desc} variant="highlight" />
+        </DiagramTooltip>
 
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Hex
+        <DiagramTooltip content="Hex-представление текущего шага padding. Каждый байт отображается в шестнадцатеричной системе для наглядности побитовых операций.">
+          <div style={{ ...glassStyle, padding: 12 }}>
+            <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Hex
+            </div>
+            <div style={{
+              fontFamily: 'monospace',
+              fontSize: 12,
+              color: colors.text,
+              wordBreak: 'break-all',
+              lineHeight: 1.8,
+            }}>
+              {data.hex}
+            </div>
           </div>
-          <div style={{
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colors.text,
-            wordBreak: 'break-all',
-            lineHeight: 1.8,
-          }}>
-            {data.hex}
-          </div>
-        </div>
+        </DiagramTooltip>
 
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Примечание
+        <DiagramTooltip content="Примечание к текущему шагу. Padding гарантирует, что сообщение имеет длину, кратную 512 бит, и содержит метаданные о длине исходного сообщения.">
+          <div style={{ ...glassStyle, padding: 12 }}>
+            <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Примечание
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.accent, lineHeight: 1.5 }}>
+              {data.binary}
+            </div>
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.accent, lineHeight: 1.5 }}>
-            {data.binary}
-          </div>
-        </div>
+        </DiagramTooltip>
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button
-            onClick={() => setStep(0)}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
-          >
-            Сброс
-          </button>
-          <button
-            onClick={() => setStep(s => Math.max(0, s - 1))}
-            disabled={step === 0}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step === 0 ? 'not-allowed' : 'pointer',
-              color: step === 0 ? colors.textMuted : colors.text,
-              fontSize: 13, opacity: step === 0 ? 0.5 : 1,
-            }}
-          >
-            Назад
-          </button>
-          <button
-            onClick={() => setStep(s => Math.min(maxStep, s + 1))}
-            disabled={step >= maxStep}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step >= maxStep ? 'not-allowed' : 'pointer',
-              color: step >= maxStep ? colors.textMuted : colors.primary,
-              fontSize: 13, opacity: step >= maxStep ? 0.5 : 1,
-            }}
-          >
-            Далее
-          </button>
+          <DiagramTooltip content="Вернуться к первому шагу padding.">
+            <div>
+              <button
+                onClick={() => setStep(0)}
+                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+              >
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Перейти к предыдущему шагу padding.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.max(0, s - 1))}
+                disabled={step === 0}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: step === 0 ? 'not-allowed' : 'pointer',
+                  color: step === 0 ? colors.textMuted : colors.text,
+                  fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+                }}
+              >
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Перейти к следующему шагу padding.">
+            <div>
+              <button
+                onClick={() => setStep(s => Math.min(maxStep, s + 1))}
+                disabled={step >= maxStep}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: step >= maxStep ? 'not-allowed' : 'pointer',
+                  color: step >= maxStep ? colors.textMuted : colors.primary,
+                  fontSize: 13, opacity: step >= maxStep ? 0.5 : 1,
+                }}
+              >
+                Далее
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -264,11 +283,13 @@ export function SHA256MessageSchedule() {
   return (
     <DiagramContainer title='SHA-256: расписание сообщений (W0-W63)' color="purple">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <DataBox
-          label="Сообщение"
-          value='"abc" — 1 блок (512 бит). W0-W15 берутся напрямую из блока, W16-W63 вычисляются.'
-          variant="default"
-        />
+        <DiagramTooltip content="Message schedule расширяет 512-битный блок до 2048 бит (64 слова по 32 бита). Первые 16 слов берутся напрямую, остальные вычисляются рекурсивно.">
+          <DataBox
+            label="Сообщение"
+            value='"abc" — 1 блок (512 бит). W0-W15 берутся напрямую из блока, W16-W63 вычисляются.'
+            variant="default"
+          />
+        </DiagramTooltip>
 
         {/* Word grid */}
         <div style={{
@@ -279,68 +300,89 @@ export function SHA256MessageSchedule() {
           overflowY: 'auto',
         }}>
           {ABC_W.slice(0, visibleCount).map((w, i) => (
-            <div
+            <DiagramTooltip
               key={i}
-              style={{
-                ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                background: i < 16 ? `${colors.primary}10` : `${colors.accent}10`,
-                border: `1px solid ${i < 16 ? colors.primary + '30' : colors.accent + '30'}`,
-              }}
+              content={i < 16
+                ? `W0-W15: первые 16 words (32 бита каждый) берутся напрямую из padded message block. Это исходные данные для раунда.`
+                : `W16-W63: вычисляются рекурсивно: Wt = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16]. Расширяет 512 бит до 2048 бит.`
+              }
             >
-              <span style={{ color: i < 16 ? colors.primary : colors.accent, fontWeight: 600 }}>
-                W[{i}]
-              </span>
-              <span style={{ color: colors.text }}>
-                {hex8(w)}
-              </span>
-            </div>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: '6px 8px',
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  background: i < 16 ? `${colors.primary}10` : `${colors.accent}10`,
+                  border: `1px solid ${i < 16 ? colors.primary + '30' : colors.accent + '30'}`,
+                }}
+              >
+                <span style={{ color: i < 16 ? colors.primary : colors.accent, fontWeight: 600 }}>
+                  W[{i}]
+                </span>
+                <span style={{ color: colors.text }}>
+                  {hex8(w)}
+                </span>
+              </div>
+            </DiagramTooltip>
           ))}
         </div>
 
         {visibleCount > 16 && visibleCount <= 64 && (
-          <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
-            W[{visibleCount - 1}] = sigma1(W[{visibleCount - 3}]) + W[{visibleCount - 8}] + sigma0(W[{visibleCount - 16}]) + W[{visibleCount - 17}])
-          </div>
+          <DiagramTooltip content="sigma0/sigma1: bitwise rotation и XOR операции, обеспечивающие diffusion в message schedule.">
+            <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
+              W[{visibleCount - 1}] = sigma1(W[{visibleCount - 3}]) + W[{visibleCount - 8}] + sigma0(W[{visibleCount - 16}]) + W[{visibleCount - 17}])
+            </div>
+          </DiagramTooltip>
         )}
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button
-            onClick={reset}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
-          >
-            Сброс
-          </button>
-          <button
-            onClick={advance}
-            disabled={visibleCount >= 64}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
-              color: visibleCount >= 64 ? colors.textMuted : colors.primary,
-              fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
-            }}
-          >
-            Следующее W
-          </button>
-          <button
-            onClick={advanceAll}
-            disabled={visibleCount >= 64}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
-              color: visibleCount >= 64 ? colors.textMuted : colors.accent,
-              fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
-            }}
-          >
-            Показать все 64
-          </button>
+          <DiagramTooltip content="Сбросить до первых 16 слов (из блока).">
+            <div>
+              <button
+                onClick={reset}
+                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+              >
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Вычислить следующее слово message schedule.">
+            <div>
+              <button
+                onClick={advance}
+                disabled={visibleCount >= 64}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
+                  color: visibleCount >= 64 ? colors.textMuted : colors.primary,
+                  fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
+                }}
+              >
+                Следующее W
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Показать все 64 слова message schedule сразу.">
+            <div>
+              <button
+                onClick={advanceAll}
+                disabled={visibleCount >= 64}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
+                  color: visibleCount >= 64 ? colors.textMuted : colors.accent,
+                  fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
+                }}
+              >
+                Показать все 64
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -466,26 +508,32 @@ export function SHA256RoundAnimation() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Round info */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <DataBox
-            label="Раунд"
-            value={step === 0 ? 'Начальное состояние (H0)' : `${step} / 64`}
-            variant="highlight"
-            style={{ flex: 1, minWidth: 120 }}
-          />
+          <DiagramTooltip content="Рабочие переменные a-h: 8 x 32-бит words. Инициализируются из текущего hash state (H0-H7). Обновляются каждый раунд через Ch, Maj, Sigma.">
+            <DataBox
+              label="Раунд"
+              value={step === 0 ? 'Начальное состояние (H0)' : `${step} / 64`}
+              variant="highlight"
+              style={{ flex: 1, minWidth: 120 }}
+            />
+          </DiagramTooltip>
           {step > 0 && step <= 64 && (
             <>
-              <DataBox
-                label={`K[${step - 1}]`}
-                value={hex8(K[step - 1])}
-                variant="default"
-                style={{ flex: 1, minWidth: 120 }}
-              />
-              <DataBox
-                label={`W[${step - 1}]`}
-                value={hex8(ABC_W[step - 1])}
-                variant="default"
-                style={{ flex: 1, minWidth: 120 }}
-              />
+              <DiagramTooltip content="K[t] -- round constant. Первые 32 бита дробной части кубических корней первых 64 простых чисел. Фиксированы стандартом FIPS 180-4.">
+                <DataBox
+                  label={`K[${step - 1}]`}
+                  value={hex8(K[step - 1])}
+                  variant="default"
+                  style={{ flex: 1, minWidth: 120 }}
+                />
+              </DiagramTooltip>
+              <DiagramTooltip content="W[t] -- слово из message schedule. W0-W15 из блока, W16-W63 вычислены через sigma0/sigma1.">
+                <DataBox
+                  label={`W[${step - 1}]`}
+                  value={hex8(ABC_W[step - 1])}
+                  variant="default"
+                  style={{ flex: 1, minWidth: 120 }}
+                />
+              </DiagramTooltip>
             </>
           )}
         </div>
@@ -493,101 +541,131 @@ export function SHA256RoundAnimation() {
         {/* Working variables a-h */}
         <Grid columns={4} gap={8}>
           {VAR_NAMES.map((name, i) => (
-            <div
+            <DiagramTooltip
               key={name}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 8,
-                background: changedVars[i] ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${changedVars[i] ? colors.warning + '60' : colors.border}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                transition: 'background 300ms ease, border-color 300ms ease',
-              }}
+              content={
+                name === 'a' ? 'a = T1 + T2. Комбинирует результат нелинейных функций. Новое значение определяет начало цепочки переменных.' :
+                name === 'e' ? 'e = d + T1. Определяет вход в функцию Ch(e,f,g). Критично для нелинейности раунда.' :
+                `Переменная ${name}: сдвигается из предыдущей позиции. Каждый раунд все 8 переменных обновляются через rotation.`
+              }
             >
-              <span style={{
-                fontSize: 11,
-                color: changedVars[i] ? colors.warning : colors.textMuted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                fontWeight: 600,
-                transition: 'color 300ms ease',
-              }}>
-                {name}
-              </span>
-              <span style={{
-                fontSize: 14,
-                color: changedVars[i] ? colors.text : colors.textMuted,
-                fontFamily: 'monospace',
-                transition: 'color 300ms ease',
-              }}>
-                {hex8(currentVars[i])}
-              </span>
-            </div>
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  background: changedVars[i] ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${changedVars[i] ? colors.warning + '60' : colors.border}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  transition: 'background 300ms ease, border-color 300ms ease',
+                }}
+              >
+                <span style={{
+                  fontSize: 11,
+                  color: changedVars[i] ? colors.warning : colors.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: 600,
+                  transition: 'color 300ms ease',
+                }}>
+                  {name}
+                </span>
+                <span style={{
+                  fontSize: 14,
+                  color: changedVars[i] ? colors.text : colors.textMuted,
+                  fontFamily: 'monospace',
+                  transition: 'color 300ms ease',
+                }}>
+                  {hex8(currentVars[i])}
+                </span>
+              </div>
+            </DiagramTooltip>
           ))}
         </Grid>
 
         {/* T1 and T2 display (only after first round) */}
         {step > 0 && step <= 64 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
-              <span style={{ color: colors.accent }}>T1</span> = h + Sigma1(e) + Ch(e,f,g) + K[{step - 1}] + W[{step - 1}]
-            </div>
-            <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
-              <span style={{ color: colors.accent }}>T2</span> = Sigma0(a) + Maj(a,b,c)
-            </div>
+            <DiagramTooltip content="T1 использует Ch(e,f,g) = (e AND f) XOR (NOT e AND g) -- бит e выбирает между f и g. Нелинейная операция, обеспечивающая confusion.">
+              <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
+                <span style={{ color: colors.accent }}>T1</span> = h + Sigma1(e) + Ch(e,f,g) + K[{step - 1}] + W[{step - 1}]
+              </div>
+            </DiagramTooltip>
+            <DiagramTooltip content="T2 использует Maj(a,b,c) = (a AND b) XOR (a AND c) XOR (b AND c) -- голосование большинством. Sigma0: bitwise rotation + XOR для diffusion.">
+              <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
+                <span style={{ color: colors.accent }}>T2</span> = Sigma0(a) + Maj(a,b,c)
+              </div>
+            </DiagramTooltip>
           </div>
         )}
 
         {/* Variable rotation explanation */}
-        <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
-          a = T1+T2, b = a, c = b, d = c, e = d+T1, f = e, g = f, h = g
-        </div>
+        <DiagramTooltip content="Каждый раунд переменные сдвигаются: предыдущий a становится b, b -> c, и т.д. Только a и e вычисляются заново через T1 и T2.">
+          <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
+            a = T1+T2, b = a, c = b, d = c, e = d+T1, f = e, g = f, h = g
+          </div>
+        </DiagramTooltip>
 
         {/* Controls */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={reset}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
-          >
-            Сброс
-          </button>
-          <button
-            onClick={goBack}
-            disabled={step === 0}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step === 0 ? 'not-allowed' : 'pointer',
-              color: step === 0 ? colors.textMuted : colors.text,
-              fontSize: 13, opacity: step === 0 ? 0.5 : 1,
-            }}
-          >
-            Назад
-          </button>
-          <button
-            onClick={advance}
-            disabled={step >= 64}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step >= 64 ? 'not-allowed' : 'pointer',
-              color: step >= 64 ? colors.textMuted : colors.primary,
-              fontSize: 13, opacity: step >= 64 ? 0.5 : 1,
-            }}
-          >
-            Следующий раунд
-          </button>
-          <button
-            onClick={toggleAutoplay}
-            style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: 'pointer',
-              color: isPlaying ? colors.warning : colors.accent,
-              fontSize: 13,
-            }}
-          >
-            {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
-          </button>
+          <DiagramTooltip content="Сбросить анимацию к начальному состоянию H0.">
+            <div>
+              <button
+                onClick={reset}
+                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+              >
+                Сброс
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Вернуться на предыдущий раунд.">
+            <div>
+              <button
+                onClick={goBack}
+                disabled={step === 0}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: step === 0 ? 'not-allowed' : 'pointer',
+                  color: step === 0 ? colors.textMuted : colors.text,
+                  fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+                }}
+              >
+                Назад
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Выполнить следующий раунд сжатия.">
+            <div>
+              <button
+                onClick={advance}
+                disabled={step >= 64}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: step >= 64 ? 'not-allowed' : 'pointer',
+                  color: step >= 64 ? colors.textMuted : colors.primary,
+                  fontSize: 13, opacity: step >= 64 ? 0.5 : 1,
+                }}
+              >
+                Следующий раунд
+              </button>
+            </div>
+          </DiagramTooltip>
+          <DiagramTooltip content="Автоматически проигрывать все 64 раунда с интервалом 200мс.">
+            <div>
+              <button
+                onClick={toggleAutoplay}
+                style={{
+                  ...glassStyle, padding: '8px 16px',
+                  cursor: 'pointer',
+                  color: isPlaying ? colors.warning : colors.accent,
+                  fontSize: 13,
+                }}
+              >
+                {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
+              </button>
+            </div>
+          </DiagramTooltip>
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -610,61 +688,73 @@ export function SHA256CompressionOverview() {
   return (
     <DiagramContainer title="SHA-256: обзор функции сжатия" color="emerald">
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <FlowNode variant="primary" size="md">
-          Сообщение (любой длины)
-        </FlowNode>
+        <DiagramTooltip content="Вход: произвольное сообщение любой длины -- от 0 бит до 2^64 - 1 бит. SHA-256 всегда выдает 256-битный хеш.">
+          <FlowNode variant="primary" size="md">
+            Сообщение (любой длины)
+          </FlowNode>
+        </DiagramTooltip>
 
         <Arrow direction="down" label="Дополнение (padding)" />
 
-        <FlowNode variant="default" size="md">
-          Дополненное сообщение (кратно 512 бит)
-        </FlowNode>
+        <DiagramTooltip content="Padding добавляет бит '1', нули и 64-бит длину. Результат кратен 512 бит -- готов к разбиению на блоки.">
+          <FlowNode variant="default" size="md">
+            Дополненное сообщение (кратно 512 бит)
+          </FlowNode>
+        </DiagramTooltip>
 
         <Arrow direction="down" label="Разбиение на блоки" />
 
-        <FlowNode variant="accent" size="md">
-          Блоки по 512 бит (M1, M2, ...)
-        </FlowNode>
+        <DiagramTooltip content="Каждый 512-битный блок обрабатывается последовательно. Результат одного блока -- вход для следующего (цепочка Меркла-Дамгарда).">
+          <FlowNode variant="accent" size="md">
+            Блоки по 512 бит (M1, M2, ...)
+          </FlowNode>
+        </DiagramTooltip>
 
         <Arrow direction="down" label="Для каждого блока:" />
 
-        <div style={{ ...glassStyle, padding: 16, width: '100%', maxWidth: 500 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <FlowNode variant="secondary" size="sm">
-              Расписание сообщений: 16 слов → 64 слова (W)
-            </FlowNode>
+        <DiagramTooltip content="Compression function: 64 раунда обработки. Каждый раунд использует Wt (message schedule word) + Kt (round constant). Финальный hash = initial state + final working variables.">
+          <div style={{ ...glassStyle, padding: 16, width: '100%', maxWidth: 500 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <FlowNode variant="secondary" size="sm">
+                Расписание сообщений: 16 слов → 64 слова (W)
+              </FlowNode>
 
-            <Arrow direction="down" />
+              <Arrow direction="down" />
 
-            <FlowNode variant="warning" size="sm">
-              64 раунда сжатия (a,b,c,d,e,f,g,h)
-            </FlowNode>
+              <FlowNode variant="warning" size="sm">
+                64 раунда сжатия (a,b,c,d,e,f,g,h)
+              </FlowNode>
 
-            <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
-              Каждый раунд: T1 = h + Sigma1(e) + Ch(e,f,g) + K[i] + W[i]
-              <br />
-              T2 = Sigma0(a) + Maj(a,b,c)
+              <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
+                Каждый раунд: T1 = h + Sigma1(e) + Ch(e,f,g) + K[i] + W[i]
+                <br />
+                T2 = Sigma0(a) + Maj(a,b,c)
+              </div>
+
+              <Arrow direction="down" />
+
+              <FlowNode variant="success" size="sm">
+                Прибавление к текущему хешу (H += a,b,...,h)
+              </FlowNode>
             </div>
-
-            <Arrow direction="down" />
-
-            <FlowNode variant="success" size="sm">
-              Прибавление к текущему хешу (H += a,b,...,h)
-            </FlowNode>
           </div>
-        </div>
+        </DiagramTooltip>
 
         <Arrow direction="down" label="После всех блоков" />
 
-        <FlowNode variant="success" size="md">
-          Финальный хеш: H0 || H1 || ... || H7 (256 бит)
-        </FlowNode>
+        <DiagramTooltip content="Финальный хеш -- конкатенация 8 слов H0..H7 по 32 бита. Для 'abc': ba7816bf 8f01cfea 414140de 5dae2223 b00361a3 96177a9c b410ff61 f20015ad.">
+          <FlowNode variant="success" size="md">
+            Финальный хеш: H0 || H1 || ... || H7 (256 бит)
+          </FlowNode>
+        </DiagramTooltip>
 
-        <DataBox
-          label="Начальные значения (FIPS 180-4)"
-          value={`H0=${hex8(H_INIT[0])} H1=${hex8(H_INIT[1])} H2=${hex8(H_INIT[2])} H3=${hex8(H_INIT[3])}`}
-          variant="default"
-        />
+        <DiagramTooltip content="Начальные значения H0-H7 -- первые 32 бита дробных частей квадратных корней первых 8 простых чисел. Стандартизованы FIPS 180-4.">
+          <DataBox
+            label="Начальные значения (FIPS 180-4)"
+            value={`H0=${hex8(H_INIT[0])} H1=${hex8(H_INIT[1])} H2=${hex8(H_INIT[2])} H3=${hex8(H_INIT[3])}`}
+            variant="default"
+          />
+        </DiagramTooltip>
       </div>
     </DiagramContainer>
   );
