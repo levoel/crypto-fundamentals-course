@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { Grid } from '@primitives/Grid';
@@ -36,8 +37,9 @@ export function AESOverviewDiagram() {
       {/* Key size selector */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
         {([128, 192, 256] as const).map((ks) => (
+          <DiagramTooltip key={ks} content={ks === 128 ? 'AES-128: 10 раундов, 128-бит ключ. Достаточен для большинства применений. Используется в TLS, WPA2.' : ks === 192 ? 'AES-192: 12 раундов, 192-бит ключ. Промежуточный вариант, редко используется на практике.' : 'AES-256: 14 раундов, 256-бит ключ. Post-quantum secure (Grover сокращает до 2^128). Используется для секретных данных.'}>
+          <div style={{ display: 'inline-block' }}>
           <button
-            key={ks}
             onClick={() => setKeySize(ks)}
             style={{
               ...glassStyle,
@@ -52,18 +54,23 @@ export function AESOverviewDiagram() {
           >
             AES-{ks}
           </button>
+          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Flow diagram */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <DiagramTooltip content="Открытый текст (plaintext): 128-бит блок данных (16 байт). AES работает с фиксированным размером блока независимо от длины ключа.">
         <FlowNode variant="primary" size="sm">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>Открытый текст</div>
             <div style={{ fontSize: 10, opacity: 0.7 }}>128 бит</div>
           </div>
         </FlowNode>
+        </DiagramTooltip>
         <Arrow direction="right" />
+        <DiagramTooltip content="Key schedule: из исходного ключа генерируются раундовые ключи через RotWord, SubWord, XOR с Rcon. Количество раундовых ключей зависит от размера ключа.">
         <div style={{
           ...glassStyle,
           padding: '8px 12px',
@@ -80,6 +87,7 @@ export function AESOverviewDiagram() {
             </div>
           </FlowNode>
         </div>
+        </DiagramTooltip>
         <Arrow direction="right" />
       </div>
 
@@ -142,12 +150,14 @@ export function AESOverviewDiagram() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <Arrow direction="right" />
+        <DiagramTooltip content="Шифротекст (ciphertext): результат раундов трансформации. Неотличим от случайных данных при корректном ключе. Размер блока всегда 128 бит.">
         <FlowNode variant="success" size="sm">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>Шифротекст</div>
             <div style={{ fontSize: 10, opacity: 0.7 }}>128 бит</div>
           </div>
         </FlowNode>
+        </DiagramTooltip>
       </div>
 
       <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
@@ -255,6 +265,7 @@ export function AESRoundDiagram() {
       name: 'Исходное состояние',
       state: EXAMPLE_STATE,
       description: '4x4 матрица байтов (128 бит)',
+      tooltip: 'State matrix: 4x4 матрица байтов (128 бит = 16 байт). Каждый байт обрабатывается независимо через SubBytes, затем строки и столбцы перемешиваются для диффузии.',
       highlight: new Set<string>(),
       color: colors.textMuted,
     },
@@ -262,6 +273,7 @@ export function AESRoundDiagram() {
       name: '1. SubBytes',
       state: AFTER_SUBBYTES,
       description: 'Каждый байт заменяется через S-box (нелинейная подстановка)',
+      tooltip: 'SubBytes: каждый байт заменяется через S-box (таблица подстановки). Единственная нелинейная операция в AES -- обеспечивает confusion. S-box построен на инверсии в GF(2^8).',
       highlight: new Set(EXAMPLE_STATE.flatMap((row, r) => row.map((_, c) => `${r}-${c}`))),
       color: colors.primary,
     },
@@ -269,6 +281,7 @@ export function AESRoundDiagram() {
       name: '2. ShiftRows',
       state: AFTER_SHIFTROWS,
       description: 'Строки сдвигаются влево на 0, 1, 2, 3 позиции',
+      tooltip: 'ShiftRows: строки state циклически сдвигаются. Строка 0: 0 сдвигов, строка 1: 1, строка 2: 2, строка 3: 3. Обеспечивает diffusion между столбцами.',
       highlight: new Set(['1-0', '1-1', '1-2', '1-3', '2-0', '2-1', '2-2', '2-3', '3-0', '3-1', '3-2', '3-3']),
       color: colors.accent,
     },
@@ -276,6 +289,7 @@ export function AESRoundDiagram() {
       name: '3. MixColumns',
       state: AFTER_MIXCOLUMNS,
       description: 'Столбцы перемешиваются полиномиальным умножением в GF(2^8)',
+      tooltip: 'MixColumns: каждый столбец умножается на фиксированную матрицу в GF(2^8). Обеспечивает diffusion внутри столбца. Не применяется в последнем раунде.',
       highlight: new Set(EXAMPLE_STATE.flatMap((row, r) => row.map((_, c) => `${r}-${c}`))),
       color: colors.success,
     },
@@ -288,6 +302,7 @@ export function AESRoundDiagram() {
         ['17', 'b1', '39', '05'],
       ],
       description: 'XOR с раундовым ключом',
+      tooltip: 'AddRoundKey: XOR state с раундовым ключом. Единственная операция, использующая ключ. Без неё шифрование было бы обратимо без ключа.',
       highlight: new Set(EXAMPLE_STATE.flatMap((row, r) => row.map((_, c) => `${r}-${c}`))),
       color: colors.warning,
     },
@@ -307,6 +322,7 @@ export function AESRoundDiagram() {
       }}>
         {operations.map((op, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <DiagramTooltip content={op.tooltip}>
             <div style={{
               ...glassStyle,
               padding: 12,
@@ -337,6 +353,7 @@ export function AESRoundDiagram() {
                 {op.description}
               </div>
             </div>
+            </DiagramTooltip>
             {i < operations.length - 1 && (
               <span style={{ fontSize: 20, color: colors.textMuted, flexShrink: 0 }}>
                 {'\u2192'}
@@ -375,6 +392,7 @@ interface AESVariant {
   security: string;
   recommended: boolean;
   useCase: string;
+  tooltip: string;
 }
 
 const aesVariants: AESVariant[] = [
@@ -386,6 +404,7 @@ const aesVariants: AESVariant[] = [
     security: '2^128 операций',
     recommended: false,
     useCase: 'Быстрое шифрование, где скорость критична',
+    tooltip: 'AES-128: 10 раундов, 128-бит ключ (2^128 вариантов). Достаточен для большинства применений. Используется в TLS, WPA2. Ethereum keystore использует AES-128-CTR.',
   },
   {
     name: 'AES-192',
@@ -395,6 +414,7 @@ const aesVariants: AESVariant[] = [
     security: '2^192 операций',
     recommended: false,
     useCase: 'Редко используется на практике',
+    tooltip: 'AES-192: 12 раундов, 192-бит ключ. Промежуточный вариант, редко используется на практике. Не имеет значительных преимуществ перед AES-256.',
   },
   {
     name: 'AES-256',
@@ -404,6 +424,7 @@ const aesVariants: AESVariant[] = [
     security: '2^256 операций',
     recommended: true,
     useCase: 'Криптовалютные кошельки, секретные данные',
+    tooltip: 'AES-256: 14 раундов, 256-бит ключ (2^256 вариантов). Post-quantum secure (Grover\'s algorithm сокращает до 2^128). Bitcoin wallet.dat использует AES-256-CBC.',
   },
 ];
 
@@ -419,8 +440,8 @@ export function AESKeySizeDiagram() {
     >
       <Grid columns={3} gap={12}>
         {aesVariants.map((variant) => (
+          <DiagramTooltip key={variant.name} content={variant.tooltip}>
           <div
-            key={variant.name}
             style={{
               ...glassStyle,
               padding: 16,
@@ -477,6 +498,7 @@ export function AESKeySizeDiagram() {
               {variant.useCase}
             </div>
           </div>
+          </DiagramTooltip>
         ))}
       </Grid>
 

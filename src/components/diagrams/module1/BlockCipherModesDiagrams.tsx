@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
 import { colors, glassStyle } from '@primitives/shared';
@@ -52,6 +53,8 @@ function StepControls({
 }) {
   return (
     <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <DiagramTooltip content="Сброс: вернуться к начальному состоянию и показать исходные блоки данных.">
+      <div style={{ display: 'inline-block' }}>
       <button
         onClick={onReset}
         style={{
@@ -64,6 +67,10 @@ function StepControls({
       >
         Сброс
       </button>
+      </div>
+      </DiagramTooltip>
+      <DiagramTooltip content="Следующий шаг: обработать следующий блок данных. Каждый шаг демонстрирует одну итерацию шифрования.">
+      <div style={{ display: 'inline-block' }}>
       <button
         onClick={onStep}
         disabled={step >= maxStep}
@@ -80,6 +87,8 @@ function StepControls({
       >
         Следующий шаг
       </button>
+      </div>
+      </DiagramTooltip>
       <span style={{
         fontSize: 12,
         color: colors.textMuted,
@@ -181,6 +190,7 @@ export function ECBPenguinDiagram() {
         flexWrap: 'wrap',
       }}>
         {/* Original pattern */}
+        <DiagramTooltip content="Оригинальное изображение. Каждый блок 16 байт шифруется независимо в ECB mode. Чёткий паттерн виден невооружённым глазом.">
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, color: colors.text, marginBottom: 8, fontWeight: 600 }}>
             Исходное изображение
@@ -206,8 +216,10 @@ export function ECBPenguinDiagram() {
             ))}
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* ECB encrypted - pattern visible */}
+        <DiagramTooltip content="ECB шифрование: одинаковые блоки plaintext дают одинаковые блоки ciphertext. Паттерн виден! ECB НЕ скрывает структуру данных. Никогда не используйте ECB для реальных данных.">
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, color: colors.error || '#ef4444', marginBottom: 8, fontWeight: 600 }}>
             ECB шифрование
@@ -236,8 +248,10 @@ export function ECBPenguinDiagram() {
             Паттерн все еще виден!
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* CBC/proper encrypted - pattern hidden */}
+        <DiagramTooltip content="CBC/CTR шифрование: каждый блок зависит от предыдущего (CBC) или счётчика (CTR). Паттерн полностью скрыт -- выглядит как случайный шум.">
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, color: colors.success, marginBottom: 8, fontWeight: 600 }}>
             CBC/CTR шифрование
@@ -266,8 +280,10 @@ export function ECBPenguinDiagram() {
             Паттерн скрыт
           </div>
         </div>
+        </DiagramTooltip>
       </div>
 
+      <DiagramTooltip content="ECB -- единственный режим без обратной связи между блоками. Все остальные режимы (CBC, CTR, GCM) решают эту проблему разными способами: цепочкой, счётчиком или аутентификацией.">
       <div style={{
         marginTop: 16,
         padding: 12,
@@ -282,6 +298,7 @@ export function ECBPenguinDiagram() {
           структуру данных без расшифровки.
         </div>
       </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -322,11 +339,15 @@ export function CBCModeDiagram() {
     >
       {/* Initial state: plaintext blocks */}
       <div style={{ marginBottom: 12 }}>
+        <DiagramTooltip content="Обратите внимание: блоки P1 и P2 содержат одинаковые данные (41414141). В ECB они дали бы одинаковый шифротекст, но CBC разрушает этот паттерн.">
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
           Открытый текст (заметьте: P1 и P2 одинаковы!)
         </div>
+        </DiagramTooltip>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <DiagramTooltip content="Initialization Vector (IV): случайный 128-бит блок, XOR-ящийся с первым блоком plaintext. Должен быть уникальным для каждого сообщения, но не секретным.">
           <Block label="IV" value={CBC_IV} active={step >= 0} color={colors.accent} />
+          </DiagramTooltip>
           {CBC_PLAINTEXTS.map((p, i) => (
             <Block
               key={i}
@@ -395,6 +416,7 @@ export function CBCModeDiagram() {
 
       {/* Key observation */}
       {step >= 3 && (
+        <DiagramTooltip content="XOR с предыдущим ciphertext блоком -- это 'цепочка' (chaining). Каждый блок ciphertext зависит от ВСЕХ предыдущих блоков plaintext, поэтому одинаковые данные дают разный шифротекст.">
         <div style={{
           marginTop: 12,
           padding: 10,
@@ -406,6 +428,7 @@ export function CBCModeDiagram() {
             CBC разрушает паттерны благодаря цепочке XOR.
           </div>
         </div>
+        </DiagramTooltip>
       )}
 
       <StepControls
@@ -462,9 +485,11 @@ export function CTRModeDiagram() {
     >
       {/* Plaintext blocks */}
       <div style={{ marginBottom: 12 }}>
+        <DiagramTooltip content="Счётчик (counter): nonce + block_number. Уникальный для каждого блока. Шифруется AES, затем XOR с plaintext. Превращает блочный шифр в потоковый.">
         <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
           Nonce: <span style={{ fontFamily: 'monospace', color: colors.accent }}>{CTR_NONCE}</span> | Открытый текст:
         </div>
+        </DiagramTooltip>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           {CTR_PLAINTEXTS.map((p, i) => (
             <Block
@@ -548,6 +573,7 @@ export function CTRModeDiagram() {
 
       {/* Key insight */}
       {step >= 3 && (
+        <DiagramTooltip content="Параллелизация: каждый блок шифруется независимо (counter -> AES -> XOR). В отличие от CBC, CTR позволяет шифровать/расшифровывать блоки в любом порядке. Идеально для многоядерных процессоров.">
         <div style={{
           marginTop: 8,
           padding: 10,
@@ -559,6 +585,7 @@ export function CTRModeDiagram() {
             CTR превращает блочный шифр в потоковый шифр.
           </div>
         </div>
+        </DiagramTooltip>
       )}
 
       <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
@@ -626,6 +653,7 @@ export function GCMModeDiagram() {
       {/* Two parallel tracks */}
       <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
         {/* Encryption track */}
+        <DiagramTooltip content="Шифрование в GCM использует CTR mode: nonce + счётчик шифруется AES, затем XOR с plaintext. Блоки обрабатываются параллельно. Счётчик начинается с 1 (0 зарезервирован для auth tag).">
         <div style={{
           ...glassStyle,
           padding: 12,
@@ -661,8 +689,10 @@ export function GCMModeDiagram() {
             </div>
           )}
         </div>
+        </DiagramTooltip>
 
         {/* Authentication track */}
+        <DiagramTooltip content="GHASH: multiplication в GF(2^128) для аутентификации. Вычисляет authentication tag из ciphertext + AAD (associated data). Galois field arithmetic обеспечивает быстрое вычисление на аппаратном уровне.">
         <div style={{
           ...glassStyle,
           padding: 12,
@@ -698,10 +728,12 @@ export function GCMModeDiagram() {
             </div>
           )}
         </div>
+        </DiagramTooltip>
       </div>
 
       {/* Output */}
       {step >= 3 && (
+        <DiagramTooltip content="Authentication tag: 128-бит MAC, гарантирующий целостность и подлинность. Если tag не совпадает -- данные были модифицированы. AEAD = Authenticated Encryption with Associated Data.">
         <div style={{
           padding: 12,
           ...glassStyle,
@@ -722,6 +754,7 @@ export function GCMModeDiagram() {
             GCM обеспечивает и конфиденциальность, и целостность данных.
           </div>
         </div>
+        </DiagramTooltip>
       )}
 
       <StepControls
