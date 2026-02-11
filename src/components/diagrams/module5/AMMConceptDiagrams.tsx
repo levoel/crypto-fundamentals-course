@@ -10,6 +10,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -118,61 +119,65 @@ export function XYKCurveDiagram() {
       </div>
 
       {/* Slider */}
-      <div style={{ marginBottom: 16, padding: '0 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
-            Swap amount (dx):
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace' }}>
-            {dx} Token A
-          </span>
+      <DiagramTooltip content="x * y = k: постоянное произведение. При свопе X -> Y: trader добавляет dx в пул X, забирает dy из пула Y, сохраняя k = (x+dx)(y-dy). Кривая никогда не касается осей -- бесконечная ликвидность (теоретически).">
+        <div style={{ marginBottom: 16, padding: '0 8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+              Swap amount (dx):
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace' }}>
+              {dx} Token A
+            </span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={500}
+            value={dx}
+            onChange={(e) => setDx(Number(e.target.value))}
+            style={{ width: '100%', accentColor: colors.primary }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span>1</span>
+            <span>250</span>
+            <span>500</span>
+          </div>
         </div>
-        <input
-          type="range"
-          min={1}
-          max={500}
-          value={dx}
-          onChange={(e) => setDx(Number(e.target.value))}
-          style={{ width: '100%', accentColor: colors.primary }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-          <span>1</span>
-          <span>250</span>
-          <span>500</span>
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Computed values */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-      }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы до</div>
-          <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>x = {x0}, y = {y0}</div>
+      <DiagramTooltip content="Price impact: чем больше swap относительно liquidity pool, тем хуже цена. Для dx от x: dy = y * dx / (x + dx). Больше пул = меньше impact.">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 8,
+        }}>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы до</div>
+            <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>x = {x0}, y = {y0}</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы после</div>
+            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>x = {newX.toFixed(0)}, y = {newY.toFixed(0)}</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>k = x * y</div>
+            <div style={{ fontSize: 12, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>{k.toLocaleString()} (const)</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Output (dy)</div>
+            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{dy.toFixed(2)} Token B</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена до (y/x)</div>
+            <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>{price0.toFixed(4)}</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена после</div>
+            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>{priceAfter.toFixed(4)}</div>
+          </div>
         </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы после</div>
-          <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>x = {newX.toFixed(0)}, y = {newY.toFixed(0)}</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>k = x * y</div>
-          <div style={{ fontSize: 12, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>{k.toLocaleString()} (const)</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Output (dy)</div>
-          <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{dy.toFixed(2)} Token B</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена до (y/x)</div>
-          <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>{price0.toFixed(4)}</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена после</div>
-          <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>{priceAfter.toFixed(4)}</div>
-        </div>
-      </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -288,15 +293,17 @@ export function SwapStepThroughDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={step.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -502,35 +509,37 @@ export function PriceImpactDiagram() {
       </div>
 
       {/* Slider */}
-      <div style={{ marginBottom: 16, padding: '0 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
-            Swap amount:
-          </span>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: 'monospace',
-            color: isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
-          }}>
-            {swapAmount} ETH
-          </span>
+      <DiagramTooltip content="Малый swap (<1% от пула): price impact < 0.3%. Для retail trades -- незначительный slippage. Большой swap (>10% от пула): price impact > 3%. MEV bots отслеживают такие свопы для sandwich attacks.">
+        <div style={{ marginBottom: 16, padding: '0 8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+              Swap amount:
+            </span>
+            <span style={{
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'monospace',
+              color: isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
+            }}>
+              {swapAmount} ETH
+            </span>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={500}
+            step={1}
+            value={swapAmount}
+            onChange={(e) => setSwapAmount(Number(e.target.value))}
+            style={{ width: '100%', accentColor: colors.accent }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span>1 ETH</span>
+            <span>250 ETH</span>
+            <span>500 ETH</span>
+          </div>
         </div>
-        <input
-          type="range"
-          min={1}
-          max={500}
-          step={1}
-          value={swapAmount}
-          onChange={(e) => setSwapAmount(Number(e.target.value))}
-          style={{ width: '100%', accentColor: colors.accent }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-          <span>1 ETH</span>
-          <span>250 ETH</span>
-          <span>500 ETH</span>
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Values */}
       <div style={{
@@ -570,11 +579,13 @@ export function PriceImpactDiagram() {
       </div>
 
       {/* Formula */}
-      <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
-          price_impact = dx / (x + dx) = {swapAmount} / ({poolX} + {swapAmount}) = {priceImpact.toFixed(4)}%
+      <DiagramTooltip content="Формула price impact для constant product AMM. Чистая математика: чем больше dx относительно x, тем больше проскальзывание. Uniswap V3 решает это concentrated liquidity.">
+        <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
+            price_impact = dx / (x + dx) = {swapAmount} / ({poolX} + {swapAmount}) = {priceImpact.toFixed(4)}%
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="Защита от проскальзывания"
@@ -651,8 +662,6 @@ const MIN_K = FEE_SWAPS[0].kBefore;
  * Bar chart + hover details.
  */
 export function FeeAccumulationDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   // Normalize for bar height (start from MIN_K to emphasize growth)
   const kRange = MAX_K - MIN_K;
 
@@ -669,66 +678,64 @@ export function FeeAccumulationDiagram() {
         padding: '0 8px',
       }}>
         {/* Initial k bar */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            height: '100%',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Initial
+        <DiagramTooltip content="Начальное значение k = x * y. Константа пула до первого свопа. Все последующие свопы будут увеличивать k за счёт комиссий.">
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              height: '100%',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Initial
+            </div>
+            <div style={{
+              width: '100%',
+              height: '20%',
+              minHeight: 20,
+              borderRadius: '4px 4px 0 0',
+              background: 'rgba(255,255,255,0.1)',
+              transition: 'all 0.2s',
+            }} />
           </div>
-          <div style={{
-            width: '100%',
-            height: '20%',
-            minHeight: 20,
-            borderRadius: '4px 4px 0 0',
-            background: 'rgba(255,255,255,0.1)',
-            transition: 'all 0.2s',
-          }} />
-        </div>
+        </DiagramTooltip>
 
         {FEE_SWAPS.map((swap, i) => {
-          const isHovered = hoveredIdx === i;
           const heightPercent = 20 + ((swap.kAfter - MIN_K) / kRange) * 70;
 
           return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                height: '100%',
-                justifyContent: 'flex-end',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                fontSize: 9,
-                color: isHovered ? colors.success : colors.textMuted,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-                fontWeight: isHovered ? 600 : 400,
-              }}>
-                {swap.swap.replace('Swap ', '#')}
+            <DiagramTooltip key={i} content={`${swap.swap}: ${swap.direction}. Комиссия: ${swap.fee}. Рост k: +${(swap.kAfter - swap.kBefore).toLocaleString()} (${swap.kBefore.toLocaleString()} -> ${swap.kAfter.toLocaleString()}).`}>
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  height: '100%',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <div style={{
+                  fontSize: 9,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}>
+                  {swap.swap.replace('Swap ', '#')}
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: `${heightPercent}%`,
+                  minHeight: 20,
+                  borderRadius: '4px 4px 0 0',
+                  background: `${colors.success}60`,
+                  transition: 'all 0.3s',
+                }} />
               </div>
-              <div style={{
-                width: '100%',
-                height: `${heightPercent}%`,
-                minHeight: 20,
-                borderRadius: '4px 4px 0 0',
-                background: isHovered ? colors.success : `${colors.success}60`,
-                transition: 'all 0.3s',
-              }} />
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -743,42 +750,6 @@ export function FeeAccumulationDiagram() {
       }}>
         k: {MIN_K.toLocaleString()} → {MAX_K.toLocaleString()} (+{((MAX_K - MIN_K) / MIN_K * 100).toFixed(4)}%)
       </div>
-
-      {/* Hover detail */}
-      {hoveredIdx !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          background: `${colors.success}08`,
-          border: `1px solid ${colors.success}30`,
-          marginBottom: 12,
-          transition: 'all 0.2s',
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: colors.success, fontFamily: 'monospace', marginBottom: 6 }}>
-            {FEE_SWAPS[hoveredIdx].swap}: {FEE_SWAPS[hoveredIdx].direction}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Комиссия</div>
-              <div style={{ fontSize: 12, color: '#f43f5e', fontFamily: 'monospace' }}>{FEE_SWAPS[hoveredIdx].fee}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Рост k</div>
-              <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>
-                +{(FEE_SWAPS[hoveredIdx].kAfter - FEE_SWAPS[hoveredIdx].kBefore).toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>k до</div>
-              <div style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>{FEE_SWAPS[hoveredIdx].kBefore.toLocaleString()}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>k после</div>
-              <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>{FEE_SWAPS[hoveredIdx].kAfter.toLocaleString()}</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <DataBox
         label="Монотонный рост k"

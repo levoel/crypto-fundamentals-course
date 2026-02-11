@@ -9,6 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -185,70 +186,76 @@ export function InterestRateCurveDiagram() {
       </div>
 
       {/* Slider */}
-      <div style={{ marginBottom: 16, padding: '0 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
-            Utilization Rate:
-          </span>
-          <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: 'monospace',
-            color: isAboveOptimal ? '#f43f5e' : colors.accent,
-          }}>
-            {utilization}% {isAboveOptimal ? '(above optimal!)' : ''}
-          </span>
+      <DiagramTooltip content="Kink point (оптимальная утилизация): обычно 80-90%. Ниже kink: пологий рост ставки. Выше kink: резкий рост (стимул для погашения займов и новых deposits).">
+        <div style={{ marginBottom: 16, padding: '0 8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+              Utilization Rate:
+            </span>
+            <span style={{
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'monospace',
+              color: isAboveOptimal ? '#f43f5e' : colors.accent,
+            }}>
+              {utilization}% {isAboveOptimal ? '(above optimal!)' : ''}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={utilization}
+            onChange={(e) => setUtilization(Number(e.target.value))}
+            style={{ width: '100%', accentColor: colors.primary }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
         </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={utilization}
-          onChange={(e) => setUtilization(Number(e.target.value))}
-          style={{ width: '100%', accentColor: colors.primary }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-          <span>0%</span>
-          <span>50%</span>
-          <span>100%</span>
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Computed values */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 12,
-      }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Borrow Rate</div>
-          <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>{borrowRate.toFixed(2)}%</div>
+      <DiagramTooltip content="Supply APY < Borrow APY (spread = протокол revenue). Reserve Factor -- доля процентов, идущая в казну протокола. Slope 1 (до kink): умеренный рост. Slope 2 (после kink): агрессивный рост (100-300% APY).">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 8,
+          marginBottom: 12,
+        }}>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Borrow Rate</div>
+            <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>{borrowRate.toFixed(2)}%</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Supply Rate</div>
+            <div style={{ fontSize: 13, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>{supplyRate.toFixed(2)}%</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>U_optimal</div>
+            <div style={{ fontSize: 13, color: '#eab308', fontFamily: 'monospace', fontWeight: 600 }}>{U_OPTIMAL}%</div>
+          </div>
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Reserve Factor</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontFamily: 'monospace' }}>{(RESERVE_FACTOR * 100).toFixed(0)}%</div>
+          </div>
         </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Supply Rate</div>
-          <div style={{ fontSize: 13, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>{supplyRate.toFixed(2)}%</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>U_optimal</div>
-          <div style={{ fontSize: 13, color: '#eab308', fontFamily: 'monospace', fontWeight: 600 }}>{U_OPTIMAL}%</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Reserve Factor</div>
-          <div style={{ fontSize: 13, color: colors.textMuted, fontFamily: 'monospace' }}>{(RESERVE_FACTOR * 100).toFixed(0)}%</div>
-        </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Formula */}
-      <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
-          {utilization <= U_OPTIMAL
-            ? `R_borrow = R_base + R_slope1 * (U / U_opt) = ${R_BASE} + ${R_SLOPE1} * (${utilization} / ${U_OPTIMAL}) = ${borrowRate.toFixed(2)}%`
-            : `R_borrow = R_base + R_slope1 + R_slope2 * ((U - U_opt) / (1 - U_opt)) = ${borrowRate.toFixed(2)}%`
-          }
+      <DiagramTooltip content="Base rate: минимальная ставка при 0% утилизации. Определяется governance. Формула piecewise linear: два наклона с переломной точкой в U_optimal.">
+        <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
+            {utilization <= U_OPTIMAL
+              ? `R_borrow = R_base + R_slope1 * (U / U_opt) = ${R_BASE} + ${R_SLOPE1} * (${utilization} / ${U_OPTIMAL}) = ${borrowRate.toFixed(2)}%`
+              : `R_borrow = R_base + R_slope1 + R_slope2 * ((U - U_opt) / (1 - U_opt)) = ${borrowRate.toFixed(2)}%`
+            }
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="Kinked Curve"
@@ -370,15 +377,17 @@ export function SupplyBorrowFlowDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={step.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -498,8 +507,6 @@ const ATOKEN_TIMELINE: ATokenSnapshot[] = [
  * without any transactions (rebasing mechanism).
  */
 export function ATokenGrowthDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   const maxBalance = Math.max(...ATOKEN_TIMELINE.map((s) => s.balanceNum));
   const minBalance = ATOKEN_TIMELINE[0].balanceNum;
   const range = maxBalance - minBalance;
@@ -517,42 +524,38 @@ export function ATokenGrowthDiagram() {
         padding: '0 8px',
       }}>
         {ATOKEN_TIMELINE.map((snap, i) => {
-          const isHovered = hoveredIdx === i;
           const heightPercent = 30 + (range > 0 ? ((snap.balanceNum - minBalance) / range) * 60 : 0);
 
           return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                height: '100%',
-                justifyContent: 'flex-end',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                fontSize: 8,
-                color: isHovered ? colors.accent : colors.textMuted,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-                fontWeight: isHovered ? 600 : 400,
-              }}>
-                {snap.day}
+            <DiagramTooltip key={i} content={`${snap.day}: aWETH баланс ${snap.balance}, APY ${snap.rate}, заработано +${snap.earned} ETH. Механизм: rebasing (balance = scaledBalance * liquidityIndex).`}>
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  height: '100%',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <div style={{
+                  fontSize: 8,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}>
+                  {snap.day}
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: `${heightPercent}%`,
+                  minHeight: 20,
+                  borderRadius: '4px 4px 0 0',
+                  background: `${colors.accent}60`,
+                  transition: 'all 0.3s',
+                }} />
               </div>
-              <div style={{
-                width: '100%',
-                height: `${heightPercent}%`,
-                minHeight: 20,
-                borderRadius: '4px 4px 0 0',
-                background: isHovered ? colors.accent : `${colors.accent}60`,
-                transition: 'all 0.3s',
-              }} />
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -567,40 +570,6 @@ export function ATokenGrowthDiagram() {
       }}>
         aWETH: {ATOKEN_TIMELINE[0].balance} &rarr; {ATOKEN_TIMELINE[ATOKEN_TIMELINE.length - 1].balance} (+{ATOKEN_TIMELINE[ATOKEN_TIMELINE.length - 1].earned} ETH)
       </div>
-
-      {/* Hover detail */}
-      {hoveredIdx !== null && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          background: `${colors.accent}08`,
-          border: `1px solid ${colors.accent}30`,
-          marginBottom: 12,
-          transition: 'all 0.2s',
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace', marginBottom: 6 }}>
-            {ATOKEN_TIMELINE[hoveredIdx].day}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>aWETH баланс</div>
-              <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{ATOKEN_TIMELINE[hoveredIdx].balance}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Текущий APY</div>
-              <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>{ATOKEN_TIMELINE[hoveredIdx].rate}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Заработано</div>
-              <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>+{ATOKEN_TIMELINE[hoveredIdx].earned} ETH</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>Механизм</div>
-              <div style={{ fontSize: 12, color: colors.primary, fontFamily: 'monospace' }}>Rebasing</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <DataBox
         label="Rebasing aTokens"
