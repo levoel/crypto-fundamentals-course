@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -76,29 +77,30 @@ export function CEIPatternDiagram() {
           const isPast = i < currentStep;
 
           return (
-            <div
-              key={i}
-              onClick={() => setCurrentStep(i)}
-              style={{
-                flex: 1,
-                padding: '10px 12px',
-                ...glassStyle,
-                background: isActive ? `${c}25` : isPast ? `${c}10` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isActive ? c : isPast ? c + '40' : 'rgba(255,255,255,0.08)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                textAlign: 'center',
-              }}
-            >
-              <div style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: isActive ? c : isPast ? c + 'aa' : colors.textMuted,
-                fontFamily: 'monospace',
-              }}>
-                {s.label}
+            <DiagramTooltip key={i} content={s.description}>
+              <div
+                onClick={() => setCurrentStep(i)}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  ...glassStyle,
+                  background: isActive ? `${c}25` : isPast ? `${c}10` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isActive ? c : isPast ? c + '40' : 'rgba(255,255,255,0.08)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textAlign: 'center' as const,
+                }}
+              >
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isActive ? c : isPast ? c + 'aa' : colors.textMuted,
+                  fontFamily: 'monospace',
+                }}>
+                  {s.label}
+                </div>
               </div>
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -204,11 +206,13 @@ export function CEIPatternDiagram() {
       </div>
 
       {currentStep >= CEI_STEPS.length - 1 && (
-        <DataBox
-          label="Принцип CEI"
-          value="Checks -> Effects -> Interactions = защита от reentrancy"
-          variant="highlight"
-        />
+        <DiagramTooltip content="CEI -- главный паттерн защиты от reentrancy. The DAO hack (2016) произошёл из-за нарушения CEI: external call до обновления balance.">
+          <DataBox
+            label="Принцип CEI"
+            value="Checks -> Effects -> Interactions = защита от reentrancy"
+            variant="highlight"
+          />
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
@@ -222,6 +226,7 @@ interface WorkflowStep {
   label: string;
   foundry: string;
   hardhat: string;
+  tooltip: string;
 }
 
 const WORKFLOW_STEPS: WorkflowStep[] = [
@@ -229,41 +234,49 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
     label: 'Компиляция',
     foundry: 'forge build',
     hardhat: 'npx hardhat compile',
+    tooltip: 'Компиляция: Foundry использует solc напрямую (быстрее). Hardhat компилирует через solc с кешированием артефактов в artifacts/.',
   },
   {
     label: 'Запуск тестов',
     foundry: 'forge test',
     hardhat: 'npx hardhat test',
+    tooltip: 'Запуск тестов: Foundry запускает тесты в EVM напрямую (Rust). Hardhat -- через Node.js с viem. Foundry значительно быстрее.',
   },
   {
     label: 'Язык тестов',
     foundry: 'Solidity (.t.sol)',
     hardhat: 'TypeScript (.test.ts)',
+    tooltip: 'Foundry: тесты на Solidity -- тот же язык что и контракты. Hardhat: TypeScript с viem -- привычнее для web-разработчиков.',
   },
   {
     label: 'Фреймворк',
     foundry: 'forge-std (Test.sol)',
     hardhat: 'node:test + node:assert',
+    tooltip: 'forge-std: библиотека Solidity с assertEq, vm cheatcodes. Hardhat 3: встроенные node:test и node:assert (без Mocha/Chai).',
   },
   {
     label: 'Деплой контракта',
     foundry: 'new Counter()',
     hardhat: 'hre.viem.deployContract("Counter")',
+    tooltip: 'Foundry: deploy через Solidity constructor (new Counter()). Hardhat: через viem publicClient и walletClient.',
   },
   {
     label: 'Проверка revert',
     foundry: 'vm.expectRevert(Error.selector)',
     hardhat: 'assert.rejects(async () => ...)',
+    tooltip: 'Foundry: vm.expectRevert() перехватывает следующий вызов. Hardhat: assert.rejects с async callback. Foundry точнее -- проверяет selector.',
   },
   {
     label: 'Смена msg.sender',
     foundry: 'vm.prank(alice)',
     hardhat: 'walletClient (другой аккаунт)',
+    tooltip: 'Foundry: vm.prank(addr) -- подменяет msg.sender на один вызов. vm.startPrank -- на несколько. Hardhat: создаёт отдельный walletClient.',
   },
   {
     label: 'Проверка событий',
     foundry: 'vm.expectEmit()',
     hardhat: 'receipt.logs (viem)',
+    tooltip: 'Foundry: vm.expectEmit() -- перед вызовом задаёт ожидаемое событие. Hardhat: парсит logs из receipt через viem decodeEventLog.',
   },
 ];
 
@@ -273,8 +286,6 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
  * Side-by-side comparison of Foundry (Forge) and Hardhat 3 (viem) testing workflows.
  */
 export function TestWorkflowDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Foundry vs Hardhat: тестирование" color="blue">
       {/* Header */}
@@ -319,62 +330,57 @@ export function TestWorkflowDiagram() {
       </div>
 
       {/* Rows */}
-      {WORKFLOW_STEPS.map((step, i) => {
-        const isHovered = hoveredRow === i;
-
-        return (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredRow(i)}
-            onMouseLeave={() => setHoveredRow(null)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '140px 1fr 1fr',
-              gap: 2,
-              marginBottom: 2,
-            }}
-          >
+      {WORKFLOW_STEPS.map((step, i) => (
+        <div
+          key={i}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '140px 1fr 1fr',
+            gap: 2,
+            marginBottom: 2,
+          }}
+        >
+          <DiagramTooltip content={step.tooltip}>
             <div style={{
               ...glassStyle,
               padding: '8px 12px',
               fontSize: 12,
-              color: isHovered ? colors.text : colors.textMuted,
+              color: colors.textMuted,
               fontFamily: 'monospace',
-              background: isHovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
+              background: 'rgba(255,255,255,0.02)',
             }}>
               {step.label}
             </div>
-            <div style={{
-              ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: isHovered ? colors.accent : colors.text,
-              fontFamily: 'monospace',
-              background: isHovered ? `${colors.accent}10` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {step.foundry}
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: isHovered ? colors.primary : colors.text,
-              fontFamily: 'monospace',
-              background: isHovered ? `${colors.primary}10` : 'rgba(255,255,255,0.02)',
-              transition: 'all 0.15s',
-            }}>
-              {step.hardhat}
-            </div>
+          </DiagramTooltip>
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            fontSize: 11,
+            color: colors.text,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+          }}>
+            {step.foundry}
           </div>
-        );
-      })}
+          <div style={{
+            ...glassStyle,
+            padding: '8px 12px',
+            fontSize: 11,
+            color: colors.text,
+            fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.02)',
+          }}>
+            {step.hardhat}
+          </div>
+        </div>
+      ))}
 
-      <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-        Оба инструмента работают в одном проекте: Foundry использует <code>foundry.toml</code>,
-        Hardhat -- <code>hardhat.config.ts</code>. Контракты в <code>contracts/</code>, тесты в <code>test/</code>.
-      </div>
+      <DiagramTooltip content="Foundry и Hardhat совместимы в одном проекте. Foundry быстрее для unit-тестов (Rust EVM), Hardhat удобнее для интеграционных тестов (TypeScript, viem).">
+        <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+          Оба инструмента работают в одном проекте: Foundry использует <code>foundry.toml</code>,
+          Hardhat -- <code>hardhat.config.ts</code>. Контракты в <code>contracts/</code>, тесты в <code>test/</code>.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

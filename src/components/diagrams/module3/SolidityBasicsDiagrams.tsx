@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -73,11 +74,23 @@ const STORAGE_LAYOUTS: Record<string, StorageSlot[]> = {
  */
 export function ContractStorageLayoutDiagram() {
   const [layout, setLayout] = useState<'simple' | 'packed'>('simple');
-  const [hoveredVar, setHoveredVar] = useState<string | null>(null);
 
   const slots = STORAGE_LAYOUTS[layout];
   const slotWidth = 320;
   const slotHeight = 52;
+
+  const varTooltips: Record<string, string> = {
+    owner: 'address (20 байт) занимает отдельный slot, хотя использует только 20 из 32 байт. 12 байт теряются без упаковки.',
+    totalSupply: 'uint256 занимает ровно 1 slot (32 байта). Slot 1 для второй переменной. Все uint256 выровнены по 32 байтам.',
+    name: 'string (short): строки до 31 байта хранятся inline в slot. Длинные строки -- по keccak256(slot).',
+    isActive: 'bool (1 байт): упакован с другими мелкими типами. Solidity автоматически упаковывает если следующий тип помещается в оставшееся место.',
+    decimals: 'uint8 (1 байт): упакован после bool в том же slot. Offset = 1 байт.',
+    rate: 'uint16 (2 байта): упакован после bool + uint8. Offset = 2 байта. Все три переменные в одном SLOAD.',
+    admin: 'address (20 байт) в packed slot: bool(1) + uint8(1) + uint16(2) + address(20) = 24 байта. Ещё 8 байт свободно.',
+    balance: 'uint256 (32 байта): всегда отдельный slot. Невозможно упаковать с другими переменными.',
+    flags: 'uint128 (16 байт) + uint128 (16 байт) = 32 байта = 1 slot. Два uint128 идеально заполняют slot.',
+    count: 'uint128 (16 байт): упакован с flags в одном slot. Offset = 16 байт.',
+  };
 
   return (
     <DiagramContainer title="Storage Layout: слоты контракта" color="blue">
@@ -86,7 +99,7 @@ export function ContractStorageLayoutDiagram() {
         {(['simple', 'packed'] as const).map((l) => (
           <button
             key={l}
-            onClick={() => { setLayout(l); setHoveredVar(null); }}
+            onClick={() => setLayout(l)}
             style={{
               ...glassStyle,
               padding: '6px 16px',
@@ -129,36 +142,32 @@ export function ContractStorageLayoutDiagram() {
             }}>
               {slot.variables.map((v) => {
                 const widthPct = (v.bytes / 32) * 100;
-                const isHovered = hoveredVar === `${slot.slot}-${v.name}`;
                 const varColors = [colors.primary, colors.accent, colors.success, '#e879f9'];
                 const idx = slot.variables.indexOf(v);
                 const c = varColors[idx % varColors.length];
 
                 return (
-                  <div
-                    key={v.name}
-                    onMouseEnter={() => setHoveredVar(`${slot.slot}-${v.name}`)}
-                    onMouseLeave={() => setHoveredVar(null)}
-                    style={{
-                      width: `${widthPct}%`,
-                      height: '100%',
-                      background: isHovered ? `${c}40` : `${c}20`,
-                      borderRight: `1px solid ${c}60`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: c, fontFamily: 'monospace', fontWeight: 600 }}>
-                      {v.name}
-                    </span>
-                    <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
-                      {v.type} ({v.bytes}B)
-                    </span>
-                  </div>
+                  <DiagramTooltip key={v.name} content={varTooltips[v.name] || `${v.type} = ${v.value} | ${v.bytes} bytes | SLOAD slot ${slot.slot}`}>
+                    <div
+                      style={{
+                        width: `${widthPct}%`,
+                        height: '100%',
+                        background: `${c}20`,
+                        borderRight: `1px solid ${c}60`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <span style={{ fontSize: 11, color: c, fontFamily: 'monospace', fontWeight: 600 }}>
+                        {v.name}
+                      </span>
+                      <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                        {v.type} ({v.bytes}B)
+                      </span>
+                    </div>
+                  </DiagramTooltip>
                 );
               })}
 
@@ -192,33 +201,19 @@ export function ContractStorageLayoutDiagram() {
         ))}
       </div>
 
-      {/* Detail panel for hovered variable */}
-      {hoveredVar && (() => {
-        const [slotIdx, varName] = [
-          parseInt(hoveredVar.split('-')[0]),
-          hoveredVar.split('-').slice(1).join('-'),
-        ];
-        const slot = slots.find((s) => s.slot === slotIdx);
-        const v = slot?.variables.find((vv) => vv.name === varName);
-        if (!v) return null;
-
-        return (
-          <DataBox
-            label={`${v.name} (slot ${slotIdx}, offset ${v.offset})`}
-            value={`${v.type} = ${v.value} | ${v.bytes} bytes | SLOAD slot ${slotIdx}`}
-            variant="highlight"
-          />
-        );
-      })()}
-
       {/* Explanation */}
-      <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-        {layout === 'simple' ? (
-          <>Каждая переменная занимает отдельный слот (32 байта). <code>address</code> (20 байт) тратит 12 байт впустую.</>
-        ) : (
-          <>Переменные размером {'<'} 32 байт упаковываются в один слот. Порядок объявления важен: <code>bool + uint8 + uint16 + address = 24 байта</code> в одном слоте.</>
-        )}
-      </div>
+      <DiagramTooltip content={layout === 'simple'
+        ? 'Без упаковки: каждая переменная в отдельном slot (32 байта). Неиспользованные байты теряются. Gas: 1 SLOAD на переменную.'
+        : 'С упаковкой: мелкие типы объединяются в один slot. Порядок объявления критичен -- Solidity упаковывает только последовательные переменные.'
+      }>
+        <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+          {layout === 'simple' ? (
+            <>Каждая переменная занимает отдельный слот (32 байта). <code>address</code> (20 байт) тратит 12 байт впустую.</>
+          ) : (
+            <>Переменные размером {'<'} 32 байт упаковываются в один слот. Порядок объявления важен: <code>bool + uint8 + uint16 + address = 24 байта</code> в одном слоте.</>
+          )}
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -258,12 +253,26 @@ const SOLIDITY_TYPES: TypeInfo[] = [
  */
 export function SolidityTypesDiagram() {
   const [filter, setFilter] = useState<'all' | 'Value' | 'Reference'>('all');
-  const [hoveredType, setHoveredType] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => (filter === 'all' ? SOLIDITY_TYPES : SOLIDITY_TYPES.filter((t) => t.category === filter)),
     [filter]
   );
+
+  const typeTooltips: Record<string, string> = {
+    bool: 'bool (1 байт): true/false. Может упаковываться с другими мелкими типами в один storage slot.',
+    uint8: 'uint8 (1 байт): 0..255. Часто используется для decimals в ERC-20. Упаковывается в slot с другими типами.',
+    uint16: 'uint16 (2 байта): 0..65535. Подходит для rate, percentage. Упаковывается с мелкими типами.',
+    uint32: 'uint32 (4 байта): 0..4.29*10^9. Часто для timestamp (до 2106 года). Упаковывается.',
+    uint128: 'uint128 (16 байт): 0..3.4*10^38. Два uint128 идеально заполняют один 32-байтный slot.',
+    uint256: 'uint256 (32 байта): основной числовой тип Solidity. Занимает весь slot. EVM нативно работает с 256-бит числами.',
+    int256: 'int256 (32 байта): знаковое целое. Two\'s complement. Диапазон от -2^255 до 2^255-1.',
+    address: 'address (20 байт): Ethereum адрес. Может упаковываться с мелкими типами. address payable -- может получать ETH.',
+    bytes32: 'bytes32 (32 байта): фиксированные raw bytes. Используется для хешей, идентификаторов. Дешевле string для коротких данных.',
+    string: 'string (dynamic): UTF-8 строка. Short strings (<32 bytes) inline в slot. Long -- длина в slot, данные по keccak256(slot).',
+    bytes: 'bytes (dynamic): произвольные байты. Аналогично string, но без UTF-8 валидации. Используется для calldata, bytecode.',
+    mapping: 'mapping(key => value): каждый элемент в slot keccak256(key . slot_number). Slot самого mapping пуст. Нельзя итерировать.',
+  };
 
   return (
     <DiagramContainer title="Типы Solidity: размеры и слоты" color="purple">
@@ -296,61 +305,55 @@ export function SolidityTypesDiagram() {
         gap: 10,
       }}>
         {filtered.map((t) => {
-          const isHovered = hoveredType === t.name;
           const barWidth = Math.max((t.bytes / 32) * 100, 8);
 
           return (
-            <div
-              key={t.name}
-              onMouseEnter={() => setHoveredType(t.name)}
-              onMouseLeave={() => setHoveredType(null)}
-              style={{
-                ...glassStyle,
-                padding: 12,
-                background: isHovered ? `${t.color}15` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isHovered ? t.color + '50' : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.2s',
-                cursor: 'default',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 600, color: t.color }}>
-                  {t.name}
-                </span>
-                <span style={{
-                  fontSize: 10,
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: `${t.color}20`,
-                  color: t.color,
-                  fontFamily: 'monospace',
-                }}>
-                  {t.bytes}B
-                </span>
-              </div>
+            <DiagramTooltip key={t.name} content={typeTooltips[t.name] || `${t.name}: ${t.bytes} байт, ${t.category} тип.`}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: 12,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 600, color: t.color }}>
+                    {t.name}
+                  </span>
+                  <span style={{
+                    fontSize: 10,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: `${t.color}20`,
+                    color: t.color,
+                    fontFamily: 'monospace',
+                  }}>
+                    {t.bytes}B
+                  </span>
+                </div>
 
-              {/* Size bar */}
-              <div style={{
-                height: 6,
-                borderRadius: 3,
-                background: 'rgba(255,255,255,0.05)',
-                marginBottom: 6,
-                overflow: 'hidden',
-              }}>
+                {/* Size bar */}
                 <div style={{
-                  height: '100%',
-                  width: `${barWidth}%`,
-                  background: t.color,
+                  height: 6,
                   borderRadius: 3,
-                  opacity: 0.6,
-                }} />
-              </div>
+                  background: 'rgba(255,255,255,0.05)',
+                  marginBottom: 6,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${barWidth}%`,
+                    background: t.color,
+                    borderRadius: 3,
+                    opacity: 0.6,
+                  }} />
+                </div>
 
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-                {t.range}
-              </div>
+                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                  {t.range}
+                </div>
 
-              {isHovered && (
                 <div style={{
                   marginTop: 6,
                   padding: '6px 8px',
@@ -362,15 +365,17 @@ export function SolidityTypesDiagram() {
                 }}>
                   {t.example}
                 </div>
-              )}
-            </div>
+              </div>
+            </DiagramTooltip>
           );
         })}
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-        <strong>Value-типы</strong> хранятся непосредственно в слоте. <strong>Reference-типы</strong> (string, bytes, mapping) хранят указатель; данные -- по keccak256(slot).
-      </div>
+      <DiagramTooltip content="Value types копируются при присваивании, хранятся в stack/storage напрямую. Reference types хранят ссылку -- важно указать data location: storage, memory, calldata.">
+        <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+          <strong>Value-типы</strong> хранятся непосредственно в слоте. <strong>Reference-типы</strong> (string, bytes, mapping) хранят указатель; данные -- по keccak256(slot).
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
