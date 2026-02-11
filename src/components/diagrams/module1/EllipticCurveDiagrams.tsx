@@ -11,6 +11,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { Grid } from '@primitives/Grid';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -135,47 +136,53 @@ export function EllipticCurveRealDiagram() {
     <DiagramContainer title={`Эллиптическая кривая y\u00B2 = x\u00B3 + ax + b`} color="blue">
       {/* Parameter controls */}
       <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.primary }}>a =</span>
-          <input
-            type="range"
-            min={-5}
-            max={5}
-            step={1}
-            value={a}
-            onChange={(e) => setA(Number(e.target.value))}
-            style={{ width: 100 }}
-          />
-          <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text, minWidth: 24 }}>{a}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.accent }}>b =</span>
-          <input
-            type="range"
-            min={-5}
-            max={5}
-            step={1}
-            value={b}
-            onChange={(e) => setB(Number(e.target.value))}
-            style={{ width: 100 }}
-          />
-          <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text, minWidth: 24 }}>{b}</span>
-        </div>
+        <DiagramTooltip content="Параметр a определяет форму кривой. Для secp256k1 (Bitcoin): a = 0.">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.primary }}>a =</span>
+            <input
+              type="range"
+              min={-5}
+              max={5}
+              step={1}
+              value={a}
+              onChange={(e) => setA(Number(e.target.value))}
+              style={{ width: 100 }}
+            />
+            <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text, minWidth: 24 }}>{a}</span>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Параметр b определяет y-смещение. Для secp256k1: b = 7. Условие: 4a^3 + 27b^2 != 0 (кривая не вырождена).">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.accent }}>b =</span>
+            <input
+              type="range"
+              min={-5}
+              max={5}
+              step={1}
+              value={b}
+              onChange={(e) => setB(Number(e.target.value))}
+              style={{ width: 100 }}
+            />
+            <span style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text, minWidth: 24 }}>{b}</span>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Equation and discriminant */}
-      <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <span style={{ fontFamily: 'monospace', fontSize: 14, color: colors.text }}>
-          y{'\u00B2'} = x{'\u00B3'} {a >= 0 ? '+' : '\u2212'} {Math.abs(a)}x {b >= 0 ? '+' : '\u2212'} {Math.abs(b)}
-        </span>
-        <div style={{
-          fontSize: 11,
-          color: isValid ? colors.success : '#ff4444',
-          marginTop: 4,
-        }}>
-          {'\u0394'} = 4a{'\u00B3'} + 27b{'\u00B2'} = {discriminant} {isValid ? '(\u2260 0, кривая невырожденная)' : '(= 0, кривая вырожденная!)'}
+      <DiagramTooltip content="Эллиптическая кривая: y^2 = x^3 + ax + b (mod p). Множество точек (x,y), удовлетворяющих уравнению, образует абелеву группу -- основу криптографии на эллиптических кривых.">
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <span style={{ fontFamily: 'monospace', fontSize: 14, color: colors.text }}>
+            y{'\u00B2'} = x{'\u00B3'} {a >= 0 ? '+' : '\u2212'} {Math.abs(a)}x {b >= 0 ? '+' : '\u2212'} {Math.abs(b)}
+          </span>
+          <div style={{
+            fontSize: 11,
+            color: isValid ? colors.success : '#ff4444',
+            marginTop: 4,
+          }}>
+            {'\u0394'} = 4a{'\u00B3'} + 27b{'\u00B2'} = {discriminant} {isValid ? '(\u2260 0, кривая невырожденная)' : '(= 0, кривая вырожденная!)'}
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* SVG Curve */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -213,9 +220,11 @@ export function EllipticCurveRealDiagram() {
         </svg>
       </div>
 
-      <div style={{ textAlign: 'center', fontSize: 11, color: colors.textMuted, marginTop: 8 }}>
-        Кривая симметрична относительно оси x. Измените a и b, чтобы увидеть разные формы.
-      </div>
+      <DiagramTooltip content="Симметрия относительно оси x -- следствие уравнения y^2: если (x, y) на кривой, то и (x, -y) тоже. Это свойство используется при отражении точки R'.">
+        <div style={{ textAlign: 'center', fontSize: 11, color: colors.textMuted, marginTop: 8 }}>
+          Кривая симметрична относительно оси x. Измените a и b, чтобы увидеть разные формы.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -300,37 +309,49 @@ export function PointAdditionAnimation() {
     <DiagramContainer title="Сложение точек P + Q на эллиптической кривой" color="purple">
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 12 }}>
-        {PA_STEP_LABELS.map((label, i) => (
-          <div
-            key={i}
-            onClick={() => setStep(i)}
-            style={{
-              padding: '4px 10px',
-              fontSize: 11,
-              borderRadius: 4,
-              cursor: 'pointer',
-              background: i <= step ? `${colors.accent}20` : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${i === step ? colors.accent : i < step ? `${colors.accent}40` : 'rgba(255,255,255,0.08)'}`,
-              color: i <= step ? colors.accent : colors.textMuted,
-              transition: 'all 0.3s',
-            }}
-          >
-            {i}
-          </div>
-        ))}
+        {PA_STEP_LABELS.map((label, i) => {
+          const stepTooltips = [
+            'Точки P и Q на кривой -- начальная конфигурация для сложения.',
+            'Прямая через P и Q пересекает кривую в третьей точке R\'. Отражение R\' относительно оси x даёт R = P + Q.',
+            'Третья точка пересечения R\' -- промежуточный результат до отражения.',
+            'Удвоение точки: если P = Q, проводим касательную к кривой в точке P.',
+            'Результат: R = P + Q -- новая точка на кривой, замкнутость групповой операции.',
+          ];
+          return (
+            <DiagramTooltip key={i} content={stepTooltips[i]}>
+              <div
+                onClick={() => setStep(i)}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  background: i <= step ? `${colors.accent}20` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i === step ? colors.accent : i < step ? `${colors.accent}40` : 'rgba(255,255,255,0.08)'}`,
+                  color: i <= step ? colors.accent : colors.textMuted,
+                  transition: 'all 0.3s',
+                }}
+              >
+                {i}
+              </div>
+            </DiagramTooltip>
+          );
+        })}
       </div>
 
       {/* Step description */}
-      <div style={{
-        textAlign: 'center',
-        fontSize: 13,
-        color: colors.accent,
-        fontWeight: 600,
-        marginBottom: 8,
-        minHeight: 20,
-      }}>
-        {PA_STEP_LABELS[step]}
-      </div>
+      <DiagramTooltip content="Точка на бесконечности O -- нейтральный элемент группы: P + O = P. Это 'ноль' в аддитивной группе кривой.">
+        <div style={{
+          textAlign: 'center',
+          fontSize: 13,
+          color: colors.accent,
+          fontWeight: 600,
+          marginBottom: 8,
+          minHeight: 20,
+        }}>
+          {PA_STEP_LABELS[step]}
+        </div>
+      </DiagramTooltip>
 
       {/* SVG Animation */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -419,62 +440,78 @@ export function PointAdditionAnimation() {
       {/* Point coordinates */}
       <div style={{ marginTop: 12 }}>
         <Grid columns={step >= 3 ? 3 : 2} gap={8}>
-          <DataBox label="P" value={`(${PA_P.x.toFixed(1)}, ${PA_P.y.toFixed(3)})`} variant="default" />
-          <DataBox label="Q" value={`(${PA_Q.x.toFixed(1)}, ${PA_Q.y.toFixed(3)})`} variant="default" />
+          <DiagramTooltip content="Точка P на кривой y^2 = x^3 - 3x + 5. Координаты определяют положение на кривой.">
+            <DataBox label="P" value={`(${PA_P.x.toFixed(1)}, ${PA_P.y.toFixed(3)})`} variant="default" />
+          </DiagramTooltip>
+          <DiagramTooltip content="Точка Q на кривой. Прямая через P и Q пересекает кривую ровно в одной дополнительной точке.">
+            <DataBox label="Q" value={`(${PA_Q.x.toFixed(1)}, ${PA_Q.y.toFixed(3)})`} variant="default" />
+          </DiagramTooltip>
           {step >= 3 && (
-            <DataBox label="R = P + Q" value={`(${PA_R.x.toFixed(3)}, ${PA_R.y.toFixed(3)})`} variant="highlight" />
+            <DiagramTooltip content="Результат сложения R = P + Q. Новая точка на кривой -- замкнутость групповой операции гарантирована.">
+              <DataBox label="R = P + Q" value={`(${PA_R.x.toFixed(3)}, ${PA_R.y.toFixed(3)})`} variant="highlight" />
+            </DiagramTooltip>
           )}
         </Grid>
       </div>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
-        <button
-          onClick={handleReset}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={step >= 4}
-          style={{
-            ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= 4 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= 4 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step >= 4 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step >= 4 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step >= 4 ? 0.5 : 1,
-          }}
-        >
-          Следующий шаг
-        </button>
+        <DiagramTooltip content="Вернуться к начальной конфигурации точек P и Q.">
+          <div>
+            <button
+              onClick={handleReset}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Следующий геометрический шаг сложения точек.">
+          <div>
+            <button
+              onClick={handleNext}
+              disabled={step >= 4}
+              style={{
+                ...glassStyle,
+                padding: '8px 16px',
+                cursor: step >= 4 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: step >= 4 ? colors.textMuted : colors.accent,
+                border: `1px solid ${step >= 4 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                background: step >= 4 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                opacity: step >= 4 ? 0.5 : 1,
+              }}
+            >
+              Следующий шаг
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {step >= 4 && (
-        <div style={{
-          marginTop: 12,
-          padding: 10,
-          ...glassStyle,
-          borderColor: `${colors.success}30`,
-          textAlign: 'center',
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-        }}>
-          <strong style={{ color: colors.success }}>Алгоритм:</strong> проводим прямую через P и Q, находим третью точку пересечения R{'\''},
-          отражаем R{'\''}  через ось x и получаем R = P + Q. Эта операция — основа всей криптографии на эллиптических кривых.
-        </div>
+        <DiagramTooltip content="Скалярное умножение nP вычисляется через повторное сложение точек. Алгоритм double-and-add делает это за O(log n) шагов.">
+          <div style={{
+            marginTop: 12,
+            padding: 10,
+            ...glassStyle,
+            borderColor: `${colors.success}30`,
+            textAlign: 'center',
+            fontSize: 12,
+            color: colors.textMuted,
+            lineHeight: 1.6,
+          }}>
+            <strong style={{ color: colors.success }}>Алгоритм:</strong> проводим прямую через P и Q, находим третью точку пересечения R{'\''},
+            отражаем R{'\''}  через ось x и получаем R = P + Q. Эта операция — основа всей криптографии на эллиптических кривых.
+          </div>
+        </DiagramTooltip>
       )}
     </DiagramContainer>
   );
@@ -573,71 +610,88 @@ export function ScalarMultiplicationDiagram() {
       {/* Point list */}
       <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
         {SM_POINTS.slice(0, visibleCount).map((item, i) => (
-          <div
+          <DiagramTooltip
             key={i}
-            style={{
-              ...glassStyle,
-              padding: '4px 8px',
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: pointColors[i % pointColors.length],
-              borderColor: `${pointColors[i % pointColors.length]}30`,
-            }}
+            content={item.n === 1
+              ? 'P -- базовая точка (генератор). Все остальные точки вычисляются через повторное сложение P с собой.'
+              : `${item.n}P = P + P + ... (${item.n} раз). Вычисляется за O(log ${item.n}) через double-and-add.`
+            }
           >
-            {item.n === 1 ? 'P' : `${item.n}P`} = ({item.point.x.toFixed(2)}, {item.point.y.toFixed(2)})
-          </div>
+            <div
+              style={{
+                ...glassStyle,
+                padding: '4px 8px',
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: pointColors[i % pointColors.length],
+                borderColor: `${pointColors[i % pointColors.length]}30`,
+              }}
+            >
+              {item.n === 1 ? 'P' : `${item.n}P`} = ({item.point.x.toFixed(2)}, {item.point.y.toFixed(2)})
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
-        <button
-          onClick={() => setVisibleCount(1)}
-          style={{
-            ...glassStyle,
-            padding: '8px 14px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-          }}
-        >
-          Сброс
-        </button>
-        <button
-          onClick={() => setVisibleCount((c) => Math.min(c + 1, 8))}
-          disabled={visibleCount >= 8}
-          style={{
-            ...glassStyle,
-            padding: '8px 14px',
-            cursor: visibleCount >= 8 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: visibleCount >= 8 ? colors.textMuted : colors.success,
-            border: `1px solid ${visibleCount >= 8 ? 'rgba(255,255,255,0.1)' : colors.success}`,
-            background: visibleCount >= 8 ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
-            opacity: visibleCount >= 8 ? 0.5 : 1,
-          }}
-        >
-          + следующая точка
-        </button>
+        <DiagramTooltip content="Вернуться к одной точке P.">
+          <div>
+            <button
+              onClick={() => setVisibleCount(1)}
+              style={{
+                ...glassStyle,
+                padding: '8px 14px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: colors.textMuted,
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+              }}
+            >
+              Сброс
+            </button>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Вычислить следующую кратную точку nP через сложение P.">
+          <div>
+            <button
+              onClick={() => setVisibleCount((c) => Math.min(c + 1, 8))}
+              disabled={visibleCount >= 8}
+              style={{
+                ...glassStyle,
+                padding: '8px 14px',
+                cursor: visibleCount >= 8 ? 'default' : 'pointer',
+                fontSize: 12,
+                color: visibleCount >= 8 ? colors.textMuted : colors.success,
+                border: `1px solid ${visibleCount >= 8 ? 'rgba(255,255,255,0.1)' : colors.success}`,
+                background: visibleCount >= 8 ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
+                opacity: visibleCount >= 8 ? 0.5 : 1,
+              }}
+            >
+              + следующая точка
+            </button>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* ECDLP note */}
-      <div style={{
-        marginTop: 12,
-        padding: 10,
-        ...glassStyle,
-        borderColor: `${colors.warning}30`,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-        textAlign: 'center',
-      }}>
-        <strong style={{ color: colors.warning }}>ECDLP:</strong>{' '}
-        Зная nP и P, найти n вычислительно невозможно.
-        Точки «прыгают» по кривой непредсказуемо — нет способа «отмотать назад» без перебора.
-      </div>
+      <DiagramTooltip content="Скалярное умножение: nP = P + P + ... + P (n раз). Вычисляется за O(log n) через double-and-add. Это односторонняя функция: зная nP и P, найти n невозможно (ECDLP).">
+        <div style={{
+          marginTop: 12,
+          padding: 10,
+          ...glassStyle,
+          borderColor: `${colors.warning}30`,
+          fontSize: 12,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+          textAlign: 'center',
+        }}>
+          <strong style={{ color: colors.warning }}>ECDLP:</strong>{' '}
+          Зная nP и P, найти n вычислительно невозможно.
+          Точки «прыгают» по кривой непредсказуемо — нет способа «отмотать назад» без перебора.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
@@ -691,33 +745,38 @@ export function FiniteFieldCurveDiagram() {
       {/* Prime selector */}
       <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 12 }}>
         {SMALL_PRIMES.map((prime) => (
-          <button
-            key={prime}
-            onClick={() => setP(prime)}
-            style={{
-              ...glassStyle,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontFamily: 'monospace',
-              background: p === prime ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${p === prime ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: p === prime ? colors.primary : colors.textMuted,
-            }}
-          >
-            p={prime}
-          </button>
+          <DiagramTooltip key={prime} content={`Кривая над конечным полем GF(${prime}): вместо непрерывной кривой -- дискретное множество точек. Все координаты в [0, ${prime - 1}].`}>
+            <div>
+              <button
+                onClick={() => setP(prime)}
+                style={{
+                  ...glassStyle,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  background: p === prime ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${p === prime ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  color: p === prime ? colors.primary : colors.textMuted,
+                }}
+              >
+                p={prime}
+              </button>
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <span style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text }}>
-          y{'\u00B2'} {'\u2261'} x{'\u00B3'} + 7 (mod {p})
-        </span>
-        <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-          {points.length} точек на кривой (+ точка на бесконечности)
+      <DiagramTooltip content="Порядок группы n: количество точек на кривой. Для secp256k1: n ~ 2^256. Приватный ключ d выбирается из [1, n-1].">
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <span style={{ fontFamily: 'monospace', fontSize: 13, color: colors.text }}>
+            y{'\u00B2'} {'\u2261'} x{'\u00B3'} + 7 (mod {p})
+          </span>
+          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+            {points.length} точек на кривой (+ точка на бесконечности)
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Scatter plot */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -777,19 +836,21 @@ export function FiniteFieldCurveDiagram() {
         </div>
       </div>
 
-      <div style={{
-        marginTop: 12,
-        padding: 10,
-        ...glassStyle,
-        borderColor: `${colors.accent}20`,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-        textAlign: 'center',
-      }}>
-        Те же операции (сложение, умножение) работают, но визуально точки разбросаны.
-        В secp256k1 поле имеет размер p {'\u2248'} 2{'\u00B2'}{'\u2075'}{'\u2076'} — точек {'\u2248'} 2{'\u00B2'}{'\u2075'}{'\u2076'}.
-      </div>
+      <DiagramTooltip content="Генератор G: фиксированная точка, порождающая всю группу. Публичный ключ Q = d * G. Знание Q и G не позволяет найти d.">
+        <div style={{
+          marginTop: 12,
+          padding: 10,
+          ...glassStyle,
+          borderColor: `${colors.accent}20`,
+          fontSize: 12,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+          textAlign: 'center',
+        }}>
+          Те же операции (сложение, умножение) работают, но визуально точки разбросаны.
+          В secp256k1 поле имеет размер p {'\u2248'} 2{'\u00B2'}{'\u2075'}{'\u2076'} — точек {'\u2248'} 2{'\u00B2'}{'\u2075'}{'\u2076'}.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }

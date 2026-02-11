@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { FlowNode } from '@primitives/FlowNode';
 import { Arrow } from '@primitives/Arrow';
@@ -117,20 +118,24 @@ export function CyclicGroupVisualization() {
       color="blue"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <InteractiveValue
-          value={p}
-          onChange={handlePrimeChange}
-          min={2}
-          max={13}
-          label={`Простое p = ${p}`}
-        />
-        <InteractiveValue
-          value={g}
-          onChange={(v) => { setG(v); setAnimStep(0); setIsPlaying(false); }}
-          min={2}
-          max={p - 1}
-          label={`Генератор g = ${g}${genIsValid ? ' (генератор)' : ' (не генератор)'}`}
-        />
+        <DiagramTooltip content="Циклическая группа Z*_p: мультипликативная группа ненулевых элементов поля GF(p). Порядок группы = p - 1.">
+          <InteractiveValue
+            value={p}
+            onChange={handlePrimeChange}
+            min={2}
+            max={13}
+            label={`Простое p = ${p}`}
+          />
+        </DiagramTooltip>
+        <DiagramTooltip content="Циклическая группа: все элементы генерируются из одного генератора g. Порядок группы -- наименьшее n, при котором g^n = 1 (mod p).">
+          <InteractiveValue
+            value={g}
+            onChange={(v) => { setG(v); setAnimStep(0); setIsPlaying(false); }}
+            min={2}
+            max={p - 1}
+            label={`Генератор g = ${g}${genIsValid ? ' (генератор)' : ' (не генератор)'}`}
+          />
+        </DiagramTooltip>
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <svg width={280} height={280} viewBox="0 0 280 280">
@@ -255,34 +260,38 @@ export function CyclicGroupVisualization() {
         </div>
 
         {/* Power sequence */}
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
-            Степени g = {g}:
+        <DiagramTooltip content="Последовательность степеней генератора: g^0 = 1, g^1, g^2, ... Если g -- генератор, он посещает все элементы Z*_p ровно по одному разу.">
+          <div style={{ ...glassStyle, padding: 12 }}>
+            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
+              Степени g = {g}:
+            </div>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', fontFamily: 'monospace', fontSize: 12 }}>
+              {powers.slice(0, animStep + 1).map((val, i) => (
+                <span key={i} style={{
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  background: `${colors.primary}20`,
+                  border: `1px solid ${colors.primary}30`,
+                  color: colors.primary,
+                }}>
+                  {g}^{i} = {val}
+                </span>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', fontFamily: 'monospace', fontSize: 12 }}>
-            {powers.slice(0, animStep + 1).map((val, i) => (
-              <span key={i} style={{
-                padding: '2px 6px',
-                borderRadius: 4,
-                background: `${colors.primary}20`,
-                border: `1px solid ${colors.primary}30`,
-                color: colors.primary,
-              }}>
-                {g}^{i} = {val}
-              </span>
-            ))}
-          </div>
-        </div>
+        </DiagramTooltip>
 
         {animStep >= order - 1 && (
-          <DataBox
-            label="Результат"
-            value={genIsValid
-              ? `g = ${g} является генератором Z*_${p}: посещает все ${order} элементов`
-              : `g = ${g} НЕ является генератором Z*_${p}: посещает ${new Set(powers).size} из ${order} элементов`
-            }
-            variant="highlight"
-          />
+          <DiagramTooltip content="Генератор порождает всю группу: каждый ненулевой элемент поля представим как степень генератора. Это свойство используется в протоколе Диффи-Хеллмана.">
+            <DataBox
+              label="Результат"
+              value={genIsValid
+                ? `g = ${g} является генератором Z*_${p}: посещает все ${order} элементов`
+                : `g = ${g} НЕ является генератором Z*_${p}: посещает ${new Set(powers).size} из ${order} элементов`
+              }
+              variant="highlight"
+            />
+          </DiagramTooltip>
         )}
       </div>
     </DiagramContainer>
@@ -304,8 +313,6 @@ const heatmapColors = [
  */
 export function FiniteFieldGrid() {
   const [p, setP] = useState(7);
-  const [hoverRow, setHoverRow] = useState<number | null>(null);
-  const [hoverCol, setHoverCol] = useState<number | null>(null);
 
   const handlePrimeChange = useCallback((v: number) => {
     const nearest = PRIMES.reduce((prev, curr) =>
@@ -321,13 +328,15 @@ export function FiniteFieldGrid() {
       title="Таблица умножения GF(p)"
       color="purple"
     >
-      <InteractiveValue
-        value={p}
-        onChange={handlePrimeChange}
-        min={2}
-        max={13}
-        label={`Простое p = ${p}`}
-      />
+      <DiagramTooltip content="Таблица умножения в конечном поле GF(p). Каждая ячейка (i,j) содержит i * j mod p. Замкнутость: результат всегда в [0, p-1].">
+        <InteractiveValue
+          value={p}
+          onChange={handlePrimeChange}
+          min={2}
+          max={13}
+          label={`Простое p = ${p}`}
+        />
+      </DiagramTooltip>
 
       <div style={{ overflowX: 'auto', marginTop: 12 }}>
         <table style={{ borderCollapse: 'collapse', fontFamily: 'monospace', fontSize: p > 7 ? 10 : 13 }}>
@@ -347,9 +356,8 @@ export function FiniteFieldGrid() {
                   key={col}
                   style={{
                     padding: '6px 10px',
-                    color: hoverCol === col ? colors.primary : colors.textMuted,
+                    color: colors.textMuted,
                     borderBottom: `1px solid ${colors.border}`,
-                    background: hoverCol === col ? `${colors.primary}15` : 'transparent',
                   }}
                 >
                   {col}
@@ -362,33 +370,30 @@ export function FiniteFieldGrid() {
               <tr key={row}>
                 <td style={{
                   padding: '6px 10px',
-                  color: hoverRow === row ? colors.primary : colors.textMuted,
+                  color: colors.textMuted,
                   fontWeight: 600,
                   borderRight: `1px solid ${colors.border}`,
-                  background: hoverRow === row ? `${colors.primary}15` : 'transparent',
                 }}>
                   {row}
                 </td>
                 {elements.map((col) => {
                   const product = (row * col) % p;
                   const colorIdx = Math.min(Math.floor((product / (p - 1 || 1)) * (heatmapColors.length - 1)), heatmapColors.length - 1);
-                  const isHighlighted = hoverRow === row || hoverCol === col;
 
                   return (
                     <td
                       key={col}
-                      onMouseEnter={() => { setHoverRow(row); setHoverCol(col); }}
-                      onMouseLeave={() => { setHoverRow(null); setHoverCol(null); }}
                       style={{
                         padding: '6px 10px',
                         textAlign: 'center',
                         background: heatmapColors[colorIdx],
                         color: colors.text,
-                        border: isHighlighted ? `1px solid ${colors.primary}60` : `1px solid rgba(255,255,255,0.05)`,
-                        transition: 'border 0.15s',
+                        border: `1px solid rgba(255,255,255,0.05)`,
                       }}
                     >
-                      {product}
+                      <DiagramTooltip content={`${row} * ${col} = ${product} (mod ${p}). Результат умножения в конечном поле GF(${p}).`}>
+                        <span>{product}</span>
+                      </DiagramTooltip>
                     </td>
                   );
                 })}
@@ -397,12 +402,6 @@ export function FiniteFieldGrid() {
           </tbody>
         </table>
       </div>
-
-      {hoverRow !== null && hoverCol !== null && (
-        <div style={{ marginTop: 8, fontSize: 13, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
-          {hoverRow} * {hoverCol} = {(hoverRow * hoverCol) % p} (mod {p})
-        </div>
-      )}
     </DiagramContainer>
   );
 }
@@ -462,56 +461,67 @@ export function GroupPropertyDiagram() {
       description="Четыре аксиомы группы на примере Z*_7 = {1, 2, 3, 4, 5, 6}"
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
-        {groupProperties.map((prop) => (
-          <div
-            key={prop.name}
-            style={{
-              ...glassStyle,
-              padding: 16,
-              borderColor: `${prop.color}30`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: prop.color,
-              }} />
-              <span style={{ fontSize: 14, fontWeight: 600, color: prop.color }}>
-                {prop.nameRu}
-              </span>
-            </div>
+        {groupProperties.map((prop) => {
+          const tooltipContent: Record<string, string> = {
+            closure: 'Замкнутость: для любых a, b из группы, a * b также принадлежит группе. В GF(p): (a * b) mod p -- результат всегда в поле.',
+            identity: 'Нейтральный элемент: a * 1 = a для умножения, a + 0 = a для сложения. В эллиптических кривых: точка на бесконечности O.',
+            inverse: 'Обратный элемент: для каждого a существует a^(-1) такой что a * a^(-1) = 1 (mod p). Вычисляется через extended Euclidean algorithm.',
+            associativity: 'Ассоциативность: (a * b) * c = a * (b * c). Позволяет вычислять в любом порядке. Критично для multi-party computation.',
+          };
+          return (
+            <DiagramTooltip key={prop.name} content={tooltipContent[prop.name]}>
+              <div
+                style={{
+                  ...glassStyle,
+                  padding: 16,
+                  borderColor: `${prop.color}30`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: prop.color,
+                  }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: prop.color }}>
+                    {prop.nameRu}
+                  </span>
+                </div>
 
-            <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
-              {prop.formula}
-            </div>
+                <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
+                  {prop.formula}
+                </div>
 
-            <div style={{
-              fontSize: 12,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-              padding: '6px 10px',
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              {prop.example}
-            </div>
-          </div>
-        ))}
+                <div style={{
+                  fontSize: 12,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  padding: '6px 10px',
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 6,
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}>
+                  {prop.example}
+                </div>
+              </div>
+            </DiagramTooltip>
+          );
+        })}
       </div>
 
-      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <FlowNode variant="primary" size="sm">Z*_7</FlowNode>
-        <Arrow direction="right" label="замкнутость" />
-        <FlowNode variant="accent" size="sm">Единица: 1</FlowNode>
-        <Arrow direction="right" label="обратные" />
-        <FlowNode variant="success" size="sm">a * a^(-1) = 1</FlowNode>
-      </div>
+      <DiagramTooltip content="Эти четыре аксиомы определяют группу. Z*_p с операцией умножения mod p удовлетворяет всем четырём -- это конечная абелева группа.">
+        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <FlowNode variant="primary" size="sm">Z*_7</FlowNode>
+          <Arrow direction="right" label="замкнутость" />
+          <FlowNode variant="accent" size="sm">Единица: 1</FlowNode>
+          <Arrow direction="right" label="обратные" />
+          <FlowNode variant="success" size="sm">a * a^(-1) = 1</FlowNode>
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
