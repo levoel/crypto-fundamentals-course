@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { InteractiveValue } from '@primitives/InteractiveValue';
 import { Grid } from '@primitives/Grid';
@@ -106,52 +107,59 @@ export function EIP1559Diagram() {
         {/* Three-block sequence */}
         <div style={{ display: 'flex', gap: 8 }}>
           {blocks.map((block, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                ...glassStyle,
-                padding: 12,
-                border: `1px solid ${block.isCurrent ? colors.primary + '80' : colors.border}`,
-                background: block.isCurrent ? `${colors.primary}10` : 'rgba(255,255,255,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 700, color: block.isCurrent ? colors.primary : colors.text, textAlign: 'center' }}>
-                {block.label}
-              </div>
+            <DiagramTooltip key={i} content={
+              i === 0
+                ? 'Block N-1: предыдущий блок с 50% заполненностью (baseline). Base fee определяется заполненностью предыдущих блоков.'
+                : i === 1
+                ? 'Block N: текущий блок. Заполненность контролируется слайдером. Base fee корректируется на основе отклонения от target (50%).'
+                : 'Block N+1: прогнозируемый base fee на основе заполненности Block N. Формула: new_base = old_base * (1 + delta/8).'
+            }>
+              <div
+                style={{
+                  flex: 1,
+                  ...glassStyle,
+                  padding: 12,
+                  border: `1px solid ${block.isCurrent ? colors.primary + '80' : colors.border}`,
+                  background: block.isCurrent ? `${colors.primary}10` : 'rgba(255,255,255,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, color: block.isCurrent ? colors.primary : colors.text, textAlign: 'center' }}>
+                  {block.label}
+                </div>
 
-              {/* Utilization bar */}
-              <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                {block.pct !== null && (
-                  <div
-                    style={{
-                      width: `${block.pct}%`,
-                      height: '100%',
-                      background: getBarColor(block.pct),
-                      borderRadius: 4,
-                      transition: 'width 200ms ease, background 200ms ease',
-                    }}
-                  />
+                {/* Utilization bar */}
+                <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                  {block.pct !== null && (
+                    <div
+                      style={{
+                        width: `${block.pct}%`,
+                        height: '100%',
+                        background: getBarColor(block.pct),
+                        borderRadius: 4,
+                        transition: 'width 200ms ease, background 200ms ease',
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+                  {block.pct !== null ? `${block.pct}% full` : 'predicted'}
+                </div>
+
+                <div style={{ fontSize: 13, fontFamily: 'monospace', color: colors.warning, textAlign: 'center', fontWeight: 600 }}>
+                  baseFee: {block.baseFee.toFixed(2)} gwei
+                </div>
+
+                {block.used !== null && (
+                  <div style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>
+                    {(block.used / 1_000_000).toFixed(1)}M / {MAX_GAS / 1_000_000}M gas
+                  </div>
                 )}
               </div>
-
-              <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
-                {block.pct !== null ? `${block.pct}% full` : 'predicted'}
-              </div>
-
-              <div style={{ fontSize: 13, fontFamily: 'monospace', color: colors.warning, textAlign: 'center', fontWeight: 600 }}>
-                baseFee: {block.baseFee.toFixed(2)} gwei
-              </div>
-
-              {block.used !== null && (
-                <div style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>
-                  {(block.used / 1_000_000).toFixed(1)}M / {MAX_GAS / 1_000_000}M gas
-                </div>
-              )}
-            </div>
+            </DiagramTooltip>
           ))}
         </div>
 
@@ -184,26 +192,33 @@ export function EIP1559Diagram() {
 
         {/* Burn and tip breakdown */}
         <Grid columns={3} gap={8}>
-          <DataBox
-            label="Сожжено (burned)"
-            value={`${burnedTotal.toLocaleString()} gwei`}
-            variant="default"
-            style={{ borderColor: `${colors.danger}30` }}
-          />
-          <DataBox
-            label="Валидатору (tip)"
-            value={`${tipTotal.toLocaleString()} gwei`}
-            variant="default"
-            style={{ borderColor: `${colors.success}30` }}
-          />
-          <DataBox
-            label="Итого"
-            value={`${totalCostWei.toLocaleString()} gwei`}
-            variant="highlight"
-          />
+          <DiagramTooltip content="Base fee сжигается (удаляется из оборота). Если burn > issuance -- ETH дефляционный. С Merge: ETH часто в дефляции.">
+            <DataBox
+              label="Сожжено (burned)"
+              value={`${burnedTotal.toLocaleString()} gwei`}
+              variant="default"
+              style={{ borderColor: `${colors.danger}30` }}
+            />
+          </DiagramTooltip>
+          <DiagramTooltip content="Priority fee (tip): надбавка, идущая напрямую валидатору. Стимул для включения транзакции в блок. Типично 1-2 Gwei.">
+            <DataBox
+              label="Валидатору (tip)"
+              value={`${tipTotal.toLocaleString()} gwei`}
+              variant="default"
+              style={{ borderColor: `${colors.success}30` }}
+            />
+          </DiagramTooltip>
+          <DiagramTooltip content="Итого = burned + tip. Max fee per gas -- максимум, который пользователь готов заплатить. Разница (max - actual) возвращается.">
+            <DataBox
+              label="Итого"
+              value={`${totalCostWei.toLocaleString()} gwei`}
+              variant="highlight"
+            />
+          </DiagramTooltip>
         </Grid>
 
         {/* Visual burn / tip split bar */}
+        <DiagramTooltip content="Распределение комиссии: красная часть (burned) -- base fee, сжигается протоколом. Зелёная часть (tip) -- priority fee, идёт валидатору.">
         <div style={{ ...glassStyle, padding: 10 }}>
           <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4, textAlign: 'center' }}>
             Распределение комиссии
@@ -239,6 +254,7 @@ export function EIP1559Diagram() {
             </div>
           </div>
         </div>
+        </DiagramTooltip>
 
         <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 }}>
           Target = {TARGET_GAS / 1_000_000}M gas (50% от max {MAX_GAS / 1_000_000}M).
@@ -259,22 +275,23 @@ interface OpcodeEntry {
   gasWarm: number | null;
   category: string;
   note: string;
+  tooltip: string;
 }
 
 const OPCODES: OpcodeEntry[] = [
-  { name: 'ADD / SUB', gasCold: 3, gasWarm: null, category: 'Arithmetic', note: 'Самые дешевые операции' },
-  { name: 'MUL / DIV', gasCold: 5, gasWarm: null, category: 'Arithmetic', note: 'Чуть дороже сложения' },
-  { name: 'EXP', gasCold: 10, gasWarm: null, category: 'Arithmetic', note: '+ 50 за каждый байт exponent' },
-  { name: 'KECCAK256', gasCold: 30, gasWarm: null, category: 'Hashing', note: '+ 6 gas за каждые 32 байта' },
-  { name: 'SLOAD', gasCold: 2100, gasWarm: 100, category: 'Storage', note: 'EIP-2929: cold/warm access' },
-  { name: 'SSTORE (0->non-0)', gasCold: 22100, gasWarm: 100, category: 'Storage', note: 'Создание нового слота' },
-  { name: 'SSTORE (non-0->non-0)', gasCold: 5000, gasWarm: 100, category: 'Storage', note: 'Обновление существующего' },
-  { name: 'SSTORE (non-0->0)', gasCold: 5000, gasWarm: 100, category: 'Storage', note: '+ 4800 gas refund' },
-  { name: 'CALL', gasCold: 2600, gasWarm: 100, category: 'Call', note: 'Вызов другого контракта' },
-  { name: 'DELEGATECALL', gasCold: 2600, gasWarm: 100, category: 'Call', note: 'Вызов с контекстом caller' },
-  { name: 'CREATE', gasCold: 32000, gasWarm: null, category: 'Create', note: 'Деплой нового контракта' },
-  { name: 'LOG1', gasCold: 750, gasWarm: null, category: 'Logging', note: '375 + 375*topics + 8*data_bytes' },
-  { name: 'MLOAD / MSTORE', gasCold: 3, gasWarm: null, category: 'Memory', note: '+ стоимость расширения памяти' },
+  { name: 'ADD / SUB', gasCold: 3, gasWarm: null, category: 'Arithmetic', note: 'Самые дешевые операции', tooltip: 'ADD/SUB (3 gas): базовые арифметические операции на 256-бит числах. Самые дешёвые computational opcodes в EVM.' },
+  { name: 'MUL / DIV', gasCold: 5, gasWarm: null, category: 'Arithmetic', note: 'Чуть дороже сложения', tooltip: 'MUL/DIV (5 gas): умножение и деление 256-бит чисел. DIV на 0 возвращает 0 (не revert). SDIV -- знаковое деление.' },
+  { name: 'EXP', gasCold: 10, gasWarm: null, category: 'Arithmetic', note: '+ 50 за каждый байт exponent', tooltip: 'EXP (10 + 50*bytes): возведение в степень. Стоимость растёт с размером exponent -- 50 gas за каждый байт показателя.' },
+  { name: 'KECCAK256', gasCold: 30, gasWarm: null, category: 'Hashing', note: '+ 6 gas за каждые 32 байта', tooltip: 'KECCAK256 (30 + 6*words): хеширование данных из memory. Основа mapping storage, event topics, CREATE2 адресов.' },
+  { name: 'SLOAD', gasCold: 2100, gasWarm: 100, category: 'Storage', note: 'EIP-2929: cold/warm access', tooltip: 'SLOAD (2100 cold / 100 warm): чтение из storage. Cold = первый доступ в транзакции. Warm = повторный (EIP-2929).' },
+  { name: 'SSTORE (0->non-0)', gasCold: 22100, gasWarm: 100, category: 'Storage', note: 'Создание нового слота', tooltip: 'SSTORE 0->non-0 (22100 gas): запись в пустой слот -- самая дорогая операция. Постоянное изменение мирового состояния Ethereum.' },
+  { name: 'SSTORE (non-0->non-0)', gasCold: 5000, gasWarm: 100, category: 'Storage', note: 'Обновление существующего', tooltip: 'SSTORE non-0->non-0 (5000 gas): обновление существующего значения. Дешевле создания нового слота.' },
+  { name: 'SSTORE (non-0->0)', gasCold: 5000, gasWarm: 100, category: 'Storage', note: '+ 4800 gas refund', tooltip: 'SSTORE non-0->0 (5000 gas + 4800 refund): удаление значения. Gas refund стимулирует очистку storage.' },
+  { name: 'CALL', gasCold: 2600, gasWarm: 100, category: 'Call', note: 'Вызов другого контракта', tooltip: 'CALL (2600 cold): вызов другого контракта. Передаёт control flow. Reentrancy risk если не используется CEI pattern.' },
+  { name: 'DELEGATECALL', gasCold: 2600, gasWarm: 100, category: 'Call', note: 'Вызов с контекстом caller', tooltip: 'DELEGATECALL (2600 cold): вызов кода другого контракта в контексте caller. Основа proxy pattern и библиотек.' },
+  { name: 'CREATE', gasCold: 32000, gasWarm: null, category: 'Create', note: 'Деплой нового контракта', tooltip: 'CREATE (32000 gas): создание нового контракта. Адрес = keccak256(sender, nonce). CREATE2 -- детерминистический адрес.' },
+  { name: 'LOG1', gasCold: 750, gasWarm: null, category: 'Logging', note: '375 + 375*topics + 8*data_bytes', tooltip: 'LOG1 (750 gas): запись события с 1 topic. Events не хранятся в state -- только в transaction receipt. Индексируемы off-chain.' },
+  { name: 'MLOAD / MSTORE', gasCold: 3, gasWarm: null, category: 'Memory', note: '+ стоимость расширения памяти', tooltip: 'MLOAD/MSTORE (3 gas): чтение/запись 32 байт из memory. Дешевле storage, но memory volatile -- очищается после call context.' },
 ];
 
 function getGasColor(gas: number): string {
@@ -361,9 +378,11 @@ export function GasCostTableDiagram() {
                 transition: 'all 150ms ease',
               }}
             >
-              <span style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
-                {op.name}
-              </span>
+              <DiagramTooltip content={op.tooltip}>
+                <span style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+                  {op.name}
+                </span>
+              </DiagramTooltip>
               <span style={{
                 textAlign: 'right',
                 fontFamily: 'monospace',
@@ -411,9 +430,15 @@ export function GasCostTableDiagram() {
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 11 }}>
-          <span><span style={{ color: colors.success }}>&#9632;</span> &lt;10 gas (дешево)</span>
-          <span><span style={{ color: colors.warning }}>&#9632;</span> 10-1000 gas (средне)</span>
-          <span><span style={{ color: colors.danger }}>&#9632;</span> &gt;1000 gas (дорого)</span>
+          <DiagramTooltip content="Дешёвые операции (<10 gas): арифметика, memory read/write. Не влияют существенно на стоимость транзакции.">
+            <span><span style={{ color: colors.success }}>&#9632;</span> &lt;10 gas (дешево)</span>
+          </DiagramTooltip>
+          <DiagramTooltip content="Средние операции (10-1000 gas): хеширование, логирование. Заметны при частом использовании в циклах.">
+            <span><span style={{ color: colors.warning }}>&#9632;</span> 10-1000 gas (средне)</span>
+          </DiagramTooltip>
+          <DiagramTooltip content="Дорогие операции (>1000 gas): storage, external calls, contract creation. Основной драйвер стоимости транзакций.">
+            <span><span style={{ color: colors.danger }}>&#9632;</span> &gt;1000 gas (дорого)</span>
+          </DiagramTooltip>
         </div>
 
         <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 }}>

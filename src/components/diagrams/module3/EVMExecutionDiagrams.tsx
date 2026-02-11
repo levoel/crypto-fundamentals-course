@@ -10,6 +10,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { Grid } from '@primitives/Grid';
 import { colors, glassStyle } from '@primitives/shared';
@@ -98,33 +99,34 @@ export function EVMArchitectureDiagram() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Grid columns={3} gap={8}>
           {ARCH_COMPONENTS.map((comp, i) => (
-            <div
-              key={comp.name}
-              onClick={() => setSelected(selected === i ? null : i)}
-              style={{
-                ...glassStyle,
-                padding: '14px 12px',
-                cursor: 'pointer',
-                border: `1px solid ${selected === i ? comp.color + '80' : comp.color + '30'}`,
-                background: selected === i ? `${comp.color}15` : 'rgba(255,255,255,0.03)',
-                transition: 'all 200ms ease',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-              }}
-            >
-              <span style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: comp.color,
-                fontFamily: 'monospace',
-              }}>
-                {comp.name}
-              </span>
-              <span style={{ fontSize: 11, color: colors.textMuted }}>
-                {comp.desc}
-              </span>
-            </div>
+            <DiagramTooltip key={comp.name} content={comp.details}>
+              <div
+                onClick={() => setSelected(selected === i ? null : i)}
+                style={{
+                  ...glassStyle,
+                  padding: '14px 12px',
+                  cursor: 'pointer',
+                  border: `1px solid ${selected === i ? comp.color + '80' : comp.color + '30'}`,
+                  background: selected === i ? `${comp.color}15` : 'rgba(255,255,255,0.03)',
+                  transition: 'all 200ms ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
+                <span style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: comp.color,
+                  fontFamily: 'monospace',
+                }}>
+                  {comp.name}
+                </span>
+                <span style={{ fontSize: 11, color: colors.textMuted }}>
+                  {comp.desc}
+                </span>
+              </div>
+            </DiagramTooltip>
           ))}
         </Grid>
 
@@ -143,9 +145,11 @@ export function EVMArchitectureDiagram() {
         )}
 
         {/* Data flow arrows */}
-        <div style={{ ...glassStyle, padding: 12, fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
-          Bytecode → PC → Opcode → Stack/Memory/Storage → Gas Counter
-        </div>
+        <DiagramTooltip content="Цикл выполнения EVM: Program Counter указывает на текущий байт в bytecode, извлекается opcode, операция работает со Stack/Memory/Storage, Gas Counter уменьшается.">
+          <div style={{ ...glassStyle, padding: 12, fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
+            Bytecode → PC → Opcode → Stack/Memory/Storage → Gas Counter
+          </div>
+        </DiagramTooltip>
 
         <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
           Нажмите на компонент для подробностей
@@ -375,24 +379,30 @@ export function OpcodeExecutionDiagram() {
 
         {/* Gas and opcode info */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <DataBox
-            label="Opcode"
-            value={state.opcode === '--' ? 'Начало' : `${state.opcode}${state.operand ? ' ' + state.operand : ''}`}
-            variant="highlight"
-            style={{ flex: 1, minWidth: 140 }}
-          />
-          <DataBox
-            label="Gas Remaining"
-            value={state.gas.toLocaleString()}
-            variant="default"
-            style={{ flex: 1, minWidth: 100 }}
-          />
-          <DataBox
-            label="Gas Used (step)"
-            value={state.gasUsed > 0 ? state.gasUsed.toLocaleString() : '--'}
-            variant="default"
-            style={{ flex: 1, minWidth: 100 }}
-          />
+          <DiagramTooltip content={state.desc}>
+            <DataBox
+              label="Opcode"
+              value={state.opcode === '--' ? 'Начало' : `${state.opcode}${state.operand ? ' ' + state.operand : ''}`}
+              variant="highlight"
+              style={{ flex: 1, minWidth: 140 }}
+            />
+          </DiagramTooltip>
+          <DiagramTooltip content="Gas Remaining: оставшийся газ. Каждая операция уменьшает счётчик. Если газ = 0 -- выполнение откатывается (out of gas revert).">
+            <DataBox
+              label="Gas Remaining"
+              value={state.gas.toLocaleString()}
+              variant="default"
+              style={{ flex: 1, minWidth: 100 }}
+            />
+          </DiagramTooltip>
+          <DiagramTooltip content="Gas Used: стоимость текущего шага. PUSH = 3 gas, ADD = 3 gas, SSTORE cold = 22100 gas. Разница в стоимости показывает, почему оптимизация storage критична.">
+            <DataBox
+              label="Gas Used (step)"
+              value={state.gasUsed > 0 ? state.gasUsed.toLocaleString() : '--'}
+              variant="default"
+              style={{ flex: 1, minWidth: 100 }}
+            />
+          </DiagramTooltip>
         </div>
 
         {/* Description */}
@@ -496,40 +506,48 @@ export function StorageLayoutDiagram() {
 
         {/* Storage slots visualization */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {STORAGE_LAYOUT.map((slot, i) => (
-            <div
-              key={i}
-              onClick={() => setSelectedSlot(selectedSlot === i ? null : i)}
-              style={{
-                ...glassStyle,
-                padding: '10px 14px',
-                cursor: 'pointer',
-                border: `1px solid ${selectedSlot === i ? slot.color + '80' : slot.color + '30'}`,
-                background: selectedSlot === i ? `${slot.color}12` : 'rgba(255,255,255,0.03)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                transition: 'all 200ms ease',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 13, color: slot.color, fontWeight: 600 }}>
-                  Slot {slot.slot}
-                </span>
-                <span style={{ fontSize: 11, color: colors.textMuted }}>
-                  {slot.variable}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <span style={{ fontSize: 11, color: colors.text }}>{slot.size}</span>
-                {slot.packed && (
-                  <span style={{ fontSize: 10, color: colors.warning, padding: '1px 6px', background: `${colors.warning}15`, borderRadius: 4 }}>
-                    packed
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+          {STORAGE_LAYOUT.map((slot, i) => {
+            const slotTooltips = [
+              'Slot 0: uint256 занимает ровно 1 slot (32 байта). Переменные располагаются последовательно начиная с slot 0.',
+              'Slot 1: два uint128 (по 16 байт) упакованы в один slot. Solidity автоматически упаковывает если типы помещаются.',
+              'Slot 2: mapping -- base slot пуст, элементы хранятся по keccak256(key . slot). Данные разбросаны по всему storage.',
+            ];
+            return (
+              <DiagramTooltip key={i} content={slotTooltips[i]}>
+                <div
+                  onClick={() => setSelectedSlot(selectedSlot === i ? null : i)}
+                  style={{
+                    ...glassStyle,
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    border: `1px solid ${selectedSlot === i ? slot.color + '80' : slot.color + '30'}`,
+                    background: selectedSlot === i ? `${slot.color}12` : 'rgba(255,255,255,0.03)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'all 200ms ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 13, color: slot.color, fontWeight: 600 }}>
+                      Slot {slot.slot}
+                    </span>
+                    <span style={{ fontSize: 11, color: colors.textMuted }}>
+                      {slot.variable}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                    <span style={{ fontSize: 11, color: colors.text }}>{slot.size}</span>
+                    {slot.packed && (
+                      <span style={{ fontSize: 10, color: colors.warning, padding: '1px 6px', background: `${colors.warning}15`, borderRadius: 4 }}>
+                        packed
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </DiagramTooltip>
+            );
+          })}
         </div>
 
         {/* Packed slot detail */}
@@ -715,6 +733,7 @@ export function MemoryExpansionDiagram() {
         </div>
 
         {/* Gas cost bar chart */}
+        <DiagramTooltip content="Memory expansion: стоимость растёт квадратично. Первые 724 байта линейны (3 gas/word). После -- квадратичная компонента: memory_cost = (words^2 / 512) + 3 * words.">
         <div style={{ ...glassStyle, padding: 12 }}>
           <div style={{ fontSize: 11, color: colors.warning, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
             Gas Cost: memory_cost = words * 3 + words^2 / 512
@@ -759,12 +778,19 @@ export function MemoryExpansionDiagram() {
             <span>14 words</span>
           </div>
         </div>
+        </DiagramTooltip>
 
         {/* Gas stats */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <DataBox label="Memory Size" value={`${state.memorySize} bytes`} variant="default" style={{ flex: 1, minWidth: 100 }} />
-          <DataBox label="Expansion Cost" value={state.gasCost > 0 ? `${state.gasCost} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
-          <DataBox label="Total Memory Gas" value={state.totalGas > 0 ? `${state.totalGas} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
+          <DiagramTooltip content="Memory Size: текущий размер выделенной памяти. Расширяется порциями по 32 байта (1 word). Нельзя уменьшить -- только растёт.">
+            <DataBox label="Memory Size" value={`${state.memorySize} bytes`} variant="default" style={{ flex: 1, minWidth: 100 }} />
+          </DiagramTooltip>
+          <DiagramTooltip content="Expansion Cost: стоимость расширения памяти на текущем шаге. Первые ~724 байта линейны (3 gas/word), затем квадратичная компонента.">
+            <DataBox label="Expansion Cost" value={state.gasCost > 0 ? `${state.gasCost} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
+          </DiagramTooltip>
+          <DiagramTooltip content="Total Memory Gas: суммарная стоимость всех расширений памяти. Формула: memory_cost = words * 3 + words^2 / 512.">
+            <DataBox label="Total Memory Gas" value={state.totalGas > 0 ? `${state.totalGas} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
+          </DiagramTooltip>
         </div>
 
         {/* Controls */}

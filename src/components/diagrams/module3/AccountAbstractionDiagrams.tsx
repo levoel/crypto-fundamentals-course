@@ -8,6 +8,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { Grid } from '@primitives/Grid';
 import { colors, glassStyle } from '@primitives/shared';
@@ -90,14 +91,14 @@ const AA_STEPS: AAStep[] = [
 /* ================================================================== */
 
 const FLOW_COMPONENTS = [
-  { id: 'user', label: 'Пользователь', short: 'User', x: 0 },
-  { id: 'userop', label: 'UserOperation', short: 'UserOp', x: 1 },
-  { id: 'mempool', label: 'Alt-Mempool', short: 'Mempool', x: 2 },
-  { id: 'bundler', label: 'Bundler', short: 'Bundler', x: 3 },
-  { id: 'entrypoint', label: 'EntryPoint', short: 'Entry', x: 4 },
-  { id: 'smartaccount', label: 'Smart Account', short: 'Account', x: 5 },
-  { id: 'paymaster', label: 'Paymaster', short: 'Pay', x: 6 },
-  { id: 'execute', label: 'Execute', short: 'Exec', x: 7 },
+  { id: 'user', label: 'Пользователь', short: 'User', x: 0, tooltip: 'Пользователь: инициатор UserOperation. В ERC-4337 не нужен ETH для газа -- Paymaster может спонсировать транзакцию.' },
+  { id: 'userop', label: 'UserOperation', short: 'UserOp', x: 1, tooltip: 'UserOperation: структура, заменяющая обычную транзакцию. Содержит sender, callData, signature, initCode и paymasterAndData.' },
+  { id: 'mempool', label: 'Alt-Mempool', short: 'Mempool', x: 2, tooltip: 'Alt-Mempool: отдельная P2P сеть для UserOperations. Стандартные ноды не видят UserOps до включения в блок.' },
+  { id: 'bundler', label: 'Bundler', short: 'Bundler', x: 3, tooltip: 'Bundler: off-chain агент, собирающий UserOps в bundle transaction. Отправляет bundle на EntryPoint. Зарабатывает на разнице gas fees.' },
+  { id: 'entrypoint', label: 'EntryPoint', short: 'Entry', x: 4, tooltip: 'EntryPoint: singleton контракт (один на сеть). Валидирует UserOps, вызывает validateUserOp() на wallet контракте, исполняет callData.' },
+  { id: 'smartaccount', label: 'Smart Account', short: 'Account', x: 5, tooltip: 'Smart Contract Wallet: вместо EOA. Поддерживает произвольную логику валидации (multisig, social recovery, session keys).' },
+  { id: 'paymaster', label: 'Paymaster', short: 'Pay', x: 6, tooltip: 'Paymaster: контракт, оплачивающий gas за пользователя. Позволяет gasless transactions. Может принимать оплату в ERC-20 токенах.' },
+  { id: 'execute', label: 'Execute', short: 'Exec', x: 7, tooltip: 'Execute: финальное исполнение callData на smart account. Результат записывается в блокчейн.' },
 ];
 
 export function UserOperationFlowDiagram() {
@@ -152,28 +153,27 @@ export function UserOperationFlowDiagram() {
         {FLOW_COMPONENTS.map((comp, i) => {
           const isActive = comp.id === current.activeComponent;
           const isPast = i < step;
-          const stepColor = isActive ? current.color : isPast ? `${colors.textMuted}` : colors.textMuted;
 
           return (
             <div key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <div
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  fontSize: 9,
-                  fontWeight: isActive ? 700 : 500,
-                  background: isActive ? `${current.color}20` : isPast ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${isActive ? current.color : isPast ? colors.textMuted + '40' : 'rgba(255,255,255,0.08)'}`,
-                  color: isActive ? current.color : isPast ? colors.textMuted : `${colors.textMuted}80`,
-                  transition: 'all 0.3s',
-                  minWidth: 44,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                }}
-                onClick={() => setStep(i)}
-              >
-                {comp.short}
-              </div>
+              <DiagramTooltip content={comp.tooltip}>
+                <div
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    fontSize: 9,
+                    fontWeight: isActive ? 700 : 500,
+                    background: isActive ? `${current.color}20` : isPast ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${isActive ? current.color : isPast ? colors.textMuted + '40' : 'rgba(255,255,255,0.08)'}`,
+                    color: isActive ? current.color : isPast ? colors.textMuted : `${colors.textMuted}80`,
+                    transition: 'all 0.3s',
+                    minWidth: 44,
+                    textAlign: 'center' as const,
+                  }}
+                >
+                  {comp.short}
+                </div>
+              </DiagramTooltip>
               {i < FLOW_COMPONENTS.length - 1 && (
                 <span style={{
                   color: isPast || isActive ? current.color + '60' : colors.border,
@@ -191,27 +191,26 @@ export function UserOperationFlowDiagram() {
       {/* Step indicators */}
       <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
         {AA_STEPS.map((s, i) => (
-          <div
-            key={i}
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 600,
-              background: i <= step ? `${AA_STEPS[i].color}25` : 'rgba(255,255,255,0.05)',
-              border: `2px solid ${i <= step ? AA_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
-              color: i <= step ? AA_STEPS[i].color : colors.textMuted,
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-            }}
-            onClick={() => setStep(i)}
-          >
-            {i + 1}
-          </div>
+          <DiagramTooltip key={i} content={s.title}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 600,
+                background: i <= step ? `${AA_STEPS[i].color}25` : 'rgba(255,255,255,0.05)',
+                border: `2px solid ${i <= step ? AA_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
+                color: i <= step ? AA_STEPS[i].color : colors.textMuted,
+                transition: 'all 0.3s',
+              }}
+            >
+              {i + 1}
+            </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -272,38 +271,42 @@ export function UserOperationFlowDiagram() {
       {step === AA_STEPS.length - 1 && (
         <div style={{ marginBottom: 16 }}>
           <Grid columns={2} gap={8}>
-            <div style={{
-              ...glassStyle,
-              padding: 12,
-              borderColor: `${colors.primary}30`,
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: colors.primary, marginBottom: 8 }}>
-                ERC-4337
+            <DiagramTooltip content="ERC-4337: стандарт Account Abstraction без изменения протокола. Smart account -- постоянный контракт с произвольной логикой валидации, Paymaster спонсированием и session keys.">
+              <div style={{
+                ...glassStyle,
+                padding: 12,
+                borderColor: `${colors.primary}30`,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors.primary, marginBottom: 8 }}>
+                  ERC-4337
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+                  <div>Постоянный smart account</div>
+                  <div>Любая схема подписей</div>
+                  <div>Paymaster спонсирование</div>
+                  <div>Требует deploy контракта</div>
+                  <div>Session keys, social recovery</div>
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
-                <div>Постоянный smart account</div>
-                <div>Любая схема подписей</div>
-                <div>Paymaster спонсирование</div>
-                <div>Требует deploy контракта</div>
-                <div>Session keys, social recovery</div>
+            </DiagramTooltip>
+            <DiagramTooltip content="EIP-7702 (Pectra): EOA временно делегирует код контракту на одну транзакцию (type 0x04). Batch операции и спонсирование газа без deploy контракта.">
+              <div style={{
+                ...glassStyle,
+                padding: 12,
+                borderColor: `${colors.accent}30`,
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors.accent, marginBottom: 8 }}>
+                  EIP-7702 (Pectra)
+                </div>
+                <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+                  <div>Временная делегация EOA</div>
+                  <div>Batch транзакции</div>
+                  <div>Спонсирование газа</div>
+                  <div>Не нужен deploy</div>
+                  <div>TX type 0x04, одноразовый</div>
+                </div>
               </div>
-            </div>
-            <div style={{
-              ...glassStyle,
-              padding: 12,
-              borderColor: `${colors.accent}30`,
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: colors.accent, marginBottom: 8 }}>
-                EIP-7702 (Pectra)
-              </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
-                <div>Временная делегация EOA</div>
-                <div>Batch транзакции</div>
-                <div>Спонсирование газа</div>
-                <div>Не нужен deploy</div>
-                <div>TX type 0x04, одноразовый</div>
-              </div>
-            </div>
+            </DiagramTooltip>
           </Grid>
         </div>
       )}
@@ -376,18 +379,20 @@ export function UserOperationFlowDiagram() {
       </div>
 
       {/* Reference note */}
-      <div style={{
-        marginTop: 16,
-        ...glassStyle,
-        padding: '10px 14px',
-        fontSize: 11,
-        color: colors.textMuted,
-        lineHeight: 1.6,
-        textAlign: 'center',
-      }}>
-        <strong style={{ color: colors.primary }}>OpenZeppelin Contracts 5.x:</strong>{' '}
-        предоставляет базовые реализации Account (IAccount, AccountCore, AccountERC7579) для создания совместимых smart accounts. EIP-7702 поддержка: ERC7702Utils.
-      </div>
+      <DiagramTooltip content="OpenZeppelin Contracts 5.x: IAccount -- интерфейс ERC-4337, AccountCore -- базовая реализация с validateUserOp(), AccountERC7579 -- модульный стандарт. ERC7702Utils -- утилиты для EIP-7702 делегации.">
+        <div style={{
+          marginTop: 16,
+          ...glassStyle,
+          padding: '10px 14px',
+          fontSize: 11,
+          color: colors.textMuted,
+          lineHeight: 1.6,
+          textAlign: 'center',
+        }}>
+          <strong style={{ color: colors.primary }}>OpenZeppelin Contracts 5.x:</strong>{' '}
+          предоставляет базовые реализации Account (IAccount, AccountCore, AccountERC7579) для создания совместимых smart accounts. EIP-7702 поддержка: ERC7702Utils.
+        </div>
+      </DiagramTooltip>
     </DiagramContainer>
   );
 }
