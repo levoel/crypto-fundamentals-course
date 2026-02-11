@@ -2,13 +2,14 @@
  * Stablecoin Diagrams (DEFI-10)
  *
  * Exports:
- * - StablecoinComparisonDiagram: 4 stablecoin types comparison table (static with hover)
+ * - StablecoinComparisonDiagram: 4 stablecoin types comparison table (DiagramTooltip)
  * - MakerDAOCDPDiagram: MakerDAO/Sky CDP mechanism step-through (6 steps, history array)
- * - USTDeathSpiralDiagram: UST/LUNA collapse visualization (static with hover)
+ * - USTDeathSpiralDiagram: UST/LUNA collapse visualization (DiagramTooltip)
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -24,6 +25,7 @@ interface StablecoinType {
   decentralization: string;
   color: string;
   status: 'active' | 'collapsed' | 'experimental';
+  tooltip: string;
 }
 
 const STABLECOIN_TYPES: StablecoinType[] = [
@@ -35,6 +37,7 @@ const STABLECOIN_TYPES: StablecoinType[] = [
     decentralization: 'Централизованные',
     color: colors.success,
     status: 'active',
+    tooltip: 'Fiat-backed (USDT, USDC): 1:1 обеспечен фиатом на банковском счёте. Централизован, но самый стабильный peg. Риск: counterparty risk (банк, эмитент).',
   },
   {
     type: 'Crypto-collateralized',
@@ -44,6 +47,7 @@ const STABLECOIN_TYPES: StablecoinType[] = [
     decentralization: 'Децентрализованные',
     color: colors.primary,
     status: 'active',
+    tooltip: 'Crypto-backed (DAI): обеспечен криптоактивами с overcollateralization (150%+). Децентрализован, но менее эффективен по капиталу. Риск: каскадная ликвидация.',
   },
   {
     type: 'Algorithmic',
@@ -53,6 +57,7 @@ const STABLECOIN_TYPES: StablecoinType[] = [
     decentralization: 'Децентрализованные (провал)',
     color: '#ef4444',
     status: 'collapsed',
+    tooltip: 'Algorithmic (UST/LUNA): поддержка peg через mint/burn механизм. Не требует collateral. Риск: death spiral при потере доверия (UST крах: $40B+ потерь).',
   },
   {
     type: 'Hybrid',
@@ -62,6 +67,7 @@ const STABLECOIN_TYPES: StablecoinType[] = [
     decentralization: 'Полу-децентрализованные',
     color: '#f59e0b',
     status: 'experimental',
+    tooltip: 'Hybrid (FRAX): частичный залог + алгоритмическая стабилизация. Компромисс между эффективностью капитала и безопасностью. Адаптивное collateral ratio.',
   },
 ];
 
@@ -70,12 +76,9 @@ const COLUMN_HEADERS = ['Тип', 'Примеры', 'Механизм', 'Рис�
 /**
  * StablecoinComparisonDiagram
  *
- * HTML comparison table of 4 stablecoin types.
- * Color coding: green=safest, blue=moderate, red=collapsed, yellow=experimental.
+ * HTML comparison table of 4 stablecoin types. DiagramTooltip on first column.
  */
 export function StablecoinComparisonDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Классификация стейблкоинов" color="blue">
       {/* Table header */}
@@ -101,20 +104,17 @@ export function StablecoinComparisonDiagram() {
 
       {/* Table rows */}
       {STABLECOIN_TYPES.map((row, i) => {
-        const isHovered = hoveredRow === i;
         const isCollapsed = row.status === 'collapsed';
 
         return (
           <div
             key={i}
-            onMouseEnter={() => setHoveredRow(i)}
-            onMouseLeave={() => setHoveredRow(null)}
             style={{
               display: 'grid',
               gridTemplateColumns: '120px 130px 1fr 1fr 120px',
               gap: 1,
               marginBottom: 1,
-              opacity: isCollapsed && !isHovered ? 0.7 : 1,
+              opacity: isCollapsed ? 0.7 : 1,
               transition: 'all 0.2s',
             }}
           >
@@ -124,22 +124,22 @@ export function StablecoinComparisonDiagram() {
               fontSize: 12,
               fontWeight: 600,
               fontFamily: 'monospace',
-              color: isHovered ? row.color : colors.text,
-              background: isHovered ? `${row.color}08` : 'rgba(255,255,255,0.02)',
-              cursor: 'pointer',
+              color: colors.text,
+              background: 'rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               textDecoration: isCollapsed ? 'line-through' : 'none',
             }}>
-              {row.type}
+              <DiagramTooltip content={row.tooltip}>
+                <span>{row.type}</span>
+              </DiagramTooltip>
             </div>
             <div style={{
               ...glassStyle,
               padding: '8px 10px',
               fontSize: 11,
               fontFamily: 'monospace',
-              color: isHovered ? row.color : colors.textMuted,
-              background: isHovered ? `${row.color}08` : 'rgba(255,255,255,0.02)',
-              cursor: 'pointer',
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               lineHeight: 1.4,
               textDecoration: isCollapsed ? 'line-through' : 'none',
@@ -150,9 +150,8 @@ export function StablecoinComparisonDiagram() {
               ...glassStyle,
               padding: '8px 10px',
               fontSize: 11,
-              color: isHovered ? colors.text : colors.textMuted,
-              background: isHovered ? `${row.color}08` : 'rgba(255,255,255,0.02)',
-              cursor: 'pointer',
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               lineHeight: 1.4,
             }}>
@@ -162,9 +161,8 @@ export function StablecoinComparisonDiagram() {
               ...glassStyle,
               padding: '8px 10px',
               fontSize: 11,
-              color: isHovered ? (isCollapsed ? '#ef4444' : colors.text) : colors.textMuted,
-              background: isHovered ? `${row.color}08` : 'rgba(255,255,255,0.02)',
-              cursor: 'pointer',
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               lineHeight: 1.4,
             }}>
@@ -174,9 +172,8 @@ export function StablecoinComparisonDiagram() {
               ...glassStyle,
               padding: '8px 10px',
               fontSize: 11,
-              color: isHovered ? row.color : colors.textMuted,
-              background: isHovered ? `${row.color}08` : 'rgba(255,255,255,0.02)',
-              cursor: 'pointer',
+              color: colors.textMuted,
+              background: 'rgba(255,255,255,0.02)',
               transition: 'all 0.2s',
               textAlign: 'center',
             }}>
@@ -273,7 +270,7 @@ const CDP_HISTORY: CDPStep[] = [
  * MakerDAOCDPDiagram
  *
  * Step-through MakerDAO/Sky CDP mechanism. 6 steps with history array.
- * Forward/backward/reset navigation.
+ * Forward/backward/reset navigation. DiagramTooltip on step descriptions.
  */
 export function MakerDAOCDPDiagram() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -306,15 +303,17 @@ export function MakerDAOCDPDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={step.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -465,11 +464,9 @@ const SPIRAL_STEPS: SpiralStep[] = [
  * USTDeathSpiralDiagram
  *
  * Visualization of UST/LUNA collapse (May 2022). Downward spiral with 7 steps.
- * Static with hover for details.
+ * DiagramTooltip with description replaces hoveredIdx.
  */
 export function USTDeathSpiralDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="UST/LUNA: death spiral (май 2022)" color="red">
       {/* Spiral steps */}
@@ -480,84 +477,69 @@ export function USTDeathSpiralDiagram() {
         marginBottom: 16,
       }}>
         {SPIRAL_STEPS.map((step, i) => {
-          const isHovered = hoveredIdx === i;
           // Increasing indent to visualize downward spiral
           const indent = i * 8;
 
           return (
             <div
               key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
               style={{
                 marginLeft: indent,
                 transition: 'all 0.2s',
               }}
             >
-              <div style={{
-                ...glassStyle,
-                padding: '10px 14px',
-                cursor: 'pointer',
-                background: isHovered ? `${step.color}15` : `${step.color}05`,
-                border: `1px solid ${isHovered ? step.color : step.color + '20'}`,
-                transition: 'all 0.2s',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {/* Step number */}
-                  <div style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    background: `${step.color}20`,
-                    border: `1px solid ${step.color}60`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fontFamily: 'monospace',
-                    color: step.color,
-                    flexShrink: 0,
-                  }}>
-                    {step.number}
-                  </div>
-
-                  {/* Title */}
-                  <div style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: isHovered ? step.color : colors.text,
-                    fontFamily: 'monospace',
-                  }}>
-                    {step.title}
-                  </div>
-
-                  {/* Downward arrow indicator */}
-                  {i < SPIRAL_STEPS.length - 1 && (
+              <DiagramTooltip content={step.description}>
+                <div style={{
+                  ...glassStyle,
+                  padding: '10px 14px',
+                  background: `${step.color}05`,
+                  border: `1px solid ${step.color}20`,
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {/* Step number */}
                     <div style={{
-                      marginLeft: 'auto',
-                      fontSize: 14,
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: `${step.color}20`,
+                      border: `1px solid ${step.color}60`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
                       color: step.color,
-                      opacity: 0.5,
+                      flexShrink: 0,
                     }}>
-                      v
+                      {step.number}
                     </div>
-                  )}
-                </div>
 
-                {/* Detail on hover */}
-                {isHovered && (
-                  <div style={{
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: colors.text,
-                    lineHeight: 1.6,
-                    paddingLeft: 34,
-                  }}>
-                    {step.description}
+                    {/* Title */}
+                    <div style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: colors.text,
+                      fontFamily: 'monospace',
+                    }}>
+                      {step.title}
+                    </div>
+
+                    {/* Downward arrow indicator */}
+                    {i < SPIRAL_STEPS.length - 1 && (
+                      <div style={{
+                        marginLeft: 'auto',
+                        fontSize: 14,
+                        color: step.color,
+                        opacity: 0.5,
+                      }}>
+                        v
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              </DiagramTooltip>
             </div>
           );
         })}
@@ -570,18 +552,24 @@ export function USTDeathSpiralDiagram() {
         gap: 8,
         marginBottom: 16,
       }}>
-        <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>UST</div>
-          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$1 → $0.01</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LUNA</div>
-          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$80 → $0.0001</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Потери</div>
-          <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$40B+</div>
-        </div>
+        <DiagramTooltip content="UST depeg: $1 -> $0.01. Алгоритмический стейблкоин без внешнего залога полностью потерял привязку к доллару.">
+          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>UST</div>
+            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$1 → $0.01</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="LUNA гиперинфляция: цена $80 -> $0.0001. Massive supply increase с 350M до 6.5T токенов за несколько дней.">
+          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LUNA</div>
+            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$80 → $0.0001</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="$40B+ рыночной капитализации уничтожено за 3 дня. Крупнейший крах в истории DeFi.">
+          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Потери</div>
+            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$40B+</div>
+          </div>
+        </DiagramTooltip>
       </div>
 
       <DataBox

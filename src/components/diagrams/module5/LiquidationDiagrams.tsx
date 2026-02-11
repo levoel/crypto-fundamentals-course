@@ -4,12 +4,13 @@
  * Exports:
  * - HealthFactorGaugeDiagram: Interactive ETH price slider ($1000-$3000) showing HF gauge
  * - LiquidationStepThroughDiagram: Step-through liquidation scenario (6 steps, history array)
- * - LiquidationCascadeDiagram: Static cascade/spiral visualization
+ * - LiquidationCascadeDiagram: Cascade/spiral visualization (DiagramTooltip)
  * - LiquidatorProfitDiagram: Static liquidator profit calculation breakdown
  */
 
 import { useState } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -184,27 +185,35 @@ export function HealthFactorGaugeDiagram() {
         gap: 8,
         marginBottom: 12,
       }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Collateral</div>
-          <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>${collateralUSD.toLocaleString()}</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Debt</div>
-          <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${debtUSD.toLocaleString()}</div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LTV используемый</div>
-          <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{(ltvUsed * 100).toFixed(1)}%</div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: isLiquidated ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${isLiquidated ? '#f43f5e30' : 'rgba(255,255,255,0.08)'}`,
-        }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена ликвидации</div>
-          <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${liquidationPrice.toFixed(0)}</div>
-        </div>
+        <DiagramTooltip content="Health Factor > 2: безопасная зона. Collateral значительно превышает долг. Можно добавить ещё borrowing.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Collateral</div>
+            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>${collateralUSD.toLocaleString()}</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Health Factor < 1: ЛИКВИДАЦИЯ. Liquidator может погасить до 50% долга и получить collateral с дисконтом (5-15% liquidation bonus).">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Debt</div>
+            <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${debtUSD.toLocaleString()}</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Health Factor 1-2: зона предупреждения. Волатильность может привести к ликвидации. Рекомендуется добавить collateral или погасить часть долга.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LTV используемый</div>
+            <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{(ltvUsed * 100).toFixed(1)}%</div>
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Цена ликвидации: при достижении этой цены ETH позиция будет ликвидирована (HF < 1). Формула: debt / (collateral_amount * liq_threshold).">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: isLiquidated ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${isLiquidated ? '#f43f5e30' : 'rgba(255,255,255,0.08)'}`,
+          }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена ликвидации</div>
+            <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${liquidationPrice.toFixed(0)}</div>
+          </div>
+        </DiagramTooltip>
       </div>
 
       {/* Formula */}
@@ -319,7 +328,7 @@ const LIQUIDATION_HISTORY: LiqStep[] = [
  * LiquidationStepThroughDiagram
  *
  * Step-through liquidation scenario with concrete numbers.
- * 10 ETH at $2000, borrow 12000 USDC, ETH drops to $1400, liquidation.
+ * DiagramTooltip on step titles using description data.
  */
 export function LiquidationStepThroughDiagram() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -348,15 +357,17 @@ export function LiquidationStepThroughDiagram() {
       </div>
 
       {/* Step title */}
-      <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
-      }}>
-        {step.title}
-      </div>
+      <DiagramTooltip content={step.description}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text,
+          marginBottom: 8,
+          fontFamily: 'monospace',
+        }}>
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div style={{
@@ -458,6 +469,7 @@ interface CascadeEvent {
   ethPrice: string;
   totalLiquidated: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
+  tooltip: string;
 }
 
 const CASCADE_EVENTS: CascadeEvent[] = [
@@ -468,6 +480,7 @@ const CASCADE_EVENTS: CascadeEvent[] = [
     ethPrice: '$1,600',
     totalLiquidated: '$50M',
     severity: 'low',
+    tooltip: 'Каскадная ликвидация: первая волна. Ликвидируются позиции с наивысшим LTV. ETH: $1,600, $50M ликвидировано.',
   },
   {
     step: 2,
@@ -476,6 +489,7 @@ const CASCADE_EVENTS: CascadeEvent[] = [
     ethPrice: '$1,450',
     totalLiquidated: '$200M',
     severity: 'medium',
+    tooltip: 'Ликвидаторы продают полученный ETH на рынке, создавая дополнительное давление на цену. ETH: $1,450, $200M ликвидировано.',
   },
   {
     step: 3,
@@ -484,6 +498,7 @@ const CASCADE_EVENTS: CascadeEvent[] = [
     ethPrice: '$1,300',
     totalLiquidated: '$500M',
     severity: 'high',
+    tooltip: 'Вторая волна: ранее безопасные позиции достигают HF < 1. Самоусиливающийся цикл. ETH: $1,300, $500M ликвидировано.',
   },
   {
     step: 4,
@@ -492,6 +507,7 @@ const CASCADE_EVENTS: CascadeEvent[] = [
     ethPrice: '$1,100',
     totalLiquidated: '$1B+',
     severity: 'critical',
+    tooltip: 'Каскадная ликвидация: ликвидация крупных позиций продаёт collateral -> цена collateral падает -> другие позиции достигают HF < 1 -> ещё больше ликвидаций. Пример: Black Thursday (Mar 2020): ETH -43%.',
   },
 ];
 
@@ -505,79 +521,69 @@ const severityColors: Record<string, string> = {
 /**
  * LiquidationCascadeDiagram
  *
- * Static visualization of cascading liquidations (like Black Thursday March 2020).
- * Shows the positive feedback loop: liquidations -> selling -> price drop -> more liquidations.
+ * Visualization of cascading liquidations. DiagramTooltip replaces hoveredIdx.
  */
 export function LiquidationCascadeDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Каскадная ликвидация: positive feedback loop" color="purple">
       {/* Spiral visualization */}
       <div style={{ marginBottom: 16 }}>
         {CASCADE_EVENTS.map((event, i) => {
-          const isHovered = hoveredIdx === i;
           const sColor = severityColors[event.severity];
-          const width = 70 + i * 8; // Widening spiral
 
           return (
-            <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 8,
-                cursor: 'pointer',
-              }}
-            >
-              {/* Step number */}
-              <div style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: isHovered ? sColor : `${sColor}40`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: 'monospace',
-                color: isHovered ? '#fff' : sColor,
-                flexShrink: 0,
-                transition: 'all 0.2s',
-              }}>
-                {event.step}
-              </div>
-
-              {/* Bar */}
-              <div style={{ flex: 1 }}>
+            <DiagramTooltip key={i} content={event.tooltip}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 8,
+                }}
+              >
+                {/* Step number */}
                 <div style={{
-                  ...glassStyle,
-                  padding: '8px 12px',
-                  background: isHovered ? `${sColor}12` : 'transparent',
-                  border: `1px solid ${isHovered ? `${sColor}40` : 'rgba(255,255,255,0.06)'}`,
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: `${sColor}40`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: 'monospace',
+                  color: sColor,
+                  flexShrink: 0,
                   transition: 'all 0.2s',
                 }}>
+                  {event.step}
+                </div>
+
+                {/* Bar */}
+                <div style={{ flex: 1 }}>
                   <div style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: sColor,
-                    fontFamily: 'monospace',
-                    marginBottom: 2,
+                    ...glassStyle,
+                    padding: '8px 12px',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    transition: 'all 0.2s',
                   }}>
-                    {event.trigger}
-                  </div>
-                  <div style={{
-                    fontSize: 11,
-                    color: colors.text,
-                    lineHeight: 1.4,
-                  }}>
-                    {event.effect}
-                  </div>
-                  {isHovered && (
+                    <div style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: sColor,
+                      fontFamily: 'monospace',
+                      marginBottom: 2,
+                    }}>
+                      {event.trigger}
+                    </div>
+                    <div style={{
+                      fontSize: 11,
+                      color: colors.text,
+                      lineHeight: 1.4,
+                    }}>
+                      {event.effect}
+                    </div>
                     <div style={{
                       display: 'flex',
                       gap: 16,
@@ -588,23 +594,10 @@ export function LiquidationCascadeDiagram() {
                       <span style={{ color: colors.textMuted }}>ETH: <span style={{ color: sColor }}>{event.ethPrice}</span></span>
                       <span style={{ color: colors.textMuted }}>Liquidated: <span style={{ color: sColor }}>{event.totalLiquidated}</span></span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
-
-              {/* Arrow down (except last) */}
-              {i < CASCADE_EVENTS.length - 1 && (
-                <div style={{
-                  position: 'absolute',
-                  left: 28,
-                  marginTop: 36,
-                  fontSize: 14,
-                  color: sColor,
-                  opacity: 0.5,
-                }}>
-                </div>
-              )}
-            </div>
+            </DiagramTooltip>
           );
         })}
       </div>
@@ -639,8 +632,7 @@ export function LiquidationCascadeDiagram() {
 /**
  * LiquidatorProfitDiagram
  *
- * Static breakdown of liquidator profit calculation.
- * Shows: debt repaid, collateral received, bonus, gas, net profit.
+ * Static breakdown of liquidator profit calculation. DiagramTooltip on profit items.
  */
 export function LiquidatorProfitDiagram() {
   // Scenario from the step-through:
@@ -656,11 +648,11 @@ export function LiquidatorProfitDiagram() {
   const netProfit = profitUSD - gasCost;
 
   const items = [
-    { label: 'Долг погашен ликвидатором', value: `${debtRepaid.toLocaleString()} USDC`, color: '#f43f5e', isNegative: true },
-    { label: 'Collateral получен', value: `${collateralETH.toFixed(2)} ETH ($${collateralValue.toLocaleString()})`, color: colors.success, isNegative: false },
-    { label: 'Liquidation Bonus (5%)', value: `+$${profitUSD.toFixed(0)}`, color: colors.success, isNegative: false },
-    { label: 'Gas cost (~200k gas)', value: `-$${gasCost}`, color: colors.textMuted, isNegative: true },
-    { label: 'NET PROFIT', value: `$${netProfit.toFixed(0)}`, color: colors.success, isNegative: false },
+    { label: 'Долг погашен ликвидатором', value: `${debtRepaid.toLocaleString()} USDC`, color: '#f43f5e', isNegative: true, tooltip: 'Ликвидатор отправляет USDC в протокол для погашения части долга заёмщика. Close factor = 50% -- можно погасить до половины долга.' },
+    { label: 'Collateral получен', value: `${collateralETH.toFixed(2)} ETH ($${collateralValue.toLocaleString()})`, color: colors.success, isNegative: false, tooltip: 'Ликвидатор получает collateral заёмщика с liquidation bonus. Стоимость: debt_repaid * (1 + bonus) = больше, чем было погашено.' },
+    { label: 'Liquidation Bonus (5%)', value: `+$${profitUSD.toFixed(0)}`, color: colors.success, isNegative: false, tooltip: 'Liquidator profit = liquidation_bonus * debt_repaid. Для Aave: 5-15% bonus в зависимости от collateral type.' },
+    { label: 'Gas cost (~200k gas)', value: `-$${gasCost}`, color: colors.textMuted, isNegative: true, tooltip: 'Gas cost для вызова liquidationCall(). При высоком gas price (500+ gwei) стоимость может превысить прибыль.' },
+    { label: 'NET PROFIT', value: `$${netProfit.toFixed(0)}`, color: colors.success, isNegative: false, tooltip: 'Flash loan + liquidation = atomic profit без начального капитала. MEV-боты конкурируют через Flashbots и PGA за право ликвидации.' },
   ];
 
   return (
@@ -679,48 +671,52 @@ export function LiquidatorProfitDiagram() {
                   margin: '8px 0',
                 }} />
               )}
-              <div style={{
-                ...glassStyle,
-                padding: '10px 14px',
-                marginBottom: isLast ? 0 : 6,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: isLast ? `${colors.success}08` : 'transparent',
-                border: isLast ? `1px solid ${colors.success}30` : '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <span style={{
-                  fontSize: isLast ? 13 : 12,
-                  fontFamily: 'monospace',
-                  color: isLast ? colors.success : colors.text,
-                  fontWeight: isLast ? 700 : 400,
+              <DiagramTooltip content={item.tooltip}>
+                <div style={{
+                  ...glassStyle,
+                  padding: '10px 14px',
+                  marginBottom: isLast ? 0 : 6,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: isLast ? `${colors.success}08` : 'transparent',
+                  border: isLast ? `1px solid ${colors.success}30` : '1px solid rgba(255,255,255,0.06)',
                 }}>
-                  {item.label}
-                </span>
-                <span style={{
-                  fontSize: isLast ? 15 : 13,
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: item.color,
-                }}>
-                  {item.value}
-                </span>
-              </div>
+                  <span style={{
+                    fontSize: isLast ? 13 : 12,
+                    fontFamily: 'monospace',
+                    color: isLast ? colors.success : colors.text,
+                    fontWeight: isLast ? 700 : 400,
+                  }}>
+                    {item.label}
+                  </span>
+                  <span style={{
+                    fontSize: isLast ? 15 : 13,
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
+                    color: item.color,
+                  }}>
+                    {item.value}
+                  </span>
+                </div>
+              </DiagramTooltip>
             </div>
           );
         })}
       </div>
 
       {/* Flash loan note */}
-      <div style={{
-        ...glassStyle,
-        padding: 10,
-        marginBottom: 8,
-      }}>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
-          Flash loan liquidation: ликвидатор берет 6,000 USDC flash loan, погашает долг, получает 4.5 ETH, продает ETH, возвращает flash loan. Profit = $300 - gas - flash fee.
+      <DiagramTooltip content="Flash loan + liquidation = atomic profit без начального капитала. Flash loan fee обычно 0.09% (Aave) или 0% (dYdX).">
+        <div style={{
+          ...glassStyle,
+          padding: 10,
+          marginBottom: 8,
+        }}>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
+            Flash loan liquidation: ликвидатор берет 6,000 USDC flash loan, погашает долг, получает 4.5 ETH, продает ETH, возвращает flash loan. Profit = $300 - gas - flash fee.
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="MEV и ликвидации"
