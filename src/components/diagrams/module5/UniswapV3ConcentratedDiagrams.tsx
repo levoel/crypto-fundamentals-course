@@ -3,12 +3,13 @@
  *
  * Exports:
  * - TickRangeDiagram: Interactive tick/price range visualization with slider
- * - ConcentratedVsFullRangeDiagram: Concentrated vs full-range comparison (static with hover)
- * - V4HooksOverviewDiagram: V4 singleton + hooks architecture with V2/V3/V4 table (static with hover)
+ * - ConcentratedVsFullRangeDiagram: Concentrated vs full-range comparison (DiagramTooltip)
+ * - V4HooksOverviewDiagram: V4 singleton + hooks architecture with V2/V3/V4 table (DiagramTooltip)
  */
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -102,10 +103,12 @@ export function TickRangeDiagram() {
       {/* Sliders */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_lower:</span>
-            <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickLower}</span>
-          </div>
+          <DiagramTooltip content="Tick: дискретная точка на ценовой оси. price = 1.0001^tick. Tick spacing (60 для 0.3% fee) определяет гранулярность позиций.">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_lower:</span>
+              <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickLower}</span>
+            </div>
+          </DiagramTooltip>
           <input
             type="range"
             min={70000}
@@ -116,10 +119,12 @@ export function TickRangeDiagram() {
           />
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_upper:</span>
-            <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickUpper}</span>
-          </div>
+          <DiagramTooltip content="Range [tickLower, tickUpper]: интервал, в котором LP предоставляет ликвидность. Ликвидность активна только когда текущая цена в range.">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_upper:</span>
+              <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickUpper}</span>
+            </div>
+          </DiagramTooltip>
           <input
             type="range"
             min={76000}
@@ -133,43 +138,51 @@ export function TickRangeDiagram() {
 
       {/* Values */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            price(tick_lower) = 1.0001^{tickLower}
+        <DiagramTooltip content="Tick: дискретная точка на ценовой оси. price = 1.0001^tick. Tick spacing (60 для 0.3% fee) определяет гранулярность позиций.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              price(tick_lower) = 1.0001^{tickLower}
+            </div>
+            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
+              ${priceLower.toFixed(2)}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
-            ${priceLower.toFixed(2)}
+        </DiagramTooltip>
+        <DiagramTooltip content="Range [tickLower, tickUpper]: интервал, в котором LP предоставляет ликвидность. Ликвидность активна только когда текущая цена в range.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              price(tick_upper) = 1.0001^{tickUpper}
+            </div>
+            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
+              ${priceUpper.toFixed(2)}
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            price(tick_upper) = 1.0001^{tickUpper}
+        </DiagramTooltip>
+        <DiagramTooltip content="Текущая цена определяется текущим тиком. Если цена внутри range -- LP зарабатывает fees. Вне range -- позиция неактивна.">
+          <div style={{ ...glassStyle, padding: 10 }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Текущая цена (tick {currentTick})
+            </div>
+            <div style={{ fontSize: 13, color: inRange ? colors.success : '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>
+              ${currentPrice.toFixed(2)}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
-            ${priceUpper.toFixed(2)}
+        </DiagramTooltip>
+        <DiagramTooltip content="Узкий range = выше concentration = больше fee income, но выше риск выхода за пределы. Широкий range = безопаснее, но меньше доход.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            background: inRange ? 'rgba(34,197,94,0.06)' : 'rgba(244,63,94,0.06)',
+            border: `1px solid ${inRange ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
+          }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              Ширина диапазона
+            </div>
+            <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace', fontWeight: 600 }}>
+              {(tickUpper - tickLower).toLocaleString()} тиков
+            </div>
           </div>
-        </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Текущая цена (tick {currentTick})
-          </div>
-          <div style={{ fontSize: 13, color: inRange ? colors.success : '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>
-            ${currentPrice.toFixed(2)}
-          </div>
-        </div>
-        <div style={{
-          ...glassStyle,
-          padding: 10,
-          background: inRange ? 'rgba(34,197,94,0.06)' : 'rgba(244,63,94,0.06)',
-          border: `1px solid ${inRange ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
-        }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-            Ширина диапазона
-          </div>
-          <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace', fontWeight: 600 }}>
-            {(tickUpper - tickLower).toLocaleString()} тиков
-          </div>
-        </div>
+        </DiagramTooltip>
       </div>
 
       <DataBox
@@ -188,11 +201,9 @@ export function TickRangeDiagram() {
 /**
  * ConcentratedVsFullRangeDiagram
  *
- * Static with hover. Two overlaid curves: full xy=k vs concentrated range.
+ * Two overlaid curves: full xy=k vs concentrated range. DiagramTooltip replaces hoveredZone.
  */
 export function ConcentratedVsFullRangeDiagram() {
-  const [hoveredZone, setHoveredZone] = useState<'full' | 'concentrated' | null>(null);
-
   const svgW = 320;
   const svgH = 200;
   const padL = 40;
@@ -268,31 +279,22 @@ export function ConcentratedVsFullRangeDiagram() {
           <polyline
             points={fullCurve}
             fill="none"
-            stroke={hoveredZone === 'full' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
-            strokeWidth={hoveredZone === 'full' ? 2.5 : 1.5}
-            onMouseEnter={() => setHoveredZone('full')}
-            onMouseLeave={() => setHoveredZone(null)}
-            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth={1.5}
           />
 
           {/* Concentrated range shading */}
           <polygon
             points={shadedPath}
             fill="rgba(34,197,94,0.1)"
-            onMouseEnter={() => setHoveredZone('concentrated')}
-            onMouseLeave={() => setHoveredZone(null)}
-            style={{ cursor: 'pointer' }}
           />
 
           {/* Concentrated curve (V3) */}
           <polyline
             points={concCurve}
             fill="none"
-            stroke={hoveredZone === 'concentrated' ? colors.success : `${colors.success}90`}
-            strokeWidth={hoveredZone === 'concentrated' ? 3 : 2}
-            onMouseEnter={() => setHoveredZone('concentrated')}
-            onMouseLeave={() => setHoveredZone(null)}
-            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+            stroke={`${colors.success}90`}
+            strokeWidth={2}
           />
 
           {/* Range boundaries */}
@@ -308,27 +310,44 @@ export function ConcentratedVsFullRangeDiagram() {
         </svg>
       </div>
 
-      {/* Hover detail */}
-      {hoveredZone && (
-        <div style={{
-          ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          background: hoveredZone === 'concentrated' ? `${colors.success}08` : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${hoveredZone === 'concentrated' ? `${colors.success}30` : 'rgba(255,255,255,0.1)'}`,
-          transition: 'all 0.2s',
-        }}>
-          {hoveredZone === 'full' ? (
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-              <strong>V2 (full range):</strong> Ликвидность по всей кривой [0, infinity). Для ETH/USDC большая часть этого диапазона никогда не используется. Виртуальные резервы = реальные резервы.
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
-              <strong>V3 (concentrated):</strong> LP размещает ликвидность только между p_a и p_b. Внутри диапазона AMM ведет себя как будто кривая полная, но реальных токенов нужно значительно меньше. Капитал = только зеленая область.
-            </div>
-          )}
-        </div>
-      )}
+      {/* Zone explanations with DiagramTooltip */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+        <DiagramTooltip content="Full range [0, infinity): V2-style. Капитал распределён по всем ценам. Безопасно (всегда in range), но неэффективно.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            fontSize: 12,
+            color: colors.text,
+            lineHeight: 1.5,
+          }}>
+            <strong style={{ color: 'rgba(255,255,255,0.5)' }}>V2 (full range):</strong> Ликвидность по всей кривой [0, infinity). Виртуальные резервы = реальные резервы.
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Narrow range (+-2%): высокая concentration. 100x+ эффективнее full range. Но требует активного management -- цена может выйти за пределы.">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            fontSize: 12,
+            color: colors.text,
+            lineHeight: 1.5,
+            background: `${colors.success}08`,
+            border: `1px solid ${colors.success}30`,
+          }}>
+            <strong style={{ color: colors.success }}>V3 (concentrated):</strong> LP размещает ликвидность только между p_a и p_b. Реальных токенов нужно значительно меньше.
+          </div>
+        </DiagramTooltip>
+        <DiagramTooltip content="Out of range: позиция неактивна. LP не зарабатывает fees. Позиция конвертируется в один токен (100% token X или 100% token Y).">
+          <div style={{
+            ...glassStyle,
+            padding: 10,
+            fontSize: 12,
+            color: colors.textMuted,
+            lineHeight: 1.5,
+          }}>
+            <strong style={{ color: '#f43f5e' }}>Out of range:</strong> Позиция неактивна, LP не зарабатывает fees. Конвертируется в 100% одного токена.
+          </div>
+        </DiagramTooltip>
+      </div>
 
       <DataBox
         label="Виртуальные резервы"
@@ -348,68 +367,74 @@ interface V4ComparisonRow {
   v2: string;
   v3: string;
   v4: string;
+  tooltip: string;
 }
 
 const V4_COMPARISON: V4ComparisonRow[] = [
-  { feature: 'Pool deployment', v2: 'Отдельный контракт', v3: 'Отдельный контракт', v4: 'Singleton PoolManager' },
-  { feature: 'Creation cost', v2: '~4.5M gas', v3: '~4.5M gas', v4: '~99.99% дешевле' },
-  { feature: 'Multi-hop', v2: 'Промежуточные переводы', v3: 'Промежуточные переводы', v4: 'Flash accounting' },
-  { feature: 'Кастомизация', v2: 'Нет', v3: 'Нет', v4: 'Hooks (10 точек)' },
-  { feature: 'Native ETH', v2: 'Требует WETH', v3: 'Требует WETH', v4: 'Нативная поддержка' },
+  { feature: 'Pool deployment', v2: 'Отдельный контракт', v3: 'Отдельный контракт', v4: 'Singleton PoolManager', tooltip: 'V3: отдельный контракт на каждый пул. V4: Singleton (один контракт для всех пулов). Flash accounting через transient storage (EIP-1153).' },
+  { feature: 'Creation cost', v2: '~4.5M gas', v3: '~4.5M gas', v4: '~99.99% дешевле', tooltip: 'V3: отдельный контракт на каждый пул. V4: Singleton (один контракт для всех пулов). Flash accounting через transient storage (EIP-1153).' },
+  { feature: 'Multi-hop', v2: 'Промежуточные переводы', v3: 'Промежуточные переводы', v4: 'Flash accounting', tooltip: 'V3: отдельный контракт на каждый пул. V4: Singleton (один контракт для всех пулов). Flash accounting через transient storage (EIP-1153).' },
+  { feature: 'Кастомизация', v2: 'Нет', v3: 'Нет', v4: 'Hooks (10 точек)', tooltip: 'V3: фиксированная логика. V4: hook контракты для custom behavior. Любой может создать hook и подключить к пулу.' },
+  { feature: 'Native ETH', v2: 'Требует WETH', v3: 'Требует WETH', v4: 'Нативная поддержка', tooltip: 'V3: фиксированная логика. V4: hook контракты для custom behavior. Любой может создать hook и подключить к пулу.' },
 ];
 
-const HOOKS_LIST = [
-  'beforeInitialize',
-  'afterInitialize',
-  'beforeAddLiquidity',
-  'afterAddLiquidity',
-  'beforeRemoveLiquidity',
-  'afterRemoveLiquidity',
-  'beforeSwap',
-  'afterSwap',
-  'beforeDonate',
-  'afterDonate',
+interface HookItem {
+  name: string;
+  tooltip: string;
+}
+
+const HOOKS_LIST: HookItem[] = [
+  { name: 'beforeInitialize', tooltip: 'beforeInitialize: вызывается перед созданием пула. Можно: валидация параметров, access control, начальная конфигурация hook.' },
+  { name: 'afterInitialize', tooltip: 'afterInitialize: вызывается после создания пула. Можно: инициализация oracle, настройка дополнительного state.' },
+  { name: 'beforeAddLiquidity', tooltip: 'beforeAddLiquidity: контроль кто может предоставлять ликвидность. Whitelisted LP, minimum deposit, KYC.' },
+  { name: 'afterAddLiquidity', tooltip: 'afterAddLiquidity: post-processing после добавления ликвидности. Reward distribution, analytics.' },
+  { name: 'beforeRemoveLiquidity', tooltip: 'beforeRemoveLiquidity: контроль вывода ликвидности. Lock periods, withdrawal limits.' },
+  { name: 'afterRemoveLiquidity', tooltip: 'afterRemoveLiquidity: post-processing при withdraw. Fee settlement, reward claiming.' },
+  { name: 'beforeSwap', tooltip: 'beforeSwap hook: вызывается перед свопом. Можно: custom fees, oracle updates, access control. V4 Singleton contract вызывает hook перед каждым swap.' },
+  { name: 'afterSwap', tooltip: 'afterSwap hook: вызывается после свопа. Можно: reward distribution, analytics, TWAP update.' },
+  { name: 'beforeDonate', tooltip: 'beforeDonate: вызывается перед donate (прямое пожертвование LP). Можно: валидация, access control.' },
+  { name: 'afterDonate', tooltip: 'afterDonate: вызывается после donate. Можно: учёт донатов, reward распределение.' },
 ];
 
 /**
  * V4HooksOverviewDiagram
  *
- * Static with hover. Singleton architecture + hooks lifecycle + V2/V3/V4 comparison table.
+ * Singleton architecture + hooks lifecycle + V2/V3/V4 comparison table.
+ * DiagramTooltip replaces hoveredHook and hoveredRow.
  */
 export function V4HooksOverviewDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-  const [hoveredHook, setHoveredHook] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="Uniswap V4: singleton и hooks" color="purple">
       {/* Singleton pattern */}
-      <div style={{
-        ...glassStyle,
-        padding: 14,
-        marginBottom: 16,
-        background: 'rgba(168,85,247,0.06)',
-        border: '1px solid rgba(168,85,247,0.2)',
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace', marginBottom: 8 }}>
-          Singleton Pattern
-        </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-          V2/V3: каждый пул -- отдельный контракт (Factory + create2). V4: ВСЕ пулы живут в одном контракте <span style={{ color: colors.accent }}>PoolManager</span>. Создание пула = запись в mapping, не деплой контракта.
-        </div>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-          <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>V2/V3</div>
-            <div style={{ fontSize: 20, marginTop: 4 }}>{'{ } { } { }'}</div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>N контрактов</div>
+      <DiagramTooltip content="V3: отдельный контракт на каждый пул. V4: Singleton (один контракт для всех пулов). Flash accounting через transient storage (EIP-1153).">
+        <div style={{
+          ...glassStyle,
+          padding: 14,
+          marginBottom: 16,
+          background: 'rgba(168,85,247,0.06)',
+          border: '1px solid rgba(168,85,247,0.2)',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace', marginBottom: 8 }}>
+            Singleton Pattern
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', color: colors.textMuted }}>-&gt;</div>
-          <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1, background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.3)' }}>
-            <div style={{ fontSize: 10, color: colors.accent, fontFamily: 'monospace' }}>V4</div>
-            <div style={{ fontSize: 20, marginTop: 4 }}>{'{ }'}</div>
-            <div style={{ fontSize: 9, color: colors.accent, fontFamily: 'monospace' }}>1 контракт</div>
+          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
+            V2/V3: каждый пул -- отдельный контракт (Factory + create2). V4: ВСЕ пулы живут в одном контракте <span style={{ color: colors.accent }}>PoolManager</span>. Создание пула = запись в mapping, не деплой контракта.
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>V2/V3</div>
+              <div style={{ fontSize: 20, marginTop: 4 }}>{'{ } { } { }'}</div>
+              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>N контрактов</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', color: colors.textMuted }}>-&gt;</div>
+            <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1, background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.3)' }}>
+              <div style={{ fontSize: 10, color: colors.accent, fontFamily: 'monospace' }}>V4</div>
+              <div style={{ fontSize: 20, marginTop: 4 }}>{'{ }'}</div>
+              <div style={{ fontSize: 9, color: colors.accent, fontFamily: 'monospace' }}>1 контракт</div>
+            </div>
           </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       {/* Hooks lifecycle */}
       <div style={{ marginBottom: 16 }}>
@@ -418,33 +443,26 @@ export function V4HooksOverviewDiagram() {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {HOOKS_LIST.map((hook, i) => {
-            const isBefore = hook.startsWith('before');
+            const isBefore = hook.name.startsWith('before');
             return (
-              <div
-                key={i}
-                onMouseEnter={() => setHoveredHook(i)}
-                onMouseLeave={() => setHoveredHook(null)}
-                style={{
-                  ...glassStyle,
-                  padding: '4px 8px',
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  cursor: 'pointer',
-                  color: hoveredHook === i ? (isBefore ? colors.primary : colors.success) : colors.textMuted,
-                  background: hoveredHook === i ? (isBefore ? 'rgba(99,102,241,0.08)' : 'rgba(34,197,94,0.08)') : 'rgba(255,255,255,0.03)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {hook}
-              </div>
+              <DiagramTooltip key={i} content={hook.tooltip}>
+                <div
+                  style={{
+                    ...glassStyle,
+                    padding: '4px 8px',
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                    color: isBefore ? colors.primary : colors.success,
+                    background: isBefore ? 'rgba(99,102,241,0.05)' : 'rgba(34,197,94,0.05)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {hook.name}
+                </div>
+              </DiagramTooltip>
             );
           })}
         </div>
-        {hoveredHook !== null && (
-          <div style={{ fontSize: 11, color: colors.text, marginTop: 6, fontFamily: 'monospace' }}>
-            Hook {HOOKS_LIST[hoveredHook]} выполняется {HOOKS_LIST[hoveredHook].startsWith('before') ? 'ДО' : 'ПОСЛЕ'} операции. Кастомная логика: TWAP oracle, dynamic fees, limit orders...
-          </div>
-        )}
       </div>
 
       {/* Comparison table */}
@@ -469,16 +487,14 @@ export function V4HooksOverviewDiagram() {
             {V4_COMPARISON.map((row, i) => (
               <tr
                 key={i}
-                onMouseEnter={() => setHoveredRow(i)}
-                onMouseLeave={() => setHoveredRow(null)}
                 style={{
-                  background: hoveredRow === i ? 'rgba(168,85,247,0.06)' : 'transparent',
                   transition: 'all 0.15s',
-                  cursor: 'pointer',
                 }}
               >
                 <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.text, fontWeight: 600 }}>
-                  {row.feature}
+                  <DiagramTooltip content={row.tooltip}>
+                    <span>{row.feature}</span>
+                  </DiagramTooltip>
                 </td>
                 <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.textMuted }}>
                   {row.v2}

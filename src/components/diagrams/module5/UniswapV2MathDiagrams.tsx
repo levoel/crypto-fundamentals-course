@@ -3,12 +3,13 @@
  *
  * Exports:
  * - V2SwapMathDiagram: Step-through V2 swap calculation with integer math (6 steps, history array)
- * - LPTokenMintingDiagram: LP token minting calculation (static with hover)
- * - V2vsV3EfficiencyDiagram: Capital efficiency comparison V2 vs V3 (static with hover)
+ * - LPTokenMintingDiagram: LP token minting calculation (DiagramTooltip)
+ * - V2vsV3EfficiencyDiagram: Capital efficiency comparison V2 vs V3 (DiagramTooltip)
  */
 
 import { useState, useMemo } from 'react';
 import { DiagramContainer } from '@primitives/DiagramContainer';
+import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
 import { colors, glassStyle } from '@primitives/shared';
 
@@ -122,17 +123,19 @@ export function V2SwapMathDiagram() {
       </div>
 
       {/* Step title */}
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
-        }}
-      >
-        {step.title}
-      </div>
+      <DiagramTooltip content="Формула свопа V2: dy = y * dx / (x + dx). С учётом fee: dy = y * (dx * 997) / (x * 1000 + dx * 997). 0.3% fee остаётся в пуле.">
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: colors.text,
+            marginBottom: 8,
+            fontFamily: 'monospace',
+          }}
+        >
+          {step.title}
+        </div>
+      </DiagramTooltip>
 
       {/* Description */}
       <div
@@ -156,28 +159,30 @@ export function V2SwapMathDiagram() {
         }}
       >
         {step.values.map((v, i) => (
-          <div key={i} style={{ ...glassStyle, padding: 10 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                marginBottom: 4,
-              }}
-            >
-              {v.label}
+          <DiagramTooltip key={i} content="Reserve X: количество токена X в пуле. Reserve Y: количество токена Y. Цена X в Y: price = reserve_Y / reserve_X.">
+            <div style={{ ...glassStyle, padding: 10 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  marginBottom: 4,
+                }}
+              >
+                {v.label}
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: v.color,
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                }}
+              >
+                {v.value}
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 13,
-                color: v.color,
-                fontFamily: 'monospace',
-                fontWeight: 600,
-              }}
-            >
-              {v.value}
-            </div>
-          </div>
+          </DiagramTooltip>
         ))}
       </div>
 
@@ -272,6 +277,7 @@ interface MintScenario {
   explanation: string;
   example: string;
   color: string;
+  tooltip: string;
 }
 
 const MINT_SCENARIOS: MintScenario[] = [
@@ -283,6 +289,7 @@ const MINT_SCENARIOS: MintScenario[] = [
     example:
       'amountA = 10 ETH (10e18), amountB = 20,000 USDC (20,000e6)\nliquidity = sqrt(10e18 * 20,000e6) - 1000 = sqrt(2e26) - 1000',
     color: colors.primary,
+    tooltip: 'Первый LP: LP_tokens = sqrt(x * y) - MINIMUM_LIQUIDITY. 1000 wei LP токенов навсегда locked (предотвращает деление на ноль и manipulation).',
   },
   {
     title: 'Последующие провайдеры',
@@ -292,34 +299,28 @@ const MINT_SCENARIOS: MintScenario[] = [
     example:
       'reserveA = 100 ETH, reserveB = 200,000 USDC, totalSupply = 1000\namountA = 10 ETH, amountB = 20,000 USDC\nliquidity = min(10*1000/100, 20000*1000/200000) = min(100, 100) = 100',
     color: colors.success,
+    tooltip: 'Добавление ликвидности: LP_tokens = min(dx/x, dy/y) * totalSupply. Нужно добавить оба токена пропорционально текущему ratio.',
   },
 ];
 
 /**
  * LPTokenMintingDiagram
  *
- * Static with hover. Shows first-provider and subsequent-provider scenarios.
+ * Shows first-provider and subsequent-provider scenarios with DiagramTooltip.
  */
 export function LPTokenMintingDiagram() {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-
   return (
     <DiagramContainer title="LP токены: расчет долей" color="green">
       {/* Scenario cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-        {MINT_SCENARIOS.map((s, i) => {
-          const isHovered = hoveredIdx === i;
-          return (
+        {MINT_SCENARIOS.map((s, i) => (
+          <DiagramTooltip key={i} content={s.tooltip}>
             <div
-              key={i}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx(null)}
               style={{
                 ...glassStyle,
                 padding: 14,
-                cursor: 'pointer',
-                background: isHovered ? `${s.color}0a` : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isHovered ? `${s.color}40` : 'rgba(255,255,255,0.08)'}`,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 transition: 'all 0.2s',
               }}
             >
@@ -347,60 +348,58 @@ export function LPTokenMintingDiagram() {
               >
                 {s.formula}
               </div>
-              {isHovered && (
-                <>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: colors.text,
-                      lineHeight: 1.5,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {s.explanation}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: colors.textMuted,
-                      fontFamily: 'monospace',
-                      whiteSpace: 'pre-line',
-                      padding: 8,
-                      background: 'rgba(0,0,0,0.15)',
-                      borderRadius: 4,
-                    }}
-                  >
-                    {s.example}
-                  </div>
-                </>
-              )}
+              <div
+                style={{
+                  fontSize: 12,
+                  color: colors.text,
+                  lineHeight: 1.5,
+                  marginBottom: 8,
+                }}
+              >
+                {s.explanation}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: colors.textMuted,
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-line',
+                  padding: 8,
+                  background: 'rgba(0,0,0,0.15)',
+                  borderRadius: 4,
+                }}
+              >
+                {s.example}
+              </div>
             </div>
-          );
-        })}
+          </DiagramTooltip>
+        ))}
       </div>
 
       {/* MINIMUM_LIQUIDITY note */}
-      <div
-        style={{
-          ...glassStyle,
-          padding: 10,
-          background: 'rgba(244,63,94,0.06)',
-          border: '1px solid rgba(244,63,94,0.2)',
-          marginBottom: 8,
-        }}
-      >
+      <DiagramTooltip content="Удаление ликвидности: dx = LP_tokens / totalSupply * reserve_X. Получаете долю обоих токенов + накопленные fees.">
         <div
           style={{
-            fontSize: 11,
-            color: '#f43f5e',
-            fontFamily: 'monospace',
-            textAlign: 'center',
+            ...glassStyle,
+            padding: 10,
+            background: 'rgba(244,63,94,0.06)',
+            border: '1px solid rgba(244,63,94,0.2)',
+            marginBottom: 8,
           }}
         >
-          MINIMUM_LIQUIDITY = 1000 -- навсегда заблокировано в address(0). Без этого первый LP мог
-          бы манипулировать ценой LP-токена.
+          <div
+            style={{
+              fontSize: 11,
+              color: '#f43f5e',
+              fontFamily: 'monospace',
+              textAlign: 'center',
+            }}
+          >
+            MINIMUM_LIQUIDITY = 1000 -- навсегда заблокировано в address(0). Без этого первый LP мог
+            бы манипулировать ценой LP-токена.
+          </div>
         </div>
-      </div>
+      </DiagramTooltip>
 
       <DataBox
         label="LP токены = ERC-20"
@@ -420,6 +419,7 @@ interface EfficiencyRow {
   v2: string;
   v3: string;
   advantage: string;
+  tooltip: string;
 }
 
 const EFFICIENCY_DATA: EfficiencyRow[] = [
@@ -428,41 +428,44 @@ const EFFICIENCY_DATA: EfficiencyRow[] = [
     v2: '[0, infinity)',
     v3: '[price_a, price_b]',
     advantage: 'V3: LP выбирает диапазон',
+    tooltip: 'V2: ликвидность от 0 до infinity (большая часть не используется). V3: concentrated ranges. Для +-5% range: ~4000x эффективнее V2.',
   },
   {
     metric: 'ETH/USDC $100K',
     v2: 'Глубина: ~$100K',
     v3: 'Глубина: ~$424K (x4.24)',
     advantage: 'V3: 4.24x эффективнее',
+    tooltip: 'V2: ликвидность от 0 до infinity (большая часть не используется). V3: concentrated ranges. Для +-5% range: ~4000x эффективнее V2.',
   },
   {
     metric: 'Заработок комиссий',
     v2: 'Весь диапазон, мало',
     v3: 'Только в диапазоне, много',
     advantage: 'V3: до 4000x больше',
+    tooltip: 'V2: LP зарабатывает на всём диапазоне, но мало. V3: LP зарабатывает только в своём range, но получает пропорционально больше комиссий.',
   },
   {
     metric: 'LP токен',
     v2: 'ERC-20 (взаимозаменяемый)',
     v3: 'NFT (уникальная позиция)',
     advantage: 'V2: проще, V3: гибче',
+    tooltip: 'V2: LP complexity: deposit and forget. V3: активное управление range. Если цена выходит за range -- LP перестаёт зарабатывать fees.',
   },
   {
     metric: 'Управление',
     v2: 'Set & forget',
     v3: 'Активное управление',
     advantage: 'V2: проще',
+    tooltip: 'V2: IL = 2*sqrt(p) / (1+p) - 1. V3: IL amplified пропорционально concentration. Узкий range = больше fees, но больше IL.',
   },
 ];
 
 /**
  * V2vsV3EfficiencyDiagram
  *
- * Static comparison table with hover. Shows capital efficiency difference.
+ * Comparison table with DiagramTooltip on first column cells.
  */
 export function V2vsV3EfficiencyDiagram() {
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-
   // SVG visualization
   const svgW = 320;
   const svgH = 160;
@@ -587,12 +590,8 @@ export function V2vsV3EfficiencyDiagram() {
             {EFFICIENCY_DATA.map((row, i) => (
               <tr
                 key={i}
-                onMouseEnter={() => setHoveredRow(i)}
-                onMouseLeave={() => setHoveredRow(null)}
                 style={{
-                  background: hoveredRow === i ? 'rgba(168,85,247,0.06)' : 'transparent',
                   transition: 'all 0.15s',
-                  cursor: 'pointer',
                 }}
               >
                 <td
@@ -603,7 +602,9 @@ export function V2vsV3EfficiencyDiagram() {
                     fontWeight: 600,
                   }}
                 >
-                  {row.metric}
+                  <DiagramTooltip content={row.tooltip}>
+                    <span>{row.metric}</span>
+                  </DiagramTooltip>
                 </td>
                 <td
                   style={{
