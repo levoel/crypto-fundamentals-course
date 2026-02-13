@@ -31,6 +31,48 @@
       "correctAnswer": true,
       "explanation": "H0..H7 инициализируются дробными частями квадратных корней из 2, 3, 5, 7, 11, 13, 17 и 19. Эти «ничего-в-рукаве» константы (nothing-up-my-sleeve numbers) гарантируют отсутствие скрытых бэкдоров в алгоритме.",
       "bloomLevel": "analytical"
+    },
+    {
+      "id": "sha256-vis-code-1",
+      "type": "code-challenge",
+      "question": "Напишите функцию countDifferentBits(hex1, hex2), которая подсчитывает количество различающихся битов между двумя hex-строками одинаковой длины. Это демонстрирует лавинный эффект SHA-256.",
+      "language": "javascript",
+      "starterCode": "function countDifferentBits(hex1, hex2) {\n  // hex1 и hex2 — строки одинаковой длины из hex-символов\n  // Верните число различающихся битов\n  \n  let count = 0;\n  // Ваш код здесь\n  return count;\n}",
+      "solutionCode": "function countDifferentBits(hex1, hex2) {\n  let count = 0;\n  for (let i = 0; i < hex1.length; i++) {\n    let xor = parseInt(hex1[i], 16) ^ parseInt(hex2[i], 16);\n    while (xor > 0) {\n      count += xor & 1;\n      xor >>= 1;\n    }\n  }\n  return count;\n}",
+      "testCases": [
+        {
+          "id": "t1",
+          "description": "Одинаковые строки — 0 различий",
+          "input": "'abcd', 'abcd'",
+          "expectedOutput": "0",
+          "hidden": false
+        },
+        {
+          "id": "t2",
+          "description": "Один hex-символ отличается на 1 бит (0 vs 1)",
+          "input": "'0', '1'",
+          "expectedOutput": "1",
+          "hidden": false
+        },
+        {
+          "id": "t3",
+          "description": "Максимальное различие в одном символе (0 vs f = 4 бита)",
+          "input": "'0', 'f'",
+          "expectedOutput": "4",
+          "hidden": false
+        },
+        {
+          "id": "t4",
+          "description": "Реалистичный пример из двух SHA-256 хешей (скрытый тест)",
+          "input": "'a3f2', '5c0d'",
+          "expectedOutput": "9",
+          "hidden": true
+        }
+      ],
+      "explanation": "Подсчёт различающихся битов — основа метрики лавинного эффекта. Для идеальной хеш-функции изменение одного бита входа должно менять ~50% битов выхода (128 из 256 для SHA-256). Операция XOR выявляет различия: если бит одинаков, XOR даёт 0; если различен — 1.",
+      "hint": "Используйте XOR (^) для каждой пары hex-символов, затем подсчитайте единичные биты в результате (popcount).",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
     }
   ]
 }

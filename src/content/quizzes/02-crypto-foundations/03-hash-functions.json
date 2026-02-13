@@ -45,6 +45,41 @@
       "correctAnswer": true,
       "explanation": "По принципу Дирихле, коллизии неизбежны (бесконечное множество входов отображается в конечное 2^256 множество хешей). Но для SHA-256 нахождение коллизии требует ~2^128 операций (атака дней рождения), что выходит за пределы вычислительных возможностей.",
       "bloomLevel": "analytical"
+    },
+    {
+      "id": "hash-code-1",
+      "type": "code-challenge",
+      "question": "Реализуйте функцию sha256(input), которая вычисляет SHA-256 хеш строки с помощью Web Crypto API и возвращает результат в виде hex-строки.",
+      "language": "javascript",
+      "starterCode": "async function sha256(input) {\n  // Используйте crypto.subtle.digest('SHA-256', data)\n  // Верните hex-строку из 64 символов\n  const encoder = new TextEncoder();\n  const data = encoder.encode(input);\n  \n  // Ваш код здесь\n}",
+      "solutionCode": "async function sha256(input) {\n  const encoder = new TextEncoder();\n  const data = encoder.encode(input);\n  const hashBuffer = await crypto.subtle.digest('SHA-256', data);\n  const hashArray = Array.from(new Uint8Array(hashBuffer));\n  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');\n}",
+      "testCases": [
+        {
+          "id": "t1",
+          "description": "SHA-256 пустой строки",
+          "input": "''",
+          "expectedOutput": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "hidden": false
+        },
+        {
+          "id": "t2",
+          "description": "SHA-256 строки 'hello'",
+          "input": "'hello'",
+          "expectedOutput": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+          "hidden": false
+        },
+        {
+          "id": "t3",
+          "description": "SHA-256 строки 'Hello' (регистрозависимость)",
+          "input": "'Hello'",
+          "expectedOutput": "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969",
+          "hidden": true
+        }
+      ],
+      "explanation": "Web Crypto API предоставляет нативную реализацию SHA-256 через crypto.subtle.digest(). Результат — ArrayBuffer, который нужно преобразовать в hex-строку. Это та же функция, которую браузер использует для TLS/SSL соединений.",
+      "hint": "crypto.subtle.digest() возвращает ArrayBuffer. Используйте new Uint8Array() для доступа к байтам, затем .toString(16).padStart(2, '0') для каждого байта.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
     }
   ]
 }
