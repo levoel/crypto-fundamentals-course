@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "02-crypto-foundations/01-modular-arithmetic",
+  "moduleId": "02-crypto-foundations",
+  "questions": [
+    {
+      "id": "mod-q1",
+      "type": "multiple-choice",
+      "question": "Чему равно 15 mod 7?",
+      "options": [
+        { "id": "a", "text": "1" },
+        { "id": "b", "text": "2" },
+        { "id": "c", "text": "7" },
+        { "id": "d", "text": "8" }
+      ],
+      "correctAnswer": "a",
+      "explanation": "15 = 2 × 7 + 1, поэтому остаток от деления 15 на 7 равен 1. В модулярной арифметике мы работаем только с остатками.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "mod-q2",
+      "type": "multiple-choice",
+      "question": "Какой обратный элемент числа 3 по модулю 7? То есть, чему равно x, если 3x ≡ 1 (mod 7)?",
+      "options": [
+        { "id": "a", "text": "2" },
+        { "id": "b", "text": "3" },
+        { "id": "c", "text": "5" },
+        { "id": "d", "text": "4" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "3 × 5 = 15 = 2 × 7 + 1, значит 15 mod 7 = 1. Поэтому 5 — обратный элемент числа 3 по модулю 7. Обратный элемент существует, так как gcd(3, 7) = 1.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "mod-q3",
+      "type": "true-false",
+      "question": "В модулярной арифметике (a + b) mod n = ((a mod n) + (b mod n)) mod n",
+      "correctAnswer": true,
+      "explanation": "Это свойство совместимости модулярной арифметики со сложением. Оно позволяет выполнять промежуточные вычисления по модулю, не дожидаясь финального результата. Это критично для криптографии, где числа могут быть 256-битными.",
+      "bloomLevel": "conceptual"
+    }
+  ]
+}
