@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "02-crypto-foundations/05-keccak-sha3",
+  "moduleId": "02-crypto-foundations",
+  "questions": [
+    {
+      "id": "keccak-q1",
+      "type": "multiple-choice",
+      "question": "Какая основная структурная разница между SHA-256 и Keccak (SHA-3)?",
+      "options": [
+        { "id": "a", "text": "SHA-256 быстрее" },
+        { "id": "b", "text": "SHA-256 использует конструкцию Меркла-Дамгора, а Keccak — конструкцию губки (sponge)" },
+        { "id": "c", "text": "Keccak выдает хеш меньшей длины" },
+        { "id": "d", "text": "Keccak не поддерживает входы произвольной длины" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "SHA-256 построена на конструкции Меркла-Дамгора (последовательное сжатие блоков), а Keccak использует конструкцию губки с фазами absorb (впитывание) и squeeze (выжимание). Конструкция губки устойчива к атакам расширения длины.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "keccak-q2",
+      "type": "true-false",
+      "question": "Ethereum использует стандартный SHA-3 (FIPS 202) для вычисления адресов и хеширования данных",
+      "correctAnswer": false,
+      "explanation": "Ethereum использует Keccak-256, а НЕ стандартный SHA-3 (FIPS 202). Отличие в паддинге: NIST добавил дополнительные биты при стандартизации. Поэтому keccak256('') ≠ sha3_256(''). Это частый источник ошибок при разработке.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "keccak-q3",
+      "type": "multiple-choice",
+      "question": "Как вычисляется адрес Ethereum из публичного ключа?",
+      "options": [
+        { "id": "a", "text": "Первые 20 байт SHA-256 публичного ключа" },
+        { "id": "b", "text": "Последние 20 байт Keccak-256 публичного ключа" },
+        { "id": "c", "text": "Двойной SHA-256 публичного ключа" },
+        { "id": "d", "text": "RIPEMD-160 от SHA-256 публичного ключа" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Адрес Ethereum = последние 20 байт (160 бит) от Keccak-256(публичный_ключ). Берутся именно последние байты. Вариант (d) — это схема адресов Bitcoin, не Ethereum.",
+      "bloomLevel": "applied"
+    }
+  ]
+}
