@@ -1,0 +1,78 @@
+{
+  "lessonSlug": "04-ethereum/03-state-trie-mpt",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth03-q1",
+      "type": "true-false",
+      "question": "State root в заголовке блока Ethereum -- это корневой хеш Modified Merkle Patricia Trie (MPT), однозначно определяющий состояние всех аккаунтов сети.",
+      "correctAnswer": true,
+      "explanation": "State root -- 32-байтный хеш корня MPT, который однозначно определяет глобальное состояние всех 280+ миллионов аккаунтов. Любое изменение даже одного бита в одном аккаунте приводит к другому state root. Каждый заголовок блока содержит stateRoot, transactionsRoot и receiptsRoot.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth03-q2",
+      "type": "multiple-choice",
+      "question": "Какие три типа узлов используются в Modified Merkle Patricia Trie?",
+      "options": [
+        { "id": "a", "text": "Root, Internal, Leaf" },
+        { "id": "b", "text": "Branch, Extension, Leaf" },
+        { "id": "c", "text": "Hash, Data, Pointer" },
+        { "id": "d", "text": "Parent, Child, Sibling" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "MPT использует три типа узлов: Branch (17 элементов: 16 nibble-слотов + value), Extension (сжатый общий префикс + указатель на дочерний узел) и Leaf (оставшийся путь + RLP-кодированные данные аккаунта). Extension сжимает цепочки узлов с единственным потомком, оптимизируя хранение.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth03-q3",
+      "type": "multiple-choice",
+      "question": "Почему MPT позволяет light clients эффективно проверять состояние аккаунтов без скачивания полного дерева?",
+      "options": [
+        { "id": "a", "text": "Light client хранит копию всего дерева в сжатом виде" },
+        { "id": "b", "text": "MPT объединяет свойства Patricia trie (быстрый поиск) и Merkle tree (криптографические доказательства), позволяя верифицировать proof размером ~2-3 KB по state root из заголовка блока" },
+        { "id": "c", "text": "Ethereum сервер подписывает каждый ответ цифровой подписью" },
+        { "id": "d", "text": "Light client запрашивает данные у нескольких нод и сравнивает ответы" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "MPT сочетает Patricia trie (эффективный поиск по ключу O(k)) с Merkle tree (каждый узел содержит хеш потомков). Light client хранит только заголовки блоков (~500 байт каждый) и запрашивает Merkle proof (~2-3 KB) через eth_getProof. Proof верифицируется путём пересчёта хешей от leaf до root и сравнения с state root.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "eth03-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте вычисление ключа в State Trie. Функция solve(address) получает строку Ethereum-адреса и возвращает её Keccak-256 хеш -- ключ, по которому аккаунт хранится в State Trie.",
+      "language": "javascript",
+      "useCryptoHelpers": true,
+      "starterCode": "function solve(address) {\n  // Вычислите keccak256 хеш адреса\n  // keccak256() принимает строку и возвращает hex-строку\n  // Верните полный хеш\n}",
+      "solutionCode": "function solve(address) {\n  return keccak256(address);\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Адрес 0x0...001",
+          "input": "'0x0000000000000000000000000000000000000001'",
+          "expectedOutput": "bcc2192660e415142f6fb338081a9efe1152ffbfec1ac3f2f90a6201ea3c5e16",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Строка 'hello'",
+          "input": "'hello'",
+          "expectedOutput": "1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Адрес Vitalik",
+          "input": "'0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'",
+          "expectedOutput": "1e1424ab9612aff0e8fd41ee0d78f525ad6963610bd017d18f96d2a37cdf402a",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "В State Trie ключ для каждого аккаунта -- это keccak256(address). Хеширование адресов обеспечивает равномерное распределение по дереву и фиксированную длину ключа (32 байта = 64 nibble). Light client верифицирует proof, следуя nibble-последовательности keccak256(address) от корня дерева.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

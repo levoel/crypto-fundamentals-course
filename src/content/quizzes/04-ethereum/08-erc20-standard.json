@@ -1,0 +1,84 @@
+{
+  "lessonSlug": "04-ethereum/08-erc20-standard",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth08-q1",
+      "type": "true-false",
+      "question": "ERC-20 определяет стандартный интерфейс для fungible (взаимозаменяемых) токенов, включающий 6 функций и 2 события.",
+      "correctAnswer": true,
+      "explanation": "Стандарт ERC-20 (EIP-20) определяет 6 функций: totalSupply(), balanceOf(), transfer(), approve(), transferFrom(), allowance() и 2 события: Transfer и Approval. Более 500 000 токенов на Ethereum следуют этому стандарту, что позволяет кошелькам, DEX и DeFi-протоколам работать с любым ERC-20 одинаковым образом.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth08-q2",
+      "type": "multiple-choice",
+      "question": "Какие функции обязательны по стандарту ERC-20?",
+      "options": [
+        { "id": "a", "text": "totalSupply, balanceOf, transfer, mint, burn" },
+        { "id": "b", "text": "totalSupply, balanceOf, transfer, approve, transferFrom, allowance" },
+        { "id": "c", "text": "transfer, approve, transferFrom, name, symbol, decimals" },
+        { "id": "d", "text": "balanceOf, transfer, approve, permit, increaseAllowance" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "ERC-20 требует 6 функций: totalSupply() -- общее количество токенов, balanceOf(address) -- баланс адреса, transfer(to, amount) -- прямой перевод, approve(spender, amount) -- разрешение, transferFrom(from, to, amount) -- перевод от имени, allowance(owner, spender) -- разрешённая сумма. Функции mint, burn, name, symbol, decimals, permit -- расширения, не обязательные по стандарту.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth08-q3",
+      "type": "multiple-choice",
+      "question": "Почему ERC-20 использует двухшаговый паттерн approve + transferFrom вместо просто transfer?",
+      "options": [
+        { "id": "a", "text": "Approve обеспечивает шифрование данных перевода для приватности" },
+        { "id": "b", "text": "DEX-контракт не может вызвать transfer от имени пользователя (msg.sender будет адресом DEX), поэтому пользователь сначала даёт разрешение (approve), а затем DEX вызывает transferFrom" },
+        { "id": "c", "text": "Approve ускоряет транзакцию за счёт кэширования результата" },
+        { "id": "d", "text": "Двухшаговый процесс нужен для совместимости с Bitcoin Script" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "При вызове transfer() контрактом-DEX, msg.sender будет адресом DEX, а не пользователя -- DEX не может перемещать чужие токены. Паттерн approve + transferFrom решает это: пользователь вызывает approve(DEX, amount), устанавливая allowance. Затем DEX вызывает transferFrom(user, recipient, amount), расходуя allowance. ERC-2612 Permit -- современная альтернатива с off-chain подписью.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "eth08-q4",
+      "type": "code-challenge",
+      "question": "Напишите минимальный ERC-20 контракт MyToken с функциями totalSupply() returns (uint256), balanceOf(address) returns (uint256) и transfer(address, uint256) returns (bool). Используйте mapping для балансов, в constructor задайте initial supply для msg.sender.",
+      "language": "solidity",
+      "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract MyToken {\n    // Реализуйте:\n    // - mapping(address => uint256) private _balances\n    // - uint256 private _totalSupply\n    // - constructor(uint256 initialSupply) -- выделяет supply msg.sender\n    // - function totalSupply() external view returns (uint256)\n    // - function balanceOf(address account) external view returns (uint256)\n    // - function transfer(address to, uint256 amount) external returns (bool)\n}",
+      "solutionCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract MyToken {\n    mapping(address => uint256) private _balances;\n    uint256 private _totalSupply;\n\n    constructor(uint256 initialSupply) {\n        _totalSupply = initialSupply;\n        _balances[msg.sender] = initialSupply;\n    }\n\n    function totalSupply() external view returns (uint256) {\n        return _totalSupply;\n    }\n\n    function balanceOf(address account) external view returns (uint256) {\n        return _balances[account];\n    }\n\n    function transfer(address to, uint256 amount) external returns (bool) {\n        require(_balances[msg.sender] >= amount, \"Insufficient balance\");\n        _balances[msg.sender] -= amount;\n        _balances[to] += amount;\n        return true;\n    }\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Контракт компилируется",
+          "expectedOutput": "Contract:",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc2",
+          "description": "ABI содержит функцию totalSupply",
+          "expectedOutput": "\"name\": \"totalSupply\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc3",
+          "description": "ABI содержит функцию balanceOf",
+          "expectedOutput": "\"name\": \"balanceOf\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc4",
+          "description": "ABI содержит функцию transfer",
+          "expectedOutput": "\"name\": \"transfer\"",
+          "hidden": false,
+          "matchMode": "contains"
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Минимальный ERC-20 состоит из двух mapping (_balances и _allowances) и _totalSupply. Каждая операция -- модификация mapping: transfer уменьшает баланс sender и увеличивает баланс to. В production используйте OpenZeppelin ERC20 -- он обрабатывает edge cases: проверки нулевого адреса, events (Transfer, Approval), overflow protection.",
+      "bloomLevel": "applied",
+      "timeoutMs": 30000
+    }
+  ]
+}

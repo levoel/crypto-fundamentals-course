@@ -1,0 +1,78 @@
+{
+  "lessonSlug": "04-ethereum/02-account-model",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth02-q1",
+      "type": "true-false",
+      "question": "Ethereum различает два типа аккаунтов: EOA (Externally Owned Account), контролируемый приватным ключом, и Contract Account, контролируемый байткодом.",
+      "correctAnswer": true,
+      "explanation": "EOA контролируется приватным ключом (ECDSA secp256k1) и может инициировать транзакции. Contract Account контролируется байткодом EVM и активируется только транзакцией от EOA или вызовом другого контракта. Оба типа имеют одинаковые 4 поля состояния: nonce, balance, storageRoot, codeHash.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth02-q2",
+      "type": "multiple-choice",
+      "question": "Какие поля присутствуют в Contract Account, но содержат нетривиальные значения, в отличие от EOA?",
+      "options": [
+        { "id": "a", "text": "nonce и balance" },
+        { "id": "b", "text": "storageRoot и codeHash" },
+        { "id": "c", "text": "balance и codeHash" },
+        { "id": "d", "text": "nonce и storageRoot" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "У EOA storageRoot -- хеш пустого trie, а codeHash -- keccak256 пустой строки. У Contract Account storageRoot -- корень storage trie с переменными контракта, а codeHash -- keccak256 байткода. Именно по codeHash == keccak256(\"\") определяется, является ли аккаунт EOA -- явного поля type не существует.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth02-q3",
+      "type": "multiple-choice",
+      "question": "Почему модель аккаунтов Ethereum хуже подходит для параллельной обработки транзакций по сравнению с UTXO?",
+      "options": [
+        { "id": "a", "text": "Аккаунты Ethereum не поддерживают nonce для защиты от replay-атак" },
+        { "id": "b", "text": "Контракты имеют общее изменяемое состояние (shared mutable state), создающее зависимости между транзакциями" },
+        { "id": "c", "text": "Адреса Ethereum длиннее, чем адреса Bitcoin, что замедляет обработку" },
+        { "id": "d", "text": "EVM не поддерживает многопоточность из-за ограничений стека" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "В модели UTXO каждый выход тратится ровно один раз, поэтому параллельная валидация транзакций безопасна. В модели аккаунтов Ethereum контракты могут читать и записывать общее состояние (storage), что создаёт зависимости: две транзакции к одному контракту могут конфликтовать. Это фундаментальный trade-off: UTXO лучше для параллелизма, аккаунты -- для смарт-контрактов.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "eth02-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте упрощённое вычисление адреса контракта. Функция solve(senderHex, nonceStr) получает hex-строку адреса отправителя и строку nonce. Вычислите keccak256(senderHex + nonceStr) и верните последние 40 hex-символов с префиксом '0x'.",
+      "language": "javascript",
+      "useCryptoHelpers": true,
+      "starterCode": "function solve(senderHex, nonceStr) {\n  // 1. Конкатенируйте senderHex и nonceStr\n  // 2. Вычислите keccak256 от конкатенации\n  // 3. Возьмите последние 40 символов хеша\n  // 4. Верните с префиксом '0x'\n}",
+      "solutionCode": "function solve(senderHex, nonceStr) {\n  const hash = keccak256(senderHex + nonceStr);\n  return '0x' + hash.slice(-40);\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Адрес Vitalik + nonce 0",
+          "input": "'d8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '0'",
+          "expectedOutput": "0x4521b48815f0cb072391f115b417135124e9e79e",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Адрес Vitalik + nonce 1",
+          "input": "'d8dA6BF26964aF9D7eEd9e03E53415D37aA96045', '1'",
+          "expectedOutput": "0xdd63b85019962bce2e7649b49a1f71d5f388f778",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Нулевой адрес + nonce 0",
+          "input": "'0000000000000000000000000000000000000000', '0'",
+          "expectedOutput": "0x714cd85fb977d2e1a5ef115acae25903441f9298",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Адрес нового контракта в Ethereum детерминистически вычисляется из адреса отправителя и его nonce: address = keccak256(rlp([sender, nonce]))[12:]. В нашем упрощении мы конкатенируем строки вместо RLP-кодирования. Функция keccak256() возвращает hex-строку, из которой берём последние 40 символов (20 байт -- размер Ethereum-адреса).",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

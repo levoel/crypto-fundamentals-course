@@ -1,0 +1,77 @@
+{
+  "lessonSlug": "04-ethereum/06-solidity-basics",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth06-q1",
+      "type": "true-false",
+      "question": "Solidity -- это статически типизированный язык программирования, который компилируется в байткод EVM.",
+      "correctAnswer": true,
+      "explanation": "Solidity -- основной язык смарт-контрактов Ethereum. Он статически типизирован: каждая переменная имеет фиксированный тип (uint256, address, bool), который определяет размер в storage. Компилятор (solc) преобразует Solidity в EVM bytecode -- набор опкодов, исполняемых виртуальной машиной.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth06-q2",
+      "type": "multiple-choice",
+      "question": "Какой модификатор видимости позволяет вызывать функцию только извне контракта (из транзакций и других контрактов), но не из самого контракта?",
+      "options": [
+        { "id": "a", "text": "public" },
+        { "id": "b", "text": "private" },
+        { "id": "c", "text": "internal" },
+        { "id": "d", "text": "external" }
+      ],
+      "correctAnswer": "d",
+      "explanation": "external -- функция доступна только извне (через транзакции или вызовы других контрактов), но не из самого контракта. public -- извне и изнутри. internal -- только из контракта и наследников. private -- только из самого контракта. External-функции эффективнее для больших calldata, так как не копируют данные в memory.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth06-q3",
+      "type": "multiple-choice",
+      "question": "Почему state variables в Solidity по умолчанию имеют видимость internal, а не public?",
+      "options": [
+        { "id": "a", "text": "Это предотвращает чтение данных контракта из блокчейна" },
+        { "id": "b", "text": "Это ограничивает энергопотребление при компиляции" },
+        { "id": "c", "text": "Public автоматически генерирует getter-функцию, увеличивая размер байткода и gas деплоя, поэтому internal -- более экономичный default" },
+        { "id": "d", "text": "Internal переменные хранятся в memory, а не в storage, что дешевле" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "Объявление переменной как public автоматически генерирует getter-функцию (например, function owner() external view returns (address)), увеличивая размер деплоированного байткода и стоимость деплоя. Internal -- более экономичный default. Важно: даже internal/private переменные читаемы из блокчейна (через eth_getStorageAt), visibility лишь контролирует API контракта.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "eth06-q4",
+      "type": "code-challenge",
+      "question": "Напишите контракт Counter с приватным счётчиком _count типа uint256, функцией increment() external, которая увеличивает счётчик на 1, и функцией count() external view returns (uint256), которая возвращает значение счётчика.",
+      "language": "solidity",
+      "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract Counter {\n    // Реализуйте:\n    // - uint256 private _count\n    // - function increment() external\n    // - function count() external view returns (uint256)\n}",
+      "solutionCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract Counter {\n    uint256 private _count;\n\n    function increment() external {\n        _count += 1;\n    }\n\n    function count() external view returns (uint256) {\n        return _count;\n    }\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Контракт компилируется",
+          "expectedOutput": "Contract:",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc2",
+          "description": "ABI содержит функцию increment",
+          "expectedOutput": "\"name\": \"increment\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc3",
+          "description": "ABI содержит функцию count",
+          "expectedOutput": "\"name\": \"count\"",
+          "hidden": false,
+          "matchMode": "contains"
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Counter -- базовый контракт Solidity. _count хранится в storage slot 0 (32 байта). increment() использует SSTORE для записи нового значения (22100 gas cold). count() использует SLOAD для чтения (2100 gas cold). Модификатор view указывает, что функция не изменяет state.",
+      "bloomLevel": "applied",
+      "timeoutMs": 30000
+    }
+  ]
+}

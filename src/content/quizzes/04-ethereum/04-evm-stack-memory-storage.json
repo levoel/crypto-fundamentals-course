@@ -1,0 +1,56 @@
+{
+  "lessonSlug": "04-ethereum/04-evm-stack-memory-storage",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth04-q1",
+      "type": "true-false",
+      "question": "EVM (Ethereum Virtual Machine) -- это стековая виртуальная машина с 256-битным размером слова и максимальной глубиной стека 1024 элемента.",
+      "correctAnswer": true,
+      "explanation": "EVM -- стековая машина (stack machine), в которой все операции работают через стек. Каждый элемент стека -- 256-битное слово (uint256). Максимальная глубина -- 1024 элемента. В отличие от регистровых архитектур (x86, ARM), EVM не имеет именованных регистров.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth04-q2",
+      "type": "multiple-choice",
+      "question": "Что делает опкод SSTORE в EVM?",
+      "options": [
+        { "id": "a", "text": "Читает 32 байта из памяти (memory) по указанному адресу" },
+        { "id": "b", "text": "Записывает значение в persistent storage контракта по указанному ключу (слоту)" },
+        { "id": "c", "text": "Помещает значение на вершину стека" },
+        { "id": "d", "text": "Загружает calldata транзакции в память" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "SSTORE берёт два значения со стека: slot (ключ) и value (значение), и записывает value в persistent storage контракта по ключу slot. Это самая дорогая базовая операция EVM: 22100 gas при записи в новый слот (cold, 0 -> non-0). SLOAD -- парный опкод для чтения из storage.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth04-q3",
+      "type": "multiple-choice",
+      "question": "Чем отличаются опкоды MLOAD и SLOAD?",
+      "options": [
+        { "id": "a", "text": "MLOAD читает из volatile memory (стирается после вызова), SLOAD -- из persistent storage (сохраняется навсегда)" },
+        { "id": "b", "text": "MLOAD читает один байт, SLOAD -- 32 байта" },
+        { "id": "c", "text": "MLOAD работает только с calldata, SLOAD -- с любыми данными" },
+        { "id": "d", "text": "Разницы нет -- оба читают из одного хранилища, но с разными именами" }
+      ],
+      "correctAnswer": "a",
+      "explanation": "MLOAD загружает 32 байта из memory -- volatile области, которая доступна только во время выполнения текущего вызова и стирается после. SLOAD загружает 32 байта из storage -- persistent key-value хранилища контракта, данные которого сохраняются между транзакциями. Memory расширяется с квадратичной стоимостью, storage стоит 2100 gas (cold) за чтение.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth04-q4",
+      "type": "multiple-choice",
+      "question": "Почему запись в storage (SSTORE) -- самая дорогая базовая операция EVM?",
+      "options": [
+        { "id": "a", "text": "Storage использует шифрование, которое требует много вычислений" },
+        { "id": "b", "text": "Каждая запись должна быть подтверждена всеми валидаторами в отдельном раунде" },
+        { "id": "c", "text": "Данные сохраняются навсегда на всех полных узлах сети, увеличивая state bloat" },
+        { "id": "d", "text": "SSTORE вызывает перекомпиляцию байткода контракта" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "Storage данные persistent: они записываются на диск каждого полного узла сети и хранятся навсегда. Это создаёт state bloat -- рост размера state trie (уже ~1 TB). Одна операция SSTORE cold (22100 gas) = 7367 операций ADD (3 gas). Высокая стоимость стимулирует разработчиков минимизировать записи в storage.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

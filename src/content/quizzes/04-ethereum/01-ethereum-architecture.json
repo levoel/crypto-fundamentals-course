@@ -1,0 +1,56 @@
+{
+  "lessonSlug": "04-ethereum/01-ethereum-architecture",
+  "moduleId": "04-ethereum",
+  "questions": [
+    {
+      "id": "eth01-q1",
+      "type": "true-false",
+      "question": "После The Merge (сентябрь 2022) узел Ethereum состоит из двух уровней: Execution Layer (EL) и Consensus Layer (CL), связанных через Engine API.",
+      "correctAnswer": true,
+      "explanation": "The Merge объединил Execution Layer (исполнение транзакций, EVM, state trie) и Consensus Layer (Beacon Chain, валидаторы, финализация) в единый узел. EL и CL связаны через Engine API с тремя ключевыми методами: engine_newPayloadV3, engine_forkchoiceUpdatedV3, engine_getPayloadV3.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "eth01-q2",
+      "type": "multiple-choice",
+      "question": "Какой уровень Ethereum отвечает за исполнение транзакций, управление состоянием и работу EVM?",
+      "options": [
+        { "id": "a", "text": "Consensus Layer (CL)" },
+        { "id": "b", "text": "Execution Layer (EL)" },
+        { "id": "c", "text": "Beacon Chain" },
+        { "id": "d", "text": "Engine API" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Execution Layer (EL) отвечает за исполнение транзакций через EVM, управление State Trie, Transaction Pool и предоставляет JSON-RPC API (eth_call, eth_sendTransaction). Consensus Layer отвечает за консенсус, валидаторов и финализацию блоков.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth01-q3",
+      "type": "multiple-choice",
+      "question": "Какая комбинация клиентов образует полный узел Ethereum после The Merge?",
+      "options": [
+        { "id": "a", "text": "Только один EL-клиент (например, Geth)" },
+        { "id": "b", "text": "Только один CL-клиент (например, Prysm)" },
+        { "id": "c", "text": "Один EL-клиент + один CL-клиент (например, Geth + Lighthouse)" },
+        { "id": "d", "text": "Два EL-клиента разных реализаций (например, Geth + Nethermind)" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "Полный узел Ethereum требует один EL-клиент (Geth, Nethermind, Besu или Erigon) и один CL-клиент (Prysm, Lighthouse, Teku, Nimbus или Lodestar). Client diversity важен: если один клиент содержит баг, остальные продолжают работать корректно.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "eth01-q4",
+      "type": "multiple-choice",
+      "question": "Почему The Merge считается одним из самых значимых обновлений Ethereum?",
+      "options": [
+        { "id": "a", "text": "Увеличил максимальный размер блока в 10 раз" },
+        { "id": "b", "text": "Перевёл консенсус с Proof of Work на Proof of Stake, снизив энергопотребление на 99.95%" },
+        { "id": "c", "text": "Добавил поддержку смарт-контрактов, которой не было ранее" },
+        { "id": "d", "text": "Заменил модель аккаунтов на UTXO для совместимости с Bitcoin" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "The Merge заменил энергоёмкий Proof of Work на Proof of Stake, где безопасность обеспечивается экономическим залогом (32 ETH), а не вычислительной работой. Это снизило энергопотребление Ethereum на 99.95%. Смарт-контракты были в Ethereum с самого начала, а модель аккаунтов осталась прежней.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}
