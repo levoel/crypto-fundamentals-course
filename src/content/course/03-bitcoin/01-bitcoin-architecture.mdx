@@ -68,6 +68,11 @@ print(f"Genesis Block Hash: {block_hash[::-1].hex()[:16]}...")
 
 **RPC интерфейс** -- JSON-RPC API для взаимодействия с узлом. Через него работают `bitcoin-cli`, кошельки и приложения.
 
+<KnowledgeCheck
+  question="Из каких ключевых компонентов состоит полный узел (full node) Bitcoin?"
+  answer="Полный узел включает: P2P сеть (TCP-соединения с 8-125 пирами), Mempool (пул неподтверждённых транзакций), валидацию блоков (проверка PoW и правил консенсуса), UTXO Set (~100 млн записей неизрасходованных выходов), кошелёк (управление ключами) и RPC-интерфейс (JSON-RPC API)."
+/>
+
 ## Bitcoin vs традиционная банковская система
 
 Чтобы понять архитектуру Bitcoin, полезно сравнить её с привычной банковской системой.
@@ -75,6 +80,11 @@ print(f"Genesis Block Hash: {block_hash[::-1].hex()[:16]}...")
 <BitcoinVsBankingDiagram client:visible />
 
 Ключевое архитектурное отличие: банк использует **account model** (баланс на счёте), а Bitcoin -- **UTXO model** (набор неизрасходованных выходов). В следующем уроке мы подробно разберём модель UTXO.
+
+<KnowledgeCheck
+  question="Чем архитектурно отличается модель данных Bitcoin от банковской системы?"
+  answer="Банк использует account model (единый баланс на счёте), а Bitcoin -- UTXO model (набор неизрасходованных выходов). В банке баланс -- число в базе данных. В Bitcoin баланс -- сумма всех UTXO, которые кошелёк может потратить."
+/>
 
 ## Ключевые концепции модуля
 
@@ -129,6 +139,11 @@ print(f"Отображение (BE): {display_hash.hex()[:16]}...")
 ```
 
 Запомните: **то, что вы видите в `bitcoin-cli` -- это reversed byte order**. При работе с библиотеками используйте `lx()` для преобразования display -> internal и `b2lx()` для internal -> display.
+
+<KnowledgeCheck
+  question="Почему Bitcoin использует little-endian для внутреннего хранения, но отображает хеши в big-endian (reversed)?"
+  answer="Bitcoin Core хранит хеши в little-endian формате для совместимости с x86-архитектурой. Но для отображения (bitcoin-cli, блок-эксплореры) используется big-endian (reversed byte order). При работе с библиотеками используют lx() для конвертации display -> internal и b2lx() для internal -> display."
+/>
 
 ## Практика
 

@@ -71,6 +71,11 @@ scriptPubKey: OP_HASH160 hash160(redeemScript) OP_EQUAL
 - Отправитель платит на короткий адрес `3...`, не зная структуры мультиподписи
 - При трате получатель раскрывает полный redeemScript
 
+<KnowledgeCheck
+  question="Чем отличаются P2PKH и P2SH типы транзакций? Какую проблему решает P2SH?"
+  answer="P2PKH записывает полный скрипт в выход (scriptPubKey: OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG). P2SH записывает только хеш скрипта (OP_HASH160 <scriptHash> OP_EQUAL). P2SH переносит сложность на получателя: отправитель видит короткий адрес (3...) независимо от сложности скрипта (мультиподпись, таймлоки)."
+/>
+
 ## SegWit v0: P2WPKH и P2WSH
 
 **BIP 141** (Segregated Witness, 2017). Фундаментальное обновление Bitcoin.
@@ -152,6 +157,11 @@ vB (virtual bytes) = weight / 4
 Сравнение всех пяти типов Bitcoin-транзакций:
 
 <TransactionTypeComparison client:visible />
+
+<KnowledgeCheck
+  question="Как SegWit решает проблему transaction malleability и почему это критично для Lightning Network?"
+  answer="SegWit перемещает подписи из scriptSig (часть txid) в отдельное поле witness (НЕ входит в txid). Это делает txid стабильным: третья сторона не может изменить его через модификацию подписи. Lightning Network требует стабильных txid для цепочек зависимых неподтверждённых транзакций (commitment TX зависит от funding TX)."
+/>
 
 ## Taproot (P2TR) -- BIP 341/342
 
