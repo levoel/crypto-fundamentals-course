@@ -1,0 +1,59 @@
+{
+  "lessonSlug": "01-math-refresher/01-numbers-notation",
+  "moduleId": "01-math-refresher",
+  "questions": [
+    {
+      "id": "nn-q1",
+      "type": "multiple-choice",
+      "question": "К какому числовому множеству принадлежит число -7?",
+      "options": [
+        { "id": "a", "text": "N (натуральные числа)" },
+        { "id": "b", "text": "Z (целые числа)" },
+        { "id": "c", "text": "Q (рациональные числа, но не целые)" },
+        { "id": "d", "text": "R (вещественные числа, но не рациональные)" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "-7 -- целое число, поэтому оно принадлежит множеству Z. Натуральные числа N содержат только положительные числа (1, 2, 3, ...). -7 также принадлежит Q и R (так как Z подмножество Q подмножество R), но наиболее точный ответ -- Z.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "nn-q2",
+      "type": "multiple-choice",
+      "question": "Чему равно двоичное число 11001010 в десятичной системе?",
+      "options": [
+        { "id": "a", "text": "192" },
+        { "id": "b", "text": "202" },
+        { "id": "c", "text": "210" },
+        { "id": "d", "text": "198" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "11001010 = 128 + 64 + 0 + 0 + 8 + 0 + 2 + 0 = 202. Каждый бит имеет вес-степень двойки: бит 7 = 128, бит 6 = 64, бит 3 = 8, бит 1 = 2.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "nn-q3",
+      "type": "true-false",
+      "question": "В криптографии мы преимущественно работаем с множеством Q (рациональными числами).",
+      "correctAnswer": false,
+      "explanation": "В криптографии мы работаем с Z (целыми числами), а точнее -- с Z_p (целые по модулю простого числа p). Дроби и вещественные числа в криптографии практически не встречаются. Все операции (модулярная арифметика, эллиптические кривые над конечными полями) работают с целыми числами.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "nn-q4",
+      "type": "code-challenge",
+      "question": "Напишите функцию solve(n), которая конвертирует целое число n в шестнадцатеричную строку (hex) без префикса '0x', в верхнем регистре. Например: solve(255) -> \"FF\", solve(42) -> \"2A\".",
+      "language": "python",
+      "starterCode": "def solve(n):\n    # Конвертируйте целое число n в hex-строку\n    # Без префикса '0x', буквы в верхнем регистре\n    # Подсказка: используйте встроенную функцию hex()\n    pass",
+      "solutionCode": "def solve(n):\n    if n == 0:\n        return \"0\"\n    return hex(n)[2:].upper()",
+      "testCases": [
+        { "id": "tc1", "description": "255 -> FF", "input": "255", "expectedOutput": "FF", "hidden": false },
+        { "id": "tc2", "description": "42 -> 2A", "input": "42", "expectedOutput": "2A", "hidden": false },
+        { "id": "tc3", "description": "0 -> 0", "input": "0", "expectedOutput": "0", "hidden": false },
+        { "id": "tc4", "description": "4096 -> 1000", "input": "4096", "expectedOutput": "1000", "hidden": true }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Функция hex() в Python возвращает строку с префиксом '0x'. Срезом [2:] убираем префикс, а .upper() преобразует буквы в верхний регистр. Hex-представление критически важно в криптографии: ключи, хеши и адреса всегда отображаются в hex.",
+      "bloomLevel": "applied"
+    }
+  ]
+}
