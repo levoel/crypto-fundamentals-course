@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "03-bitcoin/08-network-protocol",
+  "moduleId": "03-bitcoin",
+  "questions": [
+    {
+      "id": "net-q1",
+      "type": "true-false",
+      "question": "Bitcoin использует gossip-протокол для распространения блоков и транзакций: каждый узел пересылает новую информацию своим соседям, которые пересылают дальше.",
+      "correctAnswer": true,
+      "explanation": "Bitcoin P2P сеть использует gossip-протокол (\"сарафанное радио\"): когда узел получает новый блок или транзакцию, он отправляет inv-сообщение (inventory) своим пирам, уведомляя о наличии данных. Заинтересованные пиры запрашивают полные данные через getdata. Так информация за секунды распространяется по всей сети из тысяч узлов.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "net-q2",
+      "type": "multiple-choice",
+      "question": "Какова правильная последовательность P2P-сообщений при Initial Block Download (IBD) в Bitcoin Core (headers-first)?",
+      "options": [
+        { "id": "a", "text": "getblocks -> block -> verack" },
+        { "id": "b", "text": "getheaders -> headers (проверка PoW) -> getdata -> block (проверка транзакций)" },
+        { "id": "c", "text": "version -> inv -> tx -> block" },
+        { "id": "d", "text": "addr -> getdata -> block -> mempool" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Headers-first IBD (Bitcoin Core 0.10+): сначала узел запрашивает заголовки (getheaders), получает цепочку заголовков (headers) и проверяет PoW и prev_hash каждого. Затем параллельно запрашивает полные блоки (getdata -> block) у нескольких пиров и проверяет все транзакции. Это эффективнее, чем скачивать блоки последовательно.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "net-q3",
+      "type": "multiple-choice",
+      "question": "Почему Compact Block Relay (BIP 152) значительно сокращает трафик при распространении блоков?",
+      "options": [
+        { "id": "a", "text": "Compact Block Relay сжимает блоки алгоритмом gzip" },
+        { "id": "b", "text": "Блок передаётся как заголовок + укороченные ID транзакций, а узел восстанавливает полный блок из своего мемпула" },
+        { "id": "c", "text": "Compact Block Relay передаёт только изменения относительно предыдущего блока" },
+        { "id": "d", "text": "Узлы кешируют все блоки и никогда не запрашивают данные повторно" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Compact Block Relay отправляет заголовок блока и укороченные идентификаторы транзакций (6 байт вместо 32 байт txid). Принимающий узел уже имеет большинство транзакций в своём мемпуле и восстанавливает полный блок локально. Это сокращает объём передаваемых данных в ~10 раз и ускоряет распространение блоков по сети.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

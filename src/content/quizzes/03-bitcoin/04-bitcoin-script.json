@@ -1,0 +1,60 @@
+{
+  "lessonSlug": "03-bitcoin/04-bitcoin-script",
+  "moduleId": "03-bitcoin",
+  "questions": [
+    {
+      "id": "script-q1",
+      "type": "true-false",
+      "question": "Bitcoin Script -- это стековый (stack-based) язык, который намеренно НЕ является Turing-полным: в нём нет циклов, рекурсии и состояния.",
+      "correctAnswer": true,
+      "explanation": "Bitcoin Script -- ограниченный стековый язык с ~100 опкодами. Отсутствие циклов гарантирует завершение любого скрипта, отсутствие состояния обеспечивает изоляцию, а ограниченный стек (1000 элементов, 520 байт на элемент) -- предсказуемые ресурсы. Это сделано намеренно: каждый узел выполняет каждый скрипт, и бесконечные циклы парализовали бы сеть.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "script-q2",
+      "type": "multiple-choice",
+      "question": "Что делает опкод OP_DUP при выполнении на стеке Bitcoin Script?",
+      "options": [
+        { "id": "a", "text": "Удаляет верхний элемент стека" },
+        { "id": "b", "text": "Дублирует верхний элемент стека (создаёт копию на вершине)" },
+        { "id": "c", "text": "Меняет местами два верхних элемента стека" },
+        { "id": "d", "text": "Хеширует верхний элемент стека с помощью SHA-256" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "OP_DUP (opcode 0x76) дублирует верхний элемент стека. Например, если стек содержит [pubKey], после OP_DUP стек станет [pubKey, pubKey]. Это первый шаг в P2PKH скрипте: дублированная копия хешируется для сравнения с адресом, а оригинал используется для проверки подписи.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "script-q3",
+      "type": "multiple-choice",
+      "question": "Почему Turing-неполнота Bitcoin Script считается преимуществом для безопасности, а не недостатком?",
+      "options": [
+        { "id": "a", "text": "Turing-неполнота позволяет выполнять более сложные смарт-контракты" },
+        { "id": "b", "text": "Каждый узел выполняет каждый скрипт, и гарантия завершения исключает атаки через бесконечные вычисления (проблема остановки)" },
+        { "id": "c", "text": "Turing-неполнота делает Script быстрее, чем Solidity" },
+        { "id": "d", "text": "Без циклов невозможно создать вредоносный код" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Каждая нода Bitcoin выполняет каждый скрипт каждой транзакции. Если бы Script был Turing-полным, атакующий мог бы создать скрипт с бесконечным циклом, парализовав валидацию. Ethereum решает эту проблему через gas, а Bitcoin -- ограничением самого языка. Это фундаментально более безопасный подход: невозможно написать скрипт, который не завершится.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "script-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте простой симулятор Bitcoin Script. Функция solve(script) принимает строку операций через пробел и выполняет их на стеке. Поддержите: числовые литералы (push), OP_ADD (pop 2, push сумму), OP_DUP (дублировать верхний элемент), OP_EQUAL (pop 2, push \"1\" если равны, \"0\" если нет). Верните верхний элемент стека как строку.",
+      "language": "python",
+      "starterCode": "def solve(script):\n    # Разбейте script на токены по пробелам\n    # Для каждого токена:\n    #   - число -> push на стек (как int)\n    #   - OP_ADD -> pop 2 элемента, push их сумму\n    #   - OP_DUP -> дублировать верхний элемент\n    #   - OP_EQUAL -> pop 2, push 1 если равны, 0 если нет\n    # Верните str(top of stack)\n    pass",
+      "solutionCode": "def solve(script):\n    stack = []\n    tokens = script.split()\n    for token in tokens:\n        if token == 'OP_ADD':\n            b = stack.pop()\n            a = stack.pop()\n            stack.append(a + b)\n        elif token == 'OP_DUP':\n            stack.append(stack[-1])\n        elif token == 'OP_EQUAL':\n            b = stack.pop()\n            a = stack.pop()\n            stack.append(1 if a == b else 0)\n        else:\n            stack.append(int(token))\n    return str(stack[-1])",
+      "testCases": [
+        { "id": "tc1", "description": "3 + 5 = 8", "input": "3 5 OP_ADD", "expectedOutput": "8", "hidden": false },
+        { "id": "tc2", "description": "7 DUP ADD = 14", "input": "7 OP_DUP OP_ADD", "expectedOutput": "14", "hidden": false },
+        { "id": "tc3", "description": "10 == 10 -> 1", "input": "10 10 OP_EQUAL", "expectedOutput": "1", "hidden": false },
+        { "id": "tc4", "description": "3 != 4 -> 0", "input": "3 4 OP_EQUAL", "expectedOutput": "0", "hidden": true }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Bitcoin Script -- стековый язык. Числа помещаются на стек, а опкоды манипулируют элементами стека. OP_ADD снимает два верхних элемента и кладёт их сумму. OP_DUP дублирует верхний элемент (используется в P2PKH). OP_EQUAL сравнивает два верхних элемента. Реальный Bitcoin Script содержит ~100 опкодов, включая криптографические (OP_CHECKSIG, OP_HASH160).",
+      "bloomLevel": "applied",
+      "timeoutMs": 10000
+    }
+  ]
+}
