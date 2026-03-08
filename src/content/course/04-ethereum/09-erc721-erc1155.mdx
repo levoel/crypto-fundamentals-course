@@ -87,6 +87,11 @@ interface IERC721Receiver {
 }
 ```
 
+<KnowledgeCheck
+  question="Что делает каждый ERC-721 токен уникальным по сравнению с ERC-20?"
+  answer="Каждый ERC-721 токен идентифицируется уникальным tokenId. Маппинг _owners[tokenId] => address хранит владельца. Нет понятия 'amount' -- токен либо принадлежит вам, либо нет. ERC-20 токены взаимозаменяемы (fungible), ERC-721 -- нет (non-fungible)."
+/>
+
 ## Metadata и tokenURI
 
 Каждый NFT может хранить ссылку на метаданные:
@@ -173,6 +178,11 @@ contract CourseMultiToken is ERC1155, Ownable {
 ```
 
 GOLD и SILVER -- fungible (можно иметь любое количество). BADGE -- фактически non-fungible (только 1 в supply).
+
+<KnowledgeCheck
+  question="Почему ERC-1155 эффективнее ERC-721 для batch-операций?"
+  answer="ERC-1155 safeBatchTransferFrom переводит несколько типов токенов за одну транзакцию. Base cost (21000 gas) оплачивается один раз вместо N. Плюс один контракт для fungible и non-fungible токенов (gold coins + unique badge)."
+/>
 
 ## Сравнение стандартов
 

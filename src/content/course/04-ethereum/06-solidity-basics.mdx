@@ -117,6 +117,11 @@ contract Wasteful {
 }
 ```
 
+<KnowledgeCheck
+  question="Как компилятор Solidity назначает storage слоты переменным?"
+  answer="Простые типы (uint256, address) -- последовательные слоты с 0. Переменные < 32 байт, объявленные подряд, упаковываются в один слот (packing). Mapping хранит значения по keccak256(key . slot_number). Динамические массивы: длина в base slot, данные с keccak256(slot)."
+/>
+
 ### Mapping: вычисление слота
 
 Для `mapping(address => uint256)` в слоте N:
@@ -251,6 +256,11 @@ ABI encoding:
 - `address`: 32 байта (12 нулевых + 20 байт адреса)
 - `bool`: 32 байта (0x00...00 или 0x00...01)
 - `string`: offset + length + padded data
+
+<KnowledgeCheck
+  question="Чем отличаются модификаторы видимости external и public для функций Solidity?"
+  answer="external -- только извне (транзакции и другие контракты), не вызывается изнутри контракта. public -- извне и изнутри. External эффективнее для больших calldata-параметров, так как не копирует данные в memory. Internal -- только контракт + наследники. Private -- только сам контракт."
+/>
 
 ## Компиляция и байткод
 

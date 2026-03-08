@@ -143,6 +143,11 @@ def encode_path(nibbles: list[int], is_leaf: bool) -> bytes:
     return bytes([nibbles[i] * 16 + nibbles[i+1] for i in range(0, len(nibbles), 2)])
 ```
 
+<KnowledgeCheck
+  question="Какие три типа узлов используются в Modified Merkle Patricia Trie?"
+  answer="Branch Node (17 элементов: 16 nibble-слотов + value), Extension Node (сжатый общий префикс + указатель на дочерний узел) и Leaf Node (оставшийся путь + RLP-кодированные данные аккаунта)."
+/>
+
 ## Визуализация MPT
 
 Ниже -- упрощённый MPT с 4 аккаунтами. Пройдите пошагово: поиск аккаунта, вставка нового, изменение state root.
@@ -213,6 +218,11 @@ block_header.receiptsRoot = receipt_trie.root()  # bytes32
 # - cumulativeGasUsed: суммарный gas всех tx до этой включительно
 # - logs: массив событий (address, topics[], data)
 ```
+
+<KnowledgeCheck
+  question="Почему state root в заголовке блока однозначно определяет состояние всей сети?"
+  answer="State root -- корневой хеш MPT, вычисленный рекурсивно от всех leaf-узлов (аккаунтов). Изменение одного бита в одном аккаунте перехешивает цепочку от leaf до root, давая другой 32-байтный хеш. Вероятность коллизии: 2^{-256}."
+/>
 
 ## Алгоритм поиска в MPT
 

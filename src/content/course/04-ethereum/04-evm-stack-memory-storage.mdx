@@ -101,6 +101,11 @@ SSTORE берет:       slot=0x00, value=0x2A
 Storage:           slot[0] = 0x2A
 ```
 
+<KnowledgeCheck
+  question="Чем EVM принципиально отличается от регистровых архитектур (x86, ARM)?"
+  answer="EVM -- стековая машина (stack machine) без именованных регистров. Все операции работают через стек из 256-битных элементов (max 1024). Операнды берутся с вершины стека (LIFO), результат кладётся обратно. Три области данных: volatile memory, persistent storage, read-only calldata."
+/>
+
 ## Storage Layout: как Solidity хранит переменные
 
 Компилятор Solidity назначает каждой переменной **слот** в хранилище контракта. Каждый слот -- 32 байта (256 бит). Правила:
@@ -136,6 +141,11 @@ contract Good {
     uint256 b;  // slot 1
 }
 ```
+
+<KnowledgeCheck
+  question="В чём разница между memory и storage в EVM?"
+  answer="Memory -- volatile (стирается после вызова), byte-addressable, расширяется с квадратичной стоимостью. Storage -- persistent (сохраняется навсегда на всех узлах), 256-bit key-value pairs, самое дорогое: SSTORE cold = 22100 gas. Memory дешевле для временных данных, storage -- для постоянных."
+/>
 
 ## Память EVM: расширение и стоимость
 

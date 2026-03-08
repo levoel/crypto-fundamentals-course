@@ -126,6 +126,11 @@ Engine API -- это JSON-RPC интерфейс между EL и CL. Три к�
 | `engine_forkchoiceUpdatedV3` | CL -> EL | Обновить head/safe/finalized блоки |
 | `engine_getPayloadV3` | CL -> EL | Запросить payload для нового блока |
 
+<KnowledgeCheck
+  question="Из каких двух уровней состоит узел Ethereum после The Merge и как они связаны?"
+  answer="Execution Layer (EL) -- исполнение транзакций, EVM, state trie. Consensus Layer (CL) -- Beacon Chain, валидаторы, финализация. Связаны через Engine API (JSON-RPC: engine_newPayloadV3, engine_forkchoiceUpdatedV3, engine_getPayloadV3)."
+/>
+
 ## Ключевые концепции модуля
 
 В этом модуле мы последовательно разберем:
@@ -143,6 +148,11 @@ Engine API -- это JSON-RPC интерфейс между EL и CL. Три к�
 | ETH-10 | Proof of Stake | Валидаторы, эпохи, финализация |
 | ETH-11 | Валидаторы и слэшинг | Attestation, proposer, slashing conditions |
 | ETH-12 | Account Abstraction | ERC-4337, UserOperation, Paymaster |
+
+<KnowledgeCheck
+  question="Почему The Merge считается одним из самых значимых обновлений Ethereum?"
+  answer="The Merge заменил энергоёмкий Proof of Work на Proof of Stake, снизив энергопотребление Ethereum на 99.95%. Вместо вычислительной работы (ASIC, электричество) безопасность обеспечивается экономическим залогом (32+ ETH)."
+/>
 
 ## Связь с криптографией
 

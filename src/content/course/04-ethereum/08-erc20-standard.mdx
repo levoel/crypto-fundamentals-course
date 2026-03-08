@@ -70,6 +70,11 @@ token.transfer(bob, 100);
 
 Обратите внимание: `transfer()` всегда перемещает токены **от msg.sender**. Контракт не может вызвать `transfer()` от имени другого пользователя.
 
+<KnowledgeCheck
+  question="Какие 6 функций и 2 события определяет стандарт ERC-20?"
+  answer="Функции: totalSupply(), balanceOf(address), transfer(to, amount), approve(spender, amount), transferFrom(from, to, amount), allowance(owner, spender). События: Transfer(from, to, value) и Approval(owner, spender, value). Все ERC-20 токены реализуют этот интерфейс."
+/>
+
 ## Approve и TransferFrom
 
 Это **ключевой паттерн** ERC-20, который часто путает новичков. Зачем нужен двухшаговый процесс?
@@ -119,6 +124,11 @@ function _burn(address from, uint256 amount) internal {
     emit Transfer(from, address(0), amount); // to = 0x0 означает burn
 }
 ```
+
+<KnowledgeCheck
+  question="Почему ERC-20 использует двухшаговый паттерн approve + transferFrom вместо одного transfer?"
+  answer="DEX-контракт не может вызвать transfer() от имени пользователя -- msg.sender будет адресом DEX. Поэтому: 1) пользователь вызывает approve(DEX, amount), устанавливая allowance, 2) DEX вызывает transferFrom(user, recipient, amount), расходуя allowance. ERC-2612 Permit -- off-chain альтернатива."
+/>
 
 ## ERC-2612 Permit
 
