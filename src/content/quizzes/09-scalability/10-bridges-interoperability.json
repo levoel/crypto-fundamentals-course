@@ -1,0 +1,77 @@
+{
+  "lessonSlug": "09-scalability/10-bridges-interoperability",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "scale10-q1",
+      "type": "true-false",
+      "question": "Атаки на мосты привели к потерям более $2.8 миллиарда, что делает мосты самой высокорисковой категорией в DeFi -- Ronin ($624M), BNB Bridge ($570M), Wormhole ($326M), Nomad ($190M).",
+      "correctAnswer": true,
+      "explanation": "Bridge = пересечение двух security domains. Каждый шаг (lock, relay, verify, mint) -- потенциальная уязвимость. Ronin: 5/9 validator key compromise (Lazarus Group). BNB: proof verifier bug (подделка proofs). Wormhole: signature verification bypass на Solana. Nomad: initialization bug (trusted root = 0x00). Harmony: 2/5 multisig compromise. Bridge контракты -- honeypots с сотнями миллионов locked assets.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "scale10-q2",
+      "type": "multiple-choice",
+      "question": "Какой общий паттерн уязвимости чаще всего приводит к взломам мостов?",
+      "options": [
+        { "id": "a", "text": "Reentrancy атаки на bridge контракты" },
+        { "id": "b", "text": "Bypass верификации подписей/proofs: Wormhole ($326M) -- signature verification bypass, BNB Bridge ($570M) -- proof verifier bug, Nomad ($190M) -- trusted root = 0x00. Proof/signature verification -- критический код: один баг = возможность подделать сообщение и заминтить неограниченное количество wrapped tokens" },
+        { "id": "c", "text": "Flash loan атаки на bridge liquidity pools" },
+        { "id": "d", "text": "Ошибки в front-end интерфейсах мостов" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Паттерн: bypass verification step. Bridge = lock -> relay -> VERIFY -> mint. Если verify имеет баг: атакующий подделывает proof/signature -> mint без реального lock -> неограниченный drain. Wormhole: обход guardian signature verification на Solana. BNB: подделка IAVL proof. Nomad: initialization с trusted root = 0x00 -> любое сообщение проходит. Ronin + Harmony: key compromise (другой вектор, но тоже bypass -- скомпрометированные ключи = легитимные подписи).",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "scale10-q3",
+      "type": "multiple-choice",
+      "question": "Почему стандарт ERC-7802 (Optimism Superchain Token) снижает bridge risk по сравнению с традиционными lock-and-mint мостами?",
+      "options": [
+        { "id": "a", "text": "ERC-7802 использует более длинные ключи шифрования" },
+        { "id": "b", "text": "ERC-7802 устраняет необходимость в wrapped tokens между OP Stack chains -- один токен нативно доступен на всех Superchain chains, используя shared security settlement. Нет отдельного bridge контракта-honeypot, нет внешних валидаторов. Безопасность наследуется от rollup security (данные на L1)" },
+        { "id": "c", "text": "ERC-7802 не использует смарт-контракты для bridging" },
+        { "id": "d", "text": "ERC-7802 добавляет 30-дневный challenge period для всех переводов" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "ERC-7802 -- стандарт для native token bridging в Superchain ecosystem. Преимущества: 1) No wrapped tokens -- один и тот же токен на Base, OP Mainnet, Zora. 2) No separate bridge honeypot -- нет контракта с locked assets. 3) Shared security -- используется rollup settlement (данные на L1, fraud proofs). 4) Chainless UX -- пользователь не думает о том, на каком chain. Traditional lock-and-mint: отдельный bridge контракт с TVL = honeypot для атакующих + внешние валидаторы = дополнительная attack surface.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "scale10-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте упрощенную верификацию Merkle proof. Функция solve(leafStr, proofStr, rootStr) получает значение листа, JSON-массив proof nodes [{hash, position}], и ожидаемый root. Для каждого proof step: если position='left', current = proofNode.hash + current; если position='right', current = current + proofNode.hash. Сравните финальный current с root. Верните 'true' или 'false'.",
+      "language": "javascript",
+      "starterCode": "function solve(leafStr, proofStr, rootStr) {\n  // 1. Начните с current = leafStr\n  // 2. Парсите proofStr как JSON массив [{hash, position}]\n  // 3. Для каждого node:\n  //    если position === 'left': current = node.hash + current\n  //    если position === 'right': current = current + node.hash\n  // 4. Сравните current с rootStr\n  // 5. Верните 'true' или 'false'\n}",
+      "solutionCode": "function solve(leafStr, proofStr, rootStr) {\n  let current = leafStr;\n  const proof = JSON.parse(proofStr);\n  for (const node of proof) {\n    if (node.position === 'left') {\n      current = node.hash + current;\n    } else {\n      current = current + node.hash;\n    }\n  }\n  return current === rootStr ? 'true' : 'false';\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Валидный proof: h2 слева, h34 справа -> root h2tx1h34",
+          "input": "'tx1', '[{\"hash\":\"h2\",\"position\":\"left\"},{\"hash\":\"h34\",\"position\":\"right\"}]', 'h2tx1h34'",
+          "expectedOutput": "true",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Невалидный proof: правильный путь, неправильный root",
+          "input": "'tx1', '[{\"hash\":\"h2\",\"position\":\"left\"},{\"hash\":\"h34\",\"position\":\"right\"}]', 'wrong'",
+          "expectedOutput": "false",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Другая структура дерева: 3 уровня",
+          "input": "'a', '[{\"hash\":\"b\",\"position\":\"right\"},{\"hash\":\"cd\",\"position\":\"right\"}]', 'abcd'",
+          "expectedOutput": "true",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Merkle proof верификация: начинаем с leaf, последовательно хешируем с proof nodes. Если position='left', proof node конкатенируется перед current; если 'right' -- после. Финальное значение должно совпасть с root. В реальных системах вместо конкатенации используется hash function (keccak256, SHA-256). Этот упрощенный пример демонстрирует ЛОГИКУ верификации: proof = путь от leaf к root в Merkle tree.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

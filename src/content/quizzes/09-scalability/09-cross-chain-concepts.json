@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "09-scalability/09-cross-chain-concepts",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "scale09-q1",
+      "type": "true-false",
+      "question": "Cross-chain коммуникация всегда требует определенной формы trust assumption о валидности сообщений -- будь то доверие к валидаторам (externally verified), к light client proof (natively verified), или к честности хотя бы одного watcher (optimistic).",
+      "correctAnswer": true,
+      "explanation": "Три модели доверия: 1) Natively verified (IBC, rollup native bridges) -- light client или state proof на destination chain, trustless, но дорого. 2) Externally verified (Wormhole 13/19, Multichain) -- набор валидаторов подписывают attestation, trust assumption: honest majority. 3) Optimistic (Across) -- сообщения валидны, пока не оспорены, trust: хотя бы 1 честный watcher. Каждая модель имеет trust assumption разной степени.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "scale09-q2",
+      "type": "multiple-choice",
+      "question": "Какие 3 основные модели передачи активов между блокчейнами?",
+      "options": [
+        { "id": "a", "text": "Swap, Stake, Burn" },
+        { "id": "b", "text": "Lock-and-Mint (lock на source, mint wrapped на destination -- honeypot risk), Burn-and-Mint (burn на source, mint native на destination -- нет honeypot, но требует поддержки эмитента), Liquidity Pool (deposit в pool на source, withdraw из pool на destination -- быстро, но ограничен ликвидностью)" },
+        { "id": "c", "text": "Direct transfer, Relay, Atomic swap" },
+        { "id": "d", "text": "Все мосты используют только Lock-and-Mint" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три модели: 1) Lock-and-Mint (самая распространенная): lock ETH на source -> mint wETH на destination. Риск: bridge контракт хранит ВСЕ locked assets (honeypot). 2) Burn-and-Mint: burn USDC на source -> mint USDC native на destination. Circle CCTP. Нет honeypot, но только для поддерживаемых токенов. 3) Liquidity Pool: deposit в pool -> LP предоставляет на destination. Across, Stargate. Быстро (минуты), но ограничен ликвидностью.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "scale09-q3",
+      "type": "multiple-choice",
+      "question": "Почему верификация через light client обеспечивает более сильные гарантии безопасности, чем multisig bridge?",
+      "options": [
+        { "id": "a", "text": "Light client использует более длинные ключи шифрования" },
+        { "id": "b", "text": "Light client верифицирует state proof криптографически на destination chain -- безопасность эквивалентна source chain (natively verified). Multisig bridge зависит от honest majority валидаторов (T-of-N) -- компрометация T ключей = полный контроль. Harmony (2/5 threshold) потеряла $100M; Wormhole (13/19) более устойчив, но все равно зависит от честности guardian set" },
+        { "id": "c", "text": "Multisig bridges не поддерживают ERC-20 токены" },
+        { "id": "d", "text": "Light client и multisig bridge одинаково безопасны" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Natively verified (light client/state proof): destination chain самостоятельно верифицирует proof, используя consensus rules source chain. Безопасность = безопасность source chain. IBC (Cosmos) -- эталон. Externally verified (multisig): T-of-N подписей. Pr[attack] = Pr[>= T corrupted]. Harmony (2/5): Pr[attack] высока -- потеряли $100M. Wormhole (13/19): более устойчив, но все равно зависит от guardian set. Light client: mathematical verification vs trust in validators.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

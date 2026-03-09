@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "09-scalability/02-layer2-concepts",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "scale02-q1",
+      "type": "true-false",
+      "question": "Layer 2 решения выполняют транзакции off-chain, но наследуют безопасность L1, потому что публикуют данные транзакций на L1 и позволяют пользователям ВСЕГДА вывести средства на L1 даже если L2 оператор исчезнет.",
+      "correctAnswer": true,
+      "explanation": "L2 определение: off-chain execution + L1 data availability + security inheritance + exit guarantee. Если L2 shut down, пользователи могут восстановить state из данных на L1 и вывести средства. Это ключевое отличие от сайдчейнов: Polygon PoS (сайдчейн) имеет собственных валидаторов -- если они скомпрометированы, средства потеряны. Rollup данные на L1 -- Ethereum валидаторы защищают их.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "scale02-q2",
+      "type": "multiple-choice",
+      "question": "Что является ключевым отличием rollups от sidechains с точки зрения безопасности?",
+      "options": [
+        { "id": "a", "text": "Rollups используют более быстрый consensus algorithm" },
+        { "id": "b", "text": "Rollups публикуют ВСЕ данные транзакций на L1 (data availability), что позволяет любому восстановить state при отказе оператора. Sidechains хранят данные на собственной цепочке с собственными валидаторами -- если 2/3+ валидаторов скомпрометированы, средства потеряны и Ethereum не может помочь" },
+        { "id": "c", "text": "Sidechains дешевле, но медленнее rollups" },
+        { "id": "d", "text": "Rollups и sidechains имеют идентичную модель безопасности" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Data availability -- ключевой различитель. Rollup: данные на L1 (calldata/blobs), Pr[compromised] <= Pr[L1 compromised] + Pr[L2 bug]. Sidechain: данные на собственной цепочке, Pr[compromised] = Pr[>2/3 собственных валидаторов malicious]. Пример: если Optimism shut down, все данные есть на Ethereum -- любой восстановит state. Если Polygon PoS shut down, средства зависят от его валидаторов.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "scale02-q3",
+      "type": "multiple-choice",
+      "question": "Почему data availability на L1 критически важна для безопасности rollup?",
+      "options": [
+        { "id": "a", "text": "L1 data availability улучшает скорость транзакций на L2" },
+        { "id": "b", "text": "Data on L1 обеспечивает 3 гарантии: 1) любой может восстановить L2 state из L1 данных (reconstruction), 2) L1 может верифицировать correctness of state transitions (fraud/validity proof), 3) пользователь может вывести средства на L1 независимо от L2 operator (exit guarantee). Без DA на L1 эти гарантии невозможны -- Plasma mass exit problem продемонстрировала это" },
+        { "id": "c", "text": "Data on L1 просто дублирует данные для backup" },
+        { "id": "d", "text": "L1 data availability нужна только для ZK rollups, не для optimistic" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три гарантии DA на L1: 1) State reconstruction -- если sequencer исчезнет, любой может восстановить полный L2 state из L1 данных. 2) State verification -- fraud proofs (optimistic) или validity proofs (ZK) работают потому что L1 имеет данные для верификации. 3) Exit guarantee -- пользователь всегда может доказать свой баланс на L1 и вывести средства. Plasma (2017) хранила только Merkle root на L1 -> data withholding -> mass exit problem. Rollups публикуют ВСЕ данные -> проблема решена.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

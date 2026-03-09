@@ -1,0 +1,77 @@
+{
+  "lessonSlug": "09-scalability/05-optimistic-rollups",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "scale05-q1",
+      "type": "true-false",
+      "question": "Optimistic rollups считают все транзакции валидными по умолчанию (optimistic assumption) и используют fraud proofs только когда кто-то обнаруживает некорректный state root.",
+      "correctAnswer": true,
+      "explanation": "Принцип: assume valid unless proven otherwise. Sequencer исполняет транзакции off-chain, публикует результат. Все считают результат корректным. Если кто-то обнаружит ошибку -- подает fraud proof на L1. Работает потому что: данные на L1 (любой может проверить), экономические стимулы (sequencer теряет bond при fraud), 1-of-N honest assumption (один честный верификатор достаточен).",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "scale05-q2",
+      "type": "multiple-choice",
+      "question": "Каков типичный challenge period для optimistic rollups и почему выбрано именно это значение?",
+      "options": [
+        { "id": "a", "text": "24 часа -- достаточно для автоматической проверки" },
+        { "id": "b", "text": "7 дней -- инженерный компромисс: достаточно для загрузки batch data, повторного исполнения транзакций, подготовки fraud proof и учета сетевых задержек, но не настолько долго, чтобы сделать withdrawals непрактичными" },
+        { "id": "c", "text": "30 дней -- максимально безопасный вариант" },
+        { "id": "d", "text": "1 час -- для максимальной скорости вывода средств" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "7 дней -- security feature, не баг. Достаточно для: загрузки batch data с L1 (часы), повторного исполнения всех транзакций, подготовки fraud proof, учета цензуры и сетевых задержек. Достаточно короткий для практичного UX. EIP-4844 blobs хранятся ~18 дней -- с запасом для challenge period. Fast withdrawals через liquidity providers (Across, Hop, Stargate) решают UX проблему: LP берет 7-дневный risk за комиссию 0.1-0.5%.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "scale05-q3",
+      "type": "multiple-choice",
+      "question": "Почему 7-дневный withdrawal delay -- необходимый tradeoff для безопасности optimistic rollups?",
+      "options": [
+        { "id": "a", "text": "7-дневная задержка нужна для синхронизации блокчейнов L1 и L2" },
+        { "id": "b", "text": "Без challenge period sequencer мог бы публиковать поддельные state roots и мгновенно красть ВСЕ средства. 7 дней дают время обнаружить fraud и подать fraud proof. Безопасность всей системы зависит от 1-of-N honest assumption: хотя бы один верификатор должен проверить и оспорить за 7 дней" },
+        { "id": "c", "text": "Задержка нужна только для compliance с регуляторами" },
+        { "id": "d", "text": "7 дней -- это просто маркетинговое решение для сокращения нагрузки на L1" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Challenge period = security vs UX tradeoff. Без delay: sequencer публикует fake state root -> мгновенно withdraw -> украдены ВСЕ средства. С 7-day delay: sequencer публикует fake root -> верификатор загружает batch data -> повторно исполняет -> обнаруживает расхождение -> fraud proof на L1 -> sequencer slashed, state rolled back. 1-of-N honest assumption: Pr[failure] = p^N. Для p=0.1, N=10: Pr = 10^-10.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "scale05-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте расчет calldata cost vs EIP-4844 blob cost для rollup batch encoding. Функция solve(txCountStr, bytesPerTxStr) получает количество транзакций и размер каждой транзакции в байтах. Вычислите: calldataBytes = txCount * bytesPerTx, blobBytes = 131072 (фиксированный размер blob = 128 KB), ratio = calldataBytes / blobBytes. Верните JSON-строку.",
+      "language": "javascript",
+      "starterCode": "function solve(txCountStr, bytesPerTxStr) {\n  // 1. Парсите txCountStr и bytesPerTxStr в числа\n  // 2. calldataBytes = txCount * bytesPerTx\n  // 3. blobBytes = 131072 (128 KB, фиксированный размер blob)\n  // 4. ratio = calldataBytes / blobBytes\n  // 5. Верните JSON.stringify({calldataBytes: String(calldataBytes), blobBytes: String(blobBytes), ratio: ratio.toFixed(2)})\n}",
+      "solutionCode": "function solve(txCountStr, bytesPerTxStr) {\n  const txCount = parseInt(txCountStr, 10);\n  const bytesPerTx = parseInt(bytesPerTxStr, 10);\n  const calldataBytes = txCount * bytesPerTx;\n  const blobBytes = 131072;\n  const ratio = calldataBytes / blobBytes;\n  return JSON.stringify({calldataBytes: String(calldataBytes), blobBytes: String(blobBytes), ratio: ratio.toFixed(2)});\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "1000 транзакций по 120 байт -- почти полный blob",
+          "input": "'1000', '120'",
+          "expectedOutput": "{\"calldataBytes\":\"120000\",\"blobBytes\":\"131072\",\"ratio\":\"0.92\"}",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "500 транзакций по 200 байт -- 76% blob",
+          "input": "'500', '200'",
+          "expectedOutput": "{\"calldataBytes\":\"100000\",\"blobBytes\":\"131072\",\"ratio\":\"0.76\"}",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "2000 транзакций по 150 байт -- превышает 1 blob",
+          "input": "'2000', '150'",
+          "expectedOutput": "{\"calldataBytes\":\"300000\",\"blobBytes\":\"131072\",\"ratio\":\"2.29\"}",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "EIP-4844 (Proto-Danksharding) ввел blob transactions: каждый blob = 128 KB = 131,072 bytes. Rollups публикуют batch data в blobs вместо calldata. Ratio > 1 означает что batch не помещается в один blob -- нужно несколько blobs. Pectra upgrade (2025) увеличил target до 6 blobs per block = ~768 KB. Стоимость blob ~1 gas/byte vs calldata ~16 gas/byte = 10-100x экономия.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "lessonSlug": "08-governance/_exam",
+  "moduleId": "08-governance",
+  "questions": [
+    {
+      "id": "exam-gov-q1",
+      "type": "multiple-choice",
+      "question": "Как механизм checkpoints в ERC20Votes (GOV-02) предотвращает flash loan governance атаки, подобные Beanstalk (GOV-03)?",
+      "options": [
+        { "id": "a", "text": "Checkpoints блокируют transfer токенов во время голосования" },
+        { "id": "b", "text": "Governor вызывает getPastVotes(voter, proposalSnapshot) -- voting power определяется на момент СОЗДАНИЯ proposal, не голосования. Checkpoint создается при delegation, не при transfer. Flash loan токены, купленные после создания proposal, дают 0 голосов, потому что checkpoint на момент snapshot отсутствует" },
+        { "id": "c", "text": "Checkpoints автоматически определяют flash loan транзакции и отклоняют их" },
+        { "id": "d", "text": "ERC20Votes не поддерживает transfer, только delegation" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Связь GOV-02 и GOV-03: ERC20Votes хранит массив checkpoints {timestamp, votes} для каждого адреса. Checkpoint обновляется при delegation, не при transfer. Governor использует getPastVotes(voter, proposalSnapshot) с binary search по checkpoints. Flash loan токены купленные ПОСЛЕ proposalSnapshot не имеют checkpoint на этот момент -> voting power = 0. Beanstalk использовал текущий balanceOf(), не checkpoints.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-gov-q2",
+      "type": "multiple-choice",
+      "question": "Как комбинация quorum (GOV-03) с timelock delay (GOV-04) создает двухуровневую защиту от governance атак?",
+      "options": [
+        { "id": "a", "text": "Quorum и timelock работают независимо и не усиливают друг друга" },
+        { "id": "b", "text": "Quorum требует минимальное участие (4% totalSupply), предотвращая принятие решений малой группой. Timelock добавляет delay после одобрения, давая community exit opportunity. Вместе: атакующему нужно И набрать quorum, И преодолеть timelock transparency -- community видит pending action и может среагировать" },
+        { "id": "c", "text": "Quorum устанавливает максимальную задержку, а timelock -- минимальную" },
+        { "id": "d", "text": "Timelock автоматически увеличивает quorum при подозрительной активности" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Двухуровневая защита: 1) Quorum (4% totalSupply) предотвращает тихое принятие решений -- нужен значительный объем голосов. Voter apathy protection. 2) Timelock delay (1-2 дня) делает все одобренные действия прозрачными -- community видит targets, values, calldatas в pending operations. Даже если quorum пройден нечестно (vote buying), timelock дает время для обнаружения и реакции.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-gov-q3",
+      "type": "multiple-choice",
+      "question": "Какой полный lifecycle proposal проходит в OpenZeppelin Governor (от DAO concepts GOV-01 до Governor GOV-05)?",
+      "options": [
+        { "id": "a", "text": "propose -> vote -> execute (3 шага)" },
+        { "id": "b", "text": "propose -> votingDelay (1 день) -> vote (1 неделя) -> quorum check -> queue в TimelockController -> timelockDelay (1 день) -> execute через timelock -> Treasury выполняет действие. Итого ~9 дней от создания до исполнения" },
+        { "id": "c", "text": "Snapshot голосование -> multisig исполнение -> timelock" },
+        { "id": "d", "text": "propose -> immediate vote -> immediate execute (без задержек)" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Полный lifecycle: Day 0 -- propose(targets, values, calldatas, description) -> Pending. Day 1 -- votingDelay истек -> Active. Days 1-8 -- castVote(proposalId, For/Against/Abstain). Day 8 -- если quorum met AND For > Against -> Succeeded. queue() -> TimelockController.schedule() -> Queued. Day 9 -- timelockDelay истек -> execute() -> TimelockController.execute() -> Treasury.release() -> Executed.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "exam-gov-q4",
+      "type": "multiple-choice",
+      "question": "Почему модульная архитектура Governor + TimelockController + GovernanceToken безопаснее монолитного DAO контракта?",
+      "options": [
+        { "id": "a", "text": "Модульность просто снижает gas costs" },
+        { "id": "b", "text": "Каждый компонент имеет минимальные полномочия: Token только отслеживает voting power, Governor только управляет proposals, Timelock обеспечивает delay и является фактическим owner Treasury. Compromise одного компонента не дает полный доступ: Governor hack -> queue only (timelock delay защищает). Token hack -> voting only (timelock все равно задерживает). Monolithic: один баг = полная потеря" },
+        { "id": "c", "text": "Модульность позволяет быстрее обновлять каждый компонент" },
+        { "id": "d", "text": "Монолитный контракт невозможен в Solidity из-за ограничений EVM" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Separation of concerns + least privilege: Token (ERC20Votes) -- только checkpoints, delegation, voting power queries. Governor -- только propose, vote, queue, execute lifecycle. TimelockController -- proposer=Governor, executor=anyone, delay enforcement, IS the owner of Treasury. Treasury -- onlyOwner(timelock). Если Governor скомпрометирован: может queue вредоносную операцию, но timelock delay дает community exit opportunity. Монолитный DAO: одна уязвимость = мгновенный доступ к средствам (The DAO, 2016).",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-gov-q5",
+      "type": "true-false",
+      "question": "Владелец токенов, который НЕ вызвал delegate() (даже для самоделегирования), все равно вносит свои токены в расчет quorum при голосовании.",
+      "correctAnswer": false,
+      "explanation": "Без delegation voting power = 0. Token holder без delegate() не может голосовать, и его токены НЕ считаются для quorum. getVotes(address) = 0, getPastVotes(address, snapshot) = 0. Delegation (даже самоделегирование) -- обязательный шаг для активации voting power. Это дизайн-решение ERC20Votes: gas optimization для non-governance token holders.",
+      "bloomLevel": "applied"
+    }
+  ]
+}

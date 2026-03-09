@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "08-governance/05-openzeppelin-governor",
+  "moduleId": "08-governance",
+  "questions": [
+    {
+      "id": "gov05-q1",
+      "type": "true-false",
+      "question": "OpenZeppelin Governor v5 -- модульная система, в которой стратегию подсчета голосов (GovernorCountingSimple), источник voting power (GovernorVotes), quorum (GovernorVotesQuorumFraction) и механизм исполнения (GovernorTimelockControl) можно заменять независимо.",
+      "correctAnswer": true,
+      "explanation": "Governor v5 модульный: каждый extension (Counting, Votes, Quorum, Timelock) -- отдельный контракт, подключаемый через множественное наследование. Можно заменить GovernorCountingSimple на GovernorCountingFractional, GovernorTimelockControl на прямое исполнение, и т.д. Это позволяет разным проектам использовать разные стратегии без переписывания базовой логики.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "gov05-q2",
+      "type": "multiple-choice",
+      "question": "Какой паттерн архитектуры используется в полной DAO реализации на OpenZeppelin Governor?",
+      "options": [
+        { "id": "a", "text": "Один монолитный контракт со всей логикой governance и treasury" },
+        { "id": "b", "text": "GovernanceToken (ERC20Votes, voting power) + MyGovernor (proposal lifecycle, голосование) + TimelockController (задержка исполнения) + Treasury (хранение средств, onlyOwner = timelock)" },
+        { "id": "c", "text": "Governor контракт + external multisig wallet для исполнения" },
+        { "id": "d", "text": "Token контракт + Snapshot off-chain + multisig для исполнения" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "3-contract + treasury паттерн: GovernanceToken (ERC20Votes с checkpoints, delegation, clock override) -> MyGovernor (4 extensions, 6 override для C3 linearization) -> TimelockController (proposer=Governor, executor=anyone, admin=renounced) -> Treasury (Ownable, owner=timelock). Deployment order критичен: token -> timelock -> governor -> grantRole -> renounceAdmin -> treasury.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "gov05-q3",
+      "type": "multiple-choice",
+      "question": "Почему разделение treasury и governor на отдельные контракты повышает безопасность DAO?",
+      "options": [
+        { "id": "a", "text": "Treasury хранится на L2, а Governor -- на L1" },
+        { "id": "b", "text": "Treasury (onlyOwner = timelock) отделен от Governor: Governor может только propose/vote/queue, а фактическое исполнение проходит через TimelockController. Даже если Governor имеет уязвимость, атакующий не получает прямой доступ к средствам -- нужно пройти timelock delay, давая community exit opportunity" },
+        { "id": "c", "text": "Разделение уменьшает gas costs для голосования" },
+        { "id": "d", "text": "Отдельный treasury позволяет использовать другой token для оплаты" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Separation of concerns: _executor() возвращает address(timelock), не address(governor). Treasury.owner = timelock. Цепочка: Governor.execute() -> TimelockController.execute() -> Treasury.release(). Если Governor взломан, атакующий может только queue операцию -- timelock delay дает community время обнаружить и среагировать. Без разделения: Governor уязвимость = мгновенная потеря treasury.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

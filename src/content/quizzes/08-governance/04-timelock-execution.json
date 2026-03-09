@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "08-governance/04-timelock-execution",
+  "moduleId": "08-governance",
+  "questions": [
+    {
+      "id": "gov04-q1",
+      "type": "true-false",
+      "question": "TimelockController добавляет обязательную задержку (минимум 1 день) между одобрением governance proposal и его исполнением, давая сообществу время среагировать на потенциально вредоносное предложение.",
+      "correctAnswer": true,
+      "explanation": "Timelock -- буфер безопасности (exit opportunity). После одобрения proposal есть задержка (minDelay, обычно 1-2 дня) перед исполнением. За это время любой может увидеть pending action и принять меры: вывести средства, оспорить, предупредить сообщество. Без timelock вредоносный proposal исполняется мгновенно.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "gov04-q2",
+      "type": "multiple-choice",
+      "question": "Какие три роли определены в OpenZeppelin TimelockController?",
+      "options": [
+        { "id": "a", "text": "Owner, Operator, Admin" },
+        { "id": "b", "text": "PROPOSER_ROLE (ставит операции в очередь -- обычно Governor), EXECUTOR_ROLE (исполняет -- обычно address(0) = anyone), DEFAULT_ADMIN_ROLE (управление ролями -- deployer MUST renounce)" },
+        { "id": "c", "text": "Voter, Delegate, Guardian" },
+        { "id": "d", "text": "Scheduler, Executor, Canceller" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "TimelockController имеет 3 роли: PROPOSER_ROLE назначается Governor контракту (только governance может ставить операции в очередь). EXECUTOR_ROLE часто устанавливается как address(0) -- кто угодно может вызвать execute() после истечения delay. DEFAULT_ADMIN_ROLE начально у deployer, но ОБЯЗАТЕЛЬНО renounced -- иначе deployer может обойти governance полностью.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "gov04-q3",
+      "type": "multiple-choice",
+      "question": "Почему timelock delay дает пользователям реальную возможность защитить свои средства (exit opportunity), даже если вредоносное предложение уже одобрено голосованием?",
+      "options": [
+        { "id": "a", "text": "Timelock автоматически отменяет вредоносные proposals" },
+        { "id": "b", "text": "В течение delay все pending actions прозрачны on-chain -- пользователи видят, что произойдет после исполнения, и могут вывести средства из протокола ДО исполнения. Это exit opportunity: disagree with governance = exit before execution" },
+        { "id": "c", "text": "Timelock delay позволяет валидаторам Ethereum отклонить транзакцию" },
+        { "id": "d", "text": "Timelock только замедляет процесс, но не дает реальной защиты" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Ключевая концепция -- exit opportunity. Pending operations в timelock прозрачны: все видят targets, values, calldatas. Если пользователь видит, что через 1 день Treasury отправит все средства неизвестному адресу, он может вывести свои средства из протокола до исполнения. Security assumption: delta (delay) >= T_reaction (типичное время реакции community: 12-48 часов для активных DAO).",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

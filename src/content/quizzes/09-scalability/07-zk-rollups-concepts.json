@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "09-scalability/07-zk-rollups-concepts",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "scale07-q1",
+      "type": "true-false",
+      "question": "ZK rollups используют validity proofs -- криптографические доказательства, которые математически подтверждают корректность всех state transitions в batch. L1 verifier проверяет proof за миллисекунды и принимает state transition мгновенно.",
+      "correctAnswer": true,
+      "explanation": "ZK rollup: prover генерирует validity proof off-chain (вычислительно дорого: минуты-часы). Proof доказывает: 'я знаю witness W такой, что F(old_root, new_root, batch_data, W) = true'. Verifier контракт на L1 проверяет proof за ~300K gas (миллисекунды). Если proof валиден -- state transition принят мгновенно. Никакого 7-дневного challenge period. Свойство: proof size O(1) или O(poly(log N)) -- не зависит от размера batch.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "scale07-q2",
+      "type": "multiple-choice",
+      "question": "Какой тип zkEVM обеспечивает полную эквивалентность с Ethereum (включая state tree и block structure)?",
+      "options": [
+        { "id": "a", "text": "Type 4 -- компилирует Solidity в custom VM bytecode (самый быстрый proving)" },
+        { "id": "b", "text": "Type 1 -- доказывает execution Ethereum напрямую, любой EVM bytecode работает без изменений (самый медленный proving)" },
+        { "id": "c", "text": "Type 2 -- небольшие отличия в state/block structure для ускорения proving" },
+        { "id": "d", "text": "Type 3 -- некоторые opcodes не поддерживаются" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Классификация Виталика: Type 1 (Taiko) -- full Ethereum equivalence, доказывает execution включая state tree и block structure. Самая медленная генерация proof (часы/дни), но лучшая совместимость. Type 2 (Polygon zkEVM, Scroll) -- EVM equivalent с упрощениями. Type 3 -- almost equivalent, переходное. Type 4 (zkSync Era, StarkNet) -- high-level language equivalent, самый быстрый proving, наименее совместимый. Tradeoff: совместимость vs performance.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "scale07-q3",
+      "type": "multiple-choice",
+      "question": "Почему ZK rollups имеют значительно быстрее финализацию (часы), чем optimistic rollups (7 дней)?",
+      "options": [
+        { "id": "a", "text": "ZK rollups используют более быстрый consensus algorithm" },
+        { "id": "b", "text": "Optimistic rollups ждут 7 дней в надежде, что никто НЕ обнаружит мошенничество (1-of-N honest assumption). ZK rollups математически ДОКАЗЫВАЮТ корректность: validity proof проверяется verifier-ом за ~300K gas, и state transition финализируется сразу после верификации. Нет необходимости в challenge period -- криптографическая soundness вместо экономического допущения" },
+        { "id": "c", "text": "ZK rollups не публикуют данные на L1, поэтому быстрее" },
+        { "id": "d", "text": "7 дней для optimistic rollups -- это баг, который будет исправлен" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Фундаментальное отличие моделей безопасности: Optimistic = probabilistic security (1-of-N honest assumption) -> нужен challenge period для обнаружения fraud. ZK = cryptographic soundness (математическая уверенность) -> proof валиден или нет, проверяется за миллисекунды. Finality: optimistic = 7 дней (challenge), ZK = часы (proof generation + verification). Tradeoff: ZK prover infrastructure дороже, но finality быстрее.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

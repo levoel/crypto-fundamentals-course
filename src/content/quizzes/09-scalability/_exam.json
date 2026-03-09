@@ -1,0 +1,70 @@
+{
+  "lessonSlug": "09-scalability/_exam",
+  "moduleId": "09-scalability",
+  "questions": [
+    {
+      "id": "exam-scale-q1",
+      "type": "multiple-choice",
+      "question": "Как rollups (SCALE-05/07) решают трилемму блокчейна (SCALE-01), достигая scalability без жертвования L1 security?",
+      "options": [
+        { "id": "a", "text": "Rollups увеличивают размер блока Ethereum L1" },
+        { "id": "b", "text": "Rollups разделяют execution (на L2) и settlement + data availability (на L1). L1 не стремится быть быстрым -- L1 обеспечивает security и DA. L2 обрабатывает тысячи TPS. Данные на L1 гарантируют: state reconstruction, state verification (fraud/validity proofs), и exit guarantee. Безопасность L2 <= безопасность L1 + вероятность бага L2 контракта" },
+        { "id": "c", "text": "Rollups работают на отдельных валидаторах, не связанных с Ethereum" },
+        { "id": "d", "text": "Rollups жертвуют decentralization для увеличения TPS" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Rollup-centric roadmap (2020): L1 = settlement + DA layer, L2 = execution layer. Trilemma обходится не увеличением блока (что снижает decentralization), а разделением ответственности. L1 остается decentralized и secure (~800K validators). L2 масштабирует execution (2,000-10,000+ TPS). DA на L1 (calldata/blobs) обеспечивает security inheritance: Pr[L2 compromised] <= Pr[L1 compromised] + Pr[L2 bug].",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-scale-q2",
+      "type": "multiple-choice",
+      "question": "Какие ключевые tradeoffs между fraud proofs (optimistic rollups, SCALE-05) и validity proofs (ZK rollups, SCALE-07)?",
+      "options": [
+        { "id": "a", "text": "Fraud proofs и validity proofs эквивалентны по всем параметрам" },
+        { "id": "b", "text": "Fraud proofs: finality 7 дней, 1-of-N honest assumption (probabilistic security), дешевле в операционной стоимости. Validity proofs: finality часы, cryptographic soundness (mathematical security), дороже (prover infrastructure). Оба публикуют данные на L1, но optimistic ждет challenge, ZK доказывает мгновенно" },
+        { "id": "c", "text": "Fraud proofs безопаснее, потому что используют 7-дневный challenge period" },
+        { "id": "d", "text": "Validity proofs не требуют data availability на L1" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Optimistic: assume valid, wait 7 days, fraud proof if error. Security: 1-of-N honest assumption (Pr[failure] = p^N). Дешевле: нет prover infrastructure. EVM equivalent (near-perfect). ZK: prove valid, verify instantly. Security: cryptographic soundness (mathematical). Дороже: prover GPU/FPGA infrastructure. Finality: часы vs 7 дней. Обе модели публикуют данные на L1 для DA. Long-term: ZK считается 'правильным' решением (crypto > economic guarantees).",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-scale-q3",
+      "type": "multiple-choice",
+      "question": "Какова иерархия безопасности масштабирующих решений от наиболее безопасного к наименее (SCALE-02, SCALE-10)?",
+      "options": [
+        { "id": "a", "text": "Bridge > Sidechain > Rollup > L1" },
+        { "id": "b", "text": "L1 > Rollup (data on L1, fraud/validity proofs) > Sidechain (собственные валидаторы) > General bridge (внешние валидаторы, отдельная attack surface)" },
+        { "id": "c", "text": "Все решения масштабирования одинаково безопасны" },
+        { "id": "d", "text": "Sidechain > Rollup > L1 > Bridge" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Иерархия: L1 Ethereum (~800K validators, battle-tested) > Rollup (наследует L1 security: data on L1, fraud/validity proofs, exit guarantee) > Sidechain (собственные валидаторы: Polygon PoS, если 2/3+ скомпрометированы -- средства потеряны) > General bridge (отдельная attack surface: $2.8B+ потерь, Ronin $624M, Wormhole $326M). Canonical rollup bridges безопаснее general bridges, потому что используют rollup security.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "exam-scale-q4",
+      "type": "multiple-choice",
+      "question": "Почему state channels (SCALE-03) и Plasma (SCALE-04) уступили rollups как основным решениям масштабирования?",
+      "options": [
+        { "id": "a", "text": "State channels и Plasma были запрещены сообществом Ethereum" },
+        { "id": "b", "text": "State channels: фиксированные участники, нет global state (DeFi невозможен), liveness requirement. Plasma: mass exit problem при data withholding, нет general smart contracts. Оба ограничены в use cases. Rollups решили обе проблемы: data on L1 (нет mass exit), full EVM support (DeFi composability), permissionless (любой может участвовать)" },
+        { "id": "c", "text": "Rollups появились раньше channels и Plasma" },
+        { "id": "d", "text": "State channels и Plasma не поддерживали ERC-20 токены" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Эволюция: Channels (2015) -> Plasma (2017) -> Rollups (2019+). Channels: фиксированные участники (Alice-Bob), нет global state (Uniswap невозможен), liveness requirement, liquidity lock. Plasma: решила фиксированных участников через child chains, но data withholding -> mass exit problem, нет general smart contracts (exit game слишком сложен). Rollups = Plasma + data on-chain: O(N) данных на L1 решает mass exit, full EVM поддержка, permissionless access.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-scale-q5",
+      "type": "true-false",
+      "question": "EIP-4844 blob transactions снижают стоимость data availability для ОБОИХ типов rollups (optimistic и ZK), потому что и fraud proofs, и validity proofs требуют публикации данных транзакций на L1.",
+      "correctAnswer": true,
+      "explanation": "Оба типа rollups публикуют batch data на L1: optimistic -- для fraud proof verification (challenger должен загрузить данные и перевыполнить транзакции), ZK -- для data availability (любой может восстановить state). EIP-4844 blobs: ~1 gas/byte vs calldata ~16 gas/byte = 10-100x экономия. 128 KB per blob, 6 blobs per block (Pectra). Хранение ~18 дней (достаточно для 7-day challenge period). Обе модели выигрывают от дешевых blobs.",
+      "bloomLevel": "applied"
+    }
+  ]
+}
