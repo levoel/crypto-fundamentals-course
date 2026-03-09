@@ -1,0 +1,59 @@
+{
+  "lessonSlug": "06-defi/07-liquidations",
+  "moduleId": "06-defi",
+  "questions": [
+    {
+      "id": "defi07-q1",
+      "type": "true-false",
+      "question": "Ликвидация позиции в lending-протоколе разрешена, когда Health Factor падает ниже 1.0.",
+      "correctAnswer": true,
+      "explanation": "Health Factor = (Collateral_USD * Liquidation_Threshold) / Debt_USD. При HF >= 1.0 позиция здоровая. При HF < 1.0 числитель (взвешенный залог) меньше знаменателя (долг), что означает недостаточное обеспечение -- любой адрес может вызвать liquidationCall() и получить бонус (5% для WETH).",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "defi07-q2",
+      "type": "multiple-choice",
+      "question": "Что означает close factor 50% в контексте ликвидации на Aave?",
+      "options": [
+        { "id": "a", "text": "Ликвидатор получает 50% залога заемщика" },
+        { "id": "b", "text": "Ликвидатор может погасить до 50% общего долга заемщика за одну транзакцию" },
+        { "id": "c", "text": "Заемщик теряет 50% своего залога при ликвидации" },
+        { "id": "d", "text": "Протокол удерживает 50% ликвидационного бонуса" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Close factor = 50% означает: Max Liquidation = Debt * 0.5. Для долга 12,000 USDC ликвидатор может погасить до 6,000 USDC за одну транзакцию. Это ограничение предотвращает полную ликвидацию и дает заемщику шанс восстановить HF. Исключение: при HF < 0.95 close factor увеличивается до 100%.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "defi07-q3",
+      "type": "multiple-choice",
+      "question": "Почему каскадные ликвидации во время рыночного краша усиливают падение цены?",
+      "options": [
+        { "id": "a", "text": "Ликвидации увеличивают gas-стоимость транзакций, что замедляет сеть" },
+        { "id": "b", "text": "Ликвидаторы получают залог (ETH) и продают его за стейблкоины для фиксации прибыли, создавая дополнительное давление на продажу -- это вызывает дальнейшее падение цены, новые ликвидации и самоусиливающийся цикл" },
+        { "id": "c", "text": "Каскадные ликвидации уменьшают TVL протокола, что снижает его рыночную капитализацию" },
+        { "id": "d", "text": "Протокол замораживает все операции при массовых ликвидациях" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Positive feedback loop: цена падает -> HF < 1 -> ликвидация -> ликвидатор получает ETH -> продает ETH за USDC (фиксация прибыли) -> дополнительное давление на продажу ETH -> цена падает дальше -> новые позиции становятся ликвидируемыми -> GOTO начало. Black Thursday (12 марта 2020): ETH -43% за 24 часа, $8.3M bad debt в MakerDAO.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "defi07-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте функцию solve(collateral_usd_str, liq_threshold_str, debt_usd_str), которая вычисляет Health Factor: HF = (collateral * liq_threshold) / debt. Верните результат с 4 знаками после запятой.",
+      "language": "python",
+      "starterCode": "def solve(collateral_usd_str, liq_threshold_str, debt_usd_str):\n    # 1. Конвертируйте строки в float\n    # 2. Вычислите HF = (collateral * liq_threshold) / debt\n    # 3. Верните f'{hf:.4f}'\n    pass",
+      "solutionCode": "def solve(collateral_usd_str, liq_threshold_str, debt_usd_str):\n    collateral = float(collateral_usd_str)\n    liq_threshold = float(liq_threshold_str)\n    debt = float(debt_usd_str)\n    hf = (collateral * liq_threshold) / debt\n    return f'{hf:.4f}'",
+      "testCases": [
+        { "id": "tc1", "description": "$10,000 залога, LT=0.825, $5,000 долга", "input": "10000,0.825,5000", "expectedOutput": "1.6500", "hidden": false },
+        { "id": "tc2", "description": "$5,000 залога, LT=0.825, $5,000 долга", "input": "5000,0.825,5000", "expectedOutput": "0.8250", "hidden": false },
+        { "id": "tc3", "description": "$15,000 залога, LT=0.75, $8,000 долга", "input": "15000,0.75,8000", "expectedOutput": "1.4063", "hidden": true }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Health Factor = (Collateral_USD * Liquidation_Threshold) / Debt_USD. HF > 1 -- позиция здоровая. HF < 1 -- ликвидация разрешена. Для 10 ETH при $2,000/ETH, LT=0.825, долг $12,000: HF = (20,000 * 0.825) / 12,000 = 1.375. Если ETH падает до $1,400: HF = (14,000 * 0.825) / 12,000 = 0.963 -- ликвидация.",
+      "bloomLevel": "applied",
+      "timeoutMs": 10000
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "07-security/07-flashbots",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec07-q1",
+      "type": "true-false",
+      "question": "Flashbots Protect отправляет транзакции напрямую block builders через приватный RPC endpoint (rpc.flashbots.net/fast), минуя публичный mempool и предотвращая sandwich attacks.",
+      "correctAnswer": true,
+      "explanation": "Стандартный путь: Wallet -> Public Mempool -> Searchers видят tx -> Sandwich -> Block. Flashbots Protect: Wallet -> Flashbots RPC -> Private Pool -> Builder -> Block (no sandwich). Транзакция НИКОГДА не появляется в публичном mempool, searchers физически не могут её увидеть. Вариант /fast отправляет tx ВСЕМ builders (не только Flashbots builder), что увеличивает скорость включения.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec07-q2",
+      "type": "multiple-choice",
+      "question": "Какое основное преимущество Flashbots Protect для обычных пользователей?",
+      "options": [
+        { "id": "a", "text": "Снижение gas-стоимости транзакций на 50%" },
+        { "id": "b", "text": "Защита от sandwich attacks, failed transaction protection (не платите gas за revert), и 90% MEV refund (возврат прибыли от backrun)" },
+        { "id": "c", "text": "Мгновенное подтверждение транзакций без ожидания блока" },
+        { "id": "d", "text": "Автоматическое хеджирование позиций на DEX" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три уровня защиты Flashbots Protect: 1) Sandwich protection -- tx не в публичном mempool. 2) Failed tx protection -- если tx ревертится, builder не включает её в блок, пользователь не платит gas за failed tx ($5-50 экономии). 3) MEV refund -- если tx создает backrun opportunity, 90% MEV возвращается пользователю в том же блоке. Настройка: добавить rpc.flashbots.net/fast как custom RPC в MetaMask за 30 секунд.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec07-q3",
+      "type": "multiple-choice",
+      "question": "Почему MEV-Share (и аналогичные системы) перераспределяют часть MEV обратно пользователям-отправителям транзакций?",
+      "options": [
+        { "id": "a", "text": "Регуляторы требуют возврата MEV пользователям" },
+        { "id": "b", "text": "MEV-Share создает конкуренцию за пользовательские транзакции: builders и searchers, предлагающие наибольший refund, получают больше order flow -- это выравнивает стимулы и привлекает пользователей к private mempools" },
+        { "id": "c", "text": "MEV-Share использует ZK-proofs для автоматического расчета справедливой доли" },
+        { "id": "d", "text": "MEV-Share блокирует все виды MEV, поэтому никто не получает прибыль" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "MEV-Share -- экономический механизм: builders конкурируют за включение пользовательских tx, предлагая refund. Builder, возвращающий 90% MEV, получает order flow (пользовательские tx). Builder, не возвращающий MEV, теряет пользователей. Это рыночная конкуренция, а не регулирование. Flashbots Protect реализует MEV-Share: backrun tx включается в тот же блок, и 90% прибыли отправляется обратно на адрес пользователя.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

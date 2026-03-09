@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "07-security/05-mev-concepts",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec05-q1",
+      "type": "true-false",
+      "question": "MEV (Maximum Extractable Value) -- это прибыль, которую можно извлечь путем включения, исключения или переупорядочивания транзакций в блоке.",
+      "correctAnswer": true,
+      "explanation": "MEV = max_pi(profit(pi(T))) - profit(T_default), где pi(T) -- перестановка транзакций, T_default -- стандартный порядок (FIFO). MEV включает sandwich attacks (вредный), арбитраж между DEX (полезный -- выравнивает цены), ликвидации в lending-протоколах (необходимый -- предотвращает bad debt). До Merge: Miner Extractable Value. После PoS: Maximum Extractable Value.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec05-q2",
+      "type": "multiple-choice",
+      "question": "Какова роль searchers в MEV supply chain?",
+      "options": [
+        { "id": "a", "text": "Валидировать блоки и обеспечивать консенсус сети" },
+        { "id": "b", "text": "Мониторить mempool, находить прибыльные MEV-возможности (арбитраж, sandwich, ликвидации) и отправлять bundles через Flashbots API" },
+        { "id": "c", "text": "Передавать блоки от builders к validators через commit-reveal протокол" },
+        { "id": "d", "text": "Управлять стейкингом ETH для валидаторов" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "MEV supply chain: Users -> Searchers -> Builders -> Relays -> Validators. Searchers -- специализированные боты, которые мониторят pending transactions в mempool, декодируют calldata (например, Uniswap swaps), симулируют прибыль от sandwich/арбитража, и создают bundles (атомарные пакеты транзакций). Bundles отправляются builders через Flashbots API. Маржа searcher стремится к 0 из-за конкуренции -- 90%+ прибыли уходит builders и validators.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec05-q3",
+      "type": "multiple-choice",
+      "question": "Почему PBS (Proposer-Builder Separation) снижает централизацию валидаторов, связанную с MEV?",
+      "options": [
+        { "id": "a", "text": "PBS запрещает валидаторам извлекать MEV" },
+        { "id": "b", "text": "PBS разделяет построение блока (builder) и его подписание (proposer/validator), так что валидатору не нужна собственная MEV-инфраструктура -- он просто выбирает блок с наивысшей bid от конкурирующих builders" },
+        { "id": "c", "text": "PBS ограничивает количество транзакций в блоке" },
+        { "id": "d", "text": "PBS заменяет PoS на PoW для создания блоков" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "До PBS (при PoW) майнеры сами собирали блоки и извлекали MEV -- это создавало преимущество для крупных майнеров с MEV-инфраструктурой. PBS разделяет роли: builders конкурируют за оптимальный блок (MEV extraction), validators просто подписывают блок с наивысшей ставкой. Validator не видит содержимое блока до подписания (commit-reveal через relay). Результат: 90%+ валидаторов используют MEV-Boost, и даже home staker получает MEV-доход.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "06-defi/09-oracle-integration",
+  "moduleId": "06-defi",
+  "questions": [
+    {
+      "id": "defi09-q1",
+      "type": "true-false",
+      "question": "Данные ценового фида Chainlink должны включать проверку свежести (staleness check), чтобы предотвратить использование устаревших цен в протоколе.",
+      "correctAnswer": true,
+      "explanation": "Staleness check: require(block.timestamp - updatedAt < maxStaleness). Без проверки контракт может использовать цену недельной давности. Для ETH/USD (heartbeat 3600s) рекомендуемый maxStaleness = 3600-7200s. Три обязательные проверки: price > 0, answeredInRound >= roundId, block.timestamp - updatedAt < maxStaleness.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "defi09-q2",
+      "type": "multiple-choice",
+      "question": "Что возвращает функция decimals() для Chainlink price feed (например, ETH/USD)?",
+      "options": [
+        { "id": "a", "text": "Количество знаков после запятой в ценовом значении (8 для USD-пар: $2,000 = 200000000000)" },
+        { "id": "b", "text": "Количество узлов DON, участвующих в агрегации" },
+        { "id": "c", "text": "Максимальное количество раундов обновления" },
+        { "id": "d", "text": "Версию протокола AggregatorV3Interface" }
+      ],
+      "correctAnswer": "a",
+      "explanation": "decimals() для всех USD-пар Chainlink возвращает 8. ETH стоит $2,000 -> answer = 200000000000 (2000 * 10^8). Это критично для конвертации: usdValue = ethAmount(18 dec) * price(8 dec) / 1e8 = result(18 dec). Путаница в decimals -- частая ошибка, приводящая к катастрофическим расчетам.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "defi09-q3",
+      "type": "multiple-choice",
+      "question": "Почему TWAP-оракулы (Time-Weighted Average Price) устойчивее к flash loan манипуляциям, чем спотовые оракулы?",
+      "options": [
+        { "id": "a", "text": "TWAP использует зашифрованные данные, которые невозможно подделать" },
+        { "id": "b", "text": "TWAP усредняет цену за N блоков: для манипуляции нужно держать сдвинутую цену на протяжении всего окна, что стоит пропорционально pool_size * N и невозможно в рамках одной транзакции flash loan" },
+        { "id": "c", "text": "TWAP работает только на приватных L2, где flash loans недоступны" },
+        { "id": "d", "text": "TWAP использует данные из Chainlink, которые не зависят от DEX" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Flash loan действует в пределах одной транзакции (1 блок). Spot price (getReserves) можно сдвинуть на 80%+ за 1 tx. TWAP = среднее за N блоков (tickCumulative). Для манипуляции TWAP атакующий должен удерживать искаженные резервы N блоков подряд, что стоит пропорционально глубине пула * время -- экономически нецелесообразно.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

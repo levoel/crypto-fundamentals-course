@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "07-security/10-audit-tools",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec10-q1",
+      "type": "true-false",
+      "question": "Slither выполняет статический анализ (static analysis) -- разбирает AST (Abstract Syntax Tree) Solidity-кода и применяет 200+ детекторов без выполнения контракта.",
+      "correctAnswer": true,
+      "explanation": "Slither от Trail of Bits: Solidity code -> Compile -> AST -> SlithIR (internal representation) -> Detectors -> Findings. Slither НЕ выполняет код, он анализирует СТРУКТУРУ: control flow, data flow, dependencies. Ключевые детекторы: reentrancy-eth (SWC-107), arbitrary-send-eth, unprotected-upgrade, tx-origin (SWC-115). ~50-70% recall на known vulnerability classes. False positive rate: 30-50%. Идеален для CI/CD (запуск за секунды).",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec10-q2",
+      "type": "multiple-choice",
+      "question": "Что отличает Mythril от Slither с точки зрения метода анализа?",
+      "options": [
+        { "id": "a", "text": "Mythril написан на Rust и работает быстрее" },
+        { "id": "b", "text": "Mythril использует symbolic execution -- вместо конкретных значений подставляет символы (x, y) и решает уравнения через SMT solver (Z3), что позволяет находить multi-transaction bugs и conditional paths, недоступные static analysis" },
+        { "id": "c", "text": "Mythril анализирует только ERC-20 контракты" },
+        { "id": "d", "text": "Mythril проверяет контракты на совместимость с разными версиями Solidity" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Slither = static analysis (AST). Mythril = symbolic execution (bytecode -> EVM simulation -> Z3 solver). Mythril может найти: multi-transaction attacks (--transaction-count 3), conditional overflow paths, assertion violations. Классифицирует findings по SWC Registry (SWC-101 overflow, SWC-107 reentrancy). Trade-off: медленнее Slither (минуты vs секунды), но находит глубокие баги. Для полного аудита: Slither (быстрый первый проход) + Mythril (глубокий анализ) + manual review.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec10-q3",
+      "type": "multiple-choice",
+      "question": "Почему стратегия layered defense (static analysis + symbolic execution + manual review) находит больше уязвимостей, чем любой отдельный подход?",
+      "options": [
+        { "id": "a", "text": "Все три метода используют одинаковые алгоритмы, просто запускаются несколько раз" },
+        { "id": "b", "text": "Каждый метод имеет разные strengths: static analysis ловит known patterns (~20% findings), symbolic execution находит conditional/multi-tx bugs, manual review обнаруживает business logic и economic attacks (~80% findings). Пересечение их capabilities -- минимальное, поэтому комбинация дает ~95%+ coverage" },
+        { "id": "c", "text": "Layered defense только снижает false positive rate, но не увеличивает true positive rate" },
+        { "id": "d", "text": "Manual review не нужен, если используются Slither и Mythril одновременно" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Layer 1 (Slither): быстрый, широкий, catches known patterns (reentrancy, unchecked calls), ~50-70% recall на known classes. Layer 2 (Mythril): медленный, глубокий, finds multi-tx bugs и conditional paths. Layer 3 (Manual): business logic, economic attacks, cross-contract -- ~80% всех critical/high findings. Пример: Slither найдет 'state change after call', Mythril найдет 'integer overflow path', manual review найдет 'price manipulation через flash loan'. Золотое правило: Slither + Mythril + Manual = минимальный набор.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "lessonSlug": "07-security/02-reentrancy-attacks",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec02-q1",
+      "type": "true-false",
+      "question": "Reentrancy возникает, когда внешний вызов (external call) позволяет повторно войти в вызывающий контракт до обновления его состояния (state).",
+      "correctAnswer": true,
+      "explanation": "Когда контракт отправляет ETH через call{}, получатель может быть контрактом с функцией receive() или fallback(). Этот callback получает управление ДО того, как вызывающий контракт продолжит выполнение. Если состояние (например, balances[msg.sender]) не обновлено перед call{}, callback может вызвать ту же функцию снова -- и проверки пройдут, потому что состояние 'stale' (устаревшее).",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec02-q2",
+      "type": "multiple-choice",
+      "question": "Какой шаг в паттерне CEI (Checks-Effects-Interactions) предотвращает single-function reentrancy?",
+      "options": [
+        { "id": "a", "text": "Checks -- проверка require(balance > 0) в начале функции" },
+        { "id": "b", "text": "Effects -- обновление состояния (balances[msg.sender] = 0) ДО внешнего вызова (Interactions)" },
+        { "id": "c", "text": "Interactions -- использование transfer() вместо call{}" },
+        { "id": "d", "text": "Добавление modifier view к функции withdraw" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "CEI предотвращает reentrancy именно благодаря порядку: Effects (обновление state) выполняются ДО Interactions (external calls). Когда balances[msg.sender] = 0 выполнен до call{value: bal}(''), повторный вызов withdraw() через callback увидит balance = 0 и revert. Checks (require) только валидируют, Interactions -- уже внешние вызовы. CEI защищает от single-function, но НЕ от cross-function reentrancy.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec02-q3",
+      "type": "multiple-choice",
+      "question": "Почему The DAO hack (2016, $60M) был возможен, несмотря на то что разработчики знали о механизме external calls?",
+      "options": [
+        { "id": "a", "text": "The DAO использовал устаревшую версию Solidity без поддержки require()" },
+        { "id": "b", "text": "Разработчики обновляли состояние ПОСЛЕ external call (нарушение CEI), а callback через fallback() позволял рекурсивно вызвать withdraw до обнуления баланса -- паттерн reentrancy ещё не был формализован" },
+        { "id": "c", "text": "Хакер скомпрометировал private key контракта The DAO" },
+        { "id": "d", "text": "The DAO не использовал ReentrancyGuard, который был доступен в 2016 году" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "В 2016 году паттерн reentrancy ещё не был широко известен. Код The DAO выполнял msg.sender.call{value: balance}('') перед balances[msg.sender] = 0. Атакующий использовал fallback() для рекурсивного вызова withdraw(). ReentrancyGuard от OpenZeppelin появился ПОСЛЕ The DAO hack именно как ответ на эту атаку. Инцидент привел к хардфорку Ethereum и созданию Ethereum Classic.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "sec02-q4",
+      "type": "code-challenge",
+      "question": "Напишите контракт SecureVault с паттерном CEI для защиты от reentrancy. Контракт должен иметь: mapping(address => uint256) public balances, функцию deposit() external payable для депозита ETH, и функцию withdraw() external, которая следует паттерну CEI (проверка баланса > 0, обнуление баланса, затем отправка ETH).",
+      "language": "solidity",
+      "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract SecureVault {\n    // Реализуйте:\n    // - mapping(address => uint256) public balances\n    // - function deposit() external payable\n    // - function withdraw() external (CEI pattern)\n}",
+      "solutionCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract SecureVault {\n    mapping(address => uint256) public balances;\n\n    function deposit() external payable {\n        balances[msg.sender] += msg.value;\n    }\n\n    function withdraw() external {\n        uint256 bal = balances[msg.sender];\n        require(bal > 0, \"No balance\");\n\n        // CEI: Effect before Interaction\n        balances[msg.sender] = 0;\n\n        (bool success, ) = msg.sender.call{value: bal}(\"\");\n        require(success, \"Transfer failed\");\n    }\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Контракт компилируется",
+          "expectedOutput": "Contract:",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc2",
+          "description": "ABI содержит функцию withdraw",
+          "expectedOutput": "\"name\": \"withdraw\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc3",
+          "description": "ABI содержит функцию deposit",
+          "expectedOutput": "\"name\": \"deposit\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc4",
+          "description": "ABI содержит mapping balances",
+          "expectedOutput": "\"name\": \"balances\"",
+          "hidden": false,
+          "matchMode": "contains"
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "SecureVault следует CEI pattern: Check (require(bal > 0)), Effect (balances[msg.sender] = 0) ДО Interaction (msg.sender.call{value: bal}). Это предотвращает single-function reentrancy: при повторном входе через receive() callback, balances[msg.sender] уже равен 0, и require revert. Для полной защиты в production добавьте ReentrancyGuard (nonReentrant modifier) -- defense in depth.",
+      "bloomLevel": "applied",
+      "timeoutMs": 30000
+    }
+  ]
+}

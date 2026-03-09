@@ -1,0 +1,77 @@
+{
+  "lessonSlug": "07-security/03-integer-overflow-underflow",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec03-q1",
+      "type": "true-false",
+      "question": "Solidity 0.8+ включает checked arithmetic по умолчанию -- арифметические операции автоматически ревертятся с Panic(0x11) при overflow или underflow.",
+      "correctAnswer": true,
+      "explanation": "До Solidity 0.8 все арифметические операции были unchecked и overflow происходил молча (uint8: 255 + 1 = 0). Разработчики использовали библиотеку SafeMath от OpenZeppelin для защиты. Начиная с 0.8, компилятор автоматически добавляет проверки overflow/underflow для +, -, *. Это решило проблему для ~90% случаев, но два вектора остаются: unchecked блоки и unsafe downcasting.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec03-q2",
+      "type": "multiple-choice",
+      "question": "Какое максимальное значение может хранить тип uint8 в Solidity?",
+      "options": [
+        { "id": "a", "text": "127" },
+        { "id": "b", "text": "256" },
+        { "id": "c", "text": "255" },
+        { "id": "d", "text": "128" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "uint8 использует 8 бит. Максимальное значение = 2^8 - 1 = 255 (0xFF). При unchecked arithmetic: 255 + 1 = 0 (overflow, 9-й бит отбрасывается). Аналогично: uint16 max = 65535, uint128 max = ~3.4 * 10^38, uint256 max = ~1.16 * 10^77. BEC Token exploit использовал overflow в uint256: amount * cnt = 0 при специально подобранных значениях.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec03-q3",
+      "type": "multiple-choice",
+      "question": "Почему unchecked блоки в Solidity 0.8+ используются для gas optimization, несмотря на повторное введение риска overflow?",
+      "options": [
+        { "id": "a", "text": "Unchecked блоки делают код более читаемым и поддерживаемым" },
+        { "id": "b", "text": "Checked arithmetic добавляет ~120 gas на каждую операцию, и в hot paths (циклы, математические библиотеки), где overflow математически невозможен, unchecked экономит значительную долю gas (6-24% транзакции)" },
+        { "id": "c", "text": "Solidity компилятор требует unchecked для циклов" },
+        { "id": "d", "text": "Unchecked блоки автоматически используют SafeMath для защиты" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Checked arithmetic: ~3 gas (операция) + ~120 gas (overflow check). На 100 операций -- ~12,000 gas экономии, что составляет 6-24% средней транзакции. Безопасный unchecked: i++ в цикле (i < length гарантирует i < 2^256), вычитание после require(a >= b). Опасный unchecked: арифметика с пользовательским вводом без предварительной проверки.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "sec03-q4",
+      "type": "code-challenge",
+      "question": "Напишите функцию solve(valueStr, bitsStr), которая симулирует integer overflow: вычисляет value mod 2^bits. Используйте BigInt для работы с большими числами. Верните результат как строку.",
+      "language": "javascript",
+      "starterCode": "function solve(valueStr, bitsStr) {\n  // valueStr: значение (строка)\n  // bitsStr: количество бит (строка)\n  // Верните (value mod 2^bits) как строку\n}",
+      "solutionCode": "function solve(valueStr, bitsStr) {\n  const value = BigInt(valueStr);\n  const bits = BigInt(bitsStr);\n  const mod = BigInt(2) ** bits;\n  const result = value % mod;\n  return result.toString();\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "uint8: 256 mod 2^8 = 0 (overflow)",
+          "input": "256,8",
+          "expectedOutput": "0",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "uint8: 257 mod 2^8 = 1",
+          "input": "257,8",
+          "expectedOutput": "1",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "uint16: 65536 mod 2^16 = 0 (overflow)",
+          "input": "65536,16",
+          "expectedOutput": "0",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "Integer overflow в unsigned типах -- это операция mod 2^n, где n = количество бит. uint8 (8 бит): 256 mod 256 = 0, 257 mod 256 = 1. uint16 (16 бит): 65536 mod 65536 = 0. В Solidity pre-0.8 и в unchecked блоках это происходит молча. BEC Token exploit: cnt=2, value=2^255, amount = 2*2^255 = 2^256 mod 2^256 = 0.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

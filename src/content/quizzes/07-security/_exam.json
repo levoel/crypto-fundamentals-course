@@ -1,0 +1,70 @@
+{
+  "lessonSlug": "07-security/_exam",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "exam-sec-q1",
+      "type": "multiple-choice",
+      "question": "Как сочетание CEI pattern (SEC-02) и access control (SEC-04) защищает от compound-уязвимостей, когда контракт имеет несколько привилегированных функций с shared state?",
+      "options": [
+        { "id": "a", "text": "CEI и access control -- независимые защиты, которые не взаимодействуют друг с другом" },
+        { "id": "b", "text": "CEI предотвращает reentrancy (state update до external call), а access control ограничивает, кто может вызвать функции. Без access control атакующий может вызвать любую функцию через callback. Без CEI даже авторизованный пользователь уязвим к reentrancy. Вместе: defense in depth" },
+        { "id": "c", "text": "Access control автоматически включает CEI pattern через modifier onlyOwner" },
+        { "id": "d", "text": "CEI заменяет необходимость access control, потому что предотвращает любые атаки" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Compound vulnerability: контракт с withdraw() (CEI) и emergencyPause() (onlyOwner). Без AC: атакующий вызывает emergencyPause() в callback. Без CEI: авторизованный admin уязвим к cross-function reentrancy. Defense in depth: CEI + nonReentrant + access control на каждой функции. Пример: VulnerableBank из SEC-02 имел withdraw() без CEI И transfer() без nonReentrant -- cross-function reentrancy обошёл CEI в withdraw().",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-sec-q2",
+      "type": "multiple-choice",
+      "question": "Как Slither (SEC-10) обнаруживает арифметические проблемы (SEC-03), которые Solidity 0.8+ не полностью предотвращает, такие как unchecked блоки?",
+      "options": [
+        { "id": "a", "text": "Slither не анализирует unchecked блоки -- это делает только Mythril" },
+        { "id": "b", "text": "Slither анализирует AST и обнаруживает unchecked блоки с арифметическими операциями над пользовательским вводом, unsafe downcasting (uint256 -> uint8/uint128) без SafeCast, и divide-before-multiply patterns -- все это Solidity 0.8+ checked arithmetic не покрывает" },
+        { "id": "c", "text": "Solidity 0.8+ полностью решает проблему overflow, и Slither не нужен для арифметических проверок" },
+        { "id": "d", "text": "Slither перекомпилирует контракт в Solidity 0.7, чтобы найти overflow" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Solidity 0.8+ проверяет overflow для арифметических операций (+, -, *), но НЕ проверяет: 1) unchecked блоки -- явное отключение проверок для gas optimization. 2) Unsafe downcasting -- uint256(256) -> uint8 = 0 (silent truncation). 3) divide-before-multiply -- precision loss (a/b*c vs a*c/b). Slither детекторы: divide-before-multiply (Medium), custom detectors для unchecked arithmetic. Mythril (SWC-101) через symbolic execution находит конкретные overflow paths в unchecked блоках.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-sec-q3",
+      "type": "multiple-choice",
+      "question": "Определите полную последовательность 4 шагов sandwich attack (SEC-05/06): от мониторинга mempool до извлечения прибыли.",
+      "options": [
+        { "id": "a", "text": "1) Отправить frontrun, 2) Дождаться victim tx, 3) Отправить backrun, 4) Повторить" },
+        { "id": "b", "text": "1) Мониторинг mempool для обнаружения swap с низким amountOutMin, 2) Frontrun: купить токен перед жертвой (цена растет), 3) Victim tx исполняется по завышенной цене, 4) Backrun: продать токен после жертвы (фиксация прибыли)" },
+        { "id": "c", "text": "1) Flash loan, 2) Swap на DEX, 3) Манипуляция oracle, 4) Возврат flash loan" },
+        { "id": "d", "text": "1) Создание приватного пула, 2) Привлечение ликвидности, 3) Rug pull, 4) Вывод средств" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "4 шага: 1) Searcher мониторит pending tx, декодирует calldata (swapExactETHForTokens), проверяет amountOutMin -- если 0, perfect victim. 2) Frontrun с higher priority fee: searcher покупает token, сдвигая цену. 3) Victim tx исполняется по сдвинутой цене, получает меньше output. 4) Backrun: searcher продает token по новой (все еще повышенной) цене. Прибыль = backrun_output - frontrun_input - gas. Через Flashbots bundles все 3 tx (front, victim, back) атомарно включаются в блок.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "exam-sec-q4",
+      "type": "multiple-choice",
+      "question": "Как связаны flash loan атаки (SEC-08) и oracle design (DEFI-08/09): почему TWAP-оракулы устойчивы к flash loan manipulation, а spot price оракулы -- нет?",
+      "options": [
+        { "id": "a", "text": "TWAP и spot price оракулы одинаково уязвимы к flash loan, но TWAP дешевле в gas" },
+        { "id": "b", "text": "Flash loan действует в рамках одной транзакции (1 блок). Spot price (getReserves) отражает текущие резервы и сдвигается одним swap. TWAP усредняет tickCumulative за N блоков -- манипуляция требует удерживать сдвинутые резервы N блоков, что стоит пропорционально pool_size * N и экономически нецелесообразно" },
+        { "id": "c", "text": "TWAP использует Chainlink внутри, поэтому защищен DON-сетью" },
+        { "id": "d", "text": "Flash loan не может взаимодействовать с TWAP-оракулами из-за ограничений EVM" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Ключевое различие -- временное окно: flash loan = 1 tx = 1 блок (~12 сек). Spot price (getReserves): мгновенный snapshot, swap 500 ETH в пул с 1000 ETH сдвигает цену на 55%+, стоимость = $0 (flash loan). TWAP (Uniswap V3): tickCumulative[now] - tickCumulative[N_blocks_ago] / N, для манипуляции нужно N блоков с искаженными резервами = стоимость O(pool_size * N). Chainlink DON: 20+ независимых sources, манипуляция = 51% attack на oracle network. $500M+ потеряно из-за spot price oracle.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-sec-q5",
+      "type": "true-false",
+      "question": "Автоматизированные инструменты (Slither, Mythril) могут полностью заменить manual audit для критических смарт-контрактов, управляющих значительными средствами.",
+      "correctAnswer": false,
+      "explanation": "Automated tools находят ~20% уязвимостей (known patterns, SWC), manual review -- ~80% (business logic, economic attacks, cross-contract interactions). Пример: Slither не найдет 'oracle manipulation через flash loan', потому что это business logic bug, а не code pattern. Euler Finance ($197M) прошёл аудит с автоматическими инструментами, но уязвимость в donateToReserves была logic error. Золотое правило: Slither + Mythril + Manual = минимальный набор. Аудит БЕЗ manual review = security theater.",
+      "bloomLevel": "applied"
+    }
+  ]
+}

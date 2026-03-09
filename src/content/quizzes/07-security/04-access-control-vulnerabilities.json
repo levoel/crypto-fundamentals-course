@@ -1,0 +1,84 @@
+{
+  "lessonSlug": "07-security/04-access-control-vulnerabilities",
+  "moduleId": "07-security",
+  "questions": [
+    {
+      "id": "sec04-q1",
+      "type": "true-false",
+      "question": "Ownable2Step требует, чтобы новый владелец явно подтвердил передачу ownership вызовом acceptOwnership(), защищая от случайной передачи на неправильный адрес.",
+      "correctAnswer": true,
+      "explanation": "В стандартном Ownable transferOwnership() мгновенно передает ownership -- если адрес указан с опечаткой, ownership потерян навсегда. Ownable2Step разделяет процесс на 2 шага: текущий owner вызывает transferOwnership(newOwner) -> устанавливается pendingOwner -> новый owner подтверждает вызовом acceptOwnership(). Если адрес ошибочный, acceptOwnership() невозможен, ownership остается у текущего owner.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sec04-q2",
+      "type": "multiple-choice",
+      "question": "Что проверяет функция hasRole(role, account) в OpenZeppelin AccessControl?",
+      "options": [
+        { "id": "a", "text": "Является ли account владельцем (owner) контракта" },
+        { "id": "b", "text": "Имеет ли account конкретную роль (bytes32), определенную в mapping _roles[role][account]" },
+        { "id": "c", "text": "Входит ли account в список авторизованных адресов multi-sig" },
+        { "id": "d", "text": "Является ли account контрактом или EOA" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "AccessControl хранит роли в nested mapping: mapping(bytes32 role => mapping(address account => bool)). hasRole(MINTER_ROLE, alice) проверяет _roles[MINTER_ROLE][alice]. Роли определяются как bytes32 константы: keccak256('MINTER_ROLE'), keccak256('PAUSER_ROLE'). DEFAULT_ADMIN_ROLE может назначать (grantRole) и отзывать (revokeRole) другие роли. Gas cost ~2600 (SLOAD nested mapping + comparison).",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sec04-q3",
+      "type": "multiple-choice",
+      "question": "Почему Role-Based Access Control (RBAC) через AccessControl более гибок, чем single-owner паттерн Ownable для DeFi-протоколов?",
+      "options": [
+        { "id": "a", "text": "RBAC требует меньше gas, чем Ownable" },
+        { "id": "b", "text": "RBAC позволяет назначить отдельные роли (MINTER, PAUSER, UPGRADER) разным адресам, реализуя принцип least privilege -- компрометация одного ключа не дает полный контроль над всеми функциями протокола" },
+        { "id": "c", "text": "RBAC автоматически предотвращает reentrancy-атаки" },
+        { "id": "d", "text": "RBAC делает контракт immutable после деплоя" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "С Ownable все привилегированные функции (mint, pause, upgrade) контролирует один адрес -- single point of failure. С RBAC: security team -> PAUSER_ROLE, treasury -> MINTER_ROLE, governance -> UPGRADER_ROLE. Компрометация ключа security team позволит только pause, но не mint или upgrade. Ronin Bridge ($624M) потерял средства из-за centralized control: 5/9 ключей у одной организации. RBAC + multi-sig + timelock = defense in depth.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "sec04-q4",
+      "type": "code-challenge",
+      "question": "Напишите контракт SafeMint с access control: mapping(address => uint256) public balances для хранения балансов, address public owner (устанавливается в constructor), modifier onlyOwner (require msg.sender == owner), и функция mint(address to, uint256 amount) external onlyOwner для безопасного минтинга.",
+      "language": "solidity",
+      "starterCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract SafeMint {\n    // Реализуйте:\n    // - mapping(address => uint256) public balances\n    // - address public owner\n    // - modifier onlyOwner\n    // - constructor: owner = msg.sender\n    // - function mint(address to, uint256 amount) external onlyOwner\n}",
+      "solutionCode": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract SafeMint {\n    mapping(address => uint256) public balances;\n    address public owner;\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Not owner\");\n        _;\n    }\n\n    function mint(address to, uint256 amount) external onlyOwner {\n        balances[to] += amount;\n    }\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "Контракт компилируется",
+          "expectedOutput": "Contract:",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc2",
+          "description": "ABI содержит функцию mint",
+          "expectedOutput": "\"name\": \"mint\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc3",
+          "description": "ABI содержит owner",
+          "expectedOutput": "\"name\": \"owner\"",
+          "hidden": false,
+          "matchMode": "contains"
+        },
+        {
+          "id": "tc4",
+          "description": "ABI содержит balances",
+          "expectedOutput": "\"name\": \"balances\"",
+          "hidden": false,
+          "matchMode": "contains"
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "SafeMint демонстрирует базовый access control: только owner может вызвать mint(). Без modifier onlyOwner любой адрес мог бы минтить неограниченное количество токенов (как UnsafeToken из урока). Разница в одной строке: 'public' vs 'public onlyOwner' = разница между $0 и $611M потерь. В production используйте OpenZeppelin Ownable2Step (двухшаговая передача) или AccessControl (RBAC).",
+      "bloomLevel": "applied",
+      "timeoutMs": 30000
+    }
+  ]
+}
