@@ -42,6 +42,11 @@ Smart contract аудит -- последняя линия обороны пер
 
 > **Ключевой вывод:** Инструменты находят ~20% уязвимостей, manual review -- ~80%. Аудит БЕЗ manual review = security theater. Аудит БЕЗ инструментов = неэффективность.
 
+<KnowledgeCheck
+  question="Какой процент уязвимостей находят automated tools, а какой -- manual review?"
+  answer="Automated tools (Slither, Mythril) находят ~20% уязвимостей (known patterns, SWC). Manual review находит ~80% (business logic, economic attacks, cross-contract). Вместе = ~95%+ coverage. Аудит БЕЗ manual review = security theater."
+/>
+
 ## Фаза 1: Scoping (10% времени)
 
 ### Что входит в scope?
@@ -239,6 +244,11 @@ Recommendation:
   Apply CEI: move balances[msg.sender] = 0 BEFORE external call.
   Add nonReentrant modifier as defense-in-depth.
 ```
+
+<KnowledgeCheck
+  question="Какой severity присваивается уязвимости, позволяющей вывести ВСЕ средства из контракта?"
+  answer="Critical -- потеря ВСЕХ средств, необратимо. Примеры: reentrancy drain, unprotected selfdestruct. Действие: немедленный fix, блокировка деплоя. Каждый finding должен включать PoC -- без PoC finding = теория, не доказательство."
+/>
 
 ## Security Audit Checklist
 

@@ -68,6 +68,11 @@ import { StablecoinComparisonDiagram, MakerDAOCDPDiagram, USTDeathSpiralDiagram 
 
 **Риски:** Сниженный risk death spiral (есть частичный залог), но более сложная модель.
 
+<KnowledgeCheck
+  question="Назовите три основных типа стейблкоинов и по одному примеру каждого."
+  answer="1) Fiat-backed: USDC/USDT -- обеспечены долларами на банковском счете. 2) Crypto-collateralized: DAI -- overcollateralized CDP с залогом в ETH/WBTC (min 150%). 3) Algorithmic: UST -- привязка через mint/burn механизм без внешнего залога (высокий риск)."
+/>
+
 ## MakerDAO/Sky: механизм CDP
 
 В сентябре 2024 MakerDAO провел ребрендинг в **Sky Protocol**. DAI продолжает существовать, USDS -- обновленная версия (конвертация 1:1). MKR конвертируется в SKY (1:24,000).
@@ -146,6 +151,11 @@ Anchor Protocol предлагал ~20% APY на депозиты UST -- неу�
 4. Паника -> массовый вывод -> death spiral
 
 > **Урок:** Алгоритмические стейблкоины без **экзогенного** (внешнего) залога фатально уязвимы. Backing собственным токеном -- круговая зависимость, которая разрушается при стрессе. До Квон, создатель Terra, арестован в марте 2023.
+
+<KnowledgeCheck
+  question="Почему крах UST/LUNA называют 'death spiral' (спираль смерти)?"
+  answer="Эндогенный залог создал круговую зависимость: depeg UST -> массовый burn UST -> mint LUNA (предложение LUNA: 350M -> 6.5T) -> LUNA обесценивается -> UST обеспечен ещё меньше -> ещё больше depeg. Нет внешнего залога = нет пола для цены. Потери: $40B за 5 дней."
+/>
 
 ## USDT vs USDC
 

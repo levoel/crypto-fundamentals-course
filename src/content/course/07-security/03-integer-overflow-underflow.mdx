@@ -95,6 +95,11 @@ function batchTransfer(address[] _receivers, uint256 _value) public {
 
 **Результат:** из ниоткуда создано огромное количество токенов. Цена обрушилась.
 
+<KnowledgeCheck
+  question="Как BEC Token exploit использовал integer overflow для создания токенов из ниоткуда?"
+  answer="batchTransfer: amount = cnt * _value, где cnt=2 и _value=2^255. Результат overflow: amount = 0. Проверка require(amount <= balances[sender]) прошла (0 <= любой баланс). Sender ничего не потерял, а получатели получили 2^255 токенов каждый."
+/>
+
 ## Два оставшихся вектора в Solidity 0.8+
 
 ### Вектор 1: unchecked блоки
@@ -195,6 +200,11 @@ function updatePosition(uint256 _amount, uint256 _price) external {
     });
 }
 ```
+
+<KnowledgeCheck
+  question="Почему unsafe downcasting (uint256 -> uint8) остается опасным в Solidity 0.8+?"
+  answer="Solidity 0.8+ проверяет overflow только для арифметических операций (+, -, *). Приведение типов (type casting) НЕ проверяется: uint256(256) -> uint8 = 0 (silent truncation). Решение: SafeCast от OpenZeppelin, который ревертится если значение не помещается в целевой тип."
+/>
 
 ## Алгоритмический анализ
 

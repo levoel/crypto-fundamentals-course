@@ -101,6 +101,11 @@ interface IFlashLoanSimpleReceiver {
 | dYdX | 0% (+ 2 wei) | Вся ликвидность |
 | Balancer | 0% | Вся ликвидность |
 
+<KnowledgeCheck
+  question="Flash loan -- это уязвимость или инструмент? Что является настоящей уязвимостью в flash loan атаках?"
+  answer="Flash loan -- инструмент (как молоток). Настоящая уязвимость -- использование spot price (getReserves) как oracle. Spot price манипулируем в 1 транзакции. Flash loan просто предоставляет капитал для манипуляции без залога."
+/>
+
 ## Oracle Manipulation: анатомия атаки
 
 Теперь самое важное -- как flash loan ИСПОЛЬЗУЕТСЯ для атаки.
@@ -200,6 +205,11 @@ forge test --match-path test/security/FlashLoanAttack.t.sol -vvv
 ```
 
 Тест доказывает: flash loan -> dump -> manipulated price -> swap back -> repay.
+
+<KnowledgeCheck
+  question="Почему Chainlink oracle устойчив к flash loan манипуляции, а getReserves() -- нет?"
+  answer="getReserves() отражает текущие резервы DEX, которые можно сдвинуть на 80%+ одним свопом (стоимость = $0 с flash loan). Chainlink агрегирует данные от 20+ независимых sources -- манипуляция требует контроля над большинством узлов (стоимость > $1B)."
+/>
 
 ## Защита протоколов от Flash Loan атак
 

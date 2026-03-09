@@ -69,6 +69,11 @@ DeFi экосистема состоит из семи основных кате
 
 **Ключевые протоколы:** Yearn, Convex, Lido (liquid staking).
 
+<KnowledgeCheck
+  question="К какой категории DeFi-протоколов относятся Uniswap, Curve и Balancer?"
+  answer="DEX (Decentralized Exchanges) -- биржи, использующие AMM (Automated Market Makers) вместо ордер-бука для обмена токенов через пулы ликвидности."
+/>
+
 ## TVL: метрика капитала в DeFi
 
 **Total Value Locked (TVL)** -- суммарная стоимость активов, заблокированных в смарт-контрактах протокола. Это основная метрика для оценки масштаба DeFi-протокола.
@@ -130,6 +135,11 @@ function swap(address tokenIn, uint amountIn, uint amountOutMin) external {
 - **Баги** = потеря средств (Harvest Finance -- $34M, Cream Finance -- $130M)
 - **Аудит** снижает, но не устраняет риск
 - **Timelock** и **multisig** ограничивают damage от компрометации
+
+<KnowledgeCheck
+  question="Почему композируемость ('DeFi Legos') создает не только возможности, но и системные риски?"
+  answer="Композируемость позволяет комбинировать протоколы (Lido -> Aave -> Yearn), но создает цепочки зависимостей: уязвимость в одном протоколе может каскадно повлиять на все связанные протоколы и их TVL."
+/>
 
 ## AMM vs Order Book
 

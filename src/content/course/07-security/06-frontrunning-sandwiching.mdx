@@ -84,6 +84,11 @@ Searcher размещает:
 
 Через Flashbots bundles searcher гарантирует атомарный порядок: frontrun -> victim -> backrun.
 
+<KnowledgeCheck
+  question="Какой параметр в Uniswap Router определяет защиту от sandwich attack?"
+  answer="amountOutMin -- минимально допустимый output. Если output ниже этого значения, транзакция ревертится. amountOutMin = 0 -- приглашение к sandwich: searcher может сдвинуть цену на любую величину. Рекомендация: 95-99% от expected output."
+/>
+
 ## Mempool: прозрачная очередь
 
 Вот почему sandwich attack вообще возможен: публичный mempool делает все ожидающие транзакции видимыми.
@@ -186,6 +191,11 @@ Step 3 (backrun):
 ```
 
 Жертва потеряла: 19,741 (ожидаемый output) - 19,605 = ~$136 DAI.
+
+<KnowledgeCheck
+  question="Почему публичный mempool делает frontrunning возможным?"
+  answer="Все pending транзакции видны всем узлам. Searcher мониторит mempool, декодирует calldata (swap parameters, amountOutMin), симулирует profit и создает sandwich bundle. Решение: приватный mempool (Flashbots Protect) -- tx не появляется в публичном mempool."
+/>
 
 ## Защита от Sandwich Attacks
 

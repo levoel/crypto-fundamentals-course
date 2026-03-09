@@ -80,6 +80,11 @@ Searcher -> Bundle -> Builder -> Block -> Relay -> Validator (Proposer)
 
 > **Факт:** Более 90% Ethereum валидаторов используют MEV-Boost. Это де-факто стандарт.
 
+<KnowledgeCheck
+  question="Опишите роли 5 участников MEV supply chain."
+  answer="1) Users -- отправляют транзакции. 2) Searchers -- мониторят mempool, находят MEV-возможности, создают bundles. 3) Builders -- собирают оптимальные блоки из bundles. 4) Relays -- передают блоки через commit-reveal. 5) Validators (Proposers) -- подписывают блок с наивысшей bid."
+/>
+
 ## Типы MEV: спектр от вредного до полезного
 
 MEV -- не однозначно "плохой". Это **спектр**: от вредных атак до необходимых для здоровья рынка операций.
@@ -110,6 +115,11 @@ Block ordering:
 ### Нейтральный MEV: JIT liquidity
 
 **JIT (Just-In-Time) liquidity** -- searcher добавляет ликвидность в Uniswap V3 непосредственно перед крупным свопом и убирает после. Трейдер получает лучшую цену (меньше slippage), но постоянные LP теряют часть комиссий.
+
+<KnowledgeCheck
+  question="Почему PBS (Proposer-Builder Separation) снижает централизацию валидаторов?"
+  answer="До PBS майнеры сами собирали блоки и извлекали MEV -- преимущество для крупных игроков. PBS разделяет: builders конкурируют за оптимальный блок, validators просто выбирают блок с наивысшей ставкой. Даже home staker получает MEV-доход через MEV-Boost."
+/>
 
 ## Алгоритмический уровень: как работает MEV-бот
 

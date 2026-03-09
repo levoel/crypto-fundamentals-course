@@ -122,6 +122,11 @@ function test_reentrancyExploit() public {
 }
 ```
 
+<KnowledgeCheck
+  question="Почему в уязвимом VulnerableVault атакующий может вывести больше ETH, чем его баланс?"
+  answer="Функция withdraw() отправляет ETH через call{} ДО обнуления balances[msg.sender]. В receive() callback атакующий повторно вызывает withdraw() -- проверка require(balance > 0) проходит, потому что состояние ещё не обновлено (stale). Цикл повторяется до опустошения vault."
+/>
+
 ## Вариант 2: Cross-function Reentrancy
 
 Атакующий вызывает **другую функцию** того же контракта через callback. CEI в одной функции недостаточно, если другая функция использует **общий state**.
@@ -301,6 +306,11 @@ function getPrice() external view returns (uint256) {
 ```
 
 OpenZeppelin v5 предоставляет `_reentrancyGuardEntered()` -- публичную проверку lock-состояния, которую можно использовать в view-функциях.
+
+<KnowledgeCheck
+  question="CEI pattern защищает от single-function reentrancy. Какой механизм нужен для защиты от cross-function reentrancy?"
+  answer="ReentrancyGuard (nonReentrant modifier) -- mutex-блокировка на ВСЕ функции с общим state. При входе lock = 2, при выходе lock = 1. Повторный вход из любой функции видит lock = 2 и ревертится. ReentrancyGuardTransient (EIP-1153) -- та же защита за ~200 gas вместо ~7100."
+/>
 
 ## Сводная таблица: 4 варианта reentrancy
 

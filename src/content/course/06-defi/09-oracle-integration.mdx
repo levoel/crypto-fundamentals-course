@@ -84,6 +84,11 @@ function getValidatedPrice(
 }
 ```
 
+<KnowledgeCheck
+  question="Какие три обязательные проверки нужно выполнить перед использованием данных Chainlink latestRoundData()?"
+  answer="1) price > 0 (защита от нулевой/отрицательной цены). 2) answeredInRound >= roundId (данные из текущего раунда). 3) block.timestamp - updatedAt < maxStaleness (данные не устарели). Без этих проверок контракт может использовать цену недельной давности."
+/>
+
 ## L2 Sequencer Uptime
 
 ### Проблема
@@ -177,6 +182,11 @@ $$TWAP = \frac{\text{tickCumulative}_2 - \text{tickCumulative}_1}{\text{timestam
 | Лучше для | Lending, derivatives | Governance, NFT pricing |
 
 **Интуитивно:** Spot-цена -- "температура прямо сейчас". TWAP -- "средняя температура за месяц". Для ликвидаций нужна актуальная температура. Для governance -- средняя стабильнее.
+
+<KnowledgeCheck
+  question="Почему TWAP-оракул устойчивее к flash loan манипуляциям, чем spot price?"
+  answer="TWAP усредняет цену за N блоков. Flash loan действует в рамках 1 блока. Для манипуляции TWAP нужно удерживать искаженную цену N блоков подряд, что стоит пропорционально глубине пула * время -- экономически нецелесообразно."
+/>
 
 ## Распространенные уязвимости
 

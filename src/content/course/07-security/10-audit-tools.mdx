@@ -96,6 +96,11 @@ jobs:
 
 > **Best practice:** Запускайте Slither на каждый PR. Fail pipeline если найдены High severity findings.
 
+<KnowledgeCheck
+  question="Как Slither анализирует контракт -- выполняет код или разбирает структуру?"
+  answer="Slither -- статический анализатор: разбирает AST (Abstract Syntax Tree) Solidity-кода без выполнения. Pipeline: Solidity -> Compile -> AST -> SlithIR -> Detectors -> Findings. Анализирует control flow, data flow, dependencies. 200+ детекторов, запуск за секунды."
+/>
+
 ## Mythril: Symbolic Execution
 
 ### Что такое Mythril?
@@ -282,6 +287,11 @@ Layer 4: Formal Verification (если бюджет позволяет)
 ```
 
 > **Золотое правило:** `Slither + Mythril + Manual review` = минимальный набор для серьезного аудита. Ни один компонент нельзя убрать.
+
+<KnowledgeCheck
+  question="Почему layered defense (Slither + Mythril + Manual) находит больше уязвимостей, чем любой метод по отдельности?"
+  answer="Каждый метод имеет разные strengths: Slither ловит known patterns за секунды, Mythril через symbolic execution находит conditional/multi-tx bugs, manual review обнаруживает business logic и economic attacks. Пересечение их capabilities минимально, комбинация дает ~95%+ coverage."
+/>
 
 ## Lab: запуск инструментов на наших контрактах
 

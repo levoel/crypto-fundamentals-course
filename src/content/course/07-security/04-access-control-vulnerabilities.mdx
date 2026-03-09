@@ -77,6 +77,11 @@ unsafeToken.burn(alice, unsafeToken.balanceOf(alice));
 
 <AccessControlComparisonDiagram client:load />
 
+<KnowledgeCheck
+  question="В UnsafeToken функция mint() объявлена как public без модификатора. Какие атаки это позволяет?"
+  answer="Бесконечный mint: любой адрес минтит произвольное количество токенов и продает на DEX, обрушая цену для всех держателей. Если burn(from, amount) тоже без AC, атакующий сжигает токены других пользователей. Одна пропущенная строка onlyOwner = катастрофа."
+/>
+
 ## Решение: Ownable
 
 ### OpenZeppelin Ownable (v5)
@@ -224,6 +229,11 @@ DEFAULT_ADMIN_ROLE (может назначать любые роли)
 ```
 
 Каждая роль имеет свой **admin role**. По умолчанию admin role = `DEFAULT_ADMIN_ROLE`. Можно настроить иерархию через `_setRoleAdmin()`.
+
+<KnowledgeCheck
+  question="Чем AccessControl (RBAC) лучше Ownable для DeFi-протоколов?"
+  answer="RBAC назначает отдельные роли (MINTER, PAUSER, UPGRADER) разным адресам. Компрометация одного ключа не дает полный контроль. С Ownable все функции контролирует один адрес -- single point of failure. RBAC + multi-sig + timelock = defense in depth."
+/>
 
 ## Эволюция access control
 
