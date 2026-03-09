@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "11-data-indexing/03-subsquid-architecture",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "idx03-q1",
+      "type": "true-false",
+      "question": "Subsquid использует EvmBatchProcessor для эффективной обработки нескольких блоков одновременно, что обеспечивает скорость 1,000-50,000 блоков/сек по сравнению с ~100 блоков/сек у The Graph.",
+      "correctAnswer": true,
+      "explanation": "EvmBatchProcessor -- 'сердце' Subsquid squid. Он группирует логи в батчи (сотни блоков за раз) и обрабатывает их одним вызовом handler. Один batch INSERT вместо сотен отдельных INSERT -- разница в 10-100x по скорости. The Graph обрабатывает события последовательно (одно за раз) через WASM sandbox, что ограничивает throughput.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "idx03-q2",
+      "type": "multiple-choice",
+      "question": "Из каких трёх основных компонентов состоит Subsquid squid?",
+      "options": [
+        { "id": "a", "text": "Solidity Compiler, EVM Runtime, Gas Optimizer" },
+        { "id": "b", "text": "EvmBatchProcessor (подключение к RPC и фильтрация событий), TypeORM Store (persistence в PostgreSQL с hot blocks), GraphQL Server (автогенерированный API из schema.graphql)" },
+        { "id": "c", "text": "IPFS Node, Graph Node, Ethereum Client" },
+        { "id": "d", "text": "Kafka Producer, Redis Cache, REST Server" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три компонента: (1) EvmBatchProcessor -- подключается к RPC, фильтрует по topic0 и адресу, группирует в батчи. (2) TypeORM Store -- маппит entities на PostgreSQL таблицы, поддерживает hot blocks (автооткат при реорге). (3) GraphQL Server (@subsquid/graphql-server) -- автоматически генерирует API из schema.graphql: queries, filtering, ordering, pagination, subscriptions. Никаких ручных resolvers.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "idx03-q3",
+      "type": "multiple-choice",
+      "question": "Почему batch processing эффективнее последовательной обработки событий для индексации блокчейна?",
+      "options": [
+        { "id": "a", "text": "Batch processing использует GPU для параллельных вычислений" },
+        { "id": "b", "text": "При batch processing 1000 событий -> 1 SQL INSERT (O(1) database operation). При последовательной: 1000 событий -> 1000 SQL INSERT (O(N) operations). Каждый SQL запрос имеет overhead (parsing, planning, network roundtrip), поэтому batch сокращает overhead в N раз" },
+        { "id": "c", "text": "Batch processing позволяет пропускать неважные блоки" },
+        { "id": "d", "text": "Batch processing работает только с PostgreSQL, другие БД не поддерживают" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Каждая SQL операция имеет fixed overhead: parse query, create execution plan, network roundtrip, commit transaction. При 1000 отдельных INSERT: 1000 * overhead. При 1 batch INSERT: 1 * overhead. На практике: при 50 блоках/сек и 10 событий/блок -- 30,000 INSERT/мин (sequential) vs 30 INSERT/мин (batch). Subsquid ctx.store.insert(transfers) -- один SQL. The Graph entity.save() -- один SQL per entity.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "lessonSlug": "11-data-indexing/02-graphql-blockchain",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "idx02-q1",
+      "type": "true-false",
+      "question": "GraphQL позволяет клиенту запрашивать ТОЧНО те поля, которые ему нужны, в одном запросе, устраняя over-fetching и under-fetching, характерные для REST.",
+      "correctAnswer": true,
+      "explanation": "В REST: GET /api/transfers возвращает фиксированную структуру (все поля), даже если нужны только from, to, value. Для двух ресурсов -- два запроса. В GraphQL: один запрос { transfers { from to value } accounts { id balance } } -- клиент выбирает поля и получает два ресурса за один HTTP POST. Один endpoint /graphql вместо множества REST endpoints.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "idx02-q2",
+      "type": "multiple-choice",
+      "question": "Что означает суффикс _gte в GraphQL фильтрах (например, value_gte: 1000)?",
+      "options": [
+        { "id": "a", "text": "Greater Than Exclusive -- строго больше 1000" },
+        { "id": "b", "text": "Greater Than or Equal -- больше или равно 1000" },
+        { "id": "c", "text": "Global Token Exchange -- фильтр по бирже" },
+        { "id": "d", "text": "Get Top Entries -- возвращает только топ-записи" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Операторы фильтрации в GraphQL: _eq (равно), _gt (строго больше), _gte (больше или равно), _lt (строго меньше), _lte (меньше или равно), _in (в списке), _contains (содержит подстроку). value_gte: 1000 транслируется в SQL WHERE value >= 1000. Эти операторы автоматически генерируются из schema.graphql для каждого поля entity.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "idx02-q3",
+      "type": "multiple-choice",
+      "question": "Почему GraphQL предпочтительнее REST для запросов блокчейн-данных?",
+      "options": [
+        { "id": "a", "text": "GraphQL быстрее на сетевом уровне, потому что использует WebSocket вместо HTTP" },
+        { "id": "b", "text": "GraphQL поддерживает гибкую схему (клиент выбирает поля), вложенные запросы (transfers + accounts в одном запросе), встроенную типизацию, и один endpoint для всех операций. Блокчейн-данные связаны (Transfer -> Account -> Balance), что идеально для GraphQL graph-based модели" },
+        { "id": "c", "text": "REST не поддерживает фильтрацию и сортировку" },
+        { "id": "d", "text": "GraphQL шифрует данные при передаче, а REST -- нет" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Блокчейн-данные имеют graph-структуру: Transfer связан с Account, Account имеет Balance, Proposal связан с Votes. GraphQL естественно выражает эти связи через вложенные запросы. Один запрос может получить transfers, accounts, и stats одновременно. REST потребовал бы 3 endpoints и 3 HTTP-запроса. Плюс: GraphQL subscriptions для real-time обновлений через WebSocket.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "idx02-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте функцию, которая строит GraphQL query object для получения ERC-20 Transfer событий. solve(tokenAddress, minAmount) возвращает JSON.stringify({ query, variables: { token: tokenAddress, minAmount } }), где query содержит запрос transfers с фильтрацией по token и amount_gte.",
+      "language": "javascript",
+      "starterCode": "function solve(tokenAddress, minAmount) {\n  // Постройте GraphQL query string с переменными $token и $minAmount\n  // Query должен содержать:\n  // - transfers(where: { token: $token, amount_gte: $minAmount })\n  // - fields: id from to amount timestamp\n  // Верните JSON.stringify({ query, variables: { token: tokenAddress, minAmount } })\n}",
+      "solutionCode": "function solve(tokenAddress, minAmount) {\n  const query = `query($token: String!, $minAmount: String!) {\n    transfers(where: { token: $token, amount_gte: $minAmount }) {\n      id\n      from\n      to\n      amount\n      timestamp\n    }\n  }`;\n  return JSON.stringify({ query, variables: { token: tokenAddress, minAmount } });\n}",
+      "testCases": [
+        { "id": "tc1", "description": "Query contains transfers and amount_gte", "input": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,1000000", "expectedOutput": "transfers", "matchMode": "contains", "hidden": false },
+        { "id": "tc2", "description": "Query contains token and $minAmount variables", "input": "0xdac17f958d2ee523a2206206994597c13d831ec7,500000", "expectedOutput": "amount_gte", "matchMode": "contains", "hidden": false },
+        { "id": "tc3", "description": "Result contains variables object with token", "input": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,100", "expectedOutput": "variables", "matchMode": "contains", "hidden": true }
+      ],
+      "correctAnswer": "code",
+      "explanation": "GraphQL query с переменными: query определяет структуру запроса с параметрами ($token, $minAmount), variables передает конкретные значения. Фильтр where: { token: $token, amount_gte: $minAmount } транслируется сервером в SQL WHERE token = '0x...' AND amount >= 1000000. Этот паттерн используется во всех GraphQL-клиентах (urql, Apollo) для типобезопасных запросов.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}

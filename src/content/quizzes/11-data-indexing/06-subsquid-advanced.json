@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "11-data-indexing/06-subsquid-advanced",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "idx06-q1",
+      "type": "true-false",
+      "question": "Subsquid Cloud (SQD Network) предоставляет managed hosting для production squids, избавляя от необходимости управлять инфраструктурой (PostgreSQL, processor, GraphQL server) самостоятельно.",
+      "correctAnswer": true,
+      "explanation": "squid.yaml -- манифест деплоймента для SQD Cloud. Определяет processors, API, и addons (PostgreSQL). Деплой через CLI: sqd deploy. SQD Cloud управляет инфраструктурой: автоскалирование, мониторинг, перезапуск при сбоях. Для разработки используем Docker Compose (локально), для production -- SQD Cloud.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "idx06-q2",
+      "type": "multiple-choice",
+      "question": "Когда следует использовать WebSocket подписки (subscriptions) вместо обычного polling?",
+      "options": [
+        { "id": "a", "text": "Всегда -- subscriptions быстрее и эффективнее polling" },
+        { "id": "b", "text": "Для real-time dashboard обновлений (governance голосования, live event feed, DeFi price ticker): subscription автоматически push-ит данные при появлении новых записей в БД через WebSocket. Для статичных отчётов достаточно polling" },
+        { "id": "c", "text": "Подписки нужны только для мобильных приложений" },
+        { "id": "d", "text": "Subscriptions работают только с The Graph, не с Subsquid" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Subscriptions: сервер PUSH-ит обновления через WebSocket при изменении данных. Идеально для: governance dashboard (новые голоса), live event feed (Transfer events), DeFi price ticker (Swap events). Предупреждение: RAM usage подписок масштабируется плохо под высокой нагрузкой. Для одного пользователя -- отлично. Для тысяч -- используйте polling или внешний PubSub (Redis, Kafka).",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "idx06-q3",
+      "type": "multiple-choice",
+      "question": "Почему multi-chain индексация требует аккуратной обработки различий в block finality между сетями?",
+      "options": [
+        { "id": "a", "text": "Все EVM-сети имеют одинаковую финальность, различий нет" },
+        { "id": "b", "text": "Разные сети имеют разную глубину возможных реоргов: Ethereum (~75 блоков), Polygon (~256 блоков), Anvil (1 блок). setFinalityConfirmation задаёт, сколько подтверждений ждать. Если использовать одно значение для всех сетей -- либо потеря данных при реорге, либо излишняя задержка" },
+        { "id": "c", "text": "Multi-chain индексация невозможна с одним PostgreSQL" },
+        { "id": "d", "text": "Финальность важна только для mainnet, не для тестовых сетей" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "setFinalityConfirmation(N): данные из блоков моложе N считаются 'hot' (могут быть откачены при реорге). Ethereum mainnet: 75 блоков (~12 мин) для финализации. Polygon: 256 блоков (длинная цепочка потенциальных реоргов). Anvil: 1 блок (нет реоргов). При multi-chain: каждый processor имеет свой setFinalityConfirmation. supportHotBlocks: true в TypeORM Store обеспечивает автооткат при реорге. Shared schema + разные processors.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

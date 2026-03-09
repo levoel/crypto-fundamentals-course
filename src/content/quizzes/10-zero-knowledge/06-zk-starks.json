@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "10-zero-knowledge/06-zk-starks",
+  "moduleId": "10-zero-knowledge",
+  "questions": [
+    {
+      "id": "zk06-q1",
+      "type": "true-false",
+      "question": "STARKs не требуют trusted setup: все параметры генерируются из публичной случайности (Fiat-Shamir heuristic), используя хеш-функции вместо эллиптических кривых.",
+      "correctAnswer": true,
+      "explanation": "STARK = Scalable Transparent ARgument of Knowledge. 'Transparent' означает: никакой MPC ceremony, никакого toxic waste. Все параметры -- публичные hash values, генерируемые через Fiat-Shamir. STARK использует Merkle trees (хеш-коммитменты) вместо elliptic curve commitments (KZG). Любой может проверить корректность setup.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "zk06-q2",
+      "type": "multiple-choice",
+      "question": "Какой ГЛАВНЫЙ трейдофф STARKs по сравнению с SNARKs (Groth16)?",
+      "options": [
+        { "id": "a", "text": "STARKs медленнее генерируют proofs и требуют больше памяти prover" },
+        { "id": "b", "text": "STARKs имеют значительно больший размер proof (~45-200 KB vs ~128 bytes у Groth16), но не требуют trusted setup и устойчивы к квантовым компьютерам" },
+        { "id": "c", "text": "STARKs не поддерживают произвольные вычисления, только простые арифметические операции" },
+        { "id": "d", "text": "STARKs требуют специальное оборудование (FPGA/ASIC) для proof generation" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "SNARK (Groth16) сжимает proof в 3 group elements (~128 bytes) через bilinear pairings -- одно уравнение проверяет ВСЕ constraints. STARK не может так сжать: без pairings нужны Merkle paths для каждого query point. При 40-80 queries: proof = O(poly(log N)) * hash_size = 45-200 KB. Взамен: transparency (no trusted setup) + quantum resistance (hash-based, не EC-based).",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "zk06-q3",
+      "type": "multiple-choice",
+      "question": "Почему STARKs считаются квантово-устойчивыми, а SNARKs на эллиптических кривых -- нет?",
+      "options": [
+        { "id": "a", "text": "STARKs используют более длинные ключи, которые квантовый компьютер не может перебрать" },
+        { "id": "b", "text": "SNARKs полагаются на discrete logarithm problem (DLP) на эллиптических кривых, которую алгоритм Шора решает за полиномиальное время. STARKs полагаются на collision resistance хеш-функций, где алгоритм Гровера даёт лишь квадратичное ускорение (достаточно удвоить hash size)" },
+        { "id": "c", "text": "Квантовые компьютеры не могут работать с хеш-функциями" },
+        { "id": "d", "text": "STARKs используют post-quantum lattice-based криптографию" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "SNARK (Groth16) безопасность основана на DLP: 'дано gA, найти a'. Алгоритм Шора решает DLP за O(poly(n)) на квантовом компьютере -- ломает EC cryptography полностью. STARK безопасность основана на collision resistance: 'найти x != y: H(x) = H(y)'. Алгоритм Гровера ускоряет поиск в sqrt раз: 2^128 -> 2^64 операций. Решение: увеличить hash size с 256 до 512 bit. Фундаментально разные математические основания.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

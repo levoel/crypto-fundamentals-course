@@ -1,0 +1,70 @@
+{
+  "lessonSlug": "11-data-indexing/_exam",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "exam-idx-q1",
+      "type": "multiple-choice",
+      "question": "Как индексация (INDEX-01) + GraphQL (INDEX-02) вместе решают фундаментальную проблему запросов к блокчейн-данным?",
+      "options": [
+        { "id": "a", "text": "Индексация и GraphQL -- независимые технологии, которые не связаны" },
+        { "id": "b", "text": "RPC ограничен: нет агрегаций, timeout на больших диапазонах, повторные вычисления. Индексатор делает один ETL-проход (blockchain -> PostgreSQL), создавая структурированные данные с B-tree индексами. GraphQL предоставляет гибкий API: клиент выбирает поля, фильтры, сортировку. Вместе: O(N) один раз -> O(log N) на каждый запрос" },
+        { "id": "c", "text": "GraphQL напрямую запрашивает blockchain без индексации" },
+        { "id": "d", "text": "Индексация нужна только для NFT данных, не для ERC-20" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Без индексации: каждый запрос сканирует блоки O(N). С индексацией: один ETL-проход O(N), затем PostgreSQL B-tree дает O(log N) per query. GraphQL автогенерирует API из schema.graphql: queries + filtering (_eq, _gte, _contains) + ordering + pagination + subscriptions. Результат: transfers(where: { from_eq: '0x...' }, orderBy: blockNumber_DESC, limit: 20) -> SQL SELECT с B-tree index -> ответ за миллисекунды.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-idx-q2",
+      "type": "multiple-choice",
+      "question": "В чём ключевое архитектурное различие обработки событий между Subsquid (INDEX-03/04) и The Graph (INDEX-07)?",
+      "options": [
+        { "id": "a", "text": "Subsquid использует SQL, а The Graph -- NoSQL" },
+        { "id": "b", "text": "Subsquid обрабатывает события БАТЧАМИ (EvmBatchProcessor получает сотни блоков, handler делает один batch INSERT). The Graph обрабатывает ПОСЛЕДОВАТЕЛЬНО (Graph Node вызывает WASM handler per event, entity.save() per entity). Это даёт Subsquid 50-300x преимущество в скорости" },
+        { "id": "c", "text": "The Graph быстрее, потому что WASM эффективнее JavaScript" },
+        { "id": "d", "text": "Различие только в языке маппингов, архитектура идентична" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Subsquid: processor.run(db, async (ctx) => { ... ctx.store.insert(transfers) }). Один batch может содержать 100+ блоков и 1000+ событий. Один SQL INSERT для всего массива. The Graph: handleTransfer(event) вызывается для КАЖДОГО события. entity.save() -> отдельный SQL INSERT. 1000 событий -> 1000 SQL операций. Каждая имеет overhead: parse, plan, network, commit. Результат: 1K-50K vs 100-150 блоков/сек.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-idx-q3",
+      "type": "multiple-choice",
+      "question": "Какие общие GraphQL паттерны используются И в Subsquid, И в The Graph для запросов к блокчейн-данным?",
+      "options": [
+        { "id": "a", "text": "Синтаксис запросов полностью идентичен между Subsquid и The Graph" },
+        { "id": "b", "text": "Оба используют schema.graphql как single source of truth, @entity для таблиц, @index для B-tree индексов, filtering (where с операторами _gt, _gte, _eq), и генерацию API из schema. Различается синтаксис: limit vs first, orderBy_DESC vs orderDirection: desc" },
+        { "id": "c", "text": "The Graph использует REST, не GraphQL" },
+        { "id": "d", "text": "Общих паттернов нет -- это полностью разные системы" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Общие паттерны: (1) schema.graphql определяет entities (type Transfer @entity). (2) @index создает B-tree в PostgreSQL. (3) Codegen генерирует typed code из schema. (4) GraphQL API с filtering, ordering, pagination. Различия в синтаксисе: Subsquid (limit: 10, orderBy: blockNumber_DESC, where: { from_eq }) vs The Graph (first: 10, orderBy: blockNumber, orderDirection: desc, where: { from: }). Суть одна -- подход к разработке одинаковый.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "exam-idx-q4",
+      "type": "multiple-choice",
+      "question": "Почему протокольная децентрализация индексации (INDEX-08) важна для censorship resistance blockchain-приложений?",
+      "options": [
+        { "id": "a", "text": "Децентрализация нужна только для token-экономики, не для надёжности" },
+        { "id": "b", "text": "Централизованный индексатор -- single point of failure и цензуры: оператор может отключить API, фильтровать данные, или изменить результаты запросов. The Graph Network (500+ независимых indexers с GRT staking) гарантирует: данные доступны, даже если один indexer уходит; GRT штрафы наказывают за некорректные данные; нет единой точки отказа" },
+        { "id": "c", "text": "Децентрализация индексации невозможна -- данные всегда хранятся централизованно" },
+        { "id": "d", "text": "Censorship resistance обеспечивается только самим блокчейном, не индексаторами" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "dApp зависит от данных. Если данные поступают из централизованного API -- вся censorship resistance блокчейна бесполезна. The Graph Network: 500+ indexers, GRT staking, slashing за некорректные данные. Любой может стать indexer. Subgraph на IPFS (immutable CID). Если один indexer цензурирует запросы -- пользователь переключается на другого. SQD Network и SubQuery Network развивают аналогичные подходы.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "exam-idx-q5",
+      "type": "true-false",
+      "question": "Batch processing в Subsquid (INDEX-03) позволяет одному processor обрабатывать события от нескольких контрактов в одном проходе (INDEX-05), потому что EvmBatchProcessor группирует все совпадающие логи в один батч.",
+      "correctAnswer": true,
+      "explanation": "EvmBatchProcessor принимает несколько .addLog() фильтров (разные адреса, разные topic0). Все совпадающие логи из блока попадают в один батч. Handler получает ctx.blocks с ВСЕМИ логами и использует switch по topic0 для маршрутизации: TRANSFER_TOPIC -> decodeTransfer(), SWAP_TOPIC -> decodeSwap(), SYNC_TOPIC -> updatePoolState(). Batch INSERT для immutable events, UPSERT для mutable state -- всё в одном проходе.",
+      "bloomLevel": "applied"
+    }
+  ]
+}

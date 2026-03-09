@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "11-data-indexing/04-subsquid-erc20-indexer",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "idx04-q1",
+      "type": "true-false",
+      "question": "Batch handler function в Subsquid получает batch context (ctx) с массивом блоков, где каждый блок содержит декодированные логи, соответствующие настроенным фильтрам processor.",
+      "correctAnswer": true,
+      "explanation": "processor.run(db, async (ctx) => { ... }) -- основная функция обработки. ctx.blocks содержит массив блоков, каждый с block.logs -- отфильтрованными логами. Фильтры настроены в processor.ts: .addLog({ address: [CONTRACT_ADDRESS], topic0: [TRANSFER_TOPIC] }). Handler обрабатывает весь батч за один вызов, а не по одному событию.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "idx04-q2",
+      "type": "multiple-choice",
+      "question": "Что настраивает вызов processor.addLog() в EvmBatchProcessor?",
+      "options": [
+        { "id": "a", "text": "Записывает логи в файл для отладки" },
+        { "id": "b", "text": "Добавляет фильтр: processor будет получать ТОЛЬКО логи, совпадающие по address (контракт) и topic0 (тип события). Можно добавить несколько фильтров для мульти-событийной индексации" },
+        { "id": "c", "text": "Создает новый лог в блокчейне через транзакцию" },
+        { "id": "d", "text": "Устанавливает максимальное количество логов в батче" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "processor.addLog({ address: [CONTRACT_ADDRESS], topic0: [TRANSFER_TOPIC] }) -- фильтр-массивы. Processor запрашивает у RPC только логи, совпадающие по address И topic0. Можно добавить несколько .addLog() для разных контрактов/событий (INDEX-05: Transfer + Swap + Sync). Это значительно эффективнее, чем получать все логи и фильтровать в коде.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "idx04-q3",
+      "type": "multiple-choice",
+      "question": "Почему TypeORM entities обеспечивают преимущество типобезопасности по сравнению с raw SQL для хранения блокчейн-данных?",
+      "options": [
+        { "id": "a", "text": "TypeORM быстрее raw SQL на порядок" },
+        { "id": "b", "text": "TypeORM entities генерируются из schema.graphql через codegen: Transfer.from -- string, Transfer.value -- BigInt, Transfer.blockNumber -- number. TypeScript compiler проверяет типы на этапе сборки. Raw SQL позволяет INSERT с неправильными типами, ошибка обнаруживается только в runtime" },
+        { "id": "c", "text": "TypeORM не использует SQL вообще, хранит данные в файлах" },
+        { "id": "d", "text": "Raw SQL не поддерживает BigInt, а TypeORM поддерживает" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Codegen pipeline: schema.graphql -> npx squid-typeorm-codegen -> src/model/generated/*.ts. Entity Transfer имеет typed fields: from: string, to: string, value: bigint, blockNumber: number. При new Transfer({ value: 'not a number' }) -- TypeScript compiler error. Raw SQL: INSERT INTO transfer (value) VALUES ('not a number') -- ошибка только в runtime. Для блокчейн-данных с BigInt (uint256) типобезопасность критична.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

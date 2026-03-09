@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "11-data-indexing/05-subsquid-multi-event",
+  "moduleId": "11-data-indexing",
+  "questions": [
+    {
+      "id": "idx05-q1",
+      "type": "true-false",
+      "question": "Один EvmBatchProcessor может индексировать несколько типов событий от нескольких контрактов одновременно, добавляя несколько .addLog() фильтров.",
+      "correctAnswer": true,
+      "explanation": "Каждый .addLog() добавляет отдельный фильтр. Processor получает ВСЕ совпадающие логи в одном батче. В handler используется switch по log.topics[0] для маршрутизации: TRANSFER_TOPIC -> decodeTransfer(), SWAP_TOPIC -> decodeSwap(), SYNC_TOPIC -> updatePoolState(). Один processor, одна база, один GraphQL API для всех типов данных.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "idx05-q2",
+      "type": "multiple-choice",
+      "question": "Почему при проектировании schema для мульти-событийной индексации следует нормализовать связанные entities?",
+      "options": [
+        { "id": "a", "text": "Нормализация уменьшает размер GraphQL запросов" },
+        { "id": "b", "text": "Разные типы данных имеют разные паттерны persistence: Transfer и Swap -- immutable events (batch INSERT), PoolState -- mutable state (UPSERT при каждом Sync). Нормализация позволяет оптимально использовать INSERT для immutable и UPSERT для mutable данных" },
+        { "id": "c", "text": "GraphQL не поддерживает ненормализованные schema" },
+        { "id": "d", "text": "Нормализация нужна только для The Graph, не для Subsquid" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три entity: Transfer (immutable event), Swap (immutable event), PoolState (mutable state). Transfer и Swap создаются один раз, никогда не обновляются -> batch INSERT (ctx.store.insert(transfers)). PoolState обновляется при каждом Sync событии -> UPSERT (ctx.store.upsert(pool)). Смешивание mutable и immutable в одном entity приводит к неоптимальному persistence и сложности handler.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "idx05-q3",
+      "type": "multiple-choice",
+      "question": "Почему совместная индексация Swap и Sync событий Uniswap V2 даёт лучшую DeFi-аналитику, чем индексация каждого типа по отдельности?",
+      "options": [
+        { "id": "a", "text": "Sync события генерируются быстрее, чем Swap, поэтому нужно их совмещать" },
+        { "id": "b", "text": "Swap содержит объёмы обмена (amount0In/Out), а Sync -- текущие резервы пула (reserve0, reserve1). Вместе они дают полную картину: цена за swap = amountOut/amountIn, impermanent loss = f(reserve0/reserve1), volume = sum(swaps). Одним GraphQL запросом получаем swaps + poolState + transfers" },
+        { "id": "c", "text": "Отдельная индексация Swap и Sync требует два отдельных PostgreSQL сервера" },
+        { "id": "d", "text": "The Graph не позволяет индексировать Swap без Sync" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Swap event: sender, amount0In, amount1In, amount0Out, amount1Out, to -- данные об обмене. Sync event: reserve0, reserve1 -- текущие резервы после операции. Вместе: (1) Price impact = amountOut / amountIn per swap. (2) Pool TVL = reserve0 + reserve1 в реальном времени. (3) Volume = SUM(amountIn) по времени. (4) Один комбинированный GraphQL запрос: swaps + poolState + transfers -- три entity за один HTTP запрос.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

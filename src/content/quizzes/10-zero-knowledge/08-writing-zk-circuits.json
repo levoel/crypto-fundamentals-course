@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "10-zero-knowledge/08-writing-zk-circuits",
+  "moduleId": "10-zero-knowledge",
+  "questions": [
+    {
+      "id": "zk08-q1",
+      "type": "true-false",
+      "question": "Полный Groth16 pipeline включает: компиляцию circuit в R1CS, trusted setup (Powers of Tau + Phase 2), генерацию proof, и верификацию через Solidity verifier contract on-chain.",
+      "correctAnswer": true,
+      "explanation": "8 шагов pipeline: (1) Write .circom, (2) Compile -> R1CS + WASM, (3) Download Powers of Tau, (4) Groth16 setup (Phase 2), (5) Contribute randomness, (6) Export verification key, (7) Generate proof (witness + Groth16), (8) Verify. snarkjs может экспортировать Solidity verifier contract с функцией verifyProof() -- ~200-300K gas для on-chain верификации.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "zk08-q2",
+      "type": "multiple-choice",
+      "question": "Когда разработчику стоит 'USE ZK' (использовать готовую ZK-инфраструктуру) vs 'BUILD ZK' (писать custom circuits)?",
+      "options": [
+        { "id": "a", "text": "USE ZK -- для крупных проектов, BUILD ZK -- для маленьких" },
+        { "id": "b", "text": "USE ZK (90%): деплой на ZK rollups, интеграция ZK identity, использование готовых circuit templates. BUILD ZK (10%): custom privacy proofs, compliance circuits, специализированные ZK приложения с уникальной логикой" },
+        { "id": "c", "text": "Всегда BUILD ZK для максимальной безопасности" },
+        { "id": "d", "text": "USE ZK -- только для прототипов, BUILD ZK -- для production" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "90% разработчиков 'USE ZK': деплоят на zkSync/StarkNet (как обычный Solidity деплой), интегрируют Semaphore/Worldcoin через SDK, используют готовые circuit templates из circomlib (Merkle tree, Poseidon). 10% 'BUILD ZK': пишут custom circuits на Circom/Noir/Cairo для уникальных use cases (privacy compliance, custom identity proofs). Понимание circuit design помогает оценить ограничения даже при 'USE ZK'.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "zk08-q3",
+      "type": "multiple-choice",
+      "question": "Почему Solidity verifier contracts позволяют проверять ZK proofs on-chain без раскрытия private inputs?",
+      "options": [
+        { "id": "a", "text": "Solidity contracts шифруют private inputs перед проверкой" },
+        { "id": "b", "text": "Verifier contract проверяет pairing equation e(A,B) = e(alpha,beta) * e(L,gamma) * e(C,delta), используя только proof elements (A,B,C) и public inputs. Private inputs 'закодированы' в proof через elliptic curve operations и недоступны из proof" },
+        { "id": "c", "text": "Private inputs хранятся off-chain на IPFS, а contract проверяет хеш" },
+        { "id": "d", "text": "Ethereum ноды автоматически скрывают private inputs из calldata" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Solidity verifier (экспортированный snarkjs) содержит verification key (alpha, beta, gamma, delta) и проверяет одно pairing equation. Proof (A, B, C) -- три точки на эллиптической кривой, вычисленные prover'ом из witness (private inputs). Извлечь private inputs из proof вычислительно невозможно (предполагая hardness of discrete logarithm). Верификация ~200-300K gas, amortized на тысячи транзакций в ZK rollup.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

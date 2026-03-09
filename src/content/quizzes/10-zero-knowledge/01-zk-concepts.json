@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "10-zero-knowledge/01-zk-concepts",
+  "moduleId": "10-zero-knowledge",
+  "questions": [
+    {
+      "id": "zk01-q1",
+      "type": "true-false",
+      "question": "Zero-knowledge proof позволяет Prover доказать Verifier, что утверждение истинно, не раскрывая никакой дополнительной информации о том, ПОЧЕМУ оно истинно.",
+      "correctAnswer": true,
+      "explanation": "Это определяющее свойство ZK-доказательств: Verifier узнает ТОЛЬКО то, что утверждение истинно. Свойство zero-knowledge формально гарантирует, что существует Simulator, который может создать неотличимую от реальной запись протокола БЕЗ знания секрета. Verifier не получает никакой дополнительной информации.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "zk01-q2",
+      "type": "multiple-choice",
+      "question": "Какие три свойства ОБЯЗАН удовлетворять любой ZK-протокол?",
+      "options": [
+        { "id": "a", "text": "Encryption, Decryption, Verification" },
+        { "id": "b", "text": "Completeness (честный Prover убедит), Soundness (нечестный не обманет), Zero-Knowledge (Verifier не узнает секрет)" },
+        { "id": "c", "text": "Confidentiality, Integrity, Availability" },
+        { "id": "d", "text": "Commitment, Challenge, Response" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Три обязательных свойства ZK: Completeness -- Pr[accept | true] = 1 (честный Prover всегда убедит). Soundness -- Pr[accept | false] < epsilon (нечестный не обманет). Zero-Knowledge -- существует Simulator, выход которого неотличим от реального протокола. Вариант D описывает СТРУКТУРУ Sigma протокола (3 шага), а не свойства ZK.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "zk01-q3",
+      "type": "multiple-choice",
+      "question": "Почему аналогия пещеры Али-Бабы демонстрирует свойство soundness? Что происходит при повторении раундов?",
+      "options": [
+        { "id": "a", "text": "Каждый раунд раскрывает часть секретного слова, поэтому после 40 раундов слово известно" },
+        { "id": "b", "text": "Повторение раундов увеличивает вероятность обмана линейно: 50% * N" },
+        { "id": "c", "text": "При каждом раунде нечестный Prover угадывает с вероятностью 1/2, и эти вероятности перемножаются: после N раундов вероятность обмана = 1/2^N, что экспоненциально стремится к нулю" },
+        { "id": "d", "text": "Пещера Али-Бабы демонстрирует completeness, а не soundness" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "Soundness гарантирует, что нечестный Prover не обманет. В пещере Али-Бабы: без секретного слова Prover угадывает правильный выход с вероятностью 1/2 за раунд. За N независимых раундов вероятности перемножаются: (1/2)^N. При 40 раундах: (1/2)^40 ~ 10^-12 (один к триллиону). Экспоненциальное снижение вероятности обмана -- ключевой механизм soundness.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}
