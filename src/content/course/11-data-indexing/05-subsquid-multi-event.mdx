@@ -159,6 +159,11 @@ processor.run(db, async (ctx) => {
 
 > **Почему PoolState не батчим?** Каждое Sync событие обновляет ОДНУ и ту же запись (один пул). Если в одном батче два Sync события, нужно применить оба последовательно. Batch insert не поддерживает update одной записи дважды.
 
+<KnowledgeCheck
+  question="Как один EvmBatchProcessor обрабатывает несколько типов событий?"
+  answer="Несколько .addLog() фильтров (Transfer, Swap, Sync). Все совпадающие логи попадают в один батч. В handler -- switch по log.topics[0] для маршрутизации: TRANSFER_TOPIC -> decodeTransfer(), SWAP_TOPIC -> decodeSwap(), SYNC_TOPIC -> updatePoolState()."
+/>
+
 ## Декодирование Swap события
 
 Uniswap V2 Swap event имеет следующую сигнатуру:
@@ -239,6 +244,11 @@ async function updatePoolState(store: Store, log: Log, block: Block) {
 ```
 
 `PoolState.totalSwaps` -- running counter, инкрементируется при каждом Sync. `reserve0` и `reserve1` перезаписываются актуальными значениями. GraphQL запрос вернёт **текущее состояние** пула.
+
+<KnowledgeCheck
+  question="Почему PoolState обновляется через UPSERT, а не batch INSERT?"
+  answer="PoolState -- mutable state (один пул). Каждое Sync событие перезаписывает reserve0 и reserve1 той же записи. Если в одном батче два Sync события, нужно применить оба последовательно. Batch INSERT создает новые записи, а не обновляет существующие."
+/>
 
 ## GraphQL запросы для мульти-данных
 

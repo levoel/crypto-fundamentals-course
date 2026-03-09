@@ -246,6 +246,11 @@ SubQuery: **~300 блоков/сек** (TypeScript, но sequential).
 
 > **Пример:** Индексация 10 миллионов блоков Ethereum. Subsquid: ~3-170 минут. The Graph: ~18-28 часов. SubQuery: ~9 часов. Batch processing -- не оптимизация, а фундаментальное архитектурное преимущество.
 
+<KnowledgeCheck
+  question="Каковы три ключевых различия между Subsquid, The Graph и SubQuery?"
+  answer="Язык: Subsquid и SubQuery -- TypeScript, The Graph -- AssemblyScript. Скорость: Subsquid 1K-50K блоков/сек (batch), The Graph ~100 (sequential), SubQuery ~300. Децентрализация: The Graph -- зрелая сеть (GRT, 500+ indexers), SubQuery и Subsquid -- растущие сети."
+/>
+
 ## Когда какой инструмент?
 
 <DecisionTreeDiagram client:visible />
@@ -270,6 +275,11 @@ SubQuery: **~300 блоков/сек** (TypeScript, но sequential).
 **Крупный DeFi протокол:** The Graph. Нужна децентрализованная инфраструктура, чтобы subgraph работал, даже если команда уходит. GRT стимулирует indexers.
 
 **Multi-chain мост:** SubQuery или Subsquid. Нужна индексация с нескольких сетей одновременно. SubQuery имеет нативную multi-chain поддержку.
+
+<KnowledgeCheck
+  question="Когда выбрать Subsquid, а когда The Graph для вашего проекта?"
+  answer="Subsquid: максимальная скорость индексации, аналитика больших объёмов, TypeScript удобство. The Graph: зрелая децентрализованная инфраструктура (500+ indexers, GRT стимулирование), censorship resistance, крупные DeFi протоколы."
+/>
 
 ## Переключение frontend между Subsquid и Graph Node
 

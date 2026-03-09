@@ -118,6 +118,11 @@ type Account @entity {
 
 > **Важно:** Стандартный JavaScript `Number` -- 64-bit float. Максимум: 2^53 (~9 * 10^15). Token supply может быть 10^18 и больше. Поэтому **BigInt ОБЯЗАТЕЛЕН** для любых token amounts.
 
+<KnowledgeCheck
+  question="Что такое @entity и @index в schema.graphql и для чего они нужны?"
+  answer="@entity -- тип = таблица в PostgreSQL (аналог CREATE TABLE). @index -- B-tree индекс на поле (аналог CREATE INDEX). @index ускоряет WHERE и ORDER BY с O(N) full scan до O(log N) seek. Пример: from: String! @index создает индекс для быстрого поиска по отправителю."
+/>
+
 ## Запросы (Queries)
 
 <GraphQLQueryBuilderDiagram client:visible />
@@ -221,6 +226,11 @@ query {
   }
 }
 ```
+
+<KnowledgeCheck
+  question="Какие операторы фильтрации доступны в GraphQL для блокчейн-данных?"
+  answer="_eq (равно), _gt (больше), _gte (больше или равно), _lt (меньше), _lte (меньше или равно), _in (в списке), _contains (содержит подстроку), _startsWith (начинается с). Пример: transfers(where: { value_gte: '1000', from_eq: '0x...' })."
+/>
 
 ## Подписки (Subscriptions)
 

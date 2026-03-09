@@ -62,6 +62,11 @@ Module 8 (SCALE-07) рассказал **ЧТО** отличает SNARKs и STA
 
 **Ключевой insight:** SNARK "сжимает" polynomial check в 3 group elements через pairing trick. STARK не может так сжать -- Merkle proofs имеют длину O(log N). Но зато STARK не полагается на hardness assumptions, которые ломает квантовый компьютер.
 
+<KnowledgeCheck
+  question="Какие два фундаментальных ограничения SNARKs решают STARKs?"
+  answer="1. Trusted setup: SNARKs требуют MPC ceremony (toxic waste). STARKs -- transparent, все параметры публичные. 2. Quantum vulnerability: SNARKs основаны на elliptic curves (уязвимы для алгоритма Шора). STARKs используют только hash functions (устойчивы к квантовым компьютерам)."
+/>
+
 ## FRI Protocol: сердце STARKs
 
 FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity) -- ключевой примитив STARKs. Он доказывает, что функция f "близка" к полиному степени ≤ d.
@@ -163,6 +168,11 @@ SNARK prover выполняет **EC scalar multiplications** -- каждая O(
 STARK prover выполняет **field operations + hashing** -- арифметика в конечном поле + SHA-256/Poseidon. Для больших вычислений field ops дешевле EC ops.
 
 На практике: для circuits > ~2^20 constraints, STARK prover обгоняет SNARK prover.
+
+<KnowledgeCheck
+  question="Как FRI protocol доказывает, что функция 'близка' к полиному нужной степени?"
+  answer="FRI использует folding: полином f(x) степени d разлагается на f_even и f_odd (степени d/2). После получения challenge r вычисляется f_folded = f_even + r * f_odd. После log(d) раундов степень падает до 0 (константа). Merkle trees коммитят значения на каждом уровне. Verifier проверяет consistency через Merkle proofs."
+/>
 
 ## Production STARKs
 

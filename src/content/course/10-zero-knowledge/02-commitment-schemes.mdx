@@ -72,6 +72,11 @@ VERIFY(C, m, r):
 
 > **Без blinding factor** hiding нарушено! Если C = H("ДА"), Боб просто вычислит H("ДА") и H("НЕТ") и сравнит.
 
+<KnowledgeCheck
+  question="Какие два свойства ОБЯЗАН обеспечивать любой commitment scheme?"
+  answer="Binding (привязка): после commit нельзя изменить значение. Hiding (сокрытие): до reveal нельзя определить запечатанное значение. Невозможно иметь ОБА свойства information-theoretic одновременно."
+/>
+
 ## Pedersen Commitment
 
 Pedersen commitment использует **эллиптические кривые** вместо хеш-функций:
@@ -142,6 +147,11 @@ C(input1) + C(input2) == C(output1) + C(output2) + C(fee)
 ```
 
 Гомоморфность позволяет проверить баланс **без раскрытия сумм**.
+
+<KnowledgeCheck
+  question="В чём ключевое преимущество Pedersen commitment перед hash-based commitment?"
+  answer="Аддитивная гомоморфность: C(a,r1) + C(b,r2) = C(a+b, r1+r2). Можно складывать зашифрованные значения без расшифровки. Используется в Confidential Transactions (Monero, Liquid) для проверки баланса без раскрытия сумм."
+/>
 
 ## Три уровня понимания
 

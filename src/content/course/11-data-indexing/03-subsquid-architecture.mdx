@@ -72,6 +72,11 @@ subsquid/
 
 > **Правило:** Никогда не редактируйте файлы в `src/model/` и `src/abi/` вручную. Они перезаписываются при каждом запуске codegen.
 
+<KnowledgeCheck
+  question="Почему batch processing в Subsquid обеспечивает 50-300x преимущество в скорости перед The Graph?"
+  answer="Subsquid обрабатывает сотни событий за раз: один batch INSERT вместо сотен отдельных. The Graph обрабатывает последовательно: entity.save() для каждого события = отдельный SQL запрос. Каждый SQL имеет overhead (parsing, planning, network). Batch сокращает overhead в N раз."
+/>
+
 ## EvmBatchProcessor в деталях
 
 <SubsquidProcessorFlowDiagram client:visible />
@@ -343,6 +348,11 @@ GraphQL Server автоматически создаёт API из `schema.graphq
 | Subscription | `subscription { transfers(...) }` | `--subscriptions` |
 
 Никаких ручных resolvers. Никакого boilerplate. `schema.graphql` определяет всё.
+
+<KnowledgeCheck
+  question="Какие 5 шагов составляют конвейер кодогенерации Subsquid?"
+  answer="1. squid-typeorm-codegen (schema.graphql -> TypeORM entities). 2. squid-evm-typegen (ABI JSON -> typed decoders). 3. tsc (TypeScript -> JavaScript). 4. squid-typeorm-migration generate (entities -> SQL migrations). 5. squid-typeorm-migration apply (migrations -> PostgreSQL tables)."
+/>
 
 ## Типичные ошибки
 

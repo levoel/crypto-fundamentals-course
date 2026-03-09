@@ -131,6 +131,11 @@ snarkjs groth16 verify build/vkey.json build/public.json build/proof.json
 ./scripts/verify.sh circuits/multiplier.circom
 ```
 
+<KnowledgeCheck
+  question="Назовите 8 шагов полного Circom/snarkjs pipeline от .circom файла до verified proof."
+  answer="1. Write .circom, 2. Compile (R1CS + WASM), 3. Download Powers of Tau, 4. Groth16 Setup (Phase 2), 5. Contribute Randomness, 6. Export Verification Key, 7. Generate Proof (witness + Groth16), 8. Verify. В Docker lab автоматизировано 3 скриптами: setup.sh, prove.sh, verify.sh."
+/>
+
 ## Прогрессия circuits: от простого к сложному
 
 <CircuitComplexityDiagram client:visible />
@@ -366,6 +371,11 @@ snarkjs zkey export soliditycalldata \
 | ZK VM programs | RISC Zero (Rust) | Advanced |
 
 **Этот курс:** научил **Build ZK basics** (Circom, 4 circuits, полный workflow), чтобы вы стали информированным **Use ZK** разработчиком.
+
+<KnowledgeCheck
+  question="В чём разница между 'use ZK' и 'build ZK' подходами для разработчиков?"
+  answer="Use ZK (90%): деплой на ZK rollups (zkSync, StarkNet), интеграция ZK identity, готовые circuit templates. Не нужно писать circuits. Build ZK (10%): custom privacy/compliance circuits на Circom/Noir/Cairo для уникальных use cases."
+/>
 
 ## Альтернативы Circom
 

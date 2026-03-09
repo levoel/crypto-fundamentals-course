@@ -88,6 +88,11 @@ dataSources:
 
 Обратите внимание на `language: wasm/assemblyscript`. Файл `src/mapping.ts` имеет расширение `.ts`, но это **НЕ TypeScript**. Graph Node компилирует его в WebAssembly.
 
+<KnowledgeCheck
+  question="Из каких трёх файлов состоит каждый subgraph в The Graph?"
+  answer="1. subgraph.yaml -- манифест: ЧТО индексировать (адрес контракта, ABI, startBlock, eventHandlers). 2. schema.graphql -- КАК хранить (entities, идентично Subsquid). 3. src/mapping.ts -- КАК обрабатывать (AssemblyScript маппинги, компилируемые в WASM)."
+/>
+
 ## AssemblyScript: НЕ TypeScript!
 
 <AssemblyScriptComparisonDiagram client:visible />
@@ -158,6 +163,11 @@ await ctx.store.insert(transfers)  // await работает! Batch insert!
 **The Graph:** 10+ строк с manual field assignment и `.save()` per entity.
 
 Для простых случаев разница невелика. Для сложных с десятками entities -- Subsquid значительно удобнее благодаря полному TypeScript.
+
+<KnowledgeCheck
+  question="Почему AssemblyScript -- это НЕ TypeScript, несмотря на расширение .ts?"
+  answer="AssemblyScript компилируется в WebAssembly, не в JavaScript. Ключевые ограничения: нет async/await (все операции синхронные), нет Array.filter/map/reduce, нет closures, нет JSON.parse, нет try/catch. entity.save() -- синхронный. Используйте for loops вместо функциональных методов."
+/>
 
 ## Code generation в The Graph
 

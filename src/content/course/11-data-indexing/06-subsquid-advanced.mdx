@@ -223,6 +223,11 @@ query {
 }
 ```
 
+<KnowledgeCheck
+  question="Чем stateful индексация (governance) отличается от stateless (ERC-20 Transfer)?"
+  answer="Stateless: каждое событие -- самодостаточная запись (INSERT). Transfer произошёл -- записали, запись не меняется. Stateful: entity имеет жизненный цикл. Proposal: Created -> Active -> Succeeded -> Executed. Каждое новое событие (VoteCast, ProposalExecuted) обновляет entity через UPSERT."
+/>
+
 ## WebSocket подписки
 
 Governance dashboard хочет обновляться **в реальном времени** -- новые голоса, смена статуса. Subsquid GraphQL server поддерживает subscriptions.
@@ -289,6 +294,11 @@ function GovernanceDashboard() {
 ```
 
 > **Внимание:** Подписки Subsquid масштабируются **плохо под нагрузкой** (RAM). Для одного студента -- отлично. Для production с тысячами подключений -- рассмотрите polling или внешний PubSub (Redis, Kafka). Официальная документация предупреждает: "RAM usage of subscriptions scales poorly under high load."
+
+<KnowledgeCheck
+  question="Когда следует использовать WebSocket подписки вместо polling?"
+  answer="Для real-time dashboards: governance голосования, live event feed, DeFi price ticker. Subscription автоматически push-ит данные при появлении новых записей через WebSocket. Предупреждение: RAM подписок масштабируется плохо. Для тысяч подключений -- используйте polling или внешний PubSub."
+/>
 
 ## БОНУС: Multi-chain индексация
 

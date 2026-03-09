@@ -99,6 +99,11 @@ s*G = (k + c*x)*G          // Подставляем s = k + cx
 
 **Попробуйте:** Запустите 5-10 раундов в режиме "Honest" (все pass), затем переключитесь в "Cheater" (большинство fail).
 
+<KnowledgeCheck
+  question="Каковы три шага Schnorr identification protocol?"
+  answer="1. Commit: Prover выбирает случайное k, вычисляет R = kG и отправляет Verifier. 2. Challenge: Verifier выбирает случайный e. 3. Response: Prover вычисляет s = k + e*x mod n. Верификация: s*G == R + e*P."
+/>
+
 ## Soundness через повторение
 
 В пещере Али-Бабы мы видели: один раунд -- 50% шанс обмана, 20 раундов -- 0.0001%. Тот же принцип работает для Schnorr:
@@ -152,6 +157,11 @@ s*G = (k + c*x)*G          // Подставляем s = k + cx
 - Подпись (R, s) -- это **неинтерактивное ZK-доказательство знания секретного ключа x**
 
 > **Каждый раз, когда вы подписываете Bitcoin/Ethereum транзакцию, вы генерируете неинтерактивное zero-knowledge доказательство знания приватного ключа.**
+
+<KnowledgeCheck
+  question="Как Fiat-Shamir transform превращает interactive proof в non-interactive?"
+  answer="Заменяет случайный challenge от Verifier на хеш от публичных данных: c = H(statement || R). Prover не может предсказать c до вычисления R, потому что изменение R непредсказуемо меняет c. Хеш-функция 'имитирует' честного Verifier."
+/>
 
 ## Три уровня понимания
 

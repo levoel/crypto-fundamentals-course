@@ -253,6 +253,11 @@ await ctx.store.upsert(toAccount)
 
 Transfer -- immutable event (факт, который не меняется). Account -- mutable state (баланс обновляется при каждом трансфере). Разные паттерны persistence для разных типов данных.
 
+<KnowledgeCheck
+  question="Как Subsquid processor декодирует Ethereum адрес из log.topics[1]?"
+  answer="topics[1] содержит 32 байта (66 hex символов с 0x prefix). Адрес -- последние 20 байт (40 hex). .slice(26) отбрасывает '0x' (2 символа) + zero-padding (24 символа). Результат: '0x' + topics[1].slice(26).toLowerCase() = корректный Ethereum адрес в lowercase."
+/>
+
 ## Шаг 6: Запрос данных через GraphQL
 
 Откройте браузер: **http://localhost:4350/graphql**
@@ -410,6 +415,11 @@ npm run dev
 **Live Events** -- real-time feed через WebSocket подписки. При каждом новом Transfer -- зелёная flash-анимация, pulsing dot индикатор. Используйте `cast send` из шага 7, чтобы увидеть live обновления.
 
 > Dashboard получает **все данные из вашего Subsquid индексатора** через GraphQL API на `localhost:4350`. urql клиент с `fetchExchange` для queries и `subscriptionExchange` (graphql-ws) для подписок.
+
+<KnowledgeCheck
+  question="Почему в Subsquid Transfer используется batch INSERT, а Account -- individual UPSERT?"
+  answer="Transfer -- immutable event (факт, который не меняется после создания). ctx.store.insert(transfers) -- один SQL для всего массива. Account -- mutable state (баланс обновляется при каждом трансфере). ctx.store.upsert(account) -- обновляет существующую запись. Разные паттерны persistence для разных типов данных."
+/>
 
 ## Упражнения
 

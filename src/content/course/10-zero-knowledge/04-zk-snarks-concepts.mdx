@@ -85,6 +85,11 @@ flatten("x^3 + x + 5 = 35") ->
     assertion: out == 35
 ```
 
+<KnowledgeCheck
+  question="Почему выражение x*x*x нельзя представить одним constraint в R1CS?"
+  answer="R1CS допускает ТОЛЬКО квадратичные constraints: умножение ровно двух переменных. x*x*x -- три переменные (cubic). Flattening решает это: v1 = x*x (quadratic), v2 = v1*x (quadratic). В Circom попытка x*x*x вызовет ошибку 'non-quadratic constraint'."
+/>
+
 ## Шаг 2: R1CS (Rank-1 Constraint System)
 
 ### Интуитивный уровень
@@ -170,6 +175,11 @@ verify_r1cs(A, B, C, s)  # True
 ```
 
 **Размер R1CS** для реального ZK rollup: миллионы constraints (каждая EVM операция = десятки gates). Verifier не может проверять каждую строку -- слишком долго. Нужен следующий шаг: QAP.
+
+<KnowledgeCheck
+  question="Что кодирует R1CS для arithmetic circuit?"
+  answer="Систему квадратичных constraints: (A_i . s) * (B_i . s) = (C_i . s), где s -- witness vector со всеми значениями, а матрицы A, B, C -- 'селекторы', выбирающие нужные переменные для каждого gate. Для x^3+x+5=35: 3 constraints, witness s = [1, 3, 9, 27, 35]."
+/>
 
 ## Шаг 3: QAP (Quadratic Arithmetic Program)
 

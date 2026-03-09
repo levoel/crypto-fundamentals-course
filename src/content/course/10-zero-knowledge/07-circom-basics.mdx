@@ -134,6 +134,11 @@ template SumOfSquares() {
 }
 ```
 
+<KnowledgeCheck
+  question="Какие три типа signals существуют в Circom и в чём их ключевое свойство?"
+  answer="input (private -- Prover знает, Verifier нет), output (public -- Verifier видит), intermediate (внутренний). Ключевое свойство: signals immutable -- после присвоения значение нельзя изменить. Все signals -- элементы конечного поля (числа mod p)."
+/>
+
 ## Constraint operators: `<==` vs `<--` vs `===`
 
 Это **самая важная тема** в Circom. Неправильное использование операторов -- причина #1 уязвимостей в ZK circuits.
@@ -216,6 +221,11 @@ template SafeMultiplier() {
 ```
 
 **Правило:** КАЖДЫЙ `<--` ДОЛЖЕН сопровождаться `===`. Если вы видите `<--` без `===` -- это потенциальная уязвимость.
+
+<KnowledgeCheck
+  question="В чём опасность оператора <-- без парного === в Circom?"
+  answer="<-- ТОЛЬКО присваивает значение БЕЗ constraint. Verifier НЕ ПРОВЕРЯЕТ корректность. Malicious Prover может подставить c = 999 вместо a*b = 33, и proof будет считаться валидным. Правило: каждый <-- ОБЯЗАН иметь парный ===."
+/>
 
 ## Первый circuit: Multiplier2
 
