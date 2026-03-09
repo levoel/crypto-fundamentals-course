@@ -79,6 +79,11 @@ Cannon исполняет EVM opcodes на L1. Single-round: challenger восп
 
 **ERC-7802** -- стандарт для seamless token bridging между OP Stack chains. Вместо отдельных bridges для каждой пары -- единый стандарт для всех Superchain chains.
 
+<KnowledgeCheck
+  question="Что такое Superchain и какую проблему решает стандарт ERC-7802?"
+  answer="Superchain -- сеть OP Stack chains (Base, Optimism, Zora, Mode) с общей безопасностью и интероперабельностью. ERC-7802 -- стандарт для seamless token bridging между OP Stack chains: один токен нативно доступен на всех chains без wrapped versions. Первый шаг к 'chainless' UX."
+/>
+
 ### Ключевые факты Optimism
 
 | Параметр | Значение |
@@ -172,6 +177,11 @@ Stylus контракты вызывают Solidity контракты и нао
 - Кастомные L2/L3 chains на технологии Arbitrum
 - Выбор: Rollup mode (полная Ethereum DA) или AnyTrust mode (DAC)
 - Nova (gaming chain) -- пример AnyTrust Orbit chain
+
+<KnowledgeCheck
+  question="Что такое Stylus в Arbitrum и почему WASM VM рядом с EVM полезен?"
+  answer="Stylus -- WASM VM, работающий рядом с EVM на одной сети. Позволяет писать контракты на Rust/C/C++ с 10-100x экономией для compute-heavy операций (cryptography, math, parsing). Stylus и EVM контракты могут вызывать друг друга. EVM для DeFi/tokens, Stylus для вычислительно сложных задач."
+/>
 
 ### Ключевые факты Arbitrum
 

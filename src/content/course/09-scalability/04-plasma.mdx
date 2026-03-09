@@ -112,6 +112,11 @@ PlasmaContract.challengeExit(
 // Alice потеряла exit bond
 ```
 
+<KnowledgeCheck
+  question="Как Plasma использует Merkle roots для commit состояния child chain на L1 и почему одного root недостаточно для восстановления state?"
+  answer="Operator вычисляет Merkle tree состояния child chain и публикует root hash (32 bytes) на L1. Root доказывает, что состояние СУЩЕСТВУЕТ, но НЕ раскрывает содержимое -- это как знать, что сейф заперт, но не знать комбинацию. Для exit нужен Merkle proof, который может создать только имеющий доступ к полным данным."
+/>
+
 ## Matic/Polygon: главная Plasma реализация
 
 **Matic Network** (2019) -- самая успешная Plasma-based сеть:
@@ -161,6 +166,11 @@ Data availability problem -- не баг реализации. Это **архи
 ### Почему operator может скрыть данные?
 
 Operator -- единственный, кто видит все транзакции child chain. Operator вычисляет Merkle tree и публикует root на L1. Но исходные данные (листья дерева) -- у operator'а. Если operator решит их не раскрывать, ни один пользователь не сможет создать Merkle proof.
+
+<KnowledgeCheck
+  question="Что такое mass exit problem в Plasma и почему это фундаментальный архитектурный недостаток?"
+  answer="Если operator скрывает данные (data withholding), пользователи не могут создать Merkle proof для exit. Все одновременно отправляют exit TX на L1 -> перегрузка Ethereum, рост gas. Фундаментально: published O(log N) данных (root), а reconstruction требует O(N). Rollups решили это публикацией ВСЕХ данных (O(N)) на L1."
+/>
 
 ## Другие ограничения Plasma
 

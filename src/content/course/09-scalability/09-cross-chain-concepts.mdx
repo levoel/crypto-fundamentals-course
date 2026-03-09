@@ -60,6 +60,11 @@ import { CrossChainMessagingDiagram, AssetTransferModelsDiagram, TrustSpectrumDi
 - **Arbitrary message passing:** передача любых данных между chains (вызов функции, обновление состояния)
 - **Asset transfers:** специализированный subset -- перемещение токенов между chains
 
+<KnowledgeCheck
+  question="Какие 3 модели доверия существуют для cross-chain верификации и как они отличаются по безопасности?"
+  answer="1) Natively verified (IBC, rollup bridges): light client/state proof на destination chain, trustless, самый безопасный. 2) Externally verified (Wormhole 13/19): валидаторы подписывают attestation, trust: honest majority. 3) Optimistic (Across): сообщения валидны пока не оспорены, trust: 1 честный watcher. Безопасность убывает от 1 к 3."
+/>
+
 ## Модели передачи активов
 
 <AssetTransferModelsDiagram client:visible />
@@ -162,6 +167,11 @@ Light client или state proof на destination chain. **Trustless верифи
 - Собственная security model (validators, guardians, DVNs)
 - **Быстрее:** минуты для любого направления
 - **Менее безопасный:** отдельная attack surface от rollup security
+
+<KnowledgeCheck
+  question="Какие 3 модели передачи активов между блокчейнами существуют и каков risk profile каждой?"
+  answer="Lock-and-Mint: lock на source, mint wrapped на destination. Высокий риск (bridge = honeypot). Burn-and-Mint: burn на source, mint native на destination (USDC CCTP). Низкий риск (нет locked assets), но требует поддержки эмитента. Liquidity Pool: deposit/withdraw через LP. Средний риск, быстрый, ограничен ликвидностью."
+/>
 
 ### Когда что использовать?
 

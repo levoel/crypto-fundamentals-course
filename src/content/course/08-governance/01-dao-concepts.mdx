@@ -53,6 +53,11 @@ import { DAOArchitectureDiagram, DAOCategoriesDiagram } from '../../../component
 
 Reentrancy атака The DAO -- это та же уязвимость, которую мы эксплуатировали в VulnerableVault.sol (SEC-02). Interaction BEFORE Effect: внешний вызов до обновления баланса.
 
+<KnowledgeCheck
+  question="Какие три ключевые характеристики определяют DAO и чем DAO отличается от традиционной организации?"
+  answer="DAO -- Decentralized (нет единого центра принятия решений), Autonomous (исполнение решений автоматическое через смарт-контракт), Organization (координация людей). В отличие от традиционной организации, нет CEO и совета директоров -- правила это код, решения принимаются голосованием token holders."
+/>
+
 ## Современные DAO
 
 | DAO | Treasury | Token | Что управляют |
@@ -95,6 +100,11 @@ Reentrancy атака The DAO -- это та же уязвимость, кото
 **Off-chain** (Snapshot): голоса -- подписи EIP-712, gas не нужен. Но кто-то должен исполнить результат вручную (обычно multisig).
 
 **Hybrid**: Snapshot для голосования, multisig для исполнения. Наиболее популярный подход среди средних DAO.
+
+<KnowledgeCheck
+  question="Почему хак The DAO (2016) привел к хардфорку Ethereum и какой урок из этого извлечен?"
+  answer="The DAO потеряла $60M из $150M через reentrancy-уязвимость. Сообщество раскололось: ETH откатил транзакцию (приоритет -- защита пользователей), ETC сохранил принцип 'код -- закон'. Урок: governance code IS the protocol -- уязвимость в governance контракте катастрофична. Это привело к созданию аудированной библиотеки OpenZeppelin Governor."
+/>
 
 ## Алгоритмический уровень
 

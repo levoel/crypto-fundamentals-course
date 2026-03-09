@@ -110,6 +110,11 @@ function CLOCK_MODE() public pure override returns (string memory) {
 
 Governor автоматически определяет clock mode токена и использует соответствующие единицы.
 
+<KnowledgeCheck
+  question="Почему balanceOf(user) = 1M не означает, что у пользователя есть voting power, и что нужно сделать для её активации?"
+  answer="ERC20Votes требует явного вызова delegate(). Без delegation getVotes(user) = 0, несмотря на balanceOf() > 0. Это gas optimization: без delegation обычные transfer не создают checkpoints. Самоделегирование delegate(msg.sender) активирует voting power и создает checkpoint."
+/>
+
 ## ERC20Permit
 
 ERC20Permit (EIP-2612) -- gasless approvals через подписи. Включен в GovernanceToken для удобства:
@@ -194,6 +199,11 @@ function getPastVotes(address account, uint256 timepoint):
 ```
 
 Binary search по массиву checkpoints -- O(log n) lookup для исторической voting power.
+
+<KnowledgeCheck
+  question="Как система checkpoints в ERC20Votes защищает от flash loan governance атак?"
+  answer="Checkpoints записывают voting power при каждом изменении delegation, не при transfer. Governor использует getPastVotes(voter, proposalSnapshot) -- voting power на момент СОЗДАНИЯ proposal. Flash loan токены, купленные ПОСЛЕ создания proposal, не имеют checkpoint на этот момент, поэтому дают 0 голосов."
+/>
 
 ## Математический уровень
 

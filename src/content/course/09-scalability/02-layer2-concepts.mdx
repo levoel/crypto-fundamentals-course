@@ -70,6 +70,11 @@ Ethereum не может обработать весь мировой трафи
 - Пример: Polygon PoS
 - **ВАЖНО:** Polygon PoS -- это сайдчейн, НЕ L2 rollup
 
+<KnowledgeCheck
+  question="Какие 4 свойства определяют настоящий Layer 2 и чем L2 отличается от сайдчейна?"
+  answer="L2: 1) off-chain execution, 2) публикация данных на L1 (data availability), 3) наследование безопасности L1, 4) exit guarantee (вывод средств на L1 даже если L2 shut down). Сайдчейн имеет собственных валидаторов и собственную безопасность -- если 2/3+ скомпрометированы, Ethereum не может помочь."
+/>
+
 ## Data Availability -- ключевой различитель
 
 Data availability (DA) -- ЭТО то, что отличает rollup от сайдчейна. Где хранятся данные транзакций?
@@ -99,6 +104,11 @@ Data availability (DA) -- ЭТО то, что отличает rollup от са�
 | Доступность | Всегда | 18 дней (достаточно для challenge period) |
 
 **Pectra upgrade (май 2025):** удвоил target с 3 до 6 blobs per block, ещё снизив комиссии L2.
+
+<KnowledgeCheck
+  question="Почему data availability на L1 -- ключевой различитель между rollup и sidechain?"
+  answer="Rollup публикует ВСЕ данные транзакций на L1 (calldata/blobs). Если rollup operator исчезнет, любой может восстановить state из L1 данных. Sidechain хранит данные на собственной цепочке -- если валидаторы скомпрометированы, данные и средства могут быть потеряны. Pr[rollup compromised] <= Pr[L1 compromised] + Pr[L2 bug]."
+/>
 
 ### Почему 18 дней достаточно?
 

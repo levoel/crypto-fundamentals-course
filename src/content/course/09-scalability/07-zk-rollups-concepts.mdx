@@ -48,6 +48,11 @@ Optimistic rollups ждут 7 дней, надеясь что никто не о
 
 **Ключевое отличие от optimistic:** шаг 4 -- это "verify proof" (миллисекунды), а не "wait 7 days".
 
+<KnowledgeCheck
+  question="В чем ключевое отличие ZK rollup от optimistic rollup с точки зрения верификации state transitions?"
+  answer="Optimistic: считаем транзакции валидными, ждем 7 дней (challenge period), fraud proof если ошибка. ZK: prover генерирует validity proof off-chain, verifier контракт проверяет proof on-chain за ~300K gas. Если proof валиден -- state transition принят мгновенно. Cryptographic soundness вместо экономического допущения."
+/>
+
 ## SNARKs vs STARKs
 
 Два основных типа proof systems для ZK rollups. Оба доказывают корректность вычислений, но используют разную математику.
@@ -111,6 +116,11 @@ Optimistic rollups ждут 7 дней, надеясь что никто не о
 - Пример: zkSync Era, StarkNet (Cairo)
 
 **Tradeoff:** совместимость (сколько существующих контрактов работает) vs performance (как быстро генерируются proofs).
+
+<KnowledgeCheck
+  question="Опишите спектр zkEVM типов (Type 1-4) и основной tradeoff."
+  answer="Type 1 (Taiko): полная Ethereum equivalence, самый медленный proving, лучшая совместимость. Type 2 (Polygon zkEVM, Scroll): EVM equivalent с упрощениями. Type 3: almost equivalent, переходное. Type 4 (zkSync, StarkNet): custom VM, самый быстрый proving, наименее совместимый. Tradeoff: совместимость vs performance proving."
+/>
 
 ## Сравнение финализации
 

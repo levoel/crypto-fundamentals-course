@@ -102,6 +102,11 @@ state_update = {
 
 <PaymentChannelDiagram client:visible />
 
+<KnowledgeCheck
+  question="Сколько on-chain транзакций нужно для state channel и какие 3 этапа составляют его lifecycle?"
+  answer="Только 2 on-chain TX: 1) Open -- депозит средств в multisig-контракт. 2) Transact off-chain -- неограниченное число подписанных обновлений (мгновенно, бесплатно, приватно). 3) Close -- публикация финального состояния. Cooperative close = 2 TX независимо от числа off-chain взаимодействий."
+/>
+
 ## Dispute Resolution: защита от мошенничества
 
 ### Как работает challenge period?
@@ -118,6 +123,11 @@ state_update = {
 - **Liveness requirement:** вы ДОЛЖНЫ следить за блокчейном во время challenge period. Если вы offline и не оспорите -- старое состояние будет принято.
 
 > **Это та же проблема, что и в Lightning Network (BTC-09):** Bitcoin решает её через watchtowers -- сервисы, которые мониторят канал за вас.
+
+<KnowledgeCheck
+  question="Как dispute resolution в state channel защищает от попытки закрыть канал со старым состоянием?"
+  answer="Контракт принимает состояние с наибольшим nonce (самое новое). Если Alice публикует старое состояние (nonce=1), Bob может в течение challenge period опубликовать более новое (nonce=2). Liveness requirement: участник ДОЛЖЕН быть онлайн или иметь watchtower для мониторинга."
+/>
 
 ## Ограничения State Channels
 

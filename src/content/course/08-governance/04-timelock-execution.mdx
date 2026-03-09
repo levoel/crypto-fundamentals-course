@@ -70,6 +70,11 @@ timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
 
 **Если deployer сохраняет admin** -- он может обойти governance полностью: добавить себя как proposer, убрать Governor, исполнить любое действие. Admin renounce -- обязательный шаг безопасности.
 
+<KnowledgeCheck
+  question="Какие три роли есть в TimelockController и почему renounce DEFAULT_ADMIN_ROLE критически важен?"
+  answer="PROPOSER_ROLE (Governor -- ставит операции в очередь), EXECUTOR_ROLE (address(0) = anyone -- исполняет после delay), DEFAULT_ADMIN_ROLE (deployer -- управление ролями). Если deployer не renounce admin, он может обойти governance: grantRole(PROPOSER, self) и исполнить любое действие без голосования."
+/>
+
 ## Полный flow: от предложения до исполнения
 
 <TimelockFlowDiagram client:load />
@@ -119,6 +124,11 @@ calldatas[2] = abi.encodeWithSignature("grantRole(bytes32,address)", ROLE, newMe
 ```
 
 Все три действия исполняются атомарно: либо все, либо ничего.
+
+<KnowledgeCheck
+  question="Что такое exit opportunity и почему timelock delay дает пользователям реальную возможность защитить свои средства?"
+  answer="Exit opportunity -- ключевая концепция: все pending actions в timelock прозрачны on-chain. Пользователи видят, что произойдет после исполнения (targets, values, calldatas). Если они не согласны с одобренным предложением, у них есть время (delay >= 1 день) вывести средства из протокола ДО исполнения."
+/>
 
 ## Integration с Governor
 

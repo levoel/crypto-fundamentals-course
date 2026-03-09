@@ -103,6 +103,11 @@ import { BridgeArchitectureDiagram, BridgeHacksTimelineDiagram, InteropCompariso
 
 **Урок:** Low threshold multisig = недостаточная безопасность. 2/5 -- это СЛИШКОМ низкий threshold для сотен миллионов долларов.
 
+<KnowledgeCheck
+  question="Какой общий паттерн уязвимости объединяет крупнейшие bridge hacks (Wormhole, BNB, Nomad)?"
+  answer="Bypass верификации подписей/proofs: Wormhole ($326M) -- signature verification bypass на Solana. BNB ($570M) -- proof verifier bug (подделка IAVL proof). Nomad ($190M) -- initialization bug (trusted root = 0x00, любое сообщение проходит). Proof/signature verification -- критический код: один баг = неограниченный mint."
+/>
+
 ## Bridge Security: три столпа
 
 ### 1. Economic Security
@@ -137,6 +142,11 @@ Rule of thumb: attack cost должен быть >= TVL bridge.
 - 24/7 мониторинг аномалий
 - Incident response plan
 - Validator key rotation
+
+<KnowledgeCheck
+  question="Почему Ronin Bridge ($624M) и Harmony Horizon ($100M) были взломаны, и какой урок о threshold multisig?"
+  answer="Ronin: 5/9 validator key compromise (Lazarus Group), 4 валидатора от одной организации -- недостаточная децентрализация. Harmony: 2/5 multisig -- слишком низкий threshold. Урок: threshold matters -- 2/5 крайне уязвим (Pr[attack] = 16% при p=0.3), 13/19 (Wormhole) значительно безопаснее (Pr < 10^-12 при p=0.05)."
+/>
 
 ## Протоколы интероперабельности
 

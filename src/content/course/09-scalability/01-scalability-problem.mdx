@@ -78,6 +78,11 @@ Ethereum L1 имеет жесткие ограничения:
 
 **Bitcoin Block Size War (2017):** Биткойн-сообщество раскололось из-за предложения увеличить блок. Одна сторона хотела 8 MB блоки (Bitcoin Cash), другая -- сохранить 1 MB + SegWit + Lightning Network. Результат: хардфорк и два блокчейна. Увеличение блока -- не бесплатное решение.
 
+<KnowledgeCheck
+  question="Почему увеличение размера блока не является бесплатным решением проблемы масштабируемости?"
+  answer="Больше блоки = больше данных для обработки = дороже оборудование для валидаторов = меньше валидаторов = централизация. Bitcoin Block Size War (2017) привел к хардфорку BTC/BCH. Трилемма: увеличение scalability (T) при сохранении security (S) и decentralization (D) provably hard."
+/>
+
 ## Ethereum Scaling Roadmap
 
 <ScalingTimelineDiagram client:visible />
@@ -110,6 +115,11 @@ Ethereum L1 имеет жесткие ограничения:
 ### Pectra Upgrade (май 2025)
 
 Удвоение blob throughput: с 3 до 6 blobs per block (target). Это означает ~768 KB данных per block для L2. Ещё одно значительное снижение комиссий для rollups.
+
+<KnowledgeCheck
+  question="Что означает rollup-centric roadmap Ethereum и какова роль EIP-4844 blobs?"
+  answer="Ethereum L1 становится settlement + data availability layer, а execution переносится на L2 rollups. L1 оптимизируется не для TPS, а для security и DA. EIP-4844 ввел blob transactions (~1 gas/byte vs calldata ~16 gas/byte = 10-100x дешевле), хранящиеся ~18 дней -- достаточно для 7-day challenge period optimistic rollups."
+/>
 
 ### Будущее: Full Danksharding
 

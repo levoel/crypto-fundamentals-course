@@ -105,12 +105,22 @@ mod Counter {
 
 StarkNet реализовал Account Abstraction **до EIP-4337**. Каждый аккаунт -- smart contract с кастомной логикой валидации. Это фундаментальное дизайн-решение, не ретрофит.
 
+<KnowledgeCheck
+  question="Что такое Volition в StarkNet и как оно позволяет балансировать cost vs security?"
+  answer="Volition -- гибридная data availability с выбором per-transaction: rollup mode (данные на Ethereum L1, дороже, максимальная безопасность) или validium mode (данные off-chain через DAC, дешевле, trust assumption на DAC). Крупный DeFi трансфер -> rollup mode. Игровой NFT -> validium mode."
+/>
+
 ### Roadmap
 
 - Mainnet с 2023 года
 - Sequencer decentralization roadmap (2026)
 - Cairo 2.0 с Rust-like синтаксисом (упрощение для разработчиков)
 - Appchains через Madara framework
+
+<KnowledgeCheck
+  question="Чем отличаются подходы zkSync Era и StarkNet к ZK rollup архитектуре?"
+  answer="zkSync Era: Solidity через zksolc compiler, SNARKs (PLONK), trusted setup (universal), быстрый onboarding для Ethereum devs. StarkNet: Cairo язык, STARKs (transparent, quantum resistant), нет trusted setup, но нужно учить Cairo. Оба нативно поддерживают Account Abstraction. zkSync = знакомый DX, StarkNet = ZK-native power."
+/>
 
 ## Сравнение: итоги
 

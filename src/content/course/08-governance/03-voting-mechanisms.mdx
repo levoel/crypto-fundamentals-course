@@ -90,6 +90,11 @@ GovernorVotesQuorumFraction(4) // 4% quorum
 - **Queued -> Expired**: прошел grace period без `execute()`
 - **Any -> Canceled**: proposer или guardian вызвал cancel
 
+<KnowledgeCheck
+  question="Перечислите 7 состояний proposal в OpenZeppelin Governor и укажите финальные состояния."
+  answer="Pending -> Active -> Succeeded или Defeated. Succeeded -> Queued -> Executed или Expired. Из любого незавершенного -> Canceled. Финальные состояния: Defeated, Executed, Canceled, Expired. Условие Succeeded: forVotes > againstVotes AND (forVotes + abstainVotes >= quorum)."
+/>
+
 ## Off-chain Voting: Snapshot
 
 **Snapshot** -- протокол для gasless голосования:
@@ -126,6 +131,11 @@ GovernorVotesQuorumFraction(4) // 4% quorum
 - ERC20Votes создает **checkpoints при delegation**, не при transfer
 - Governor использует `getPastVotes(voter, proposalSnapshot)` -- voting power на момент **создания** proposal
 - Flash loan токены, купленные ПОСЛЕ создания proposal, дают 0 голосов
+
+<KnowledgeCheck
+  question="Почему атака на Beanstalk ($182M) через flash loan governance была возможна и как OpenZeppelin Governor защищает от неё?"
+  answer="Beanstalk использовал текущий баланс (balanceOf) для voting power -- flash loan дал мгновенные 80% голосов в одной транзакции. OpenZeppelin Governor использует ERC20Votes checkpoints: getPastVotes(voter, proposalSnapshot) возвращает voting power на момент СОЗДАНИЯ proposal. Flash loan токены после создания proposal = 0 голосов."
+/>
 
 ### 2. Vote Buying
 

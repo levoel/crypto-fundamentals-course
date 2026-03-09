@@ -47,6 +47,11 @@ OpenZeppelin Governor v5 -- модульная система:
 
 Мы используем 4 наиболее распространенных. Остальные -- для специализированных случаев.
 
+<KnowledgeCheck
+  question="Из каких 3 контрактов состоит полная DAO реализация на OpenZeppelin Governor и какова роль каждого?"
+  answer="GovernanceToken (ERC20Votes: voting power, checkpoints, delegation) + MyGovernor (proposal lifecycle, голосование, 4 extensions) + TimelockController (задержка исполнения, 3 роли). Дополнительно Treasury (onlyOwner = timelock, хранение средств). _executor() возвращает адрес timelock -- timelock является фактическим владельцем контролируемых контрактов."
+/>
+
 ## GovernanceToken.sol
 
 ```solidity
@@ -401,6 +406,11 @@ cd labs/ethereum && forge test --match-path test/governance/GovernorLifecycle.t.
    - Quorum met (400K > 40K required)
    - For > Against, proposal Succeeded
    - Queue + timelock delay + execute = recipient получает 1 ETH
+
+<KnowledgeCheck
+  question="Почему в Foundry тесте полного governance lifecycle используется vm.warp() и почему каждый voter должен вызвать delegate() перед голосованием?"
+  answer="vm.warp() сдвигает block.timestamp для прохождения votingDelay (1 day), votingPeriod (1 week), и timelockDelay (1 day) -- иначе тест длился бы 9 реальных дней. delegate() обязателен: без него getVotes(voter) = 0 даже при balanceOf > 0 -- голос не будет засчитан. ERC20Votes не создает checkpoints автоматически."
+/>
 
 2. **test_delegationRequired**: демонстрация delegation requirement
    - newVoter получает 200K токенов
