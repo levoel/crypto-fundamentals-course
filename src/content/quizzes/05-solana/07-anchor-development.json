@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "05-solana/07-anchor-development",
+  "moduleId": "05-solana",
+  "questions": [
+    {
+      "id": "sol07-q1",
+      "type": "true-false",
+      "question": "При создании аккаунта через Anchor constraint init, необходимый space рассчитывается как 8 байт (discriminator) + сумма размеров полей данных. Например, для Pubkey (32) + u64 (8) + u8 (1) = 8 + 32 + 8 + 1 = 49 байт.",
+      "correctAnswer": true,
+      "explanation": "Anchor записывает 8-байтный discriminator в начало account.data для идентификации типа аккаунта. Space должен включать эти 8 байт плюс размеры всех полей: Pubkey = 32 байта, u64 = 8 байт, u8 = 1 байт, String = 4 + len, Vec<T> = 4 + len * sizeof(T). Если забыть 8 байт discriminator, возникнет ошибка AccountDiscriminatorMismatch.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sol07-q2",
+      "type": "multiple-choice",
+      "question": "Какой правильный расчет space для Anchor-аккаунта с полями: authority (Pubkey), title (String с макс. 50 символов), count (u64)?",
+      "options": [
+        { "id": "a", "text": "32 + 50 + 8 = 90 байт" },
+        { "id": "b", "text": "8 + 32 + (4 + 50) + 8 = 102 байта" },
+        { "id": "c", "text": "8 + 32 + 50 + 8 = 98 байт" },
+        { "id": "d", "text": "32 + (4 + 50) + 8 + 128 = 222 байта" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Space = 8 (discriminator) + 32 (Pubkey) + 4 + 50 (String: 4 байта длины + максимум 50 символов) + 8 (u64) = 102 байта. String в Borsh-сериализации занимает 4 байта для длины + содержимое. 128 байт metadata overhead учитываются отдельно при расчете rent-exemption, но не включаются в space constraint.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sol07-q3",
+      "type": "multiple-choice",
+      "question": "Почему rent-exempt аккаунты улучшают developer experience по сравнению с моделью постоянной оплаты ренты?",
+      "options": [
+        { "id": "a", "text": "Rent-exempt аккаунты бесплатны -- не требуют начального баланса" },
+        { "id": "b", "text": "Однократная оплата rent-exemption (2 года ренты) гарантирует, что аккаунт не будет удален -- не нужно отслеживать баланс и доплачивать периодически" },
+        { "id": "c", "text": "Rent-exempt аккаунты хранятся в памяти валидатора, а не на диске, и поэтому быстрее" },
+        { "id": "d", "text": "Rent-exempt аккаунты могут хранить неограниченное количество данных" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Rent-exemption означает: если баланс аккаунта >= rent_rate * (size + 128) * 2 года, рента не списывается. Разработчику достаточно один раз перевести нужную сумму при создании аккаунта (Anchor делает это автоматически при init). Без rent-exemption приложение должно периодически проверять и пополнять баланс аккаунтов, иначе данные будут удалены.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

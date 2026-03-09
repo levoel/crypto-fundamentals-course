@@ -1,0 +1,42 @@
+{
+  "lessonSlug": "05-solana/06-anchor-basics",
+  "moduleId": "05-solana",
+  "questions": [
+    {
+      "id": "sol06-q1",
+      "type": "true-false",
+      "question": "Anchor генерирует 8-байтные дискриминаторы из SHA-256 хеша имени функции (например, SHA-256('global:increment')[:8]) для маршрутизации инструкций к соответствующим handler'ам.",
+      "correctAnswer": true,
+      "explanation": "Anchor использует первые 8 байт SHA-256 хеша строки 'global:<method_name>' как дискриминатор инструкции. Программа читает первые 8 байт instruction data и маршрутизирует вызов к нужному handler. 8 байт (вместо 4, как в Ethereum function selector) снижают вероятность коллизии с 1/2^32 до 1/2^64.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sol06-q2",
+      "type": "multiple-choice",
+      "question": "Какой макрос Anchor используется для определения точки входа программы и её инструкций (handler-функций)?",
+      "options": [
+        { "id": "a", "text": "#[derive(Accounts)] -- определяет инструкции программы" },
+        { "id": "b", "text": "#[account] -- определяет entrypoint и dispatch" },
+        { "id": "c", "text": "#[program] -- определяет модуль с handler-функциями и генерирует entrypoint с dispatch по дискриминатору" },
+        { "id": "d", "text": "declare_id!() -- определяет инструкции и их маршрутизацию" }
+      ],
+      "correctAnswer": "c",
+      "explanation": "Макрос #[program] определяет модуль с handler-функциями программы (initialize, increment и т.д.) и генерирует entrypoint (process_instruction) с dispatch по 8-байтному дискриминатору. #[derive(Accounts)] определяет структуры аккаунтов с constraints, #[account] -- структуры данных с Borsh сериализацией, declare_id!() -- program ID.",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sol06-q3",
+      "type": "multiple-choice",
+      "question": "Почему автоматическая валидация аккаунтов через Anchor constraints (discriminator, owner, seeds, has_one) предотвращает распространенные уязвимости Solana-программ?",
+      "options": [
+        { "id": "a", "text": "Anchor шифрует все данные аккаунтов, предотвращая чтение злоумышленником" },
+        { "id": "b", "text": "Без constraints атакующий может передать аккаунт неверного типа, принадлежащий другой программе, или с неверным PDA -- Anchor отсекает эти атаки до вызова handler" },
+        { "id": "c", "text": "Anchor автоматически проверяет бизнес-логику и overflow в handler-функциях" },
+        { "id": "d", "text": "Constraints ограничивают количество compute units, предотвращая DoS-атаки" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Anchor проверяет 6 аспектов автоматически: discriminator (тип аккаунта), owner (принадлежность программе), signer (подпись), PDA (seeds + bump), constraints (has_one, close), lifecycle (init, mut). Без этих проверок атакующий мог бы передать Account типа Profile вместо Counter (type confusion), аккаунт другой программы (owner spoofing) или неверный PDA. Однако бизнес-логику, overflow и CPI-проверки нужно реализовать вручную.",
+      "bloomLevel": "analytical"
+    }
+  ]
+}

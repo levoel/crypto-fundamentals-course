@@ -1,0 +1,78 @@
+{
+  "lessonSlug": "05-solana/05-programs-instructions",
+  "moduleId": "05-solana",
+  "questions": [
+    {
+      "id": "sol05-q1",
+      "type": "true-false",
+      "question": "Каждая инструкция Solana содержит три поля: program_id (адрес программы), accounts (список аккаунтов с флагами доступа) и data (сериализованные аргументы).",
+      "correctAnswer": true,
+      "explanation": "Инструкция Solana состоит из трех полей: program_id указывает, какую программу вызвать; accounts -- список AccountMeta с pubkey, is_signer и is_writable; data -- сериализованные аргументы (в Anchor первые 8 байт -- дискриминатор для маршрутизации). Транзакция может содержать несколько инструкций, выполняемых атомарно.",
+      "bloomLevel": "conceptual"
+    },
+    {
+      "id": "sol05-q2",
+      "type": "multiple-choice",
+      "question": "Что такое Cross-Program Invocation (CPI) в Solana?",
+      "options": [
+        { "id": "a", "text": "Механизм передачи данных между валидаторами через Gulf Stream" },
+        { "id": "b", "text": "Механизм вызова одной программы из другой, аналог CALL в EVM" },
+        { "id": "c", "text": "Механизм создания PDA-адресов для программ" },
+        { "id": "d", "text": "Механизм параллельного выполнения транзакций в Sealevel" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "CPI (Cross-Program Invocation) позволяет программам вызывать друг друга. invoke() передает подписи из исходной транзакции, а invoke_signed() позволяет программе 'подписать' за свой PDA. Максимальная глубина CPI = 4 уровня. Все CPI делят общий compute budget транзакции (200K CU по умолчанию).",
+      "bloomLevel": "applied"
+    },
+    {
+      "id": "sol05-q3",
+      "type": "multiple-choice",
+      "question": "Почему Sealevel может выполнять транзакции параллельно только когда они затрагивают разные аккаунты?",
+      "options": [
+        { "id": "a", "text": "Solana не поддерживает блокировки (locks) на уровне аккаунтов" },
+        { "id": "b", "text": "Параллельная запись в один аккаунт двумя транзакциями создает race condition -- результат зависит от порядка выполнения, нарушая детерминизм" },
+        { "id": "c", "text": "Каждый аккаунт привязан к одному ядру CPU и не может мигрировать" },
+        { "id": "d", "text": "Sealevel использует однопоточный SBF-интерпретатор для каждого аккаунта" }
+      ],
+      "correctAnswer": "b",
+      "explanation": "Если TX_A пишет в account_X, а TX_B тоже пишет в account_X, результат зависит от порядка выполнения (race condition). Для детерминизма блокчейна нужен одинаковый результат на всех валидаторах. Поэтому Sealevel анализирует write sets: conflict(T_a, T_b) = write_set(T_a) intersect (read_set(T_b) union write_set(T_b)) != {}. Конфликтующие транзакции выполняются последовательно.",
+      "bloomLevel": "analytical"
+    },
+    {
+      "id": "sol05-q4",
+      "type": "code-challenge",
+      "question": "Реализуйте упрощенное вычисление PDA. Функция solve(seed, bumpStr) получает строку seed и строку bump. Вычислите sha256(seed + bumpStr) и верните hex-строку хеша.",
+      "language": "javascript",
+      "useCryptoHelpers": true,
+      "starterCode": "function solve(seed, bumpStr) {\n  // 1. Конкатенируйте seed и bumpStr в одну строку\n  // 2. Вычислите sha256 от конкатенации\n  // 3. Верните hex-строку хеша\n}",
+      "solutionCode": "function solve(seed, bumpStr) {\n  return sha256(seed + bumpStr);\n}",
+      "testCases": [
+        {
+          "id": "tc1",
+          "description": "PDA для counter с bump 255",
+          "input": "'counter', '255'",
+          "expectedOutput": "31c1e8d77073e700df4d429e8417d1b6640b6adf228589ec10d3cbe05f8cc04c",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "PDA для vault с bump 254",
+          "input": "'vault', '254'",
+          "expectedOutput": "701d0a0bf955ee47bfe48ac613f6c93d17f41d758ea240362652c015de88c689",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "PDA для token с bump 253",
+          "input": "'token', '253'",
+          "expectedOutput": "336ebc6d9d82e02eb65a0c0c5c346639acd29f7ae8b96dfc6a1ac635cc41d421",
+          "hidden": true
+        }
+      ],
+      "correctAnswer": "code",
+      "explanation": "PDA (Program Derived Address) в Solana вычисляется как SHA-256(seeds || [bump] || program_id || 'ProgramDerivedAddress'). В нашем упрощении мы конкатенируем seed и bump как строки. Bump перебирается с 255 вниз, пока результат хеширования не окажется вне кривой Ed25519 -- это гарантирует, что у PDA нет приватного ключа.",
+      "bloomLevel": "applied",
+      "timeoutMs": 5000
+    }
+  ]
+}
