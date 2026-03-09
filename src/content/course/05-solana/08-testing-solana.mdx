@@ -131,6 +131,11 @@ account.bump;        // number
 | Один signer (wallet) | Множественные signers (.signers([])) |
 | ABI encoding | Borsh serialization via IDL |
 
+<KnowledgeCheck
+  question="Как MethodsBuilder API в Anchor строит и отправляет транзакцию?"
+  answer="Цепочка вызовов: program.methods (выбор программы) -> .initialize() (инструкция из #[program]) -> .accounts({...}) (аккаунты из #[derive(Accounts)]) -> .signers([]) (дополнительные подписанты) -> .rpc() (отправка транзакции). Для чтения: program.account.counter.fetch(pda)."
+/>
+
 ### Тест 1: Initialize (позитивный)
 
 ```typescript
@@ -284,6 +289,11 @@ Transaction {
   },
 }
 ```
+
+<KnowledgeCheck
+  question="Почему негативный тест с wrong authority проваливает транзакцию в Anchor-программе?"
+  answer="PDA вычисляется из seeds [b'counter', authority.key()]. Если authority != оригинальный, seeds дают другой PDA (ConstraintSeeds ошибка). Кроме того, has_one = authority проверяет counter.authority == authority.key() -- несовпадение вызывает CourseError::Unauthorized."
+/>
 
 ## Продвинутые паттерны тестирования
 

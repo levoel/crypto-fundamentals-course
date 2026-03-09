@@ -187,6 +187,11 @@ pub mod course_counter {
 | `constants.rs` | Seeds, limits, magic numbers | Нет "магических строк" в коде |
 | `error.rs` | Custom errors | Централизованная обработка ошибок |
 
+<KnowledgeCheck
+  question="Какие три действия выполняет Anchor constraint init через CPI к System Program?"
+  answer="1) CreateAccount -- создает аккаунт с указанным space. 2) Переводит lamports от payer для rent-exemption. 3) Назначает owner = program_id (программа становится владельцем). После этого Anchor записывает 8-байтный discriminator в начало data."
+/>
+
 ### Constants: избегаем "магических строк"
 
 ```rust
@@ -257,6 +262,11 @@ seeds = [b"profile", user.key().as_ref()]
 // Плохо: может коллидировать
 seeds = [user_input]  // Атакующий контролирует длину
 ```
+
+<KnowledgeCheck
+  question="Почему при вычислении space для Anchor-аккаунта нужно добавлять 8 байт к сумме размеров полей данных?"
+  answer="Anchor записывает 8-байтный discriminator (SHA-256('account:TypeName')[:8]) в начало account.data для идентификации типа аккаунта. Space = 8 (discriminator) + сумма полей. Если забыть эти 8 байт, возникнет ошибка AccountDiscriminatorMismatch."
+/>
 
 ## Математический уровень: Rent-Exemption
 

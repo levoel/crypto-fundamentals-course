@@ -100,6 +100,11 @@ def process_instruction(program_id, accounts, data):
         raise ProgramError("Unknown instruction")
 ```
 
+<KnowledgeCheck
+  question="Из каких трех полей состоит инструкция Solana и какую роль играет дискриминатор Anchor в поле data?"
+  answer="Инструкция содержит: program_id (адрес программы), accounts (список AccountMeta с флагами is_signer и is_writable) и data (сериализованные аргументы). В Anchor первые 8 байт data -- дискриминатор SHA-256('global:<method_name>')[:8] для маршрутизации к нужному handler."
+/>
+
 ## Транзакции: атомарные пакеты инструкций
 
 Транзакция Solana -- это **атомарный пакет** из одной или нескольких инструкций:
@@ -221,6 +226,11 @@ def schedule_transactions(transactions: list[Transaction]) -> list[list[Transact
 # Это ограничение -- цена за параллелизм
 ```
 
+<KnowledgeCheck
+  question="Почему Sealevel может определять конфликты между транзакциями до их выполнения, а EVM Ethereum -- нет?"
+  answer="В Solana каждая транзакция объявляет полный список аккаунтов с флагами read/write. Sealevel анализирует пересечения множеств до выполнения. В Ethereum эффекты транзакции неизвестны до запуска EVM -- контракт может вызвать другие контракты через CALL и записать в любой storage slot."
+/>
+
 ## Cross-Program Invocation (CPI)
 
 Программы Solana могут вызывать друг друга через CPI. Это аналог `CALL` в EVM, но с важными отличиями.
@@ -315,6 +325,11 @@ MAX_CPI_DEPTH = 4  # Program A -> B -> C -> D -> E (максимум 4 уров�
 
 # Compute budget: все CPI делят общий бюджет транзакции (200K по умолчанию)
 ```
+
+<KnowledgeCheck
+  question="Чем invoke отличается от invoke_signed в CPI и когда используется каждый?"
+  answer="invoke передает подписи из исходной транзакции -- используется, когда signer уже подписал TX (например, payer). invoke_signed позволяет программе 'подписать' за свой PDA -- runtime проверяет seeds + bump + program_id == PDA address. Используется, когда PDA владеет токенами."
+/>
 
 ## Математическое определение
 

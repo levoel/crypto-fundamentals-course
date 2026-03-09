@@ -177,6 +177,11 @@ pub unchecked: UncheckedAccount<'info>,
 )]
 ```
 
+<KnowledgeCheck
+  question="Какие 4 макроса составляют основу Anchor-программы и что генерирует каждый?"
+  answer="#[program] -- entrypoint и dispatch по дискриминатору. #[derive(Accounts)] -- валидация constraints (owner, signer, PDA, has_one). #[account] -- Borsh сериализация и 8-байтный discriminator. #[error_code] -- типизированные ошибки с кодами."
+/>
+
 ## Что Anchor проверяет, а что -- нет
 
 Это **критически важная** таблица. Студенты часто думают, что Anchor проверяет всё. Это не так.
@@ -189,6 +194,11 @@ pub unchecked: UncheckedAccount<'info>,
 - Что происходит без этой проверки
 
 **Ключевой вывод:** Anchor автоматически проверяет 6 аспектов (ownership, discriminator, signer, PDA, constraints, lifecycle). Но 6 аспектов требуют ручной проверки: бизнес-логика, remaining_accounts, post-CPI data, CPI target, overflow, cross-instruction consistency.
+
+<KnowledgeCheck
+  question="Как 8-байтный discriminator Anchor защищает от подмены типа аккаунта?"
+  answer="При init Anchor записывает SHA-256('account:TypeName')[:8] в первые 8 байт data. При каждом чтении -- сравнивает. Если атакующий передаст аккаунт типа Profile вместо Counter, discriminator не совпадет и транзакция будет отклонена до вызова handler."
+/>
 
 ## Математический уровень: Instruction Dispatch
 

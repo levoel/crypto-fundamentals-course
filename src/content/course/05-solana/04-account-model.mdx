@@ -95,6 +95,11 @@ from solders.rpc.responses import GetMinimumBalanceForRentExemptionResp
 # В коде: connection.getMinimumBalanceForRentExemption(data_size)
 ```
 
+<KnowledgeCheck
+  question="Перечислите 5 полей аккаунта Solana и объясните, чем они отличаются от 4 полей аккаунта Ethereum."
+  answer="Solana: lamports (баланс), data (произвольные данные), owner (программа-владелец), executable (флаг программы), rent_epoch. Ethereum: nonce, balance, storageRoot, codeHash. Ключевое отличие: в Solana есть явный owner и executable флаг, а данные хранятся в data (не в storage trie)."
+/>
+
 ## Разделение кода и данных: Ethereum vs Solana
 
 Это самый важный концептуальный сдвиг при переходе от Ethereum к Solana.
@@ -131,6 +136,11 @@ from solders.rpc.responses import GetMinimumBalanceForRentExemptionResp
 | Стоимость хранения | Единоразовый газ за SSTORE | Постоянный rent (rent-exempt threshold) |
 | Создание хранилища | Неявное (slot создается при записи) | Явное (аккаунт нужно создать и оплатить) |
 | Размер хранилища | Неограничен (дорого) | Фиксирован при создании (10 MB max) |
+
+<KnowledgeCheck
+  question="Почему разделение кода и данных на отдельные аккаунты критично для параллельного выполнения в Sealevel?"
+  answer="Когда данные живут в отдельных аккаунтах, runtime точно знает, какие аккаунты затрагивает транзакция. Sealevel анализирует read/write sets до выполнения: непересекающиеся транзакции выполняются параллельно. В Ethereum эффекты неизвестны до запуска EVM."
+/>
 
 ## Три правила владения
 
@@ -235,6 +245,11 @@ balance_pda = find_program_address(
 # balance_pda -- отдельный аккаунт с данными
 # Программа создает этот аккаунт при первом обращении
 ```
+
+<KnowledgeCheck
+  question="Что такое PDA и почему у PDA нет приватного ключа?"
+  answer="PDA (Program Derived Address) -- адрес, который не лежит на кривой Ed25519. Это означает, что для PDA не существует приватного ключа. Только программа-владелец может 'подписать' за PDA через invoke_signed. PDA вычисляется детерминистически из seeds, bump и program_id."
+/>
 
 ## Математическое определение
 
