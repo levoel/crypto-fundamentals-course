@@ -64,12 +64,17 @@ Cannon исполняет EVM opcodes на L1. Single-round: challenger восп
 
 **Superchain** -- сеть OP Stack chains с общей безопасностью и интероперабельностью:
 
-```mermaid
-graph TD
-    ETH["Ethereum L1<br/>(shared security + DA)"] --> OP["Optimism<br/>OP Mainnet<br/>~$2.5B TVL"]
-    ETH --> BASE["Base (Coinbase)<br/>~$12B TVL"]
-    ETH --> ZORA["Zora<br/>NFT-focused"]
-    ZORA --> MODE["Mode<br/>DeFi-focused"]
+```
+                    Ethereum L1
+                    (shared security + DA)
+                        |
+    ┌───────────────────┼───────────────────┐
+    |                   |                   |
+ Optimism            Base (Coinbase)      Zora
+ OP Mainnet          ~$12B TVL            NFT-focused
+ ~$2.5B TVL                               |
+                                          Mode
+                                          DeFi-focused
 ```
 
 **ERC-7802** -- стандарт для seamless token bridging между OP Stack chains. Вместо отдельных bridges для каждой пары -- единый стандарт для всех Superchain chains.
@@ -134,18 +139,19 @@ STF компилируется в WASM. При dispute -- WASM-код испол
 
 **Stylus** -- революционная возможность Arbitrum: WASM Virtual Machine рядом с EVM.
 
-```mermaid
-graph TD
-    ARB["Arbitrum One Network"] --> EVM["EVM<br/>(Solidity, Vyper)"]
-    ARB --> WASM["WASM VM<br/>(Stylus)"]
-    EVM --> E1["Standard contract execution"]
-    WASM --> R["Rust contracts"]
-    WASM --> C["C contracts"]
-    WASM --> CPP["C++ contracts"]
-    EVM <-.->|"Interop"| WASM
 ```
+Arbitrum One Network
+├── EVM (Solidity, Vyper)
+│   └── Standard contract execution
+│
+└── WASM VM (Stylus)
+    ├── Rust contracts
+    ├── C contracts
+    └── C++ contracts
 
-> Оба VM работают на одной сети! Stylus контракты вызывают Solidity контракты и наоборот.
+Оба VM работают на одной сети!
+Stylus контракты вызывают Solidity контракты и наоборот.
+```
 
 **Зачем Stylus?**
 
