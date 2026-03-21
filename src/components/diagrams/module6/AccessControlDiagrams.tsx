@@ -4,6 +4,7 @@
  * Exports:
  * - AccessControlComparisonDiagram: HTML comparison table -- vulnerable UnsafeToken vs fixed UnsafeTokenFixed
  * - RoleHierarchyDiagram: 4-step step-through showing access control evolution (none -> Ownable -> Ownable2Step -> RBAC)
+ * - RBACHierarchyDiagram: Visual role hierarchy tree replacing ASCII art
  */
 
 import { useState } from 'react';
@@ -426,6 +427,132 @@ export function RoleHierarchyDiagram() {
           </DiagramTooltip>
         </div>
       )}
+    </DiagramContainer>
+  );
+}
+
+/* ================================================================== */
+/*  RBACHierarchyDiagram                                                */
+/* ================================================================== */
+
+interface RBACRole {
+  name: string;
+  description: string;
+  color: string;
+  tooltipRu: string;
+}
+
+const RBAC_CHILDREN: RBACRole[] = [
+  {
+    name: 'MINTER_ROLE',
+    description: 'может минтить',
+    color: '#10b981',
+    tooltipRu: 'MINTER_ROLE — право создавать новые токены. Назначается factory-контрактам или multi-sig кошелькам. Компрометация даёт бесконечный mint.',
+  },
+  {
+    name: 'PAUSER_ROLE',
+    description: 'может приостанавливать',
+    color: '#f59e0b',
+    tooltipRu: 'PAUSER_ROLE — право приостанавливать все переводы (emergency pause). Используется при обнаружении эксплойта для минимизации потерь.',
+  },
+  {
+    name: 'UPGRADER_ROLE',
+    description: 'может обновлять proxy',
+    color: '#6366f1',
+    tooltipRu: 'UPGRADER_ROLE — право обновлять implementation контракта через proxy. Критичнейшая роль: обновление может полностью изменить логику контракта.',
+  },
+  {
+    name: 'CUSTOM_ROLE',
+    description: 'кастомная роль',
+    color: '#a78bfa',
+    tooltipRu: 'Любая кастомная роль, определяемая протоколом. Например: ORACLE_ROLE, LIQUIDATOR_ROLE, STRATEGY_ROLE. Роли создаются через keccak256("ROLE_NAME").',
+  },
+];
+
+/**
+ * RBACHierarchyDiagram
+ *
+ * Visual hierarchy tree showing DEFAULT_ADMIN_ROLE and its child roles.
+ * Replaces ASCII art: DEFAULT_ADMIN_ROLE -> MINTER / PAUSER / UPGRADER / CUSTOM.
+ */
+export function RBACHierarchyDiagram() {
+  return (
+    <DiagramContainer title="Иерархия ролей AccessControl" color="blue">
+      {/* Root node: DEFAULT_ADMIN_ROLE */}
+      <DiagramTooltip content="DEFAULT_ADMIN_ROLE — корневая роль. Может назначать и отзывать любые другие роли. bytes32(0x00). Назначается deployer-у в конструкторе.">
+        <div style={{
+          ...glassStyle,
+          padding: '12px 18px',
+          borderRadius: 10,
+          border: '1px solid #ef444440',
+          background: '#ef444410',
+          marginBottom: 20,
+          textAlign: 'center',
+          cursor: 'pointer',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', fontFamily: 'monospace' }}>
+            DEFAULT_ADMIN_ROLE
+          </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
+            может назначать любые роли
+          </div>
+        </div>
+      </DiagramTooltip>
+
+      {/* Connector lines from root to children */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+        <div style={{ width: 2, height: 12, background: 'rgba(255,255,255,0.15)' }} />
+      </div>
+
+      {/* Horizontal connector bar */}
+      <div style={{
+        height: 2,
+        background: 'rgba(255,255,255,0.12)',
+        margin: '0 10%',
+        marginBottom: 4,
+      }} />
+
+      {/* Child role nodes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        {RBAC_CHILDREN.map((role, i) => (
+          <DiagramTooltip key={i} content={role.tooltipRu}>
+            <div style={{
+              ...glassStyle,
+              padding: '10px 14px',
+              borderRadius: 8,
+              border: `1px solid ${role.color}30`,
+              borderLeft: `3px solid ${role.color}`,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                {/* Connector dot */}
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: role.color,
+                  flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 11, fontWeight: 600, color: role.color, fontFamily: 'monospace' }}>
+                  {role.name}
+                </span>
+              </div>
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', paddingLeft: 12 }}>
+                {role.description}
+              </div>
+            </div>
+          </DiagramTooltip>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <DataBox
+          label="Admin role"
+          value="Каждая роль имеет свой admin role. По умолчанию admin role = DEFAULT_ADMIN_ROLE. Настраивается через _setRoleAdmin()."
+          variant="default"
+        />
+      </div>
     </DiagramContainer>
   );
 }

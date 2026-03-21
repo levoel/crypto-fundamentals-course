@@ -5,6 +5,8 @@
  * - OPStackDiagram: 4-layer OP Stack modular architecture with Superchain vision
  * - NitroDiagram: Arbitrum Nitro architecture flow with Stylus panel
  * - OPvsARBDiagram: HTML comparison table (10 rows) with per-cell DiagramTooltip
+ * - SuperchainTreeDiagram: Visual Superchain tree replacing ASCII art
+ * - StylusArchDiagram: Visual Stylus dual-VM architecture replacing ASCII art
  */
 
 import { useState } from 'react';
@@ -597,6 +599,266 @@ export function OPvsARBDiagram() {
         value="Обе системы Stage 1 с активными fraud proofs. Главное отличие: OP Stack = модульность и экосистема (Base), Arbitrum = производительность и Stylus (Rust contracts)."
         variant="highlight"
       />
+    </DiagramContainer>
+  );
+}
+
+/* ================================================================== */
+/*  SuperchainTreeDiagram                                                */
+/* ================================================================== */
+
+interface SuperchainNode {
+  name: string;
+  detail: string;
+  tvl?: string;
+  color: string;
+  tooltipRu: string;
+  children?: SuperchainNode[];
+}
+
+const SUPERCHAIN_TREE: SuperchainNode = {
+  name: 'Ethereum L1',
+  detail: 'shared security + DA',
+  color: '#6366f1',
+  tooltipRu: 'Ethereum L1 — базовый слой безопасности и Data Availability для всех OP Stack цепей. State roots и compressed batch data публикуются на L1.',
+  children: [
+    {
+      name: 'Optimism',
+      detail: 'OP Mainnet',
+      tvl: '~$2.5B TVL',
+      color: '#ef4444',
+      tooltipRu: 'Optimism Mainnet — оригинальная OP Stack сеть. Пионер optimistic rollups. Revenue sharing через RetroPGF (Public Goods Funding).',
+    },
+    {
+      name: 'Base',
+      detail: 'Coinbase',
+      tvl: '~$12B TVL',
+      color: '#2563eb',
+      tooltipRu: 'Base (Coinbase) — крупнейший L2 по TVL (~$12B). Нативная интеграция с Coinbase для массового onboarding. Не имеет собственного токена.',
+    },
+    {
+      name: 'Zora',
+      detail: 'NFT-focused',
+      tvl: undefined,
+      color: '#a78bfa',
+      tooltipRu: 'Zora — OP Stack сеть, оптимизированная для NFT и creator economy. Низкие комиссии для минтинга и торговли NFT.',
+      children: [
+        {
+          name: 'Mode',
+          detail: 'DeFi-focused',
+          color: '#f59e0b',
+          tooltipRu: 'Mode — OP Stack сеть с фокусом на DeFi. Sequencer Fee Sharing: часть доходов sequencer распределяется среди разработчиков.',
+        },
+      ],
+    },
+  ],
+};
+
+function SuperchainNodeBox({ node, isRoot }: { node: SuperchainNode; isRoot?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <DiagramTooltip content={node.tooltipRu}>
+        <div style={{
+          ...glassStyle,
+          padding: isRoot ? '12px 20px' : '8px 14px',
+          borderRadius: isRoot ? 10 : 8,
+          border: `1px solid ${node.color}${isRoot ? '50' : '30'}`,
+          borderTop: `3px solid ${node.color}`,
+          background: `${node.color}08`,
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+          minWidth: isRoot ? 180 : 120,
+        }}>
+          <div style={{ fontSize: isRoot ? 13 : 11, fontWeight: 700, color: node.color, fontFamily: 'monospace' }}>
+            {node.name}
+          </div>
+          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+            {node.detail}
+          </div>
+          {node.tvl && (
+            <div style={{ fontSize: 9, color: colors.text, fontFamily: 'monospace', marginTop: 2 }}>
+              {node.tvl}
+            </div>
+          )}
+        </div>
+      </DiagramTooltip>
+
+      {node.children && node.children.length > 0 && (
+        <>
+          {/* Vertical connector down */}
+          <div style={{ width: 2, height: 14, background: `${node.color}30` }} />
+
+          {/* Horizontal bar spanning children */}
+          {node.children.length > 1 && (
+            <div style={{
+              height: 2,
+              background: 'rgba(255,255,255,0.12)',
+              alignSelf: 'stretch',
+              margin: '0 12%',
+            }} />
+          )}
+
+          {/* Children row */}
+          <div style={{
+            display: 'flex',
+            gap: 10,
+            justifyContent: 'center',
+            marginTop: node.children.length > 1 ? 0 : undefined,
+          }}>
+            {node.children.map((child, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {node.children!.length > 1 && (
+                  <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.12)' }} />
+                )}
+                <SuperchainNodeBox node={child} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * SuperchainTreeDiagram
+ *
+ * Visual tree: Ethereum L1 -> Optimism / Base / Zora -> Mode.
+ * Replaces ASCII art Superchain hierarchy.
+ */
+export function SuperchainTreeDiagram() {
+  return (
+    <DiagramContainer title="Superchain: сеть OP Stack chains" color="rose">
+      <SuperchainNodeBox node={SUPERCHAIN_TREE} isRoot />
+    </DiagramContainer>
+  );
+}
+
+/* ================================================================== */
+/*  StylusArchDiagram                                                    */
+/* ================================================================== */
+
+interface VMEntry {
+  name: string;
+  color: string;
+  languages: string[];
+  detail: string;
+  tooltipRu: string;
+}
+
+const STYLUS_VMS: VMEntry[] = [
+  {
+    name: 'EVM',
+    color: '#6366f1',
+    languages: ['Solidity', 'Vyper'],
+    detail: 'Standard contract execution',
+    tooltipRu: 'EVM — стандартная виртуальная машина Ethereum. Исполняет байткод Solidity/Vyper. Огромная экосистема (10+ лет), проверенные паттерны, но ограниченная производительность для compute-heavy задач.',
+  },
+  {
+    name: 'WASM VM (Stylus)',
+    color: '#10b981',
+    languages: ['Rust', 'C', 'C++'],
+    detail: '10-100x дешевле для compute-heavy задач',
+    tooltipRu: 'Stylus WASM VM — вторая VM рядом с EVM. Контракты на Rust/C/C++ компилируются в WASM и исполняются с 10-100x экономией для вычислительных задач (crypto, ML, math). Полная интероперабельность с EVM.',
+  },
+];
+
+/**
+ * StylusArchDiagram
+ *
+ * Visual dual-VM architecture: EVM + WASM VM (Stylus) side by side.
+ * Replaces ASCII art showing Arbitrum One Network tree.
+ */
+export function StylusArchDiagram() {
+  return (
+    <DiagramContainer title="Arbitrum One: Dual VM Architecture" color="emerald">
+      {/* Network label */}
+      <DiagramTooltip content="Arbitrum One — основная сеть Arbitrum с двумя виртуальными машинами. EVM для совместимости с Ethereum, Stylus WASM VM для высокопроизводительных контрактов на Rust/C/C++.">
+        <div style={{
+          ...glassStyle,
+          padding: '10px 16px',
+          borderRadius: 10,
+          border: '1px solid rgba(255,255,255,0.15)',
+          textAlign: 'center',
+          marginBottom: 16,
+          cursor: 'pointer',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.text, fontFamily: 'monospace' }}>
+            Arbitrum One Network
+          </div>
+          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+            Оба VM работают на одной сети — полная интероперабельность
+          </div>
+        </div>
+      </DiagramTooltip>
+
+      {/* Connector */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+        <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.15)' }} />
+      </div>
+      <div style={{
+        height: 2,
+        background: 'rgba(255,255,255,0.12)',
+        margin: '0 15%',
+        marginBottom: 4,
+      }} />
+
+      {/* Two VMs side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {STYLUS_VMS.map((vm, i) => (
+          <DiagramTooltip key={i} content={vm.tooltipRu}>
+            <div style={{
+              ...glassStyle,
+              padding: 14,
+              borderRadius: 10,
+              border: `1px solid ${vm.color}30`,
+              borderTop: `3px solid ${vm.color}`,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}>
+              {/* VM connector dot */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: -22 }}>
+                <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.12)' }} />
+              </div>
+
+              <div style={{ fontSize: 12, fontWeight: 700, color: vm.color, fontFamily: 'monospace', marginBottom: 8 }}>
+                {vm.name}
+              </div>
+
+              {/* Languages */}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                {vm.languages.map((lang) => (
+                  <span key={lang} style={{
+                    fontSize: 9,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    background: `${vm.color}15`,
+                    color: vm.color,
+                    border: `1px solid ${vm.color}25`,
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
+                  }}>
+                    {lang}
+                  </span>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.5 }}>
+                {vm.detail}
+              </div>
+            </div>
+          </DiagramTooltip>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <DataBox
+          label="Интероперабельность"
+          value="Stylus контракты вызывают Solidity контракты и наоборот. Один shared state на одной сети."
+          variant="highlight"
+        />
+      </div>
     </DiagramContainer>
   );
 }

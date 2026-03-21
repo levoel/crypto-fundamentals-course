@@ -8,7 +8,7 @@ topics: ["Optimism", "Arbitrum", "OP Stack", "Nitro", "Stylus", "Superchain", "L
 prerequisites: ["05-optimistic-rollups"]
 ---
 
-import { OPStackDiagram, NitroDiagram, OPvsARBDiagram } from '../../../components/diagrams/module8/OptimismArbitrumDiagrams';
+import { OPStackDiagram, NitroDiagram, OPvsARBDiagram, SuperchainTreeDiagram, StylusArchDiagram } from '../../../components/diagrams/module8/OptimismArbitrumDiagrams';
 
 # Optimism и Arbitrum
 
@@ -64,18 +64,7 @@ Cannon исполняет EVM opcodes на L1. Single-round: challenger восп
 
 **Superchain** -- сеть OP Stack chains с общей безопасностью и интероперабельностью:
 
-```
-                    Ethereum L1
-                    (shared security + DA)
-                        |
-    ┌───────────────────┼───────────────────┐
-    |                   |                   |
- Optimism            Base (Coinbase)      Zora
- OP Mainnet          ~$12B TVL            NFT-focused
- ~$2.5B TVL                               |
-                                          Mode
-                                          DeFi-focused
-```
+<SuperchainTreeDiagram client:visible />
 
 **ERC-7802** -- стандарт для seamless token bridging между OP Stack chains. Вместо отдельных bridges для каждой пары -- единый стандарт для всех Superchain chains.
 
@@ -139,19 +128,7 @@ STF компилируется в WASM. При dispute -- WASM-код испол
 
 **Stylus** -- революционная возможность Arbitrum: WASM Virtual Machine рядом с EVM.
 
-```
-Arbitrum One Network
-├── EVM (Solidity, Vyper)
-│   └── Standard contract execution
-│
-└── WASM VM (Stylus)
-    ├── Rust contracts
-    ├── C contracts
-    └── C++ contracts
-
-Оба VM работают на одной сети!
-Stylus контракты вызывают Solidity контракты и наоборот.
-```
+<StylusArchDiagram client:visible />
 
 **Зачем Stylus?**
 

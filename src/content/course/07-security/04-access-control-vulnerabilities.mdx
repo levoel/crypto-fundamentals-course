@@ -8,7 +8,7 @@ topics: ["Access Control", "Ownable", "Ownable2Step", "AccessControl", "RBAC", "
 prerequisites: ["07-security/03-integer-overflow-underflow"]
 ---
 
-import { AccessControlComparisonDiagram, RoleHierarchyDiagram } from '../../../components/diagrams/module6/AccessControlDiagrams';
+import { AccessControlComparisonDiagram, RoleHierarchyDiagram, RBACHierarchyDiagram } from '../../../components/diagrams/module6/AccessControlDiagrams';
 
 # Access Control уязвимости
 
@@ -220,13 +220,7 @@ contract ProtocolToken is ERC20, AccessControl {
 
 ### Иерархия ролей
 
-```
-DEFAULT_ADMIN_ROLE (может назначать любые роли)
-├── MINTER_ROLE (может минтить)
-├── PAUSER_ROLE (может приостанавливать)
-├── UPGRADER_ROLE (может обновлять proxy)
-└── CUSTOM_ROLE (кастомная роль)
-```
+<RBACHierarchyDiagram client:visible />
 
 Каждая роль имеет свой **admin role**. По умолчанию admin role = `DEFAULT_ADMIN_ROLE`. Можно настроить иерархию через `_setRoleAdmin()`.
 
