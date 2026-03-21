@@ -30,18 +30,13 @@ import { CommitmentTransactionDiagram, HTLCMultiHopDiagram } from '../../../comp
 
 Каждая commitment TX имеет минимум два выхода:
 
-```
-Commitment TX (версия Alice):
-├── Output 0: to_local  (Alice, 4 BTC)  -- С ТАЙМЛОКОМ!
-│   └── OP_IF
-│       <revocation_pubkey> OP_CHECKSIG       # Bob может забрать, если TX отозвана
-│   OP_ELSE
-│       <to_self_delay> OP_CHECKSEQUENCEVERIFY OP_DROP
-│       <alice_delayed_pubkey> OP_CHECKSIG     # Alice может забрать после задержки
-│   OP_ENDIF
-│
-└── Output 1: to_remote (Bob, 6 BTC)    -- БЕЗ ЗАДЕРЖКИ
-    └── <bob_pubkey> OP_CHECKSIG              # Bob может забрать сразу
+```mermaid
+graph TD
+    TX["Commitment TX<br/>(версия Alice)"] --> OUT0["Output 0: to_local<br/>Alice, 4 BTC — С ТАЙМЛОКОМ!"]
+    TX --> OUT1["Output 1: to_remote<br/>Bob, 6 BTC — БЕЗ ЗАДЕРЖКИ"]
+    OUT0 -->|"OP_IF"| REV["revocation_pubkey OP_CHECKSIG<br/>Bob может забрать,<br/>если TX отозвана"]
+    OUT0 -->|"OP_ELSE"| DEL["CSV + alice_delayed_pubkey<br/>OP_CHECKSIG<br/>Alice может забрать<br/>после задержки"]
+    OUT1 --> BOB["bob_pubkey OP_CHECKSIG<br/>Bob может забрать сразу"]
 ```
 
 **Почему асимметрия необходима:**

@@ -84,10 +84,10 @@ export function ClockDiagram() {
           {/* Number positions */}
           {Array.from({ length: n }, (_, i) => {
             const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-            const x = cx + radius * Math.cos(angle);
-            const y = cy + radius * Math.sin(angle);
-            const innerX = cx + (radius - 30) * Math.cos(angle);
-            const innerY = cy + (radius - 30) * Math.sin(angle);
+            const x = Math.round((cx + radius * Math.cos(angle)) * 1e6) / 1e6;
+            const y = Math.round((cy + radius * Math.sin(angle)) * 1e6) / 1e6;
+            const innerX = Math.round((cx + (radius - 30) * Math.cos(angle)) * 1e6) / 1e6;
+            const innerY = Math.round((cy + (radius - 30) * Math.sin(angle)) * 1e6) / 1e6;
 
             const isA = selectedA === i;
             const isB = selectedB === i;

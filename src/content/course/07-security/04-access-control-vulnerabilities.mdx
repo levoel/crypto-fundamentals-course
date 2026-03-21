@@ -220,12 +220,12 @@ contract ProtocolToken is ERC20, AccessControl {
 
 ### Иерархия ролей
 
-```
-DEFAULT_ADMIN_ROLE (может назначать любые роли)
-├── MINTER_ROLE (может минтить)
-├── PAUSER_ROLE (может приостанавливать)
-├── UPGRADER_ROLE (может обновлять proxy)
-└── CUSTOM_ROLE (кастомная роль)
+```mermaid
+graph TD
+    A["DEFAULT_ADMIN_ROLE<br/>(может назначать любые роли)"] --> B["MINTER_ROLE<br/>(может минтить)"]
+    A --> C["PAUSER_ROLE<br/>(может приостанавливать)"]
+    A --> D["UPGRADER_ROLE<br/>(может обновлять proxy)"]
+    A --> E["CUSTOM_ROLE<br/>(кастомная роль)"]
 ```
 
 Каждая роль имеет свой **admin role**. По умолчанию admin role = `DEFAULT_ADMIN_ROLE`. Можно настроить иерархию через `_setRoleAdmin()`.
