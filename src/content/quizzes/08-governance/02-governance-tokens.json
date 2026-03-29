@@ -3,38 +3,62 @@
   "moduleId": "08-governance",
   "questions": [
     {
-      "id": "gov02-q1",
+      "id": "crypto-gov02-q1",
       "type": "true-false",
-      "question": "ERC20Votes использует систему checkpoints -- при каждом изменении delegation создается запись {timestamp, votes}, позволяющая запрашивать voting power на любой момент в прошлом через binary search.",
-      "correctAnswer": true,
-      "explanation": "Checkpoints -- историческое отслеживание voting power. При каждом изменении delegation создается запись {_key: timestamp, _value: votes}. getPastVotes() использует binary search (O(log n)) по массиву checkpoints для нахождения voting power на конкретный момент. Это предотвращает flash loan governance атаки.",
+      "question": "ERC20Votes отслеживает voting power в реальном времени без сохранения истории: getPastVotes() вычисляет voting power на основе текущего баланса токенов, а не исторических данных.",
+      "correctAnswer": false,
+      "explanation": "ERC20Votes СОХРАНЯЕТ историю через систему checkpoints: при каждом изменении delegation создаётся запись {timestamp, votes}. getPastVotes() выполняет binary search по массиву checkpoints для нахождения voting power на конкретный момент в прошлом. Без исторических данных flash loan governance атаки были бы тривиальными: атакующий мог бы купить токены, проголосовать и продать в одной транзакции.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "gov02-q2",
+      "id": "crypto-gov02-q2",
       "type": "multiple-choice",
       "question": "Что произойдет, когда владелец governance токенов вызовет token.delegate(msg.sender) (самоделегирование)?",
       "options": [
-        { "id": "a", "text": "Токены будут сожжены и переконвертированы в voting power" },
-        { "id": "b", "text": "Его voting power станет равна его balanceOf() -- самоделегирование активирует voting power и создает checkpoint" },
-        { "id": "c", "text": "Его токены будут заблокированы до окончания текущего голосования" },
-        { "id": "d", "text": "Ничего не произойдет -- voting power автоматически равна balanceOf()" }
+        {
+          "id": "a",
+          "text": "Токены будут сожжены и переконвертированы в voting power"
+        },
+        {
+          "id": "b",
+          "text": "Его токены будут заблокированы до окончания текущего голосования"
+        },
+        {
+          "id": "c",
+          "text": "Его voting power станет равна его balanceOf() -- самоделегирование активирует voting power и создает checkpoint"
+        },
+        {
+          "id": "d",
+          "text": "Ничего не произойдет -- voting power автоматически равна balanceOf()"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "До delegation: balanceOf(user) может быть 1M, но getVotes(user) = 0. Самоделегирование (delegate(msg.sender)) активирует voting power и создает checkpoint. После этого getVotes(user) = balanceOf(user). Это сделано для gas optimization: без delegation обычные ERC20 transfers не создают checkpoints.",
       "bloomLevel": "applied"
     },
     {
-      "id": "gov02-q3",
+      "id": "crypto-gov02-q3",
       "type": "multiple-choice",
       "question": "Почему механизм delegation необходим даже для тех, кто хочет голосовать самостоятельно (а не делегировать представителю)?",
       "options": [
-        { "id": "a", "text": "Delegation требуется для соответствия стандарту ERC-20" },
-        { "id": "b", "text": "Без delegation Governor не может проверить баланс пользователя" },
-        { "id": "c", "text": "ERC20Votes не отслеживает checkpoints при обычных transfer -- это экономит gas для не-governance пользователей. Delegation активирует checkpoint tracking, без которого getPastVotes() вернет 0 и голос не будет засчитан" },
-        { "id": "d", "text": "Delegation нужна только для off-chain голосования через Snapshot" }
+        {
+          "id": "a",
+          "text": "Delegation требуется для соответствия стандарту ERC-20"
+        },
+        {
+          "id": "b",
+          "text": "Без delegation Governor не может проверить баланс пользователя"
+        },
+        {
+          "id": "c",
+          "text": "Delegation нужна только для off-chain голосования через Snapshot"
+        },
+        {
+          "id": "d",
+          "text": "ERC20Votes не отслеживает checkpoints при обычных transfer -- это экономит gas для не-governance пользователей. Delegation активирует checkpoint tracking, без которого getPastVotes() вернет 0 и голос не будет засчитан"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "d",
       "explanation": "Gas optimization: checkpoint tracking при каждом transfer стоит дополнительный gas. Большинство token holders не участвуют в governance, поэтому ERC20Votes не создает checkpoints автоматически. delegate(self) явно включает checkpoint tracking. Governor использует getPastVotes(voter, proposalSnapshot) -- без checkpoint на этот момент voting power = 0.",
       "bloomLevel": "analytical"
     }

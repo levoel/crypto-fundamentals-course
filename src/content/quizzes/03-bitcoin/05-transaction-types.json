@@ -3,7 +3,7 @@
   "moduleId": "03-bitcoin",
   "questions": [
     {
-      "id": "txtypes-q1",
+      "id": "crypto-txtypes-q1",
       "type": "true-false",
       "question": "Segregated Witness (SegWit) перемещает подписи (witness data) из основного тела транзакции в отдельное поле, благодаря чему witness данные НЕ входят в расчёт txid.",
       "correctAnswer": true,
@@ -11,30 +11,54 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "txtypes-q2",
+      "id": "crypto-txtypes-q2",
       "type": "multiple-choice",
       "question": "Какой scriptPubKey соответствует типу транзакции P2WPKH (SegWit v0)?",
       "options": [
-        { "id": "a", "text": "OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG" },
-        { "id": "b", "text": "OP_HASH160 <scriptHash> OP_EQUAL" },
-        { "id": "c", "text": "OP_0 <20-byte-hash>" },
-        { "id": "d", "text": "OP_1 <32-byte tweaked pubKey>" }
+        {
+          "id": "a",
+          "text": "OP_0 <20-byte-hash>"
+        },
+        {
+          "id": "b",
+          "text": "OP_HASH160 <scriptHash> OP_EQUAL"
+        },
+        {
+          "id": "c",
+          "text": "OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG"
+        },
+        {
+          "id": "d",
+          "text": "OP_1 <32-byte tweaked pubKey>"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "a",
       "explanation": "P2WPKH (Pay-to-Witness-Public-Key-Hash) использует scriptPubKey: OP_0 <20-byte-hash>. Вариант (a) -- P2PKH (legacy), (b) -- P2SH, (d) -- P2TR (Taproot, SegWit v1). P2WPKH адреса начинаются с bc1q (bech32), а вся подпись и публичный ключ находятся в поле witness (scriptSig пуст).",
       "bloomLevel": "applied"
     },
     {
-      "id": "txtypes-q3",
+      "id": "crypto-txtypes-q3",
       "type": "multiple-choice",
       "question": "Почему SegWit решает проблему transaction malleability, которая существовала в P2PKH-транзакциях?",
       "options": [
-        { "id": "a", "text": "SegWit использует более стойкий алгоритм хеширования для txid" },
-        { "id": "b", "text": "SegWit шифрует подписи, делая их неизменяемыми" },
-        { "id": "c", "text": "В SegWit witness данные (подписи) не входят в расчёт txid, поэтому изменение формата подписи не меняет txid" },
-        { "id": "d", "text": "SegWit запрещает передачу транзакций до подтверждения в блоке" }
+        {
+          "id": "a",
+          "text": "SegWit использует более стойкий алгоритм хеширования для txid"
+        },
+        {
+          "id": "b",
+          "text": "В SegWit witness данные (подписи) не входят в расчёт txid, поэтому изменение формата подписи не меняет txid"
+        },
+        {
+          "id": "c",
+          "text": "SegWit шифрует подписи, делая их неизменяемыми"
+        },
+        {
+          "id": "d",
+          "text": "SegWit запрещает передачу транзакций до подтверждения в блоке"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "b",
       "explanation": "В P2PKH подпись входит в scriptSig, который является частью данных, хешируемых для txid. Третья сторона могла незначительно изменить формат подписи (не нарушая её валидность) и изменить txid неподтверждённой транзакции. В SegWit подписи находятся в witness (отдельном поле), которое не участвует в вычислении txid. Это делает txid стабильным и позволяет строить цепочки зависимых неподтверждённых транзакций (критично для Lightning Network).",
       "bloomLevel": "analytical"
     }

@@ -3,7 +3,7 @@
   "moduleId": "07-security",
   "questions": [
     {
-      "id": "sec09-q1",
+      "id": "crypto-sec09-q1",
       "type": "true-false",
       "question": "Профессиональный аудит смарт-контрактов состоит из 4 фаз: scoping (10% времени), automated analysis (20%), manual review (60%) и reporting (10%).",
       "correctAnswer": true,
@@ -11,28 +11,52 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "sec09-q2",
+      "id": "crypto-sec09-q2",
       "type": "multiple-choice",
       "question": "Какой уровень severity присваивается уязвимости, позволяющей атакующему вывести ВСЕ средства из контракта?",
       "options": [
-        { "id": "a", "text": "High -- потеря части средств" },
-        { "id": "b", "text": "Critical -- потеря ВСЕХ средств, необратимо" },
-        { "id": "c", "text": "Medium -- потеря средств при специфических условиях" },
-        { "id": "d", "text": "Low -- минимальный impact, best practice нарушение" }
+        {
+          "id": "a",
+          "text": "Critical -- потеря ВСЕХ средств, необратимо"
+        },
+        {
+          "id": "b",
+          "text": "High -- потеря части средств"
+        },
+        {
+          "id": "c",
+          "text": "Medium -- потеря средств при специфических условиях"
+        },
+        {
+          "id": "d",
+          "text": "Low -- минимальный impact, best practice нарушение"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "Severity classification: Critical = потеря ВСЕХ средств, необратимо (reentrancy drain, unprotected selfdestruct). High = потеря ЧАСТИ средств или обход access control. Medium = потеря средств при специфических условиях (edge case overflow). Low = минимальный impact (missing event). Informational = нет impact, стилистика/gas. Каждый finding должен включать PoC -- 'если вы не можете написать PoC, вы не понимаете уязвимость достаточно глубоко'.",
       "bloomLevel": "applied"
     },
     {
-      "id": "sec09-q3",
+      "id": "crypto-sec09-q3",
       "type": "multiple-choice",
       "question": "Почему invariant analysis эффективнее для обнаружения logic bugs, чем построчный review кода?",
       "options": [
-        { "id": "a", "text": "Invariant analysis быстрее, потому что использует автоматические инструменты" },
-        { "id": "b", "text": "Invariants формализуют 'что должно быть ВСЕГДА истинно' (например, sum(balances) == address(this).balance), и любая последовательность транзакций, нарушающая invariant -- уязвимость. Это системный подход vs 'посмотреть на каждую строку'" },
-        { "id": "c", "text": "Invariant analysis заменяет необходимость manual review" },
-        { "id": "d", "text": "Invariant analysis проверяет только access control уязвимости" }
+        {
+          "id": "a",
+          "text": "Invariant analysis быстрее, потому что использует автоматические инструменты"
+        },
+        {
+          "id": "b",
+          "text": "Invariants формализуют 'что должно быть ВСЕГДА истинно' (например, sum(balances) == address(this).balance), и любая последовательность транзакций, нарушающая invariant -- уязвимость. Это системный подход vs 'посмотреть на каждую строку'"
+        },
+        {
+          "id": "c",
+          "text": "Invariant analysis заменяет необходимость manual review"
+        },
+        {
+          "id": "d",
+          "text": "Invariant analysis проверяет только access control уязвимости"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Invariant -- утверждение, которое ВСЕГДА должно быть истинным. Пример: INV-01: sum(balances) == address(vault).balance. Reentrancy нарушает INV-01: во время callback balances[attacker] = 1 ETH (stale), но vault уже отправил ETH -> sum(balances) > address(vault).balance. Line-by-line review может пропустить cross-function/cross-contract interactions. Invariant analysis проверяет свойства протокола независимо от конкретного пути выполнения. Foundry invariant testing и Certora Prover автоматизируют этот подход.",

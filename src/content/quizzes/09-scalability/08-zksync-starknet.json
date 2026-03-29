@@ -3,38 +3,62 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale08-q1",
+      "id": "crypto-scale08-q1",
       "type": "true-false",
-      "question": "StarkNet использует язык Cairo и STARK proofs (Scalable Transparent ARguments of Knowledge), которые не требуют trusted setup и устойчивы к квантовым компьютерам, в отличие от SNARK proofs (используемых zkSync Era).",
-      "correctAnswer": true,
-      "explanation": "StarkNet: Cairo VM + STARKs. STARK: transparent (нет trusted setup), quantum resistant (основан на hash functions), но proof больше (~45-200 KB). zkSync Era: zkEVM + SNARKs (PLONK-based). SNARK: маленький proof (~288 bytes), быстрая верификация (~300K gas), но требует trusted setup и уязвим для квантовых компьютеров (эллиптические кривые). Cairo оптимизирован для proving: Pedersen hash вместо KECCAK256 (ZK-friendly).",
+      "question": "StarkNet использует язык Cairo и STARK proofs, которые, как и SNARKs, требуют одноразовую церемонию trusted setup для генерации proving parameters.",
+      "correctAnswer": false,
+      "explanation": "STARK proofs НЕ требуют trusted setup — это их ключевое преимущество. 'T' в STARK означает 'Transparent': все параметры генерируются из публичной случайности через Fiat-Shamir heuristic. SNARKs (Groth16) требуют MPC ceremony, которая генерирует 'toxic waste'. STARKs используют хеш-функции (Merkle commitments) вместо эллиптических кривых, что также обеспечивает квантовую устойчивость.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale08-q2",
+      "id": "crypto-scale08-q2",
       "type": "multiple-choice",
       "question": "Что обеспечивает Volition mode в StarkNet?",
       "options": [
-        { "id": "a", "text": "Автоматическое масштабирование количества sequencers" },
-        { "id": "b", "text": "Выбор data availability per-transaction: rollup mode (данные на Ethereum L1 -- дороже, безопаснее) или validium mode (данные off-chain -- дешевле, менее безопасно). Пользователь решает: крупный трансфер -> rollup mode, игровой NFT -> validium mode" },
-        { "id": "c", "text": "Возможность переключения между SNARK и STARK proofs" },
-        { "id": "d", "text": "Совместимость StarkNet контрактов с EVM" }
+        {
+          "id": "a",
+          "text": "Автоматическое масштабирование количества sequencers"
+        },
+        {
+          "id": "b",
+          "text": "Выбор data availability per-transaction: rollup mode (данные на Ethereum L1 -- дороже, безопаснее) или validium mode (данные off-chain -- дешевле, менее безопасно). Пользователь решает: крупный трансфер -> rollup mode, игровой NFT -> validium mode"
+        },
+        {
+          "id": "c",
+          "text": "Возможность переключения между SNARK и STARK proofs"
+        },
+        {
+          "id": "d",
+          "text": "Совместимость StarkNet контрактов с EVM"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Volition -- гибридная data availability: каждая транзакция может выбрать между rollup mode (данные на L1, наследует Ethereum security) и validium mode (данные off-chain через DAC, дешевле, trust assumption на DAC). Use cases: крупные DeFi транзакции -> rollup mode (максимальная безопасность). Gaming, social -- validium mode (дешевле, DA менее критична). Пользователь балансирует cost vs security per-transaction.",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale08-q3",
+      "id": "crypto-scale08-q3",
       "type": "multiple-choice",
       "question": "Почему StarkNet выбрал полностью custom VM (Cairo VM) вместо EVM совместимости, как zkSync Era?",
       "options": [
-        { "id": "a", "text": "Cairo VM быстрее EVM для обычных транзакций" },
-        { "id": "b", "text": "EVM opcodes (KECCAK256, SSTORE) сложны для ZK proving -- они не ZK-friendly. Cairo спроектирован для provability: использует Pedersen hash (ZK-friendly) вместо KECCAK256, оптимизированные операции для STARK proof generation. Trade-off: мощнее для ZK-native приложений, но высокий порог входа (нужно учить Cairo)" },
-        { "id": "c", "text": "EVM несовместим со STARK proof system" },
-        { "id": "d", "text": "Cairo VM позволяет запускать Python код on-chain" }
+        {
+          "id": "a",
+          "text": "Cairo VM быстрее EVM для обычных транзакций"
+        },
+        {
+          "id": "b",
+          "text": "EVM несовместим со STARK proof system"
+        },
+        {
+          "id": "c",
+          "text": "EVM opcodes (KECCAK256, SSTORE) сложны для ZK proving -- они не ZK-friendly. Cairo спроектирован для provability: использует Pedersen hash (ZK-friendly) вместо KECCAK256, оптимизированные операции для STARK proof generation. Trade-off: мощнее для ZK-native приложений, но высокий порог входа (нужно учить Cairo)"
+        },
+        {
+          "id": "d",
+          "text": "Cairo VM позволяет запускать Python код on-chain"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "ZK-friendliness: KECCAK256 в EVM требует ~500K+ constraints в circuit. Pedersen hash в Cairo -- ~10K constraints (50x эффективнее для proving). Cairo оптимизирован для generation STARKs: операции, которые легко 'доказать'. zkSync (Type 4 zkEVM): компромисс -- Solidity через zksolc compiler, PLONK SNARKs, но KECCAK256 дороже. StarkNet: полная оптимизация для ZK, но нужно учить Cairo. Tradeoff: developer experience (zkSync) vs ZK-native power (StarkNet).",
       "bloomLevel": "analytical"
     }

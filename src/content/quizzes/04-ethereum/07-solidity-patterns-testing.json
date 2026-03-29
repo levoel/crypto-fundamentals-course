@@ -3,7 +3,7 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth07-q1",
+      "id": "crypto-eth07-q1",
       "type": "true-false",
       "question": "Паттерн Checks-Effects-Interactions (CEI) предотвращает reentrancy-атаки, требуя обновить состояние контракта ДО выполнения внешних вызовов.",
       "correctAnswer": true,
@@ -11,35 +11,59 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth07-q2",
+      "id": "crypto-eth07-q2",
       "type": "multiple-choice",
       "question": "Что делает модификатор onlyOwner в контракте?",
       "options": [
-        { "id": "a", "text": "Автоматически передаёт ownership новому адресу при каждом вызове" },
-        { "id": "b", "text": "Проверяет, что msg.sender == owner, и откатывает транзакцию, если условие не выполнено" },
-        { "id": "c", "text": "Шифрует данные транзакции, чтобы только owner мог их прочитать" },
-        { "id": "d", "text": "Запрещает owner вызывать функцию, ограничивая доступ другими пользователями" }
+        {
+          "id": "a",
+          "text": "Автоматически передаёт ownership новому адресу при каждом вызове"
+        },
+        {
+          "id": "b",
+          "text": "Запрещает owner вызывать функцию, ограничивая доступ другими пользователями"
+        },
+        {
+          "id": "c",
+          "text": "Шифрует данные транзакции, чтобы только owner мог их прочитать"
+        },
+        {
+          "id": "d",
+          "text": "Проверяет, что msg.sender == owner, и откатывает транзакцию, если условие не выполнено"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Модификатор onlyOwner проверяет if (msg.sender != owner) revert NotOwner() перед выполнением тела функции. Символ _; в модификаторе обозначает место, куда подставляется код функции. Если msg.sender не является owner, транзакция откатывается до выполнения логики функции.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth07-q3",
+      "id": "crypto-eth07-q3",
       "type": "multiple-choice",
       "question": "Почему reentrancy-атака опасна и как модификатор nonReentrant предотвращает её?",
       "options": [
-        { "id": "a", "text": "Reentrancy позволяет переписать байткод контракта; nonReentrant блокирует изменения кода" },
-        { "id": "b", "text": "Reentrancy позволяет вызвать функцию повторно до завершения первого вызова, обходя проверки; nonReentrant устанавливает флаг блокировки, который запрещает повторный вход" },
-        { "id": "c", "text": "Reentrancy замедляет сеть; nonReentrant ограничивает gas per call" },
-        { "id": "d", "text": "Reentrancy позволяет подделать msg.sender; nonReentrant проверяет подпись дважды" }
+        {
+          "id": "a",
+          "text": "Reentrancy позволяет вызвать функцию повторно до завершения первого вызова, обходя проверки; nonReentrant устанавливает флаг блокировки, который запрещает повторный вход"
+        },
+        {
+          "id": "b",
+          "text": "Reentrancy позволяет переписать байткод контракта; nonReentrant блокирует изменения кода"
+        },
+        {
+          "id": "c",
+          "text": "Reentrancy замедляет сеть; nonReentrant ограничивает gas per call"
+        },
+        {
+          "id": "d",
+          "text": "Reentrancy позволяет подделать msg.sender; nonReentrant проверяет подпись дважды"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "При reentrancy контракт-получатель (через receive/fallback) повторно вызывает уязвимую функцию до завершения первого вызова. Если состояние ещё не обновлено (нарушен CEI), атакующий может, например, вывести средства многократно. nonReentrant модификатор устанавливает флаг _locked = true при входе и проверяет его при повторном вызове, откатывая транзакцию.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "eth07-q4",
+      "id": "crypto-eth07-q4",
       "type": "code-challenge",
       "question": "Напишите контракт Ownable с public переменной owner типа address, которая устанавливается в constructor как msg.sender. Добавьте modifier onlyOwner, который проверяет msg.sender == owner. Добавьте функцию setOwner(address newOwner) external onlyOwner, которая меняет owner.",
       "language": "solidity",

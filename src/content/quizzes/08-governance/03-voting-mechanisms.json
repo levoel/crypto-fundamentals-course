@@ -3,7 +3,7 @@
   "moduleId": "08-governance",
   "questions": [
     {
-      "id": "gov03-q1",
+      "id": "crypto-gov03-q1",
       "type": "true-false",
       "question": "Quorum -- минимальное количество голосов (For + Abstain), необходимое для того, чтобы голосование считалось валидным. Без quorum proposal может пройти даже если проголосовал один человек.",
       "correctAnswer": true,
@@ -11,44 +11,80 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "gov03-q2",
+      "id": "crypto-gov03-q2",
       "type": "multiple-choice",
       "question": "Какие 7 состояний проходит governance proposal в OpenZeppelin Governor?",
       "options": [
-        { "id": "a", "text": "Created, Voting, Approved, Rejected, Executed, Canceled, Expired" },
-        { "id": "b", "text": "Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed (+ Expired для Queued proposals)" },
-        { "id": "c", "text": "Draft, Review, Voting, Approved, Timelock, Execution, Complete" },
-        { "id": "d", "text": "Proposed, Debated, Voted, Passed, Delayed, Executed, Archived" }
+        {
+          "id": "a",
+          "text": "Pending, Active, Canceled, Defeated, Succeeded, Queued, Executed (+ Expired для Queued proposals)"
+        },
+        {
+          "id": "b",
+          "text": "Created, Voting, Approved, Rejected, Executed, Canceled, Expired"
+        },
+        {
+          "id": "c",
+          "text": "Draft, Review, Voting, Approved, Timelock, Execution, Complete"
+        },
+        {
+          "id": "d",
+          "text": "Proposed, Debated, Voted, Passed, Delayed, Executed, Archived"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "OpenZeppelin Governor state machine: Pending (ожидание votingDelay) -> Active (голосование открыто) -> Succeeded (quorum met AND For > Against) или Defeated. Succeeded -> Queued (в TimelockController) -> Executed или Expired. Из любого незавершенного состояния -> Canceled. Итого 7 состояний + Expired.",
       "bloomLevel": "applied"
     },
     {
-      "id": "gov03-q3",
+      "id": "crypto-gov03-q3",
       "type": "multiple-choice",
       "question": "Почему атака на Beanstalk ($182M, 2022) через flash loan governance оказалась успешной?",
       "options": [
-        { "id": "a", "text": "OpenZeppelin Governor имел уязвимость в механизме checkpoints" },
-        { "id": "b", "text": "Beanstalk использовал ТЕКУЩИЙ баланс (balanceOf) для определения voting power, а не checkpoints. Flash loan дал мгновенное voting power в той же транзакции -- предложение создано и одобрено за один блок" },
-        { "id": "c", "text": "Атакующий скомпрометировал приватные ключи валидаторов Beanstalk" },
-        { "id": "d", "text": "Quorum был установлен слишком низко (1%)" }
+        {
+          "id": "a",
+          "text": "OpenZeppelin Governor имел уязвимость в механизме checkpoints"
+        },
+        {
+          "id": "b",
+          "text": "Beanstalk использовал ТЕКУЩИЙ баланс (balanceOf) для определения voting power, а не checkpoints. Flash loan дал мгновенное voting power в той же транзакции -- предложение создано и одобрено за один блок"
+        },
+        {
+          "id": "c",
+          "text": "Атакующий скомпрометировал приватные ключи валидаторов Beanstalk"
+        },
+        {
+          "id": "d",
+          "text": "Quorum был установлен слишком низко (1%)"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Beanstalk использовал текущий баланс, не checkpoints. Атака: flash loan ~$1B -> swap в governance tokens -> 80% voting power -> немедленное одобрение BIP-18 -> перевод $182M -> возврат flash loan. OpenZeppelin Governor защищен: ERC20Votes создает checkpoints при delegation, и getPastVotes(voter, proposalSnapshot) возвращает voting power на момент СОЗДАНИЯ proposal. Flash loan токены, купленные ПОСЛЕ создания, дают 0 голосов.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "gov03-q4",
+      "id": "crypto-gov03-q4",
       "type": "multiple-choice",
       "question": "Почему Snapshot использует off-chain голосование с on-chain state snapshots вместо полностью on-chain подхода?",
       "options": [
-        { "id": "a", "text": "Off-chain голосование безопаснее, чем on-chain, потому что подписи сложнее подделать" },
-        { "id": "b", "text": "Snapshot устраняет gas barrier для участия: голоса -- подписи EIP-712 (бесплатно), voting power определяется по on-chain snapshot (предотвращает flash loan). Это увеличивает participation rate, но результат advisory -- исполнение требует доверия к multisig" },
-        { "id": "c", "text": "Ethereum не поддерживает on-chain голосование на уровне протокола" },
-        { "id": "d", "text": "Off-chain голосование позволяет голосовать анонимно" }
+        {
+          "id": "a",
+          "text": "Off-chain голосование безопаснее, чем on-chain, потому что подписи сложнее подделать"
+        },
+        {
+          "id": "b",
+          "text": "Ethereum не поддерживает on-chain голосование на уровне протокола"
+        },
+        {
+          "id": "c",
+          "text": "Snapshot устраняет gas barrier для участия: голоса -- подписи EIP-712 (бесплатно), voting power определяется по on-chain snapshot (предотвращает flash loan). Это увеличивает participation rate, но результат advisory -- исполнение требует доверия к multisig"
+        },
+        {
+          "id": "d",
+          "text": "Off-chain голосование позволяет голосовать анонимно"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "On-chain governance имеет gas barrier: каждый голос -- транзакция. Типичный participation rate в on-chain governance = 4-8%. Snapshot устраняет этот барьер: голоса -- подписи EIP-712, опубликованные на IPFS (бесплатно). Voting power по on-chain snapshot предотвращает flash loan атаки. Компромисс: результат advisory (не binding) -- multisig должен исполнить решение вручную.",
       "bloomLevel": "analytical"
     }

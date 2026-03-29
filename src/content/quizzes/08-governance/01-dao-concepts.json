@@ -3,38 +3,62 @@
   "moduleId": "08-governance",
   "questions": [
     {
-      "id": "gov01-q1",
+      "id": "crypto-gov01-q1",
       "type": "true-false",
-      "question": "DAO (Decentralized Autonomous Organization) позволяет сообществу управлять протоколом через голосование владельцев токенов, без необходимости в центральном органе управления (CEO, совет директоров).",
-      "correctAnswer": true,
-      "explanation": "DAO -- организация, управляемая смарт-контрактами и голосованием token holders. Правила -- это код, решения -- это proposals, за которые голосуют владельцы governance токенов. Нет CEO, нет совета директоров -- decentralized, autonomous, organization.",
+      "question": "DAO (Decentralized Autonomous Organization) не позволяет сообществу управлять протоколом через голосование владельцев токенов, без необходимости в центральном органе управления (CEO, совет директоров).",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. DAO -- организация, управляемая смарт-контрактами и голосованием token holders. Правила -- это код, решения -- это proposals, за которые голосуют владельцы governance токенов. Нет CEO, нет совета директоров -- decentralized, autonomous, organization.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "gov01-q2",
+      "id": "crypto-gov01-q2",
       "type": "multiple-choice",
       "question": "Какое событие 2016 года привело к хардфорку Ethereum и появлению Ethereum Classic (ETC)?",
       "options": [
-        { "id": "a", "text": "Взлом биржи Mt. Gox и потеря 850,000 BTC" },
-        { "id": "b", "text": "Эксплуатация reentrancy-уязвимости в The DAO, приведшая к краже $60M из $150M собранных средств" },
-        { "id": "c", "text": "Отказ Ethereum Foundation от Proof-of-Work в пользу Proof-of-Stake" },
-        { "id": "d", "text": "Взлом Beanstalk через flash loan governance атаку" }
+        {
+          "id": "a",
+          "text": "Эксплуатация reentrancy-уязвимости в The DAO, приведшая к краже $60M из $150M собранных средств"
+        },
+        {
+          "id": "b",
+          "text": "Взлом биржи Mt. Gox и потеря 850,000 BTC"
+        },
+        {
+          "id": "c",
+          "text": "Отказ Ethereum Foundation от Proof-of-Work в пользу Proof-of-Stake"
+        },
+        {
+          "id": "d",
+          "text": "Взлом Beanstalk через flash loan governance атаку"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "The DAO (2016) -- первая крупная DAO. $150M собрано через crowdsale, $60M украдено через reentrancy-уязвимость (interaction before effect -- внешний вызов до обновления баланса). Сообщество разделилось: ETH откатил транзакцию, ETC сохранил принцип 'код -- закон'. Mt. Gox -- это Bitcoin (2014), Beanstalk -- 2022.",
       "bloomLevel": "applied"
     },
     {
-      "id": "gov01-q3",
+      "id": "crypto-gov01-q3",
       "type": "multiple-choice",
       "question": "Почему выбор между on-chain (Governor) и off-chain (Snapshot) governance всегда связан с компромиссом?",
       "options": [
-        { "id": "a", "text": "On-chain governance дешевле, но менее безопасен" },
-        { "id": "b", "text": "Off-chain governance обеспечивает автоматическое исполнение (binding votes)" },
-        { "id": "c", "text": "On-chain обеспечивает автоматическое исполнение и криптографические гарантии, но требует gas за каждый голос (снижая участие). Off-chain (Snapshot) бесплатен и увеличивает участие, но результат advisory -- кто-то должен исполнить решение вручную (trust the executor)" },
-        { "id": "d", "text": "Snapshot и Governor полностью эквивалентны по безопасности, отличаются только UI" }
+        {
+          "id": "a",
+          "text": "On-chain governance дешевле, но менее безопасен"
+        },
+        {
+          "id": "b",
+          "text": "On-chain обеспечивает автоматическое исполнение и криптографические гарантии, но требует gas за каждый голос (снижая участие). Off-chain (Snapshot) бесплатен и увеличивает участие, но результат advisory -- кто-то должен исполнить решение вручную (trust the executor)"
+        },
+        {
+          "id": "c",
+          "text": "Off-chain governance обеспечивает автоматическое исполнение (binding votes)"
+        },
+        {
+          "id": "d",
+          "text": "Snapshot и Governor полностью эквивалентны по безопасности, отличаются только UI"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "b",
       "explanation": "On-chain (Governor): каждый голос -- транзакция с gas, исполнение автоматическое через смарт-контракт (binding). Off-chain (Snapshot): голоса -- подписи EIP-712, gas не нужен, участие выше, но результат advisory -- multisig или другой доверенный исполнитель должен провести решение on-chain. Это трейдофф между прозрачностью/безопасностью и доступностью/участием.",
       "bloomLevel": "analytical"
     }

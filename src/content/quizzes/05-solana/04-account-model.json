@@ -3,43 +3,67 @@
   "moduleId": "05-solana",
   "questions": [
     {
-      "id": "sol04-q1",
+      "id": "crypto-sol04-q1",
       "type": "true-false",
-      "question": "В Solana программы (код) являются stateless -- они не хранят данные внутри себя, а получают данные через отдельные аккаунты, переданные в инструкции.",
-      "correctAnswer": true,
-      "explanation": "В отличие от Ethereum, где контракт содержит и код, и данные (storage) в одном аккаунте, в Solana программа (executable account) и данные (data accounts) живут в разных аккаунтах. Программа получает аккаунты как аргументы и оперирует ими. Это разделение -- фундамент для параллельного выполнения через Sealevel.",
+      "question": "В Solana программы (код) хранят свои данные непосредственно внутри собственного аккаунта, аналогично модели storage в Ethereum смарт-контрактах.",
+      "correctAnswer": false,
+      "explanation": "В Solana программы являются STATELESS — код и данные хранятся в РАЗНЫХ аккаунтах. Программа (executable account) получает аккаунты данных (data accounts) как аргументы инструкции. Это фундаментальное отличие от Ethereum, где контракт хранит и код, и данные (storage) в одном аккаунте. Разделение позволяет параллельное выполнение через Sealevel runtime.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "sol04-q2",
+      "id": "crypto-sol04-q2",
       "type": "multiple-choice",
       "question": "Какие 5 полей описывают каждый аккаунт Solana?",
       "options": [
-        { "id": "a", "text": "address, balance, nonce, codeHash, storageRoot" },
-        { "id": "b", "text": "lamports, data, owner, executable, rent_epoch" },
-        { "id": "c", "text": "pubkey, signature, program_id, data, lamports" },
-        { "id": "d", "text": "key, value, type, permissions, timestamp" }
+        {
+          "id": "a",
+          "text": "address, balance, nonce, codeHash, storageRoot"
+        },
+        {
+          "id": "b",
+          "text": "pubkey, signature, program_id, data, lamports"
+        },
+        {
+          "id": "c",
+          "text": "lamports, data, owner, executable, rent_epoch"
+        },
+        {
+          "id": "d",
+          "text": "key, value, type, permissions, timestamp"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Каждый аккаунт Solana описывается ровно 5 полями: lamports (баланс, 1 SOL = 10^9 lamports), data (произвольные данные Vec<u8>), owner (программа-владелец), executable (является ли программой), rent_epoch (эпоха ренты). В Ethereum аккаунт имеет 4 поля: nonce, balance, storageRoot, codeHash.",
       "bloomLevel": "applied"
     },
     {
-      "id": "sol04-q3",
+      "id": "crypto-sol04-q3",
       "type": "multiple-choice",
       "question": "Почему разделение кода и данных на отдельные аккаунты в Solana делает возможным параллельное выполнение через Sealevel?",
       "options": [
-        { "id": "a", "text": "Программы компилируются в BPF-байткод, который быстрее EVM-байткода" },
-        { "id": "b", "text": "Данные в отдельных аккаунтах позволяют runtime точно определить зависимости между транзакциями по их read/write sets" },
-        { "id": "c", "text": "Разделение уменьшает размер транзакции, позволяя включить больше в блок" },
-        { "id": "d", "text": "Отдельные аккаунты данных автоматически реплицируются на все валидаторы" }
+        {
+          "id": "a",
+          "text": "Программы компилируются в BPF-байткод, который быстрее EVM-байткода"
+        },
+        {
+          "id": "b",
+          "text": "Отдельные аккаунты данных автоматически реплицируются на все валидаторы"
+        },
+        {
+          "id": "c",
+          "text": "Разделение уменьшает размер транзакции, позволяя включить больше в блок"
+        },
+        {
+          "id": "d",
+          "text": "Данные в отдельных аккаунтах позволяют runtime точно определить зависимости между транзакциями по их read/write sets"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Когда данные живут в отдельных аккаунтах, каждая транзакция явно указывает, какие аккаунты ей нужны для чтения и записи. Runtime (Sealevel) анализирует эти read/write sets до выполнения: если транзакции не пересекаются по writable-аккаунтам, они безопасно выполняются параллельно. В Ethereum эффекты транзакции неизвестны до запуска EVM.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "sol04-q4",
+      "id": "crypto-sol04-q4",
       "type": "code-challenge",
       "question": "Реализуйте конвертацию lamports в SOL. Функция solve(lamportsStr) получает строку с количеством lamports. 1 SOL = 10^9 lamports. Верните строку с количеством SOL с 9 знаками после запятой, используя .toFixed(9).",
       "language": "javascript",

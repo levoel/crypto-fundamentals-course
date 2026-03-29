@@ -3,43 +3,67 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth08-q1",
+      "id": "crypto-eth08-q1",
       "type": "true-false",
-      "question": "ERC-20 определяет стандартный интерфейс для fungible (взаимозаменяемых) токенов, включающий 6 функций и 2 события.",
-      "correctAnswer": true,
-      "explanation": "Стандарт ERC-20 (EIP-20) определяет 6 функций: totalSupply(), balanceOf(), transfer(), approve(), transferFrom(), allowance() и 2 события: Transfer и Approval. Более 500 000 токенов на Ethereum следуют этому стандарту, что позволяет кошелькам, DEX и DeFi-протоколам работать с любым ERC-20 одинаковым образом.",
+      "question": "ERC-20 определяет стандартный интерфейс для fungible (взаимозаменяемых) токенов, включающий 6 функций, 2 события и обязательную функцию mint() для создания новых токенов.",
+      "correctAnswer": false,
+      "explanation": "Стандарт ERC-20 (EIP-20) определяет ровно 6 функций (totalSupply, balanceOf, transfer, approve, transferFrom, allowance) и 2 события (Transfer, Approval). Функция mint() НЕ является частью стандарта — это расширение, которое реализуется отдельно (например, через OpenZeppelin ERC20Mintable). Аналогично, burn(), name(), symbol() и decimals() — опциональные расширения.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth08-q2",
+      "id": "crypto-eth08-q2",
       "type": "multiple-choice",
       "question": "Какие функции обязательны по стандарту ERC-20?",
       "options": [
-        { "id": "a", "text": "totalSupply, balanceOf, transfer, mint, burn" },
-        { "id": "b", "text": "totalSupply, balanceOf, transfer, approve, transferFrom, allowance" },
-        { "id": "c", "text": "transfer, approve, transferFrom, name, symbol, decimals" },
-        { "id": "d", "text": "balanceOf, transfer, approve, permit, increaseAllowance" }
+        {
+          "id": "a",
+          "text": "totalSupply, balanceOf, transfer, mint, burn"
+        },
+        {
+          "id": "b",
+          "text": "totalSupply, balanceOf, transfer, approve, transferFrom, allowance"
+        },
+        {
+          "id": "c",
+          "text": "transfer, approve, transferFrom, name, symbol, decimals"
+        },
+        {
+          "id": "d",
+          "text": "balanceOf, transfer, approve, permit, increaseAllowance"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "ERC-20 требует 6 функций: totalSupply() -- общее количество токенов, balanceOf(address) -- баланс адреса, transfer(to, amount) -- прямой перевод, approve(spender, amount) -- разрешение, transferFrom(from, to, amount) -- перевод от имени, allowance(owner, spender) -- разрешённая сумма. Функции mint, burn, name, symbol, decimals, permit -- расширения, не обязательные по стандарту.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth08-q3",
+      "id": "crypto-eth08-q3",
       "type": "multiple-choice",
       "question": "Почему ERC-20 использует двухшаговый паттерн approve + transferFrom вместо просто transfer?",
       "options": [
-        { "id": "a", "text": "Approve обеспечивает шифрование данных перевода для приватности" },
-        { "id": "b", "text": "DEX-контракт не может вызвать transfer от имени пользователя (msg.sender будет адресом DEX), поэтому пользователь сначала даёт разрешение (approve), а затем DEX вызывает transferFrom" },
-        { "id": "c", "text": "Approve ускоряет транзакцию за счёт кэширования результата" },
-        { "id": "d", "text": "Двухшаговый процесс нужен для совместимости с Bitcoin Script" }
+        {
+          "id": "a",
+          "text": "Approve обеспечивает шифрование данных перевода для приватности"
+        },
+        {
+          "id": "b",
+          "text": "Approve ускоряет транзакцию за счёт кэширования результата"
+        },
+        {
+          "id": "c",
+          "text": "DEX-контракт не может вызвать transfer от имени пользователя (msg.sender будет адресом DEX), поэтому пользователь сначала даёт разрешение (approve), а затем DEX вызывает transferFrom"
+        },
+        {
+          "id": "d",
+          "text": "Двухшаговый процесс нужен для совместимости с Bitcoin Script"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "При вызове transfer() контрактом-DEX, msg.sender будет адресом DEX, а не пользователя -- DEX не может перемещать чужие токены. Паттерн approve + transferFrom решает это: пользователь вызывает approve(DEX, amount), устанавливая allowance. Затем DEX вызывает transferFrom(user, recipient, amount), расходуя allowance. ERC-2612 Permit -- современная альтернатива с off-chain подписью.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "eth08-q4",
+      "id": "crypto-eth08-q4",
       "type": "code-challenge",
       "question": "Напишите минимальный ERC-20 контракт MyToken с функциями totalSupply() returns (uint256), balanceOf(address) returns (uint256) и transfer(address, uint256) returns (bool). Используйте mapping для балансов, в constructor задайте initial supply для msg.sender.",
       "language": "solidity",

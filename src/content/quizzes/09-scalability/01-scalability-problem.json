@@ -3,7 +3,7 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale01-q1",
+      "id": "crypto-scale01-q1",
       "type": "true-false",
       "question": "Трилемма блокчейна утверждает, что блокчейн может оптимизировать максимум 2 из 3 свойств одновременно: decentralization, security, scalability. Попытка улучшить одно приводит к ухудшению другого.",
       "correctAnswer": true,
@@ -11,30 +11,54 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale01-q2",
+      "id": "crypto-scale01-q2",
       "type": "multiple-choice",
       "question": "Каков приблизительный предел TPS Ethereum L1 для реальных DeFi-транзакций (swap на Uniswap, lending на Aave)?",
       "options": [
-        { "id": "a", "text": "~1,000-5,000 TPS" },
-        { "id": "b", "text": "~100-500 TPS" },
-        { "id": "c", "text": "~15-30 TPS (из-за gas limit ~30M при block time 12 секунд и высокой стоимости DeFi транзакций в 150K-300K gas)" },
-        { "id": "d", "text": "~1-5 TPS" }
+        {
+          "id": "a",
+          "text": "~1,000-5,000 TPS"
+        },
+        {
+          "id": "b",
+          "text": "~100-500 TPS"
+        },
+        {
+          "id": "c",
+          "text": "~1-5 TPS"
+        },
+        {
+          "id": "d",
+          "text": "~15-30 TPS (из-за gas limit ~30M при block time 12 секунд и высокой стоимости DeFi транзакций в 150K-300K gas)"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "d",
       "explanation": "Gas limit ~30M per block, block time 12 секунд. Простые переводы ETH (~21K gas): ~1,400 TX / 12s = ~117 TPS. Но DeFi транзакции стоят 150K-300K gas: ~100-200 TX per block / 12s = ~8-17 TPS. Реальный effective TPS для смешанной нагрузки: ~15-30. CryptoKitties (2017), DeFi Summer (2020), NFT mania (2021) -- все парализовали сеть из-за этого ограничения.",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale01-q3",
+      "id": "crypto-scale01-q3",
       "type": "multiple-choice",
       "question": "Почему Ethereum выбрал rollup-centric roadmap (2020) вместо увеличения размера блока для масштабирования?",
       "options": [
-        { "id": "a", "text": "Увеличение блока технически невозможно в EVM" },
-        { "id": "b", "text": "Rollup-centric подход отделяет settlement + data availability (L1) от execution (L2). Увеличение блока повысило бы hardware requirements для валидаторов, снижая decentralization (Bitcoin Block Size War, 2017). Rollups масштабируют execution без жертвования decentralization L1" },
-        { "id": "c", "text": "Rollups были дешевле в разработке" },
-        { "id": "d", "text": "Увеличение блока требует хардфорка, который невозможен после The Merge" }
+        {
+          "id": "a",
+          "text": "Rollup-centric подход отделяет settlement + data availability (L1) от execution (L2). Увеличение блока повысило бы hardware requirements для валидаторов, снижая decentralization (Bitcoin Block Size War, 2017). Rollups масштабируют execution без жертвования decentralization L1"
+        },
+        {
+          "id": "b",
+          "text": "Увеличение блока технически невозможно в EVM"
+        },
+        {
+          "id": "c",
+          "text": "Rollups были дешевле в разработке"
+        },
+        {
+          "id": "d",
+          "text": "Увеличение блока требует хардфорка, который невозможен после The Merge"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "Rollup-centric roadmap: L1 становится settlement layer + data availability layer. Execution переносится на L2 rollups. L1 НЕ стремится стать быстрым -- стремится быть самым безопасным базовым слоем. Увеличение блока: больше блоки -> дороже оборудование -> меньше валидаторов -> централизация. Bitcoin Block Size War (2017) показал: увеличение блока -- не бесплатное решение (BTC vs BCH хардфорк). EIP-4844 (blobs) оптимизирует DA для L2 без жертвования L1 decentralization.",
       "bloomLevel": "analytical"
     }

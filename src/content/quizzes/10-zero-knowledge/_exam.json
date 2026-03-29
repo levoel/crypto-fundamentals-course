@@ -3,68 +3,121 @@
   "moduleId": "10-zero-knowledge",
   "questions": [
     {
-      "id": "exam-zk-q1",
+      "id": "crypto-exam-zk-q1",
       "type": "multiple-choice",
       "question": "Как Pedersen commitments (ZK-02) связаны с Move 1 (commit) в Sigma протоколах (ZK-03)? Почему commitment scheme -- необходимый строительный блок для interactive proofs?",
       "options": [
-        { "id": "a", "text": "Commitment schemes и Sigma протоколы -- независимые конструкции, случайно оказавшиеся в одном модуле" },
-        { "id": "b", "text": "В Sigma протоколе Prover фиксирует свой выбор (R = kG) ДО получения challenge. Commitment scheme обеспечивает binding (нельзя изменить R после отправки) и hiding (challenge не раскрывает k). Без binding -- Prover подменит R; без hiding -- Verifier узнает k" },
-        { "id": "c", "text": "Pedersen commitment используется только в STARKs, не в Sigma протоколах" },
-        { "id": "d", "text": "Commitment нужен только для non-interactive proofs (Fiat-Shamir)" }
+        {
+          "id": "a",
+          "text": "Commitment schemes и Sigma протоколы -- независимые конструкции, случайно оказавшиеся в одном модуле"
+        },
+        {
+          "id": "b",
+          "text": "Commitment нужен только для non-interactive proofs (Fiat-Shamir)"
+        },
+        {
+          "id": "c",
+          "text": "Pedersen commitment используется только в STARKs, не в Sigma протоколах"
+        },
+        {
+          "id": "d",
+          "text": "В Sigma протоколе Prover фиксирует свой выбор (R = kG) ДО получения challenge. Commitment scheme обеспечивает binding (нельзя изменить R после отправки) и hiding (challenge не раскрывает k). Без binding -- Prover подменит R; без hiding -- Verifier узнает k"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Schnorr identification: Move 1 -- Prover отправляет R = kG (commitment). Это Pedersen commitment с m=k, r=0 (в простейшем случае). Binding гарантирует: после отправки R Prover не может изменить k (иначе soundness нарушена). Hiding гарантирует: Verifier не узнает k из R (иначе zero-knowledge нарушено). Commitment scheme -- фундамент, на котором строится soundness и ZK свойства Sigma протоколов.",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 2: Commitment Schemes — раздел «Pedersen Commitment»"
     },
     {
-      "id": "exam-zk-q2",
+      "id": "crypto-exam-zk-q2",
       "type": "multiple-choice",
       "question": "Почему QAP transformation (ZK-04) является мостом между R1CS constraint system и Groth16 proof generation (ZK-05)?",
       "options": [
-        { "id": "a", "text": "QAP просто сжимает R1CS матрицы для экономии памяти" },
-        { "id": "b", "text": "QAP кодирует ВСЕ R1CS constraints в полиномы через Lagrange interpolation. Schwartz-Zippel lemma позволяет проверить все N constraints одной evaluation в случайной точке: A(r)*B(r)-C(r) = H(r)*T(r). Groth16 выполняет эту проверку в 'зашифрованной' точке tau через bilinear pairings" },
-        { "id": "c", "text": "QAP нужен только для STARKs, а Groth16 работает напрямую с R1CS" },
-        { "id": "d", "text": "QAP transformation -- опциональная оптимизация, без неё proof просто больше" }
+        {
+          "id": "a",
+          "text": "QAP кодирует ВСЕ R1CS constraints в полиномы через Lagrange interpolation. Schwartz-Zippel lemma позволяет проверить все N constraints одной evaluation в случайной точке: A(r)*B(r)-C(r) = H(r)*T(r). Groth16 выполняет эту проверку в 'зашифрованной' точке tau через bilinear pairings"
+        },
+        {
+          "id": "b",
+          "text": "QAP просто сжимает R1CS матрицы для экономии памяти"
+        },
+        {
+          "id": "c",
+          "text": "QAP нужен только для STARKs, а Groth16 работает напрямую с R1CS"
+        },
+        {
+          "id": "d",
+          "text": "QAP transformation -- опциональная оптимизация, без неё proof просто больше"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "R1CS: N constraints проверяемых по отдельности (O(N)). QAP: все N constraints кодированы в полиномы. Schwartz-Zippel: если A(x)*B(x)-C(x) = H(x)*T(x) в случайной точке r, то с вероятностью > 1 - d/p (~1 - 10^-70) равенство верно для всех x. Groth16: verification key содержит зашифрованные [tau^i], proof вычисляется в точке tau. Pairing equation проверяет QAP divisibility. QAP -- мост от O(N) проверок к O(1).",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 4: zk-SNARKs: от вычисления к доказательству — раздел «Шаг 3: QAP (Quadratic Arithmetic Program)»"
     },
     {
-      "id": "exam-zk-q3",
+      "id": "crypto-exam-zk-q3",
       "type": "multiple-choice",
       "question": "Какая из перечисленных proof систем НЕ требует trusted setup ceremony?",
       "options": [
-        { "id": "a", "text": "Groth16 -- требует per-circuit trusted setup (Phase 1 + Phase 2)" },
-        { "id": "b", "text": "PLONK -- требует universal trusted setup (Phase 1 только)" },
-        { "id": "c", "text": "STARKs -- transparent setup, все параметры публичные, используют hash functions вместо elliptic curve pairings" },
-        { "id": "d", "text": "Все три системы требуют trusted setup" }
+        {
+          "id": "a",
+          "text": "Groth16 -- требует per-circuit trusted setup (Phase 1 + Phase 2)"
+        },
+        {
+          "id": "b",
+          "text": "STARKs -- transparent setup, все параметры публичные, используют hash functions вместо elliptic curve pairings"
+        },
+        {
+          "id": "c",
+          "text": "PLONK -- требует universal trusted setup (Phase 1 только)"
+        },
+        {
+          "id": "d",
+          "text": "Все три системы требуют trusted setup"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "b",
       "explanation": "Groth16: per-circuit setup (Phase 1 Powers of Tau + Phase 2 circuit-specific). При изменении circuit -- новая Phase 2. PLONK: universal setup (одна ceremony для всех circuits). При изменении circuit -- та же SRS. STARKs: NO trusted setup. Параметры генерируются через Fiat-Shamir (public randomness). Используют Merkle trees (hash commitments) вместо elliptic curve commitments. Цена transparency: proof ~45-200 KB vs ~128 bytes (Groth16).",
-      "bloomLevel": "applied"
+      "bloomLevel": "applied",
+      "studyHint": "Повторите урок 6: zk-STARKs и FRI Protocol — раздел «STARK: ключевые свойства»"
     },
     {
-      "id": "exam-zk-q4",
+      "id": "crypto-exam-zk-q4",
       "type": "multiple-choice",
       "question": "Почему различие 'use ZK vs build ZK' (ZK-07/08) ПРАКТИЧЕСКИ важно при разработке блокчейн-приложений?",
       "options": [
-        { "id": "a", "text": "Нет практического различия -- все разработчики должны уметь писать circuits" },
-        { "id": "b", "text": "90% разработчиков используют ZK инфраструктуру (rollups, identity) без написания circuits. Понимание circuit design (flattening, constraints, trusted setup) помогает оценить ограничения протоколов, выбрать правильный proof system, и понять security implications -- даже не написав ни одного .circom файла" },
-        { "id": "c", "text": "Различие существует только для Circom; Cairo и Noir его устраняют" },
-        { "id": "d", "text": "'Build ZK' нужен только для Zcash и Tornado Cash" }
+        {
+          "id": "a",
+          "text": "Нет практического различия -- все разработчики должны уметь писать circuits"
+        },
+        {
+          "id": "b",
+          "text": "Различие существует только для Circom; Cairo и Noir его устраняют"
+        },
+        {
+          "id": "c",
+          "text": "90% разработчиков используют ZK инфраструктуру (rollups, identity) без написания circuits. Понимание circuit design (flattening, constraints, trusted setup) помогает оценить ограничения протоколов, выбрать правильный proof system, и понять security implications -- даже не написав ни одного .circom файла"
+        },
+        {
+          "id": "d",
+          "text": "'Build ZK' нужен только для Zcash и Tornado Cash"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "'Use ZK': деплой на zkSync/StarkNet, интеграция Semaphore/Worldcoin, использование circomlib templates. 'Build ZK': custom privacy/compliance circuits (Circom, Noir, Cairo). Знание внутреннего устройства позволяет: (1) выбрать SNARK vs STARK vs PLONK для проекта, (2) оценить gas cost on-chain verification, (3) понять security trade-offs trusted setup, (4) знать ограничения (non-quadratic constraints, no runtime conditionals).",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 8: Пишем ZK circuits: от Multiplier до Age Check — раздел «Use ZK vs Build ZK»"
     },
     {
-      "id": "exam-zk-q5",
+      "id": "crypto-exam-zk-q5",
       "type": "true-false",
-      "question": "Non-interactive proofs (через Fiat-Shamir transform, ZK-03) необходимы для on-chain верификации (ZK-08), потому что smart contracts не могут участвовать в интерактивных протоколах с prover в реальном времени.",
-      "correctAnswer": true,
-      "explanation": "Smart contract -- это код, исполняемый при получении транзакции. Он не может 'ждать' ответа от prover (нет сессий, нет WebSocket). Interactive proof требует живого Verifier: commit -> challenge -> response -> verify. On-chain: prover отправляет proof в одной транзакции, contract верифицирует синхронно. Fiat-Shamir transform: c = H(statement || R) заменяет живого Verifier хешем, делая proof non-interactive и blockchain-compatible.",
-      "bloomLevel": "applied"
+      "question": "Non-interactive proofs (через Fiat-Shamir transform, ZK-03) необходимы для on-chain верификации (ZK-08), потому что smart contracts не не могут участвовать в интерактивных протоколах с prover в реальном времени.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. Smart contract -- это код, исполняемый при получении транзакции. Он не может 'ждать' ответа от prover (нет сессий, нет WebSocket). Interactive proof требует живого Verifier: commit -> challenge -> response -> verify. On-chain: prover отправляет proof в одной транзакции, contract верифицирует синхронно. Fiat-Shamir transform: c = H(statement || R) заменяет живого Verifier хешем, делая proof non-interactive и blockchain-compatible.",
+      "bloomLevel": "applied",
+      "studyHint": "Повторите урок 3: Interactive Proofs и Fiat-Shamir — раздел «Fiat-Shamir Transform»"
     }
   ]
 }

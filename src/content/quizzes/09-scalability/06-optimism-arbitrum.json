@@ -3,38 +3,62 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale06-q1",
+      "id": "crypto-scale06-q1",
       "type": "true-false",
-      "question": "OP Stack -- модульный фреймворк для развертывания custom L2 chains (Superchain ecosystem), который позволяет другим проектам (Base от Coinbase, Zora, Mode) запускать свои L2 с общей безопасностью и интероперабельностью.",
-      "correctAnswer": true,
-      "explanation": "OP Stack -- модульный фреймворк: execution (OP-Geth), data availability (Ethereum L1 blobs), settlement (L1 verification via Cannon FPVM), consensus (sequencer). Superchain vision: сеть OP Stack chains с общей безопасностью. Base (~$12B TVL, Coinbase), Zora (NFT), Mode (DeFi) -- все построены на OP Stack. ERC-7802 обеспечивает seamless token bridging между Superchain chains.",
+      "question": "OP Stack -- модульный фреймворк для развертывания custom L2 chains (Superchain ecosystem), который не позволяет другим проектам (Base от Coinbase, Zora, Mode) запускать свои L2 с общей безопасностью и интероперабельностью.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. OP Stack -- модульный фреймворк: execution (OP-Geth), data availability (Ethereum L1 blobs), settlement (L1 verification via Cannon FPVM), consensus (sequencer). Superchain vision: сеть OP Stack chains с общей безопасностью. Base (~$12B TVL, Coinbase), Zora (NFT), Mode (DeFi) -- все построены на OP Stack. ERC-7802 обеспечивает seamless token bridging между Superchain chains.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale06-q2",
+      "id": "crypto-scale06-q2",
       "type": "multiple-choice",
       "question": "Что принципиально отличает Arbitrum Nitro от Optimism в подходе к fraud proofs и execution?",
       "options": [
-        { "id": "a", "text": "Arbitrum не использует fraud proofs" },
-        { "id": "b", "text": "Nitro использует WASM для dispute resolution (multi-round bisection protocol: ~log2(N) раундов для N инструкций) и поддерживает Stylus -- WASM VM для контрактов на Rust/C/C++ рядом с EVM. Optimism использует Cannon FPVM (single-round fraud proof)" },
-        { "id": "c", "text": "Optimism поддерживает больше языков программирования" },
-        { "id": "d", "text": "Nitro работает только на приватных сетях" }
+        {
+          "id": "a",
+          "text": "Arbitrum не использует fraud proofs"
+        },
+        {
+          "id": "b",
+          "text": "Nitro использует WASM для dispute resolution (multi-round bisection protocol: ~log2(N) раундов для N инструкций) и поддерживает Stylus -- WASM VM для контрактов на Rust/C/C++ рядом с EVM. Optimism использует Cannon FPVM (single-round fraud proof)"
+        },
+        {
+          "id": "c",
+          "text": "Optimism поддерживает больше языков программирования"
+        },
+        {
+          "id": "d",
+          "text": "Nitro работает только на приватных сетях"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Ключевые отличия Nitro: 1) Multi-round interactive bisection -- State Transition Function компилируется в WASM. При dispute bisection за log2(N) раундов (~27 для 10^8 инструкций) находит конкретную ошибочную инструкцию, которая верифицируется on-chain. 2) Stylus -- WASM VM рядом с EVM: Rust/C/C++ контракты в 10-100x дешевле для compute-heavy операций. Оба VM работают на одной сети и могут вызывать друг друга.",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale06-q3",
+      "id": "crypto-scale06-q3",
       "type": "multiple-choice",
       "question": "Почему наличие нескольких конкурирующих L2 реализаций (OP Stack, Nitro, zkSync, StarkNet) полезно для экосистемы?",
       "options": [
-        { "id": "a", "text": "Конкуренция снижает стоимость газа на Ethereum L1" },
-        { "id": "b", "text": "Разные реализации оптимизированы для разных use cases (модульность vs performance vs ZK-native). Конкуренция ускоряет инновации: Cannon FPVM (Optimism, 2024) и Stylus (Arbitrum, 2024) появились как ответ на ZK rollups. Отказ одной реализации не компрометирует всю экосистему -- redundancy через diversity" },
-        { "id": "c", "text": "Конкуренция необходима для соблюдения антимонопольного законодательства" },
-        { "id": "d", "text": "Несколько L2 нужны только для увеличения TVL метрик" }
+        {
+          "id": "a",
+          "text": "Конкуренция снижает стоимость газа на Ethereum L1"
+        },
+        {
+          "id": "b",
+          "text": "Конкуренция необходима для соблюдения антимонопольного законодательства"
+        },
+        {
+          "id": "c",
+          "text": "Разные реализации оптимизированы для разных use cases (модульность vs performance vs ZK-native). Конкуренция ускоряет инновации: Cannon FPVM (Optimism, 2024) и Stylus (Arbitrum, 2024) появились как ответ на ZK rollups. Отказ одной реализации не компрометирует всю экосистему -- redundancy через diversity"
+        },
+        {
+          "id": "d",
+          "text": "Несколько L2 нужны только для увеличения TVL метрик"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Diversity = resilience + innovation: OP Stack (модульность, Superchain экосистема), Nitro (performance, Stylus WASM), zkSync (Solidity + SNARKs), StarkNet (Cairo + STARKs). Конкуренция: Cannon FPVM (permissionless fraud proofs) появился как ответ на ZK rollups' Stage advantage. Stylus (WASM контракты) -- ответ на ограничения EVM для compute-heavy tasks. Разные architectures = разные failure modes = ecosystem resilience.",
       "bloomLevel": "analytical"
     }

@@ -3,52 +3,97 @@
   "moduleId": "11-data-indexing",
   "questions": [
     {
-      "id": "idx07-q1",
+      "id": "crypto-idx07-q1",
       "type": "true-false",
-      "question": "The Graph использует subgraph manifests (subgraph.yaml) для определения, какие blockchain данные индексировать: адрес контракта, ABI, начальный блок, и обработчики событий.",
-      "correctAnswer": true,
-      "explanation": "subgraph.yaml -- манифест, описывающий: dataSources (контракт, ABI, startBlock), eventHandlers (маппинг событий на функции), и schema (schema.graphql). Graph Node читает манифест и начинает индексацию с startBlock. Три файла subgraph: subgraph.yaml (ЧТО индексировать), schema.graphql (КАК хранить), src/mapping.ts (КАК обрабатывать).",
+      "question": "The Graph не требует конфигурационных файлов — Graph Node автоматически обнаруживает все контракты и события на блокчейне и индексирует их без явной настройки.",
+      "correctAnswer": false,
+      "explanation": "The Graph ТРЕБУЕТ явную конфигурацию через subgraph manifest (subgraph.yaml). Разработчик должен указать: адрес контракта (source.address), ABI, начальный блок (startBlock), обработчики событий (eventHandlers). Graph Node НЕ выполняет автоматическое обнаружение — без manifest он не знает, какие контракты и события индексировать. Три обязательных файла: subgraph.yaml (ЧТО), schema.graphql (КАК хранить), mapping.ts (КАК обрабатывать).",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "idx07-q2",
+      "id": "crypto-idx07-q2",
       "type": "multiple-choice",
       "question": "Что делают AssemblyScript маппинги (mapping.ts) в The Graph?",
       "options": [
-        { "id": "a", "text": "Компилируют Solidity контракты в bytecode" },
-        { "id": "b", "text": "Трансформируют blockchain события в GraphQL entities: получают event объект с params (from, to, value), создают entity с нужными полями, и вызывают entity.save() для записи в PostgreSQL через Graph Node" },
-        { "id": "c", "text": "Генерируют TypeScript типы из ABI" },
-        { "id": "d", "text": "Маппинги -- конфигурационные файлы без логики" }
+        {
+          "id": "a",
+          "text": "Компилируют Solidity контракты в bytecode"
+        },
+        {
+          "id": "b",
+          "text": "Маппинги -- конфигурационные файлы без логики"
+        },
+        {
+          "id": "c",
+          "text": "Генерируют TypeScript типы из ABI"
+        },
+        {
+          "id": "d",
+          "text": "Трансформируют blockchain события в GraphQL entities: получают event объект с params (from, to, value), создают entity с нужными полями, и вызывают entity.save() для записи в PostgreSQL через Graph Node"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "handleTransfer(event: TransferEvent): void -- получает typed event (from, to, value из generated types). Создает entity: new Transfer(id). Присваивает поля: entity.from = event.params.from. Сохраняет: entity.save() (синхронно, НЕ async). AssemblyScript -> WASM: Graph Node исполняет маппинги в WASM sandbox. Ключевые ограничения: нет async/await, нет Array.filter/map, нет closures.",
       "bloomLevel": "applied"
     },
     {
-      "id": "idx07-q3",
+      "id": "crypto-idx07-q3",
       "type": "multiple-choice",
       "question": "Почему IPFS-based deployment обеспечивает гарантии неизменяемости (immutability) для кода subgraph?",
       "options": [
-        { "id": "a", "text": "IPFS шифрует код subgraph, делая его нередактируемым" },
-        { "id": "b", "text": "IPFS использует content-addressed storage: CID (Content IDentifier) = хеш от содержимого. Изменение одного байта кода -> новый CID. Graph Node скачивает subgraph по CID, поэтому нельзя подменить код после deploy без изменения CID. Любой может проверить: CID соответствует конкретному коду" },
-        { "id": "c", "text": "IPFS хранит данные на блокчейне, что делает их неизменяемыми" },
-        { "id": "d", "text": "Immutability обеспечивается Graph Node, IPFS необязателен" }
+        {
+          "id": "a",
+          "text": "IPFS использует content-addressed storage: CID (Content IDentifier) = хеш от содержимого. Изменение одного байта кода -> новый CID. Graph Node скачивает subgraph по CID, поэтому нельзя подменить код после deploy без изменения CID. Любой может проверить: CID соответствует конкретному коду"
+        },
+        {
+          "id": "b",
+          "text": "IPFS шифрует код subgraph, делая его нередактируемым"
+        },
+        {
+          "id": "c",
+          "text": "IPFS хранит данные на блокчейне, что делает их неизменяемыми"
+        },
+        {
+          "id": "d",
+          "text": "Immutability обеспечивается Graph Node, IPFS необязателен"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "При graph deploy: schema.graphql, WASM (compiled mapping), manifest загружаются в IPFS. Каждый файл получает CID = hash(content). Graph Node скачивает по CID и исполняет. Если кто-то изменит mapping.ts и перекомпилирует -- новый WASM -> новый CID. Старый subgraph продолжит работать со старым кодом. Для The Graph Network (decentralized): indexers скачивают subgraph по CID, гарантируя, что все исполняют одинаковый код.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "idx07-q4",
+      "id": "crypto-idx07-q4",
       "type": "code-challenge",
       "question": "Реализуйте функцию, которая строит объект конфигурации subgraph. solve(contractAddress, startBlock) создает config с dataSources[0].source.address, dataSources[0].source.startBlock (Number), и dataSources[0].mapping.eventHandlers[0].event = 'Transfer(address,address,uint256)'. Верните JSON.stringify(config).",
       "language": "javascript",
       "starterCode": "function solve(contractAddress, startBlock) {\n  // Создайте объект конфигурации subgraph:\n  // { dataSources: [{ source: { address, startBlock }, mapping: { eventHandlers: [{ event, handler }] } }] }\n  // startBlock должен быть Number (не строка)\n  // event = 'Transfer(address,address,uint256)'\n  // handler = 'handleTransfer'\n  // Верните JSON.stringify(config)\n}",
       "solutionCode": "function solve(contractAddress, startBlock) {\n  const config = {\n    dataSources: [{\n      source: {\n        address: contractAddress,\n        startBlock: Number(startBlock)\n      },\n      mapping: {\n        eventHandlers: [{\n          event: 'Transfer(address,address,uint256)',\n          handler: 'handleTransfer'\n        }]\n      }\n    }]\n  };\n  return JSON.stringify(config);\n}",
       "testCases": [
-        { "id": "tc1", "description": "Config contains Transfer event signature", "input": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,6082465", "expectedOutput": "Transfer(address,address,uint256)", "matchMode": "contains", "hidden": false },
-        { "id": "tc2", "description": "Config contains startBlock and address", "input": "0xdac17f958d2ee523a2206206994597c13d831ec7,4634748", "expectedOutput": "startBlock", "matchMode": "contains", "hidden": false },
-        { "id": "tc3", "description": "Config contains dataSources array", "input": "0x5FbDB2315678afecb367f032d93F642f64180aa3,0", "expectedOutput": "dataSources", "matchMode": "contains", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "Config contains Transfer event signature",
+          "input": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,6082465",
+          "expectedOutput": "Transfer(address,address,uint256)",
+          "matchMode": "contains",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Config contains startBlock and address",
+          "input": "0xdac17f958d2ee523a2206206994597c13d831ec7,4634748",
+          "expectedOutput": "startBlock",
+          "matchMode": "contains",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Config contains dataSources array",
+          "input": "0x5FbDB2315678afecb367f032d93F642f64180aa3,0",
+          "expectedOutput": "dataSources",
+          "matchMode": "contains",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Конфигурация subgraph определяет ЧТО индексировать: address (контракт), startBlock (с какого блока начать), eventHandlers (какие события обрабатывать). В реальном subgraph.yaml это YAML формат, но структура та же. event signature 'Transfer(address,address,uint256)' -- стандартный ERC-20 Transfer. Graph Node использует эту сигнатуру для вычисления topic0 и фильтрации логов.",

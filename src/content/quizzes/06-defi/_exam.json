@@ -3,68 +3,121 @@
   "moduleId": "06-defi",
   "questions": [
     {
-      "id": "exam-defi-q1",
+      "id": "crypto-exam-defi-q1",
       "type": "multiple-choice",
       "question": "Как связаны AMM (DEFI-02/03) и impermanent loss (DEFI-05)? Почему крупные ценовые движения вызывают одновременно и высокий slippage для трейдеров, и высокий IL для LP?",
       "options": [
-        { "id": "a", "text": "Slippage и IL -- независимые явления, связанные только с комиссиями" },
-        { "id": "b", "text": "Оба явления -- следствие выпуклой кривой xy=k: slippage = dx/(x+dx) растет с размером сделки, а IL = 2*sqrt(r)/(1+r)-1 растет с отклонением цены. Чем больше сделки двигают цену, тем больше арбитражеры извлекают из LP (источник IL)" },
-        { "id": "c", "text": "Высокий slippage снижает IL, потому что трейдеры получают меньше токенов" },
-        { "id": "d", "text": "IL возникает только в Uniswap V3, а slippage -- только в V2" }
+        {
+          "id": "a",
+          "text": "Оба явления -- следствие выпуклой кривой xy=k: slippage = dx/(x+dx) растет с размером сделки, а IL = 2*sqrt(r)/(1+r)-1 растет с отклонением цены. Чем больше сделки двигают цену, тем больше арбитражеры извлекают из LP (источник IL)"
+        },
+        {
+          "id": "b",
+          "text": "Slippage и IL -- независимые явления, связанные только с комиссиями"
+        },
+        {
+          "id": "c",
+          "text": "Высокий slippage снижает IL, потому что трейдеры получают меньше токенов"
+        },
+        {
+          "id": "d",
+          "text": "IL возникает только в Uniswap V3, а slippage -- только в V2"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "Slippage и IL -- два проявления одной математики (xy=k). Price impact = dx/(x+dx) определяет, насколько каждая сделка двигает цену. IL возникает, когда арбитражеры совершают серию сделок для выравнивания цены пула с рыночной -- каждая арбитражная сделка извлекает стоимость из LP. Чем больше цена отклонилась (r далеко от 1), тем больше арбитражных сделок и тем больше IL.",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 5: Ликвидность и Impermanent Loss — раздел «Что такое Impermanent Loss»"
     },
     {
-      "id": "exam-defi-q2",
+      "id": "crypto-exam-defi-q2",
       "type": "multiple-choice",
       "question": "Как Health Factor (DEFI-07) связывает стоимость залога, Liquidation Threshold (DEFI-06) и долг заемщика в единую метрику?",
       "options": [
-        { "id": "a", "text": "HF = Debt / (Collateral * LTV) -- показывает долю использованного кредитного лимита" },
-        { "id": "b", "text": "HF = (Collateral_USD * Liquidation_Threshold) / Debt_USD -- взвешивает залог по LT и делит на долг; HF < 1 означает, что взвешенный залог не покрывает долг, разрешая ликвидацию" },
-        { "id": "c", "text": "HF = Collateral_USD / (Debt_USD * Liquidation_Threshold) -- инвертированная формула" },
-        { "id": "d", "text": "HF учитывает только LTV, а не Liquidation Threshold" }
+        {
+          "id": "a",
+          "text": "HF = Debt / (Collateral * LTV) -- показывает долю использованного кредитного лимита"
+        },
+        {
+          "id": "b",
+          "text": "HF = (Collateral_USD * Liquidation_Threshold) / Debt_USD -- взвешивает залог по LT и делит на долг; HF < 1 означает, что взвешенный залог не покрывает долг, разрешая ликвидацию"
+        },
+        {
+          "id": "c",
+          "text": "HF = Collateral_USD / (Debt_USD * Liquidation_Threshold) -- инвертированная формула"
+        },
+        {
+          "id": "d",
+          "text": "HF учитывает только LTV, а не Liquidation Threshold"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "HF = (Collateral_USD * LT) / Debt_USD. LT (не LTV!) используется в формуле. LTV ограничивает новые займы, LT определяет ликвидацию. Для 10 ETH при $2,000 и $12,000 долга: HF = (20,000 * 0.825) / 12,000 = 1.375. При падении ETH до $1,400: HF = (14,000 * 0.825) / 12,000 = 0.963 < 1 -- ликвидация разрешена.",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 7: Ликвидации — раздел «Health Factor: формула здоровья позиции»"
     },
     {
-      "id": "exam-defi-q3",
+      "id": "crypto-exam-defi-q3",
       "type": "multiple-choice",
       "question": "Как манипуляция оракулом (DEFI-08/09) может быть использована через flash loan для эксплуатации lending-протокола?",
       "options": [
-        { "id": "a", "text": "Flash loan позволяет занять токены с Chainlink, чтобы изменить цену в DON" },
-        { "id": "b", "text": "Если протокол использует spot price DEX (getReserves) как oracle, атакующий берет flash loan, сдвигает резервы пула крупным свопом, и протокол оценивает залог по искаженной цене -- позволяя занять больше или избежать ликвидации" },
-        { "id": "c", "text": "Flash loan позволяет обойти staleness check в Chainlink" },
-        { "id": "d", "text": "Flash loan автоматически обновляет Chainlink price feed" }
+        {
+          "id": "a",
+          "text": "Flash loan позволяет занять токены с Chainlink, чтобы изменить цену в DON"
+        },
+        {
+          "id": "b",
+          "text": "Flash loan позволяет обойти staleness check в Chainlink"
+        },
+        {
+          "id": "c",
+          "text": "Если протокол использует spot price DEX (getReserves) как oracle, атакующий берет flash loan, сдвигает резервы пула крупным свопом, и протокол оценивает залог по искаженной цене -- позволяя занять больше или избежать ликвидации"
+        },
+        {
+          "id": "d",
+          "text": "Flash loan автоматически обновляет Chainlink price feed"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Spot price oracle (getReserves) манипулируем в 1 транзакции: flash loan -> swap 500 ETH в пуле с 1000 ETH -> цена сдвигается на 55%+ -> протокол оценивает залог по завышенной цене -> займ больше чем позволяет реальная стоимость -> возврат flash loan, оставив прибыль. Chainlink DON устойчив: нужно скомпрометировать большинство независимых узлов. TWAP устойчив: нужно держать сдвиг N блоков.",
-      "bloomLevel": "applied"
+      "bloomLevel": "applied",
+      "studyHint": "Повторите урок 9: Интеграция оракулов — раздел «Распространенные уязвимости»"
     },
     {
-      "id": "exam-defi-q4",
+      "id": "crypto-exam-defi-q4",
       "type": "multiple-choice",
       "question": "Как depeg стейблкоина (DEFI-10) может вызвать каскадные ликвидации (DEFI-07) в lending-протоколах?",
       "options": [
-        { "id": "a", "text": "Depeg стейблкоина не влияет на lending-протоколы, потому что они используют фиксированные цены" },
-        { "id": "b", "text": "Если стейблкоин используется как залог и теряет привязку, oracle обновляет его цену ниже $1 -- Health Factor заемщиков падает -> массовые ликвидации -> продажа залога -> давление на цену -> ещё больше ликвидаций" },
-        { "id": "c", "text": "Depeg стейблкоина увеличивает процентные ставки, но не вызывает ликвидации" },
-        { "id": "d", "text": "Стейблкоины не могут быть использованы как залог в lending-протоколах" }
+        {
+          "id": "a",
+          "text": "Depeg стейблкоина не влияет на lending-протоколы, потому что они используют фиксированные цены"
+        },
+        {
+          "id": "b",
+          "text": "Стейблкоины не могут быть использованы как залог в lending-протоколах"
+        },
+        {
+          "id": "c",
+          "text": "Depeg стейблкоина увеличивает процентные ставки, но не вызывает ликвидации"
+        },
+        {
+          "id": "d",
+          "text": "Если стейблкоин используется как залог и теряет привязку, oracle обновляет его цену ниже $1 -- Health Factor заемщиков падает -> массовые ликвидации -> продажа залога -> давление на цену -> ещё больше ликвидаций"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Пример USDC depeg (SVB, март 2023): USDC упал до $0.87. Позиции с USDC-залогом: HF = (Collateral * 0.87 * LT) / Debt. Если HF < 1 -> ликвидация. Ликвидаторы получают USDC по $0.87, продают -> дополнительное давление. Если стейблкоин используется как заемный актив, depeg наоборот увеличивает реальную стоимость долга. Связь DeFi-06/07/10 -- системный risk management.",
-      "bloomLevel": "analytical"
+      "bloomLevel": "analytical",
+      "studyHint": "Повторите урок 10: Стейблкоины — раздел «Профили рисков»"
     },
     {
-      "id": "exam-defi-q5",
+      "id": "crypto-exam-defi-q5",
       "type": "true-false",
       "question": "Concentrated liquidity в Uniswap V3 (DEFI-04) усиливает impermanent loss (DEFI-05) внутри выбранного ценового диапазона по сравнению с равномерным распределением V2.",
       "correctAnswer": true,
       "explanation": "V3 LP ведет себя как V2 LP с виртуально бОльшим капиталом в узком диапазоне. IL_V3 = IL_V2 * amplification_factor, где factor зависит от ширины диапазона. Узкий диапазон = высокая capital efficiency (больше комиссий) + высокий amplified IL. Для диапазона [1900, 2100] вокруг цены $2000 efficiency ~100x, но IL при 10% движении тоже усилен. Это фундаментальный трейдофф concentrated liquidity.",
-      "bloomLevel": "applied"
+      "bloomLevel": "applied",
+      "studyHint": "Повторите урок 4: Uniswap V3: Concentrated Liquidity — раздел «Капитальная эффективность»"
     }
   ]
 }

@@ -3,7 +3,7 @@
   "moduleId": "10-zero-knowledge",
   "questions": [
     {
-      "id": "zk07-q1",
+      "id": "crypto-zk07-q1",
       "type": "true-false",
       "question": "Circom signals immutable -- после присвоения значение сигнала нельзя изменить. Это свойство отражает природу 'проводов' в arithmetic circuit.",
       "correctAnswer": true,
@@ -11,30 +11,54 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "zk07-q2",
+      "id": "crypto-zk07-q2",
       "type": "multiple-choice",
       "question": "В чём разница между операторами <== и <-- в Circom?",
       "options": [
-        { "id": "a", "text": "<== используется для input signals, а <-- для output signals" },
-        { "id": "b", "text": "Оба оператора идентичны, <-- -- устаревший синтаксис" },
-        { "id": "c", "text": "<== выполняет И присвоение значения, И добавление constraint (safe). <-- выполняет ТОЛЬКО присвоение значения БЕЗ constraint (dangerous) -- Verifier не проверяет корректность" },
-        { "id": "d", "text": "<== -- для квадратичных выражений, <-- -- для линейных" }
+        {
+          "id": "a",
+          "text": "<== используется для input signals, а <-- для output signals"
+        },
+        {
+          "id": "b",
+          "text": "Оба оператора идентичны, <-- -- устаревший синтаксис"
+        },
+        {
+          "id": "c",
+          "text": "<== -- для квадратичных выражений, <-- -- для линейных"
+        },
+        {
+          "id": "d",
+          "text": "<== выполняет И присвоение значения, И добавление constraint (safe). <-- выполняет ТОЛЬКО присвоение значения БЕЗ constraint (dangerous) -- Verifier не проверяет корректность"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "d",
       "explanation": "c <== a * b эквивалентно двум операциям: c <-- a * b (assign) + c === a * b (constraint). <== -- SAFE: Verifier проверяет constraint. <-- -- DANGEROUS: без constraint Prover может подставить c = 999 вместо a*b, и Verifier примет proof. <-- необходим только для non-quadratic operations (деление, sqrt), где <== не работает, и ОБЯЗАН сопровождаться парным === constraint.",
       "bloomLevel": "applied"
     },
     {
-      "id": "zk07-q3",
+      "id": "crypto-zk07-q3",
       "type": "multiple-choice",
       "question": "Почему использование <-- без соответствующего === constraint является распространённой уязвимостью в ZK circuits?",
       "options": [
-        { "id": "a", "text": "Без === circuit не компилируется, поэтому уязвимость невозможна" },
-        { "id": "b", "text": "Без constraint Verifier НЕ ПРОВЕРЯЕТ корректность вычисления. Malicious Prover может установить произвольное значение signal (например, c=999 вместо a*b=33), и proof будет считаться валидным -- Verifier не имеет информации для отклонения" },
-        { "id": "c", "text": "<-- автоматически добавляет слабый constraint, который можно обойти только с квантовым компьютером" },
-        { "id": "d", "text": "Уязвимость существует только в тестовом режиме, не в production" }
+        {
+          "id": "a",
+          "text": "Без constraint Verifier НЕ ПРОВЕРЯЕТ корректность вычисления. Malicious Prover может установить произвольное значение signal (например, c=999 вместо a*b=33), и proof будет считаться валидным -- Verifier не имеет информации для отклонения"
+        },
+        {
+          "id": "b",
+          "text": "Без === circuit не компилируется, поэтому уязвимость невозможна"
+        },
+        {
+          "id": "c",
+          "text": "<-- автоматически добавляет слабый constraint, который можно обойти только с квантовым компьютером"
+        },
+        {
+          "id": "d",
+          "text": "Уязвимость существует только в тестовом режиме, не в production"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "Пример эксплойта: template UnsafeMultiplier() { c <-- a * b; } -- Prover устанавливает a=3, b=11, c=999. Нет constraint c === a*b. Proof генерируется успешно. Verifier проверяет: все constraints satisfied? Да (их 0). Proof accepted! Output c=999, хотя a*b=33. Правило: каждый <-- ДОЛЖЕН иметь парный ===. Это причина #1 уязвимостей в ZK circuits.",
       "bloomLevel": "analytical"
     }

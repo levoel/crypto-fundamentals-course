@@ -336,9 +336,9 @@ docker compose --profile security run mythril \
 
 | Finding | Slither | Mythril | Triage |
 |---------|---------|---------|--------|
-| Reentrancy in withdraw() | ✓ (reentrancy-eth) | ✓ (SWC-107) | TP |
-| Unprotected initialize() | ✓ (unprotected-upgrade) | ? | TP |
-| Event after call | ✓ (reentrancy-events) | ✗ | Info |
+| Reentrancy in withdraw() | [OK] (reentrancy-eth) | [OK] (SWC-107) | TP |
+| Unprotected initialize() | [OK] (unprotected-upgrade) | ? | TP |
+| Event after call | [OK] (reentrancy-events) | [NO] | Info |
 | ...     | ...     | ...     | ...    |
 ```
 

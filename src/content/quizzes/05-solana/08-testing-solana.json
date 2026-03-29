@@ -3,38 +3,62 @@
   "moduleId": "05-solana",
   "questions": [
     {
-      "id": "sol08-q1",
+      "id": "crypto-sol08-q1",
       "type": "true-false",
-      "question": "Solana-программы можно тестировать против локального валидатора через Docker-контейнер, используя Anchor-тесты с Mocha/Chai на TypeScript.",
-      "correctAnswer": true,
-      "explanation": "Anchor предоставляет полный тест-стек: Mocha + Chai (определение тестов), @coral-xyz/anchor (построение инструкций из IDL), @solana/web3.js (подпись и отправка транзакций), JSON-RPC (транспорт), Docker-валидатор (исполнение BPF-программы). Команда 'anchor test' выполняет build + deploy + test за один шаг.",
+      "question": "Solana-программы нельзя тестировать против локального валидатора через Docker-контейнер, используя Anchor-тесты с Mocha/Chai на TypeScript.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. Anchor предоставляет полный тест-стек: Mocha + Chai (определение тестов), @coral-xyz/anchor (построение инструкций из IDL), @solana/web3.js (подпись и отправка транзакций), JSON-RPC (транспорт), Docker-валидатор (исполнение BPF-программы). Команда 'anchor test' выполняет build + deploy + test за один шаг.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "sol08-q2",
+      "id": "crypto-sol08-q2",
       "type": "multiple-choice",
       "question": "Какую роль выполняет MethodsBuilder API в Anchor-тестах?",
       "options": [
-        { "id": "a", "text": "Компилирует Rust-программу в BPF-байткод для деплоя" },
-        { "id": "b", "text": "Предоставляет цепочечный API для построения инструкций: program.methods.initialize().accounts({...}).rpc()" },
-        { "id": "c", "text": "Генерирует TypeScript-типы из IDL-файла программы" },
-        { "id": "d", "text": "Запускает solana-test-validator в Docker-контейнере" }
+        {
+          "id": "a",
+          "text": "Компилирует Rust-программу в BPF-байткод для деплоя"
+        },
+        {
+          "id": "b",
+          "text": "Генерирует TypeScript-типы из IDL-файла программы"
+        },
+        {
+          "id": "c",
+          "text": "Предоставляет цепочечный API для построения инструкций: program.methods.initialize().accounts({...}).rpc()"
+        },
+        {
+          "id": "d",
+          "text": "Запускает solana-test-validator в Docker-контейнере"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "MethodsBuilder -- цепочечный API: program.methods (выбор программы) -> .initialize() (имя инструкции из #[program]) -> .accounts({...}) (аккаунты из #[derive(Accounts)]) -> .signers([]) (дополнительные подписанты) -> .rpc() (отправка транзакции). Для чтения данных: program.account.counter.fetch(pda) десериализует аккаунт через IDL-типы.",
       "bloomLevel": "applied"
     },
     {
-      "id": "sol08-q3",
+      "id": "crypto-sol08-q3",
       "type": "multiple-choice",
       "question": "Почему негативные тесты (ожидание ошибки при неверных условиях) критически важны для безопасности Solana-программ?",
       "options": [
-        { "id": "a", "text": "Негативные тесты ускоряют компиляцию BPF-байткода" },
-        { "id": "b", "text": "Они проверяют, что программа отклоняет атаки: wrong authority, overflow, type confusion -- без них уязвимость может остаться незамеченной до эксплуатации в production" },
-        { "id": "c", "text": "Негативные тесты генерируют IDL-типы для TypeScript-клиента" },
-        { "id": "d", "text": "Solana требует минимум 50% негативных тестов для деплоя на mainnet" }
+        {
+          "id": "a",
+          "text": "Негативные тесты ускоряют компиляцию BPF-байткода"
+        },
+        {
+          "id": "b",
+          "text": "Solana требует минимум 50% негативных тестов для деплоя на mainnet"
+        },
+        {
+          "id": "c",
+          "text": "Негативные тесты генерируют IDL-типы для TypeScript-клиента"
+        },
+        {
+          "id": "d",
+          "text": "Они проверяют, что программа отклоняет атаки: wrong authority, overflow, type confusion -- без них уязвимость может остаться незамеченной до эксплуатации в production"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Позитивные тесты проверяют, что программа работает при корректных условиях. Но безопасность требует проверки, что программа НЕ работает при некорректных: wrong authority (чужой пользователь не может изменить данные), overflow (checked_add возвращает ошибку при u64::MAX + 1), wrong PDA (seeds не совпадают). Без негативных тестов constraints могут содержать ошибки, которые проявятся только при реальной атаке.",
       "bloomLevel": "analytical"
     }

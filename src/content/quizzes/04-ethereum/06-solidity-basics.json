@@ -3,7 +3,7 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth06-q1",
+      "id": "crypto-eth06-q1",
       "type": "true-false",
       "question": "Solidity -- это статически типизированный язык программирования, который компилируется в байткод EVM.",
       "correctAnswer": true,
@@ -11,35 +11,59 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth06-q2",
+      "id": "crypto-eth06-q2",
       "type": "multiple-choice",
       "question": "Какой модификатор видимости позволяет вызывать функцию только извне контракта (из транзакций и других контрактов), но не из самого контракта?",
       "options": [
-        { "id": "a", "text": "public" },
-        { "id": "b", "text": "private" },
-        { "id": "c", "text": "internal" },
-        { "id": "d", "text": "external" }
+        {
+          "id": "a",
+          "text": "public"
+        },
+        {
+          "id": "b",
+          "text": "external"
+        },
+        {
+          "id": "c",
+          "text": "internal"
+        },
+        {
+          "id": "d",
+          "text": "private"
+        }
       ],
-      "correctAnswer": "d",
+      "correctAnswer": "b",
       "explanation": "external -- функция доступна только извне (через транзакции или вызовы других контрактов), но не из самого контракта. public -- извне и изнутри. internal -- только из контракта и наследников. private -- только из самого контракта. External-функции эффективнее для больших calldata, так как не копируют данные в memory.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth06-q3",
+      "id": "crypto-eth06-q3",
       "type": "multiple-choice",
       "question": "Почему state variables в Solidity по умолчанию имеют видимость internal, а не public?",
       "options": [
-        { "id": "a", "text": "Это предотвращает чтение данных контракта из блокчейна" },
-        { "id": "b", "text": "Это ограничивает энергопотребление при компиляции" },
-        { "id": "c", "text": "Public автоматически генерирует getter-функцию, увеличивая размер байткода и gas деплоя, поэтому internal -- более экономичный default" },
-        { "id": "d", "text": "Internal переменные хранятся в memory, а не в storage, что дешевле" }
+        {
+          "id": "a",
+          "text": "Это предотвращает чтение данных контракта из блокчейна"
+        },
+        {
+          "id": "b",
+          "text": "Это ограничивает энергопотребление при компиляции"
+        },
+        {
+          "id": "c",
+          "text": "Public автоматически генерирует getter-функцию, увеличивая размер байткода и gas деплоя, поэтому internal -- более экономичный default"
+        },
+        {
+          "id": "d",
+          "text": "Internal переменные хранятся в memory, а не в storage, что дешевле"
+        }
       ],
       "correctAnswer": "c",
       "explanation": "Объявление переменной как public автоматически генерирует getter-функцию (например, function owner() external view returns (address)), увеличивая размер деплоированного байткода и стоимость деплоя. Internal -- более экономичный default. Важно: даже internal/private переменные читаемы из блокчейна (через eth_getStorageAt), visibility лишь контролирует API контракта.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "eth06-q4",
+      "id": "crypto-eth06-q4",
       "type": "code-challenge",
       "question": "Напишите контракт Counter с приватным счётчиком _count типа uint256, функцией increment() external, которая увеличивает счётчик на 1, и функцией count() external view returns (uint256), которая возвращает значение счётчика.",
       "language": "solidity",

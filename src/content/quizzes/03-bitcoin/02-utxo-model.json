@@ -3,52 +3,94 @@
   "moduleId": "03-bitcoin",
   "questions": [
     {
-      "id": "utxo-q1",
+      "id": "crypto-utxo-q1",
       "type": "true-false",
-      "question": "В Bitcoin баланс кошелька -- это не число в базе данных, а сумма всех неизрасходованных выходов (UTXO), которые кошелёк может потратить.",
-      "correctAnswer": true,
-      "explanation": "В отличие от банковской модели, Bitcoin не хранит \"баланс\". Вместо этого каждый кошелёк отслеживает набор UTXO (Unspent Transaction Outputs), которые можно потратить. Баланс вычисляется как сумма amount всех доступных UTXO.",
+      "question": "В Bitcoin баланс кошелька хранится как единое числовое значение в специальном поле аккаунта, аналогично банковскому счёту.",
+      "correctAnswer": false,
+      "explanation": "В отличие от банковской модели и модели аккаунтов (Ethereum), Bitcoin НЕ хранит баланс как единое число. Вместо этого используется модель UTXO (Unspent Transaction Outputs): каждый кошелёк отслеживает набор неизрасходованных выходов транзакций, и баланс вычисляется как их сумма. Понятие 'аккаунт' в Bitcoin не существует на уровне протокола.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "utxo-q2",
+      "id": "crypto-utxo-q2",
       "type": "multiple-choice",
       "question": "Alice хочет отправить 0.7 BTC Bob. У неё есть UTXO: 0.5 BTC и 0.4 BTC. Комиссия = 0.001 BTC. Какой будет выход для сдачи?",
       "options": [
-        { "id": "a", "text": "0.199 BTC" },
-        { "id": "b", "text": "0.2 BTC" },
-        { "id": "c", "text": "0.1 BTC" },
-        { "id": "d", "text": "0.3 BTC" }
+        {
+          "id": "a",
+          "text": "0.1 BTC"
+        },
+        {
+          "id": "b",
+          "text": "0.2 BTC"
+        },
+        {
+          "id": "c",
+          "text": "0.199 BTC"
+        },
+        {
+          "id": "d",
+          "text": "0.3 BTC"
+        }
       ],
-      "correctAnswer": "a",
+      "correctAnswer": "c",
       "explanation": "Входы: 0.5 + 0.4 = 0.9 BTC. Выход Bob: 0.7 BTC. Комиссия: 0.001 BTC. Сдача = 0.9 - 0.7 - 0.001 = 0.199 BTC. В Bitcoin комиссия -- это разница между суммой входов и суммой выходов (fee = sum(inputs) - sum(outputs)). Если забыть создать выход для сдачи, вся разница уйдёт майнеру.",
       "bloomLevel": "applied"
     },
     {
-      "id": "utxo-q3",
+      "id": "crypto-utxo-q3",
       "type": "multiple-choice",
       "question": "Какое преимущество модели UTXO перед моделью аккаунтов (account model) при обработке транзакций?",
       "options": [
-        { "id": "a", "text": "UTXO позволяет хранить смарт-контракты с произвольной логикой" },
-        { "id": "b", "text": "UTXO обеспечивает параллельную валидацию транзакций, так как каждый UTXO независим" },
-        { "id": "c", "text": "UTXO использует меньше дискового пространства, чем account model" },
-        { "id": "d", "text": "UTXO автоматически рассчитывает комиссии" }
+        {
+          "id": "a",
+          "text": "UTXO позволяет хранить смарт-контракты с произвольной логикой"
+        },
+        {
+          "id": "b",
+          "text": "UTXO автоматически рассчитывает комиссии"
+        },
+        {
+          "id": "c",
+          "text": "UTXO использует меньше дискового пространства, чем account model"
+        },
+        {
+          "id": "d",
+          "text": "UTXO обеспечивает параллельную валидацию транзакций, так как каждый UTXO независим"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Каждый UTXO -- независимый объект с уникальным идентификатором (txid, vout). Транзакции, потребляющие разные UTXO, можно проверять параллельно без конфликтов. В account model транзакции от одного аккаунта должны выполняться последовательно из-за общего состояния (nonce, balance).",
       "bloomLevel": "analytical"
     },
     {
-      "id": "utxo-q4",
+      "id": "crypto-utxo-q4",
       "type": "code-challenge",
       "question": "Напишите функцию solve(utxo_json), которая принимает JSON-строку с массивом UTXO-объектов (каждый имеет поле \"amount\"), суммирует все amount и возвращает результат как строку с 8 десятичными знаками.",
       "language": "python",
       "starterCode": "def solve(utxo_json):\n    # Парсим JSON-массив UTXO\n    # Каждый элемент имеет поле \"amount\" (float)\n    # Суммируем все amount\n    # Возвращаем строку с 8 десятичными знаками\n    # Подсказка: import json, используйте format или f-string\n    pass",
       "solutionCode": "def solve(utxo_json):\n    import json\n    utxos = json.loads(utxo_json)\n    total = sum(u[\"amount\"] for u in utxos)\n    return f\"{total:.8f}\"",
       "testCases": [
-        { "id": "tc1", "description": "Три UTXO: 0.5 + 0.3 + 1.2", "input": "[{\"amount\": 0.5}, {\"amount\": 0.3}, {\"amount\": 1.2}]", "expectedOutput": "2.00000000", "hidden": false },
-        { "id": "tc2", "description": "Один UTXO: 0.001", "input": "[{\"amount\": 0.001}]", "expectedOutput": "0.00100000", "hidden": false },
-        { "id": "tc3", "description": "Четыре UTXO", "input": "[{\"amount\": 1.0}, {\"amount\": 2.5}, {\"amount\": 0.25}, {\"amount\": 0.125}]", "expectedOutput": "3.87500000", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "Три UTXO: 0.5 + 0.3 + 1.2",
+          "input": "[{\"amount\": 0.5}, {\"amount\": 0.3}, {\"amount\": 1.2}]",
+          "expectedOutput": "2.00000000",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Один UTXO: 0.001",
+          "input": "[{\"amount\": 0.001}]",
+          "expectedOutput": "0.00100000",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Четыре UTXO",
+          "input": "[{\"amount\": 1.0}, {\"amount\": 2.5}, {\"amount\": 0.25}, {\"amount\": 0.125}]",
+          "expectedOutput": "3.87500000",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "В Bitcoin баланс -- это сумма всех UTXO, которые можно потратить. Каждый UTXO содержит поле amount (в BTC). Результат форматируется с 8 десятичными знаками, так как 1 BTC = 10^8 сатоши.",

@@ -3,38 +3,62 @@
   "moduleId": "07-security",
   "questions": [
     {
-      "id": "sec06-q1",
+      "id": "crypto-sec06-q1",
       "type": "true-false",
-      "question": "Sandwich attack состоит из размещения двух транзакций атакующего: frontrun (перед транзакцией жертвы) и backrun (после), чтобы извлечь прибыль из price impact жертвы.",
-      "correctAnswer": true,
-      "explanation": "Sandwich: 1) Searcher tx: buy token (frontrun) -- цена растет. 2) Victim tx: buy token -- покупает по завышенной цене. 3) Searcher tx: sell token (backrun) -- фиксирует прибыль. Жертва получает меньше токенов, чем ожидала. Разница -- прибыль searcher. Sandwich составляет ~60% всего вредного MEV на Ethereum.",
+      "question": "Sandwich attack состоит из одной транзакции атакующего, размещённой после транзакции жертвы (backrun), которая извлекает прибыль из остаточного price impact.",
+      "correctAnswer": false,
+      "explanation": "Sandwich attack требует ДВУХ транзакций атакующего: frontrun (ДО жертвы — сдвигает цену вверх) и backrun (ПОСЛЕ жертвы — фиксирует прибыль на развороте). Одна backrun-транзакция — это просто backrunning, а не sandwich. Ключевая механика sandwich: 1) Buy (frontrun) → цена растёт, 2) Victim buy → покупает по завышенной цене, 3) Sell (backrun) → searcher фиксирует прибыль. Без frontrun нет ценового сдвига.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "sec06-q2",
+      "id": "crypto-sec06-q2",
       "type": "multiple-choice",
       "question": "Какой параметр в Uniswap Router защищает от sandwich attacks при DEX-свопах?",
       "options": [
-        { "id": "a", "text": "deadline -- временной лимит для исполнения транзакции" },
-        { "id": "b", "text": "amountOutMin -- минимально допустимый output, при котором транзакция не ревертится" },
-        { "id": "c", "text": "gasPrice -- приоритет транзакции в блоке" },
-        { "id": "d", "text": "path -- маршрут свопа через промежуточные токены" }
+        {
+          "id": "a",
+          "text": "deadline -- временной лимит для исполнения транзакции"
+        },
+        {
+          "id": "b",
+          "text": "gasPrice -- приоритет транзакции в блоке"
+        },
+        {
+          "id": "c",
+          "text": "amountOutMin -- минимально допустимый output, при котором транзакция не ревертится"
+        },
+        {
+          "id": "d",
+          "text": "path -- маршрут свопа через промежуточные токены"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "amountOutMin определяет МИНИМАЛЬНО допустимый output. Если output ниже -- транзакция ревертится. amountOutMin = 0 -- 'приглашение к sandwich': searcher может сдвинуть цену на любую величину. amountOutMin = 95% от expected -- разумная защита (5% slippage tolerance). Прибыль searcher ограничена amountOutMin жертвы: чем строже slippage -- тем меньше searcher может извлечь.",
       "bloomLevel": "applied"
     },
     {
-      "id": "sec06-q3",
+      "id": "crypto-sec06-q3",
       "type": "multiple-choice",
       "question": "Почему прозрачность публичного mempool делает frontrunning возможным, и как private mempools (Flashbots Protect) решают эту проблему?",
       "options": [
-        { "id": "a", "text": "Mempool шифрует транзакции, а Flashbots дешифрует их для валидаторов" },
-        { "id": "b", "text": "Все pending транзакции в публичном mempool видны searchers, которые декодируют calldata (swap parameters, amountOutMin) и строят frontrun/backrun. Flashbots Protect отправляет tx напрямую builders, минуя публичный mempool -- searchers физически не видят tx" },
-        { "id": "c", "text": "Публичный mempool слишком медленный, а Flashbots ускоряет транзакции" },
-        { "id": "d", "text": "Mempool хранит транзакции на отдельном блокчейне, который Flashbots блокирует" }
+        {
+          "id": "a",
+          "text": "Mempool шифрует транзакции, а Flashbots дешифрует их для валидаторов"
+        },
+        {
+          "id": "b",
+          "text": "Mempool хранит транзакции на отдельном блокчейне, который Flashbots блокирует"
+        },
+        {
+          "id": "c",
+          "text": "Публичный mempool слишком медленный, а Flashbots ускоряет транзакции"
+        },
+        {
+          "id": "d",
+          "text": "Все pending транзакции в публичном mempool видны searchers, которые декодируют calldata (swap parameters, amountOutMin) и строят frontrun/backrun. Flashbots Protect отправляет tx напрямую builders, минуя публичный mempool -- searchers физически не видят tx"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Ethereum mempool -- прозрачная очередь: все pending tx видны всем узлам. Searcher бот мониторит mempool, декодирует calldata (функция swapExactETHForTokens, параметр amountOutMin), симулирует profit, и создает sandwich bundle. Flashbots Protect (RPC: rpc.flashbots.net/fast) отправляет транзакцию напрямую builders через приватный канал. Транзакция НИКОГДА не появляется в публичном mempool. 12M+ транзакций защищены.",
       "bloomLevel": "analytical"
     }

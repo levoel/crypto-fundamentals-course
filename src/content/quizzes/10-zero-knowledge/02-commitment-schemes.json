@@ -3,52 +3,94 @@
   "moduleId": "10-zero-knowledge",
   "questions": [
     {
-      "id": "zk02-q1",
+      "id": "crypto-zk02-q1",
       "type": "true-false",
-      "question": "Commitment scheme должен удовлетворять двум свойствам: binding (нельзя изменить значение после commit) и hiding (нельзя узнать значение до reveal).",
-      "correctAnswer": true,
-      "explanation": "Binding гарантирует честность Prover: после commit он привязан к выбранному значению. Hiding гарантирует приватность: до reveal получатель не может определить содержимое. Невозможно иметь ОБА свойства information-theoretic одновременно: Pedersen имеет computational binding + perfect hiding, а hash-based -- computational binding + perfect hiding (при наличии blinding factor).",
+      "question": "Commitment scheme должен удовлетворять одному ключевому свойству: hiding (нельзя узнать значение до reveal). Свойство binding не является обязательным и применяется только в интерактивных протоколах.",
+      "correctAnswer": false,
+      "explanation": "Commitment scheme ОБЯЗАТЕЛЬНО должен удовлетворять ДВУМ свойствам: binding И hiding. Binding гарантирует, что Prover не может изменить значение после commit (честность). Hiding гарантирует, что Verifier не может узнать значение до reveal (приватность). Без binding Prover мог бы 'подменить' значение после commit, что делает схему бесполезной. Оба свойства необходимы независимо от типа протокола.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "zk02-q2",
+      "id": "crypto-zk02-q2",
       "type": "multiple-choice",
       "question": "Почему Pedersen commitments предпочтительнее hash-based commitments для ZK-протоколов?",
       "options": [
-        { "id": "a", "text": "Pedersen commitments быстрее вычисляются, чем SHA-256" },
-        { "id": "b", "text": "Pedersen commitments обладают аддитивной гомоморфностью: C(a,r1) + C(b,r2) = C(a+b, r1+r2), что позволяет выполнять вычисления на зашифрованных значениях без расшифровки" },
-        { "id": "c", "text": "Hash-based commitments не обеспечивают свойство binding" },
-        { "id": "d", "text": "Pedersen commitments не требуют генератора эллиптической кривой" }
+        {
+          "id": "a",
+          "text": "Pedersen commitments быстрее вычисляются, чем SHA-256"
+        },
+        {
+          "id": "b",
+          "text": "Pedersen commitments обладают аддитивной гомоморфностью: C(a,r1) + C(b,r2) = C(a+b, r1+r2), что позволяет выполнять вычисления на зашифрованных значениях без расшифровки"
+        },
+        {
+          "id": "c",
+          "text": "Hash-based commitments не обеспечивают свойство binding"
+        },
+        {
+          "id": "d",
+          "text": "Pedersen commitments не требуют генератора эллиптической кривой"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Ключевое преимущество Pedersen (C = mG + rH) -- аддитивная гомоморфность. Доказательство: C(a,r1) + C(b,r2) = (aG + r1H) + (bG + r2H) = (a+b)G + (r1+r2)H = C(a+b, r1+r2). Это позволяет проверять баланс транзакций (сумма входов = сумма выходов) БЕЗ раскрытия сумм. Используется в Confidential Transactions (Monero, Liquid).",
       "bloomLevel": "applied"
     },
     {
-      "id": "zk02-q3",
+      "id": "crypto-zk02-q3",
       "type": "multiple-choice",
       "question": "Почему blinding factor r критически важен для свойства hiding в Pedersen commitment C = mG + rH?",
       "options": [
-        { "id": "a", "text": "Без r невозможно вычислить commitment, потому что формула не определена" },
-        { "id": "b", "text": "r используется только для binding, а не для hiding" },
-        { "id": "c", "text": "Случайный r делает C равномерно распределённым по кривой: для любого C и любого m существует ровно одно r, поэтому C не несет информации о m (information-theoretic hiding)" },
-        { "id": "d", "text": "r нужен только для совместимости с hash-based commitment" }
+        {
+          "id": "a",
+          "text": "Без r невозможно вычислить commitment, потому что формула не определена"
+        },
+        {
+          "id": "b",
+          "text": "r используется только для binding, а не для hiding"
+        },
+        {
+          "id": "c",
+          "text": "Случайный r делает C равномерно распределённым по кривой: для любого C и любого m существует ровно одно r, поэтому C не несет информации о m (information-theoretic hiding)"
+        },
+        {
+          "id": "d",
+          "text": "r нужен только для совместимости с hash-based commitment"
+        }
       ],
       "correctAnswer": "c",
       "explanation": "Без blinding factor r commitment C = mG был бы детерминированным: зная G (публичный генератор), атакующий мог бы перебрать возможные m и найти совпадение. С r: для каждой пары (m, C) существует ровно одно r такое что C = mG + rH. Поэтому наблюдение C не даёт никакой информации о m -- это perfect (information-theoretic) hiding, не зависящее от вычислительной мощности атакующего.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "zk02-q4",
+      "id": "crypto-zk02-q4",
       "type": "code-challenge",
       "question": "Реализуйте Pedersen commitment в малом поле. Функция solve(v_str, r_str) вычисляет C = g^v * h^r mod p, где p=23, g=5, h=7. Используйте pow(base, exp, mod) для модулярного возведения в степень. Верните str(C).",
       "language": "python",
       "starterCode": "def solve(v_str, r_str):\n    p = 23\n    g = 5\n    h = 7\n    v = int(v_str)\n    r = int(r_str)\n    # Вычислите C = g^v * h^r mod p\n    # Используйте pow(g, v, p) для модулярного возведения\n    # Верните str(C)\n    pass",
       "solutionCode": "def solve(v_str, r_str):\n    p = 23\n    g = 5\n    h = 7\n    v = int(v_str)\n    r = int(r_str)\n    C = (pow(g, v, p) * pow(h, r, p)) % p\n    return str(C)",
       "testCases": [
-        { "id": "tc1", "description": "v=3, r=4: C = 5^3 * 7^4 mod 23 = 125 * 2401 mod 23 = 10 * 16 mod 23 = 160 mod 23 = 18", "input": "3,4", "expectedOutput": "18", "hidden": false },
-        { "id": "tc2", "description": "v=0, r=1: C = 5^0 * 7^1 mod 23 = 1 * 7 mod 23 = 7", "input": "0,1", "expectedOutput": "7", "hidden": false },
-        { "id": "tc3", "description": "v=5, r=2", "input": "5,2", "expectedOutput": "3", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "v=3, r=4: C = 5^3 * 7^4 mod 23 = 125 * 2401 mod 23 = 10 * 16 mod 23 = 160 mod 23 = 18",
+          "input": "3,4",
+          "expectedOutput": "18",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "v=0, r=1: C = 5^0 * 7^1 mod 23 = 1 * 7 mod 23 = 7",
+          "input": "0,1",
+          "expectedOutput": "7",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "v=5, r=2",
+          "input": "5,2",
+          "expectedOutput": "3",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Pedersen commitment в мультипликативной группе: C = g^v * h^r mod p. В реальных системах используются эллиптические кривые (C = vG + rH), но мультипликативная группа Z_p* демонстрирует ту же идею. pow(g, v, p) -- встроенная Python функция для эффективного модулярного возведения в степень (square-and-multiply).",

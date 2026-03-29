@@ -244,6 +244,7 @@ Mutex-блокировка: `nonReentrant` modifier устанавливает l
 
 ```solidity
 import {ReentrancyGuard} from
+
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract SafeVault is ReentrancyGuard {
@@ -274,6 +275,7 @@ contract SafeVault is ReentrancyGuard {
 
 ```solidity
 import {ReentrancyGuardTransient} from
+
     "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 contract CheapSafeVault is ReentrancyGuardTransient {

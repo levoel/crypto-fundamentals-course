@@ -3,7 +3,7 @@
   "moduleId": "06-defi",
   "questions": [
     {
-      "id": "defi05-q1",
+      "id": "crypto-defi05-q1",
       "type": "true-false",
       "question": "Impermanent loss возникает, когда соотношение цен токенов в пуле изменяется по сравнению с начальным соотношением при депозите.",
       "correctAnswer": true,
@@ -11,43 +11,82 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "defi05-q2",
+      "id": "crypto-defi05-q2",
       "type": "multiple-choice",
       "question": "В каком из этих сценариев impermanent loss будет наибольшим?",
       "options": [
-        { "id": "a", "text": "Цена токена выросла в 2 раза (r = 2.0)" },
-        { "id": "b", "text": "Цена токена выросла в 5 раз (r = 5.0)" },
-        { "id": "c", "text": "Цена токена упала вдвое (r = 0.5)" }
+        {
+          "id": "a",
+          "text": "Цена токена выросла в 2 раза (r = 2.0)"
+        },
+        {
+          "id": "b",
+          "text": "Цена токена упала вдвое (r = 0.5)"
+        },
+        {
+          "id": "c",
+          "text": "Цена токена выросла в 5 раз (r = 5.0)"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "IL при r=2.0: 2*sqrt(2)/(1+2) - 1 = -5.72%. IL при r=5.0: 2*sqrt(5)/(1+5) - 1 = -25.46%. IL при r=0.5: 2*sqrt(0.5)/(1+0.5) - 1 = -5.72%. Благодаря свойству симметрии IL(r) = IL(1/r), потери при 2x вверх = потери при 2x вниз. При r=5.0 IL максимален из представленных вариантов.",
       "bloomLevel": "applied"
     },
     {
-      "id": "defi05-q3",
+      "id": "crypto-defi05-q3",
       "type": "multiple-choice",
       "question": "Почему LP-комиссии могут компенсировать impermanent loss в пулах с высоким объемом торгов?",
       "options": [
-        { "id": "a", "text": "Высокий объем снижает IL за счет уменьшения волатильности цены" },
-        { "id": "b", "text": "LP-доходность = Fee APR + IL. Если Fee APR (зависит от объема торгов, TVL и fee tier) превышает абсолютное значение IL, LP получает чистую прибыль" },
-        { "id": "c", "text": "Комиссии уменьшают значение k в формуле xy=k, компенсируя потери" },
-        { "id": "d", "text": "Пулы с высоким объемом имеют фиксированную гарантию доходности" }
+        {
+          "id": "a",
+          "text": "Высокий объем снижает IL за счет уменьшения волатильности цены"
+        },
+        {
+          "id": "b",
+          "text": "LP-доходность = Fee APR + IL. Если Fee APR (зависит от объема торгов, TVL и fee tier) превышает абсолютное значение IL, LP получает чистую прибыль"
+        },
+        {
+          "id": "c",
+          "text": "Комиссии уменьшают значение k в формуле xy=k, компенсируя потери"
+        },
+        {
+          "id": "d",
+          "text": "Пулы с высоким объемом имеют фиксированную гарантию доходности"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Total LP Return = Fee Revenue + IL. Комиссии 0.3% от каждого свопа остаются в пуле, увеличивая k. Fee APR = (Daily Volume * Fee Rate * 365) / TVL. При daily volume $100M, TVL $500M и fee 0.3% Fee APR = 21.9%. При IL -5.7% (2x price change) LP остается прибыльным: 21.9% - 5.7% = +16.2%.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "defi05-q4",
+      "id": "crypto-defi05-q4",
       "type": "code-challenge",
       "question": "Реализуйте функцию solve(price_ratio_str), которая вычисляет impermanent loss по формуле: IL = 2*sqrt(r)/(1+r) - 1. Верните результат в процентах с 4 знаками после запятой.",
       "language": "python",
       "starterCode": "def solve(price_ratio_str):\n    # 1. Конвертируйте price_ratio_str в float\n    # 2. Вычислите IL = 2*sqrt(r)/(1+r) - 1\n    # 3. Верните f'{il * 100:.4f}' (в процентах)\n    # Подсказка: import math\n    pass",
       "solutionCode": "def solve(price_ratio_str):\n    import math\n    r = float(price_ratio_str)\n    il = 2 * math.sqrt(r) / (1 + r) - 1\n    return f'{il * 100:.4f}'",
       "testCases": [
-        { "id": "tc1", "description": "Price ratio 2.0 (2x рост)", "input": "2.0", "expectedOutput": "-5.7191", "hidden": false },
-        { "id": "tc2", "description": "Price ratio 5.0 (5x рост)", "input": "5.0", "expectedOutput": "-25.4644", "hidden": false },
-        { "id": "tc3", "description": "Price ratio 0.5 (2x падение)", "input": "0.5", "expectedOutput": "-5.7191", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "Price ratio 2.0 (2x рост)",
+          "input": "2.0",
+          "expectedOutput": "-5.7191",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Price ratio 5.0 (5x рост)",
+          "input": "5.0",
+          "expectedOutput": "-25.4644",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Price ratio 0.5 (2x падение)",
+          "input": "0.5",
+          "expectedOutput": "-5.7191",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Формула IL = 2*sqrt(r)/(1+r) - 1 выводится из сравнения стоимости LP-позиции (V_LP = 2*x*P*sqrt(r)) с HODL-стоимостью (V_HODL = x*P*(1+r)). Свойство симметрии IL(r) = IL(1/r) означает, что 2x рост и 2x падение дают одинаковый IL = -5.72%.",

@@ -3,7 +3,7 @@
   "moduleId": "10-zero-knowledge",
   "questions": [
     {
-      "id": "zk04-q1",
+      "id": "crypto-zk04-q1",
       "type": "true-false",
       "question": "Arithmetic circuits преобразуют произвольные вычисления в комбинацию gates двух типов: умножение (*) и сложение (+) над конечным полем.",
       "correctAnswer": true,
@@ -11,30 +11,54 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "zk04-q2",
+      "id": "crypto-zk04-q2",
       "type": "multiple-choice",
       "question": "Что кодирует R1CS (Rank-1 Constraint System) для arithmetic circuit?",
       "options": [
-        { "id": "a", "text": "Набор полиномиальных уравнений произвольной степени" },
-        { "id": "b", "text": "Систему квадратичных constraints вида (A_i . s) * (B_i . s) = (C_i . s), где s -- witness vector, а матрицы A, B, C выбирают нужные переменные для каждого gate" },
-        { "id": "c", "text": "Хеш-функцию от входных данных circuit" },
-        { "id": "d", "text": "Двоичное представление вычисления в формате Boolean circuit" }
+        {
+          "id": "a",
+          "text": "Набор полиномиальных уравнений произвольной степени"
+        },
+        {
+          "id": "b",
+          "text": "Систему квадратичных constraints вида (A_i . s) * (B_i . s) = (C_i . s), где s -- witness vector, а матрицы A, B, C выбирают нужные переменные для каждого gate"
+        },
+        {
+          "id": "c",
+          "text": "Хеш-функцию от входных данных circuit"
+        },
+        {
+          "id": "d",
+          "text": "Двоичное представление вычисления в формате Boolean circuit"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "R1CS -- система constraints, где каждый gate circuit становится одной строкой: (A_i . s) * (B_i . s) = (C_i . s). Матрицы A, B, C -- селекторы переменных. Для x^3 + x + 5 = 35 с witness s = [1, 3, 9, 27, 35]: constraint 1 проверяет v1 = x*x (3*3=9), constraint 2 -- v2 = v1*x (9*3=27), constraint 3 -- out = v2+x+5 (27+3+5=35).",
       "bloomLevel": "applied"
     },
     {
-      "id": "zk04-q3",
+      "id": "crypto-zk04-q3",
       "type": "multiple-choice",
       "question": "Почему flattening вычисления в binary gates НЕОБХОДИМ перед созданием ZK proof?",
       "options": [
-        { "id": "a", "text": "Flattening уменьшает размер proof, потому что binary gates занимают меньше памяти" },
-        { "id": "b", "text": "R1CS допускает ТОЛЬКО квадратичные constraints (умножение ровно двух переменных). Выражение x*x*x -- три переменные (non-quadratic). Flattening вводит промежуточные переменные: v1=x*x, v2=v1*x -- каждый gate квадратичный" },
-        { "id": "c", "text": "Flattening нужен только для эстетики кода и не влияет на correctness" },
-        { "id": "d", "text": "Без flattening proof генерируется, но верификация занимает экспоненциальное время" }
+        {
+          "id": "a",
+          "text": "Flattening уменьшает размер proof, потому что binary gates занимают меньше памяти"
+        },
+        {
+          "id": "b",
+          "text": "Flattening нужен только для эстетики кода и не влияет на correctness"
+        },
+        {
+          "id": "c",
+          "text": "R1CS допускает ТОЛЬКО квадратичные constraints (умножение ровно двух переменных). Выражение x*x*x -- три переменные (non-quadratic). Flattening вводит промежуточные переменные: v1=x*x, v2=v1*x -- каждый gate квадратичный"
+        },
+        {
+          "id": "d",
+          "text": "Без flattening proof генерируется, но верификация занимает экспоненциальное время"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "R1CS фундаментально ограничен квадратичными constraints: каждая строка -- произведение двух линейных комбинаций. x^3 = x*x*x -- кубическое выражение, не представимое одним constraint. Flattening решает это: v1 = x*x (quadratic), v2 = v1*x (quadratic). В Circom попытка написать x*x*x вызовет ошибку 'non-quadratic constraint'. Это не ограничение реализации, а фундаментальное свойство R1CS формализма.",
       "bloomLevel": "analytical"
     }

@@ -3,38 +3,62 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale03-q1",
+      "id": "crypto-scale03-q1",
       "type": "true-false",
-      "question": "State channel требует только 2 on-chain транзакции (open + close) независимо от количества off-chain взаимодействий между участниками.",
-      "correctAnswer": true,
-      "explanation": "Lifecycle: 1) Open -- депозит средств в multisig-контракт (on-chain TX #1). 2) Transact off-chain -- неограниченное число подписанных обновлений состояния (мгновенно, бесплатно, приватно). 3) Close -- публикация финального состояния (on-chain TX #2). При cooperative close -- 2 TX. При dispute -- дополнительные TX для challenge, но в нормальном случае 2 TX обрабатывают любое количество off-chain взаимодействий.",
+      "question": "State channel не требует только 2 on-chain транзакции (open + close) независимо от количества off-chain взаимодействий между участниками.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. Lifecycle: 1) Open -- депозит средств в multisig-контракт (on-chain TX #1). 2) Transact off-chain -- неограниченное число подписанных обновлений состояния (мгновенно, бесплатно, приватно). 3) Close -- публикация финального состояния (on-chain TX #2). При cooperative close -- 2 TX. При dispute -- дополнительные TX для challenge, но в нормальном случае 2 TX обрабатывают любое количество off-chain взаимодействий.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale03-q2",
+      "id": "crypto-scale03-q2",
       "type": "multiple-choice",
       "question": "Какова цель dispute resolution period в state channels?",
       "options": [
-        { "id": "a", "text": "Дать участникам время собрать комиссии за off-chain транзакции" },
-        { "id": "b", "text": "Позволить контрагенту опубликовать более новое состояние (с более высоким nonce), если одна сторона попыталась закрыть канал со старым, выгодным для себя состоянием. Контракт принимает состояние с наибольшим nonce" },
-        { "id": "c", "text": "Дать L1 валидаторам время верифицировать все off-chain транзакции" },
-        { "id": "d", "text": "Challenge period нужен только для compliance с регуляторами" }
+        {
+          "id": "a",
+          "text": "Дать участникам время собрать комиссии за off-chain транзакции"
+        },
+        {
+          "id": "b",
+          "text": "Challenge period нужен только для compliance с регуляторами"
+        },
+        {
+          "id": "c",
+          "text": "Дать L1 валидаторам время верифицировать все off-chain транзакции"
+        },
+        {
+          "id": "d",
+          "text": "Позволить контрагенту опубликовать более новое состояние (с более высоким nonce), если одна сторона попыталась закрыть канал со старым, выгодным для себя состоянием. Контракт принимает состояние с наибольшим nonce"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Dispute resolution защищает от мошенничества: Alice публикует state с nonce=1 (Alice=4, Bob=6). Bob знает о state с nonce=2 (Alice=6, Bob=4). В течение challenge period Bob публикует state с nonce=2. Контракт принимает state с наибольшим nonce (самое новое). Liveness requirement: участник ДОЛЖЕН быть онлайн (или иметь watchtower) для мониторинга dispute.",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale03-q3",
+      "id": "crypto-scale03-q3",
       "type": "multiple-choice",
       "question": "Почему state channels ограничены фиксированным набором участников и не могут масштабировать DeFi (Uniswap, Aave)?",
       "options": [
-        { "id": "a", "text": "State channels слишком медленные для DeFi" },
-        { "id": "b", "text": "DeFi требует global shared state (один пул ликвидности для всех), composability (Aave + Uniswap в одной TX), и permissionless access (любой может участвовать). State channels поддерживают только двусторонние взаимодействия с фиксированными участниками -- для нового участника нужен новый канал (on-chain TX)" },
-        { "id": "c", "text": "DeFi протоколы запрещены в state channels по дизайну EVM" },
-        { "id": "d", "text": "State channels не поддерживают ERC-20 токены" }
+        {
+          "id": "a",
+          "text": "DeFi требует global shared state (один пул ликвидности для всех), composability (Aave + Uniswap в одной TX), и permissionless access (любой может участвовать). State channels поддерживают только двусторонние взаимодействия с фиксированными участниками -- для нового участника нужен новый канал (on-chain TX)"
+        },
+        {
+          "id": "b",
+          "text": "State channels слишком медленные для DeFi"
+        },
+        {
+          "id": "c",
+          "text": "DeFi протоколы запрещены в state channels по дизайну EVM"
+        },
+        {
+          "id": "d",
+          "text": "State channels не поддерживают ERC-20 токены"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "State channels = фиксированные участники (Alice-Bob). Ограничения для DeFi: 1) No global state -- Uniswap AMM требует один пул для всех, не двусторонний канал. 2) No composability -- flash loan (Aave -> Uniswap -> Aave) требует shared state. 3) No permissionless access -- новый участник = новый канал (on-chain TX + deposit). 4) Liquidity lock -- средства заблокированы в канале. Эти ограничения привели к Plasma (2017) как следующей попытке.",
       "bloomLevel": "analytical"
     }

@@ -19,6 +19,7 @@ import { MiningSimulator, HashTargetVisualization } from '../../../components/di
 ```python
 # Суть майнинга в 5 строках:
 import hashlib
+
 header = b"version|prev_hash|merkle_root|timestamp|bits|nonce"
 hash_result = hashlib.sha256(hashlib.sha256(header).digest()).digest()
 target = 0x00000000FFFF0000000000000000000000000000000000000000000000000000

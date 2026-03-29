@@ -3,38 +3,62 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale04-q1",
+      "id": "crypto-scale04-q1",
       "type": "true-false",
-      "question": "Plasma создает child chains, где operator выполняет транзакции и периодически публикует Merkle root (32 bytes) состояния на Ethereum L1, что позволяет L1 знать snapshot child chain.",
-      "correctAnswer": true,
-      "explanation": "Plasma архитектура: operator собирает транзакции на child chain, выполняет их, вычисляет Merkle tree состояния и публикует root hash на L1. L1 знает snapshot (Merkle root), но НЕ знает деталей -- только root hash. Exit требует Merkle proof (доказательство включения баланса в committed state). Проблема: root доказывает существование состояния, но не раскрывает содержимое.",
+      "question": "Plasma создает child chains, где operator выполняет транзакции и периодически публикует Merkle root (32 bytes) состояния на Ethereum L1, что не позволяет L1 знать snapshot child chain.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. Plasma архитектура: operator собирает транзакции на child chain, выполняет их, вычисляет Merkle tree состояния и публикует root hash на L1. L1 знает snapshot (Merkle root), но НЕ знает деталей -- только root hash. Exit требует Merkle proof (доказательство включения баланса в committed state). Проблема: root доказывает существование состояния, но не раскрывает содержимое.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale04-q2",
+      "id": "crypto-scale04-q2",
       "type": "multiple-choice",
       "question": "Что такое 'mass exit problem' в Plasma?",
       "options": [
-        { "id": "a", "text": "Проблема медленного вывода средств из-за высоких gas costs" },
-        { "id": "b", "text": "Если operator перестает делиться данными транзакций (data withholding), пользователи не могут создать Merkle proof для своего баланса. Единственный выход -- exit с последним известным состоянием. Все пользователи одновременно отправляют exit TX на L1, перегружая Ethereum" },
-        { "id": "c", "text": "Проблема двойного расходования при одновременном exit нескольких пользователей" },
-        { "id": "d", "text": "Невозможность создать новые аккаунты после определенного числа пользователей" }
+        {
+          "id": "a",
+          "text": "Проблема медленного вывода средств из-за высоких gas costs"
+        },
+        {
+          "id": "b",
+          "text": "Если operator перестает делиться данными транзакций (data withholding), пользователи не могут создать Merkle proof для своего баланса. Единственный выход -- exit с последним известным состоянием. Все пользователи одновременно отправляют exit TX на L1, перегружая Ethereum"
+        },
+        {
+          "id": "c",
+          "text": "Проблема двойного расходования при одновременном exit нескольких пользователей"
+        },
+        {
+          "id": "d",
+          "text": "Невозможность создать новые аккаунты после определенного числа пользователей"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Mass exit: 1) Operator публикует Merkle roots, но перестает делиться данными. 2) Без данных пользователи не могут создать Merkle proof. 3) Паника: все хотят exit с последним известным валидным состоянием. 4) Тысячи exit TX на L1 -> gas взлетает -> некоторые не могут позволить exit. Информационно-теоретическая проблема: published O(log N) данных на L1, но reconstruction требует O(N). Gap = O(N).",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale04-q3",
+      "id": "crypto-scale04-q3",
       "type": "multiple-choice",
       "question": "Почему data availability issues Plasma стали фундаментальной причиной перехода индустрии к rollups?",
       "options": [
-        { "id": "a", "text": "Rollups просто быстрее Plasma" },
-        { "id": "b", "text": "Plasma публикует только Merkle root (O(log N) данных) -- экономит на publication cost, но создает катастрофический risk (mass exit, O(N) on-chain TX). Rollups публикуют ВСЕ данные (O(N)) -- платят предсказуемую стоимость (с EIP-4844 blobs: очень дешево), но никогда не платят exit cost. Rollups выбирают предсказуемую стоимость вместо катастрофического риска" },
-        { "id": "c", "text": "Plasma просто не получил достаточного финансирования" },
-        { "id": "d", "text": "Rollups используют ту же data availability модель, что и Plasma" }
+        {
+          "id": "a",
+          "text": "Rollups просто быстрее Plasma"
+        },
+        {
+          "id": "b",
+          "text": "Plasma просто не получил достаточного финансирования"
+        },
+        {
+          "id": "c",
+          "text": "Plasma публикует только Merkle root (O(log N) данных) -- экономит на publication cost, но создает катастрофический risk (mass exit, O(N) on-chain TX). Rollups публикуют ВСЕ данные (O(N)) -- платят предсказуемую стоимость (с EIP-4844 blobs: очень дешево), но никогда не платят exit cost. Rollups выбирают предсказуемую стоимость вместо катастрофического риска"
+        },
+        {
+          "id": "d",
+          "text": "Rollups используют ту же data availability модель, что и Plasma"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Ключевой инсайт: Plasma = O(log N) publication + O(N) worst-case exit. Rollup = O(N) publication + O(0) worst-case exit. Plasma экономит на публикации (32 bytes root), но платит катастрофическую цену при data withholding. Rollups платят за публикацию всех данных (calldata -> blobs = 10-100x дешевле), но если sequencer исчезнет -- все данные уже на L1, любой восстановит state, no mass exit needed. EIP-4844 сделал data publication настолько дешевым, что trade-off однозначен.",
       "bloomLevel": "analytical"
     }

@@ -3,7 +3,7 @@
   "moduleId": "10-zero-knowledge",
   "questions": [
     {
-      "id": "zk03-q1",
+      "id": "crypto-zk03-q1",
       "type": "true-false",
       "question": "Fiat-Shamir transform превращает интерактивный ZK-протокол в неинтерактивный, заменяя случайный challenge от Verifier на хеш от публичных данных: c = H(statement || R).",
       "correctAnswer": true,
@@ -11,44 +11,86 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "zk03-q2",
+      "id": "crypto-zk03-q2",
       "type": "multiple-choice",
       "question": "Каковы три шага Schnorr identification protocol для доказательства знания секретного ключа x (при P = xG)?",
       "options": [
-        { "id": "a", "text": "Encrypt(x), Send(P), Decrypt(proof)" },
-        { "id": "b", "text": "Commit: R = kG (случайное k), Challenge: Verifier выбирает e, Response: s = k + e*x mod n" },
-        { "id": "c", "text": "Hash(x), Sign(message), Verify(signature)" },
-        { "id": "d", "text": "Setup: генерация p, Prove: вычисление R1CS, Verify: pairing check" }
+        {
+          "id": "a",
+          "text": "Encrypt(x), Send(P), Decrypt(proof)"
+        },
+        {
+          "id": "b",
+          "text": "Setup: генерация p, Prove: вычисление R1CS, Verify: pairing check"
+        },
+        {
+          "id": "c",
+          "text": "Hash(x), Sign(message), Verify(signature)"
+        },
+        {
+          "id": "d",
+          "text": "Commit: R = kG (случайное k), Challenge: Verifier выбирает e, Response: s = k + e*x mod n"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "Schnorr identification -- Sigma протокол с тремя ходами: (1) Prover выбирает случайное k, вычисляет R = kG и отправляет Verifier. (2) Verifier выбирает случайный challenge e. (3) Prover вычисляет s = k + e*x mod n. Верификация: s*G == R + e*P. Подставляя: (k + ex)G = kG + exG = R + eP.",
       "bloomLevel": "applied"
     },
     {
-      "id": "zk03-q3",
+      "id": "crypto-zk03-q3",
       "type": "multiple-choice",
       "question": "Почему случайный challenge от Verifier КРИТИЧЕСКИ важен для soundness в Sigma протоколах?",
       "options": [
-        { "id": "a", "text": "Без challenge Prover не может вычислить response, поэтому протокол не работает" },
-        { "id": "b", "text": "Challenge нужен только для zero-knowledge свойства, а не для soundness" },
-        { "id": "c", "text": "Без случайного challenge Prover может подготовить ложный ответ заранее: зная challenge до commit, можно выбрать R = sG - eP и ответить s без знания x. Случайность challenge после commit делает это невозможным" },
-        { "id": "d", "text": "Challenge увеличивает размер proof, что улучшает безопасность" }
+        {
+          "id": "a",
+          "text": "Без случайного challenge Prover может подготовить ложный ответ заранее: зная challenge до commit, можно выбрать R = sG - eP и ответить s без знания x. Случайность challenge после commit делает это невозможным"
+        },
+        {
+          "id": "b",
+          "text": "Challenge нужен только для zero-knowledge свойства, а не для soundness"
+        },
+        {
+          "id": "c",
+          "text": "Без challenge Prover не может вычислить response, поэтому протокол не работает"
+        },
+        {
+          "id": "d",
+          "text": "Challenge увеличивает размер proof, что улучшает безопасность"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "a",
       "explanation": "Если Prover знает challenge e ДО отправки commitment R, он может: (1) выбрать произвольное s, (2) вычислить R = sG - eP, (3) отправить R как commitment. Тогда sG = R + eP выполняется без знания x. Но если challenge выбирается ПОСЛЕ фиксации R, Prover должен знать x для вычисления s = k + ex. Именно порядок commit-THEN-challenge обеспечивает soundness.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "zk03-q4",
+      "id": "crypto-zk03-q4",
       "type": "code-challenge",
       "question": "Реализуйте вычисление Schnorr response. Функция solve(x_str, k_str, e_str) вычисляет s = (k - e*x) mod (p-1), где p=23, порядок группы = p-1 = 22. Верните str(s).",
       "language": "python",
       "starterCode": "def solve(x_str, k_str, e_str):\n    p = 23\n    order = p - 1  # 22\n    x = int(x_str)\n    k = int(k_str)\n    e = int(e_str)\n    # Вычислите s = (k - e * x) mod order\n    # Верните str(s)\n    pass",
       "solutionCode": "def solve(x_str, k_str, e_str):\n    p = 23\n    order = p - 1  # 22\n    x = int(x_str)\n    k = int(k_str)\n    e = int(e_str)\n    s = (k - e * x) % order\n    return str(s)",
       "testCases": [
-        { "id": "tc1", "description": "x=3, k=15, e=5: s = (15 - 5*3) mod 22 = 0 mod 22 = 0", "input": "3,15,5", "expectedOutput": "0", "hidden": false },
-        { "id": "tc2", "description": "x=7, k=20, e=4: s = (20 - 4*7) mod 22 = (20 - 28) mod 22 = -8 mod 22 = 14", "input": "7,20,4", "expectedOutput": "14", "hidden": false },
-        { "id": "tc3", "description": "x=2, k=10, e=3", "input": "2,10,3", "expectedOutput": "4", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "x=3, k=15, e=5: s = (15 - 5*3) mod 22 = 0 mod 22 = 0",
+          "input": "3,15,5",
+          "expectedOutput": "0",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "x=7, k=20, e=4: s = (20 - 4*7) mod 22 = (20 - 28) mod 22 = -8 mod 22 = 14",
+          "input": "7,20,4",
+          "expectedOutput": "14",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "x=2, k=10, e=3",
+          "input": "2,10,3",
+          "expectedOutput": "4",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Schnorr response s = (k - e*x) mod order. В реальных системах порядок группы -- большое простое число (~2^256 для secp256k1). Python оператор % корректно обрабатывает отрицательные числа: -8 % 22 = 14 (а не -8). Верификация: g^s * P^e = g^(k-ex) * g^(ex) = g^k = R.",

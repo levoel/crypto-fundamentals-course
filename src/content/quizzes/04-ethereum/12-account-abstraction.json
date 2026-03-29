@@ -3,38 +3,62 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth12-q1",
+      "id": "crypto-eth12-q1",
       "type": "true-false",
-      "question": "ERC-4337 реализует Account Abstraction без изменения протокола Ethereum, используя смарт-контракты и off-chain инфраструктуру (Bundler).",
-      "correctAnswer": true,
-      "explanation": "ERC-4337 -- стандарт Account Abstraction на уровне приложений. Вся логика реализована через смарт-контракты (EntryPoint, Smart Account, Paymaster) и off-chain инфраструктуру (Bundler). Не требуется обновление протокола Ethereum (hard fork). Bundler упаковывает UserOperations в обычные транзакции и отправляет их через EntryPoint.",
+      "question": "ERC-4337 реализует Account Abstraction через хард-форк Ethereum, добавляя новый тип транзакций на уровне протокола.",
+      "correctAnswer": false,
+      "explanation": "ERC-4337 реализует Account Abstraction БЕЗ изменения протокола Ethereum (без хард-форка). Вся логика реализована через смарт-контракты (EntryPoint, Smart Account, Paymaster) и off-chain инфраструктуру (Bundler). UserOperations упаковываются в обычные транзакции. Это ключевое преимущество ERC-4337: он не требует консенсуса всей сети на обновление протокола.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth12-q2",
+      "id": "crypto-eth12-q2",
       "type": "multiple-choice",
       "question": "Какова роль Bundler в архитектуре ERC-4337?",
       "options": [
-        { "id": "a", "text": "Хранение приватных ключей пользователей для подписи транзакций" },
-        { "id": "b", "text": "Сбор UserOperations от пользователей, локальная симуляция, упаковка в bundle и отправка обычной транзакции в EntryPoint.handleOps()" },
-        { "id": "c", "text": "Компиляция Solidity-кода Smart Account в байткод" },
-        { "id": "d", "text": "Управление балансами ETH для оплаты газа всех пользователей" }
+        {
+          "id": "a",
+          "text": "Хранение приватных ключей пользователей для подписи транзакций"
+        },
+        {
+          "id": "b",
+          "text": "Сбор UserOperations от пользователей, локальная симуляция, упаковка в bundle и отправка обычной транзакции в EntryPoint.handleOps()"
+        },
+        {
+          "id": "c",
+          "text": "Компиляция Solidity-кода Smart Account в байткод"
+        },
+        {
+          "id": "d",
+          "text": "Управление балансами ETH для оплаты газа всех пользователей"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Bundler -- off-chain сервис, аналог валидатора мемпула для UserOperations. Он: 1) принимает UserOps через JSON-RPC (eth_sendUserOperation), 2) симулирует каждый UserOp локально для отсева невалидных, 3) упаковывает валидные в bundle, 4) отправляет транзакцию EntryPoint.handleOps(userOps). Bundler получает прибыль из gas refund.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth12-q3",
+      "id": "crypto-eth12-q3",
       "type": "multiple-choice",
       "question": "Как Paymaster в ERC-4337 позволяет пользователям выполнять транзакции без ETH для газа?",
       "options": [
-        { "id": "a", "text": "Paymaster берёт кредит у протокола Ethereum и возвращает его позже" },
-        { "id": "b", "text": "Paymaster -- смарт-контракт, который оплачивает газ за пользователя, позволяя dApp спонсировать транзакции или принимать оплату в ERC-20 токенах вместо ETH" },
-        { "id": "c", "text": "Paymaster отключает механизм газа для определённых адресов" },
-        { "id": "d", "text": "Paymaster создаёт отдельную цепочку без газа для бесплатных транзакций" }
+        {
+          "id": "a",
+          "text": "Paymaster берёт кредит у протокола Ethereum и возвращает его позже"
+        },
+        {
+          "id": "b",
+          "text": "Paymaster отключает механизм газа для определённых адресов"
+        },
+        {
+          "id": "c",
+          "text": "Paymaster -- смарт-контракт, который оплачивает газ за пользователя, позволяя dApp спонсировать транзакции или принимать оплату в ERC-20 токенах вместо ETH"
+        },
+        {
+          "id": "d",
+          "text": "Paymaster создаёт отдельную цепочку без газа для бесплатных транзакций"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Paymaster -- самый инновационный компонент ERC-4337. Это смарт-контракт, который может: 1) спонсировать газ (dApp платит за пользователя -- решает проблему cold start), 2) принимать оплату газа в ERC-20 (USDC, DAI) вместо ETH, 3) реализовать подписочную модель. Пользователю НЕ НУЖЕН ETH для начала работы с dApp.",
       "bloomLevel": "analytical"
     }

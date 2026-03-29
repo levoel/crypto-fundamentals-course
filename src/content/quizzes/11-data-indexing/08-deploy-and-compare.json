@@ -3,7 +3,7 @@
   "moduleId": "11-data-indexing",
   "questions": [
     {
-      "id": "idx08-q1",
+      "id": "crypto-idx08-q1",
       "type": "true-false",
       "question": "Не существует единого 'лучшего' инструмента индексации: Subsquid, The Graph и SubQuery оптимизированы для разных use cases, и выбор зависит от конкретных требований проекта.",
       "correctAnswer": true,
@@ -11,30 +11,54 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "idx08-q2",
+      "id": "crypto-idx08-q2",
       "type": "multiple-choice",
       "question": "Какой инструмент индексации предоставляет наибольшую multi-chain архивную сеть (SQD Network)?",
       "options": [
-        { "id": "a", "text": "The Graph -- через GRT Network и децентрализованных indexers" },
-        { "id": "b", "text": "Subsquid -- через SQD Network с batch processing и покрытием 100+ сетей" },
-        { "id": "c", "text": "SubQuery -- через SubQuery Network с нативной multi-chain" },
-        { "id": "d", "text": "Все три имеют одинаковое покрытие сетей" }
+        {
+          "id": "a",
+          "text": "The Graph -- через GRT Network и децентрализованных indexers"
+        },
+        {
+          "id": "b",
+          "text": "Subsquid -- через SQD Network с batch processing и покрытием 100+ сетей"
+        },
+        {
+          "id": "c",
+          "text": "SubQuery -- через SubQuery Network с нативной multi-chain"
+        },
+        {
+          "id": "d",
+          "text": "Все три имеют одинаковое покрытие сетей"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "Subsquid SQD Network предоставляет batch-optimized archive для 100+ EVM и non-EVM сетей. Ключевое преимущество: batch processing позволяет запрашивать сотни блоков одним запросом. The Graph Network фокусируется на индивидуальных subgraph'ах с GRT token-экономикой. SubQuery Network растёт. Для raw archive speed -- Subsquid.",
       "bloomLevel": "applied"
     },
     {
-      "id": "idx08-q3",
+      "id": "crypto-idx08-q3",
       "type": "multiple-choice",
       "question": "Почему выбор между Subsquid и The Graph зависит от факторов chain support, query complexity и потребности в децентрализации?",
       "options": [
-        { "id": "a", "text": "Все факторы одинаково важны для любого проекта" },
-        { "id": "b", "text": "Chain support: Subsquid покрывает больше сетей. Query complexity: Subsquid TypeScript позволяет сложные агрегации (.filter, .map, batch INSERT), The Graph AssemblyScript ограничен (нет async, filter, map). Децентрализация: The Graph Network зрелее (500+ indexers, GRT staking), что критично для протоколов, требующих censorship resistance" },
-        { "id": "c", "text": "Выбор определяется только ценой: The Graph дешевле" },
-        { "id": "d", "text": "Различия только в языке маппингов, остальное идентично" }
+        {
+          "id": "a",
+          "text": "Все факторы одинаково важны для любого проекта"
+        },
+        {
+          "id": "b",
+          "text": "Выбор определяется только ценой: The Graph дешевле"
+        },
+        {
+          "id": "c",
+          "text": "Chain support: Subsquid покрывает больше сетей. Query complexity: Subsquid TypeScript позволяет сложные агрегации (.filter, .map, batch INSERT), The Graph AssemblyScript ограничен (нет async, filter, map). Децентрализация: The Graph Network зрелее (500+ indexers, GRT staking), что критично для протоколов, требующих censorship resistance"
+        },
+        {
+          "id": "d",
+          "text": "Различия только в языке маппингов, остальное идентично"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "Три оси принятия решения: (1) Chain support: Subsquid SQD Network 100+ сетей vs The Graph 50+. (2) Query complexity: TypeScript (Subsquid) позволяет .filter().map(), async/await, batch INSERT. AssemblyScript (The Graph): for loops, entity.save() per entity. Для аналитики с агрегациями -- Subsquid значительно удобнее. (3) Децентрализация: The Graph Network -- production-proven, GRT стимулирует indexers. Для протоколов, требующих liveness без trust -- The Graph.",
       "bloomLevel": "analytical"
     }

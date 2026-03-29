@@ -3,38 +3,62 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth09-q1",
+      "id": "crypto-eth09-q1",
       "type": "true-false",
-      "question": "Каждый ERC-721 токен идентифицируется уникальным tokenId, и один tokenId принадлежит ровно одному адресу.",
-      "correctAnswer": true,
-      "explanation": "В отличие от ERC-20, где токены взаимозаменяемы (fungible), каждый ERC-721 токен уникален. Внутренний маппинг _owners[tokenId] => address хранит владельца каждого токена. Нет понятия 'amount' -- токен либо принадлежит вам, либо нет. Это и делает ERC-721 стандартом для NFT.",
+      "question": "ERC-721 позволяет нескольким адресам совместно владеть одним и тем же tokenId через встроенный механизм fractional ownership.",
+      "correctAnswer": false,
+      "explanation": "ERC-721 НЕ поддерживает совместное владение на уровне стандарта. Каждый tokenId принадлежит ровно одному адресу через маппинг _owners[tokenId] => address. Fractional ownership реализуется через ОТДЕЛЬНЫЕ протоколы (например, Fractional/Tessera), которые блокируют NFT и выпускают ERC-20 токены-доли. Для мульти-токенов с количествами используется ERC-1155.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth09-q2",
+      "id": "crypto-eth09-q2",
       "type": "multiple-choice",
       "question": "Какая функция ERC-721 безопасно переводит NFT, проверяя, что контракт-получатель может обработать токен?",
       "options": [
-        { "id": "a", "text": "transferFrom(from, to, tokenId)" },
-        { "id": "b", "text": "safeTransferFrom(from, to, tokenId)" },
-        { "id": "c", "text": "approve(to, tokenId)" },
-        { "id": "d", "text": "setApprovalForAll(operator, approved)" }
+        {
+          "id": "a",
+          "text": "transferFrom(from, to, tokenId)"
+        },
+        {
+          "id": "b",
+          "text": "setApprovalForAll(operator, approved)"
+        },
+        {
+          "id": "c",
+          "text": "approve(to, tokenId)"
+        },
+        {
+          "id": "d",
+          "text": "safeTransferFrom(from, to, tokenId)"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "safeTransferFrom проверяет, что контракт-получатель реализует интерфейс IERC721Receiver (функцию onERC721Received). Если контракт не реализует этот интерфейс, транзакция откатится, предотвращая потерю NFT. Обычный transferFrom не выполняет эту проверку и может привести к блокировке токена в контракте, который не умеет с ним работать.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth09-q3",
+      "id": "crypto-eth09-q3",
       "type": "multiple-choice",
       "question": "Почему ERC-1155 более газоэффективен для batch-операций по сравнению с ERC-721?",
       "options": [
-        { "id": "a", "text": "ERC-1155 использует сжатие данных, уменьшая размер транзакции" },
-        { "id": "b", "text": "ERC-1155 хранит токены off-chain, поэтому SSTORE не нужен" },
-        { "id": "c", "text": "safeBatchTransferFrom переводит несколько типов токенов за одну транзакцию, оплачивая base cost (21000 gas) один раз вместо N раз" },
-        { "id": "d", "text": "ERC-1155 не требует проверки подписей при переводе" }
+        {
+          "id": "a",
+          "text": "safeBatchTransferFrom переводит несколько типов токенов за одну транзакцию, оплачивая base cost (21000 gas) один раз вместо N раз"
+        },
+        {
+          "id": "b",
+          "text": "ERC-1155 хранит токены off-chain, поэтому SSTORE не нужен"
+        },
+        {
+          "id": "c",
+          "text": "ERC-1155 использует сжатие данных, уменьшая размер транзакции"
+        },
+        {
+          "id": "d",
+          "text": "ERC-1155 не требует проверки подписей при переводе"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "a",
       "explanation": "В ERC-721 перевод N токенов требует N отдельных транзакций, каждая с base cost 21000 gas. ERC-1155 safeBatchTransferFrom итерирует по массивам ids и amounts в одной транзакции: base cost 21000 gas оплачивается один раз, а каждый отдельный transfer -- это O(1) SSTORE. При переводе 10 токенов экономия ~190000 gas (9 * 21000).",
       "bloomLevel": "analytical"
     }

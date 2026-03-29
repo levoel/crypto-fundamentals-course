@@ -131,6 +131,7 @@ contract UnsafeTokenFixed is ERC20, Ownable {
 
 ```solidity
 import {Ownable2Step} from
+
     "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 contract SafeToken is ERC20, Ownable2Step {
@@ -183,6 +184,7 @@ DeFi-протоколы часто требуют **гранулярный ко�
 
 ```solidity
 import {AccessControl} from
+
     "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract ProtocolToken is ERC20, AccessControl {

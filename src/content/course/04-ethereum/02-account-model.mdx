@@ -220,6 +220,7 @@ for i, char in enumerate(address_hex):
 # CREATE: address = keccak256(rlp([sender, nonce]))[12:]
 
 import rlp
+
 from eth_utils import keccak
 
 sender = bytes.fromhex("d8dA6BF26964aF9D7eEd9e03E53415D37aA96045")

@@ -3,7 +3,7 @@
   "moduleId": "03-bitcoin",
   "questions": [
     {
-      "id": "block-q1",
+      "id": "crypto-block-q1",
       "type": "true-false",
       "question": "Заголовок блока Bitcoin содержит поле Previous Block Hash (prevBlockHash), которое связывает блоки в цепочку: изменение любого бита в предыдущем блоке меняет его хеш и ломает все последующие блоки.",
       "correctAnswer": true,
@@ -11,44 +11,86 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "block-q2",
+      "id": "crypto-block-q2",
       "type": "multiple-choice",
       "question": "Какие 6 полей содержит заголовок блока Bitcoin (80 байт)?",
       "options": [
-        { "id": "a", "text": "version, prevHash, merkleRoot, timestamp, nBits, nonce" },
-        { "id": "b", "text": "version, prevHash, txCount, timestamp, difficulty, nonce" },
-        { "id": "c", "text": "magic, prevHash, merkleRoot, timestamp, nBits, size" },
-        { "id": "d", "text": "version, prevHash, stateRoot, timestamp, gasLimit, nonce" }
+        {
+          "id": "a",
+          "text": "version, prevHash, merkleRoot, timestamp, nBits, nonce"
+        },
+        {
+          "id": "b",
+          "text": "version, prevHash, txCount, timestamp, difficulty, nonce"
+        },
+        {
+          "id": "c",
+          "text": "magic, prevHash, merkleRoot, timestamp, nBits, size"
+        },
+        {
+          "id": "d",
+          "text": "version, prevHash, stateRoot, timestamp, gasLimit, nonce"
+        }
       ],
       "correctAnswer": "a",
       "explanation": "Заголовок блока Bitcoin состоит из 6 полей: version (4 байта), Previous Block Hash (32 байта), Merkle Root (32 байта), timestamp (4 байта), nBits (4 байта, компактное представление target) и nonce (4 байта). Итого ровно 80 байт. Поле txCount не входит в заголовок, а stateRoot и gasLimit -- это концепции Ethereum.",
       "bloomLevel": "applied"
     },
     {
-      "id": "block-q3",
+      "id": "crypto-block-q3",
       "type": "multiple-choice",
       "question": "Почему Bitcoin использует двойное хеширование SHA-256 (SHA-256d) вместо однократного SHA-256?",
       "options": [
-        { "id": "a", "text": "Двойное хеширование удваивает длину хеша до 512 бит" },
-        { "id": "b", "text": "Двойное хеширование защищает от атак length-extension, которым подвержен однократный SHA-256" },
-        { "id": "c", "text": "Двойное хеширование делает вычисления быстрее за счёт кеширования промежуточного результата" },
-        { "id": "d", "text": "Однократного SHA-256 недостаточно для обработки 80 байт заголовка" }
+        {
+          "id": "a",
+          "text": "Двойное хеширование удваивает длину хеша до 512 бит"
+        },
+        {
+          "id": "b",
+          "text": "Двойное хеширование защищает от атак length-extension, которым подвержен однократный SHA-256"
+        },
+        {
+          "id": "c",
+          "text": "Двойное хеширование делает вычисления быстрее за счёт кеширования промежуточного результата"
+        },
+        {
+          "id": "d",
+          "text": "Однократного SHA-256 недостаточно для обработки 80 байт заголовка"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "SHA-256 использует конструкцию Merkle-Damgard, которая подвержена атакам length-extension: зная H(m), можно вычислить H(m || padding || m') без знания m. Двойной SHA-256 (SHA-256d = SHA-256(SHA-256(x))) защищает от этого, так как внешний SHA-256 хеширует фиксированные 32 байта, делая extension невозможным.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "block-q4",
+      "id": "crypto-block-q4",
       "type": "code-challenge",
       "question": "Реализуйте функцию solve(hex_data), которая вычисляет double-SHA-256: принимает hex-строку, конвертирует в байты, дважды применяет SHA-256 и возвращает результат как hex-строку.",
       "language": "python",
       "starterCode": "def solve(hex_data):\n    # 1. Конвертируйте hex_data в bytes\n    #    (пустая строка -> пустые bytes b'')\n    # 2. Примените SHA-256 дважды: SHA-256(SHA-256(data))\n    # 3. Верните результат как hex-строку\n    # Подсказка: import hashlib\n    pass",
       "solutionCode": "def solve(hex_data):\n    import hashlib\n    data = bytes.fromhex(hex_data) if hex_data else b''\n    first = hashlib.sha256(data).digest()\n    second = hashlib.sha256(first).digest()\n    return second.hex()",
       "testCases": [
-        { "id": "tc1", "description": "Пустые данные", "input": "", "expectedOutput": "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456", "hidden": false },
-        { "id": "tc2", "description": "Один нулевой байт (00)", "input": "00", "expectedOutput": "1406e05881e299367766d313e26c05564ec91bf721d31726bd6e46e60689539a", "hidden": false },
-        { "id": "tc3", "description": "Hello в hex (48656c6c6f)", "input": "48656c6c6f", "expectedOutput": "70bc18bef5ae66b72d1995f8db90a583a60d77b4066e4653f1cead613025861c", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "Пустые данные",
+          "input": "",
+          "expectedOutput": "5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Один нулевой байт (00)",
+          "input": "00",
+          "expectedOutput": "1406e05881e299367766d313e26c05564ec91bf721d31726bd6e46e60689539a",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Hello в hex (48656c6c6f)",
+          "input": "48656c6c6f",
+          "expectedOutput": "70bc18bef5ae66b72d1995f8db90a583a60d77b4066e4653f1cead613025861c",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Double-SHA-256 (SHA-256d) -- основная хеш-функция Bitcoin. Она применяется для вычисления хешей блоков, txid и других идентификаторов. SHA-256d(x) = SHA-256(SHA-256(x)). В Python используется hashlib.sha256(data).digest() для получения байтового результата.",

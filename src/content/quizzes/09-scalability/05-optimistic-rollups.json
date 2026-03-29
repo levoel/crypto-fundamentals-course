@@ -3,43 +3,67 @@
   "moduleId": "09-scalability",
   "questions": [
     {
-      "id": "scale05-q1",
+      "id": "crypto-scale05-q1",
       "type": "true-false",
-      "question": "Optimistic rollups считают все транзакции валидными по умолчанию (optimistic assumption) и используют fraud proofs только когда кто-то обнаруживает некорректный state root.",
-      "correctAnswer": true,
-      "explanation": "Принцип: assume valid unless proven otherwise. Sequencer исполняет транзакции off-chain, публикует результат. Все считают результат корректным. Если кто-то обнаружит ошибку -- подает fraud proof на L1. Работает потому что: данные на L1 (любой может проверить), экономические стимулы (sequencer теряет bond при fraud), 1-of-N honest assumption (один честный верификатор достаточен).",
+      "question": "Optimistic rollups верифицируют каждую транзакцию с помощью криптографического доказательства (validity proof) перед включением в L1, аналогично ZK rollups.",
+      "correctAnswer": false,
+      "explanation": "Optimistic rollups НЕ верифицируют каждую транзакцию заранее — это делают ZK rollups с validity proofs. Optimistic rollups работают по принципу 'assume valid unless proven otherwise': sequencer публикует state root, и все считают его корректным. Только при обнаружении ошибки подаётся fraud proof на L1. Это ключевое различие: ZK = proactive verification, Optimistic = reactive verification (fraud proofs).",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "scale05-q2",
+      "id": "crypto-scale05-q2",
       "type": "multiple-choice",
       "question": "Каков типичный challenge period для optimistic rollups и почему выбрано именно это значение?",
       "options": [
-        { "id": "a", "text": "24 часа -- достаточно для автоматической проверки" },
-        { "id": "b", "text": "7 дней -- инженерный компромисс: достаточно для загрузки batch data, повторного исполнения транзакций, подготовки fraud proof и учета сетевых задержек, но не настолько долго, чтобы сделать withdrawals непрактичными" },
-        { "id": "c", "text": "30 дней -- максимально безопасный вариант" },
-        { "id": "d", "text": "1 час -- для максимальной скорости вывода средств" }
+        {
+          "id": "a",
+          "text": "24 часа -- достаточно для автоматической проверки"
+        },
+        {
+          "id": "b",
+          "text": "1 час -- для максимальной скорости вывода средств"
+        },
+        {
+          "id": "c",
+          "text": "30 дней -- максимально безопасный вариант"
+        },
+        {
+          "id": "d",
+          "text": "7 дней -- инженерный компромисс: достаточно для загрузки batch data, повторного исполнения транзакций, подготовки fraud proof и учета сетевых задержек, но не настолько долго, чтобы сделать withdrawals непрактичными"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "7 дней -- security feature, не баг. Достаточно для: загрузки batch data с L1 (часы), повторного исполнения всех транзакций, подготовки fraud proof, учета цензуры и сетевых задержек. Достаточно короткий для практичного UX. EIP-4844 blobs хранятся ~18 дней -- с запасом для challenge period. Fast withdrawals через liquidity providers (Across, Hop, Stargate) решают UX проблему: LP берет 7-дневный risk за комиссию 0.1-0.5%.",
       "bloomLevel": "applied"
     },
     {
-      "id": "scale05-q3",
+      "id": "crypto-scale05-q3",
       "type": "multiple-choice",
       "question": "Почему 7-дневный withdrawal delay -- необходимый tradeoff для безопасности optimistic rollups?",
       "options": [
-        { "id": "a", "text": "7-дневная задержка нужна для синхронизации блокчейнов L1 и L2" },
-        { "id": "b", "text": "Без challenge period sequencer мог бы публиковать поддельные state roots и мгновенно красть ВСЕ средства. 7 дней дают время обнаружить fraud и подать fraud proof. Безопасность всей системы зависит от 1-of-N honest assumption: хотя бы один верификатор должен проверить и оспорить за 7 дней" },
-        { "id": "c", "text": "Задержка нужна только для compliance с регуляторами" },
-        { "id": "d", "text": "7 дней -- это просто маркетинговое решение для сокращения нагрузки на L1" }
+        {
+          "id": "a",
+          "text": "Без challenge period sequencer мог бы публиковать поддельные state roots и мгновенно красть ВСЕ средства. 7 дней дают время обнаружить fraud и подать fraud proof. Безопасность всей системы зависит от 1-of-N honest assumption: хотя бы один верификатор должен проверить и оспорить за 7 дней"
+        },
+        {
+          "id": "b",
+          "text": "7-дневная задержка нужна для синхронизации блокчейнов L1 и L2"
+        },
+        {
+          "id": "c",
+          "text": "Задержка нужна только для compliance с регуляторами"
+        },
+        {
+          "id": "d",
+          "text": "7 дней -- это просто маркетинговое решение для сокращения нагрузки на L1"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "Challenge period = security vs UX tradeoff. Без delay: sequencer публикует fake state root -> мгновенно withdraw -> украдены ВСЕ средства. С 7-day delay: sequencer публикует fake root -> верификатор загружает batch data -> повторно исполняет -> обнаруживает расхождение -> fraud proof на L1 -> sequencer slashed, state rolled back. 1-of-N honest assumption: Pr[failure] = p^N. Для p=0.1, N=10: Pr = 10^-10.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "scale05-q4",
+      "id": "crypto-scale05-q4",
       "type": "code-challenge",
       "question": "Реализуйте расчет calldata cost vs EIP-4844 blob cost для rollup batch encoding. Функция solve(txCountStr, bytesPerTxStr) получает количество транзакций и размер каждой транзакции в байтах. Вычислите: calldataBytes = txCount * bytesPerTx, blobBytes = 131072 (фиксированный размер blob = 128 KB), ratio = calldataBytes / blobBytes. Верните JSON-строку.",
       "language": "javascript",

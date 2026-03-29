@@ -177,6 +177,7 @@ address_bytes = keccak(public_key_bytes)[-20:]
 
 # Bitcoin: SHA-256d (double SHA-256)
 import hashlib
+
 result = hashlib.sha256(hashlib.sha256(data).digest()).digest()
 ```
 

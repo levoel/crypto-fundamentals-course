@@ -3,67 +3,127 @@
   "moduleId": "01-math-refresher",
   "questions": [
     {
-      "id": "bb-q1",
+      "id": "crypto-bb-q1",
       "type": "true-false",
-      "question": "XOR числа с самим собой всегда даёт 0.",
-      "correctAnswer": true,
-      "explanation": "a XOR a = 0 для любого числа a. Это следует из определения XOR: бит XOR сам с собой дает 0 (0^0=0, 1^1=0). Это свойство лежит в основе обратимости XOR: a ^ b ^ b = a ^ 0 = a.",
+      "question": "XOR числа с самим собой не всегда даёт 0.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. a XOR a = 0 для любого числа a. Это следует из определения XOR: бит XOR сам с собой дает 0 (0^0=0, 1^1=0). Это свойство лежит в основе обратимости XOR: a ^ b ^ b = a ^ 0 = a.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "bb-q2",
+      "id": "crypto-bb-q2",
       "type": "multiple-choice",
       "question": "Чему равно 170 AND 85 в десятичной системе?",
       "options": [
-        { "id": "a", "text": "0" },
-        { "id": "b", "text": "85" },
-        { "id": "c", "text": "170" },
-        { "id": "d", "text": "255" }
+        {
+          "id": "a",
+          "text": "0"
+        },
+        {
+          "id": "b",
+          "text": "85"
+        },
+        {
+          "id": "c",
+          "text": "170"
+        },
+        {
+          "id": "d",
+          "text": "255"
+        }
       ],
       "correctAnswer": "a",
       "explanation": "170 в двоичной = 10101010, 85 в двоичной = 01010101. Операция AND дает 1 только когда оба бита равны 1. Поскольку у 170 и 85 единицы стоят в разных позициях, результат AND = 00000000 = 0.",
       "bloomLevel": "applied"
     },
     {
-      "id": "bb-q3",
+      "id": "crypto-bb-q3",
       "type": "multiple-choice",
       "question": "Что происходит с числом при левом сдвиге на 3 позиции (n << 3)?",
       "options": [
-        { "id": "a", "text": "Число делится на 8" },
-        { "id": "b", "text": "Число умножается на 3" },
-        { "id": "c", "text": "Число умножается на 8" },
-        { "id": "d", "text": "Число возводится в куб" }
+        {
+          "id": "a",
+          "text": "Число делится на 8"
+        },
+        {
+          "id": "b",
+          "text": "Число умножается на 8"
+        },
+        {
+          "id": "c",
+          "text": "Число умножается на 3"
+        },
+        {
+          "id": "d",
+          "text": "Число возводится в куб"
+        }
       ],
-      "correctAnswer": "c",
+      "correctAnswer": "b",
       "explanation": "Левый сдвиг на n позиций эквивалентен умножению на 2^n. Сдвиг на 3 позиции = умножение на 2^3 = 8. Например: 5 << 3 = 5 * 8 = 40. Аналогично, правый сдвиг на n -- это целочисленное деление на 2^n.",
       "bloomLevel": "applied"
     },
     {
-      "id": "bb-q4",
+      "id": "crypto-bb-q4",
       "type": "multiple-choice",
       "question": "Почему XOR называют 'королём криптографии'?",
       "options": [
-        { "id": "a", "text": "Потому что XOR -- самая быстрая битовая операция" },
-        { "id": "b", "text": "Потому что XOR обратим (a ^ b ^ b = a) и используется в шифровании, SHA-256 sigma-функциях и one-time pad" },
-        { "id": "c", "text": "Потому что XOR невозможно взломать" },
-        { "id": "d", "text": "Потому что XOR работает только с двоичными числами" }
+        {
+          "id": "a",
+          "text": "Потому что XOR -- самая быстрая битовая операция"
+        },
+        {
+          "id": "b",
+          "text": "Потому что XOR невозможно взломать"
+        },
+        {
+          "id": "c",
+          "text": "Потому что XOR обратим (a ^ b ^ b = a) и используется в шифровании, SHA-256 sigma-функциях и one-time pad"
+        },
+        {
+          "id": "d",
+          "text": "Потому что XOR работает только с двоичными числами"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "XOR обладает уникальным свойством обратимости: a ^ b ^ b = a. Это делает его основой шифрования (XOR с ключом шифрует, повторный XOR с тем же ключом расшифровывает), SHA-256 (sigma-функции строятся на XOR ротаций) и one-time pad (теоретически невзламываемый шифр).",
       "bloomLevel": "analytical"
     },
     {
-      "id": "bb-q5",
+      "id": "crypto-bb-q5",
       "type": "code-challenge",
       "question": "Напишите функцию solve(n, mask), которая вычисляет XOR двух целых чисел и возвращает результат в виде строки. Например: solve(170, 85) -> \"255\".",
       "language": "python",
       "starterCode": "def solve(n, mask):\n    # Вычислите XOR двух чисел\n    # Верните результат как строку\n    # Подсказка: оператор XOR в Python -- это ^\n    pass",
       "solutionCode": "def solve(n, mask):\n    n, mask = int(n), int(mask)\n    return str(n ^ mask)",
       "testCases": [
-        { "id": "tc1", "description": "170 XOR 85 = 255", "input": "170, 85", "expectedOutput": "255", "hidden": false },
-        { "id": "tc2", "description": "255 XOR 255 = 0", "input": "255, 255", "expectedOutput": "0", "hidden": false },
-        { "id": "tc3", "description": "42 XOR 137 = 163", "input": "42, 137", "expectedOutput": "163", "hidden": false },
-        { "id": "tc4", "description": "0 XOR 0 = 0", "input": "0, 0", "expectedOutput": "0", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "170 XOR 85 = 255",
+          "input": "170, 85",
+          "expectedOutput": "255",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "255 XOR 255 = 0",
+          "input": "255, 255",
+          "expectedOutput": "0",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "42 XOR 137 = 163",
+          "input": "42, 137",
+          "expectedOutput": "163",
+          "hidden": false
+        },
+        {
+          "id": "tc4",
+          "description": "0 XOR 0 = 0",
+          "input": "0, 0",
+          "expectedOutput": "0",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Оператор XOR (^) в Python выполняет побитовое исключающее ИЛИ. XOR -- фундаментальная операция криптографии: 170 ^ 85 = 10101010 ^ 01010101 = 11111111 = 255. Обратимость: 255 ^ 85 = 170 (возвращает исходное значение).",

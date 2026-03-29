@@ -3,52 +3,94 @@
   "moduleId": "06-defi",
   "questions": [
     {
-      "id": "defi03-q1",
+      "id": "crypto-defi03-q1",
       "type": "true-false",
-      "question": "Uniswap V2 использует целочисленную формулу с множителем 997/1000 для реализации комиссии 0.3%, потому что Solidity не поддерживает числа с плавающей точкой.",
-      "correctAnswer": true,
-      "explanation": "Solidity работает только с целыми числами (uint256). Вместо дробного множителя 0.997 Uniswap V2 использует целочисленный эквивалент: amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997). Умножение на 997 и 1000 -- это (1 - 3/1000) = (1 - 0.003) без дробей.",
+      "question": "Uniswap V2 использует целочисленную формулу с множителем 997/1000 для реализации комиссии 0.3%, потому что Solidity не не поддерживает числа с плавающей точкой.",
+      "correctAnswer": false,
+      "explanation": "Это утверждение неверно. Solidity работает только с целыми числами (uint256). Вместо дробного множителя 0.997 Uniswap V2 использует целочисленный эквивалент: amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997). Умножение на 997 и 1000 -- это (1 - 3/1000) = (1 - 0.003) без дробей.",
       "bloomLevel": "conceptual"
     },
     {
-      "id": "defi03-q2",
+      "id": "crypto-defi03-q2",
       "type": "multiple-choice",
       "question": "В формуле amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997), какая переменная представляет резервы того токена, который получает трейдер?",
       "options": [
-        { "id": "a", "text": "reserveIn" },
-        { "id": "b", "text": "reserveOut" },
-        { "id": "c", "text": "amountIn" },
-        { "id": "d", "text": "amountOut" }
+        {
+          "id": "a",
+          "text": "reserveOut"
+        },
+        {
+          "id": "b",
+          "text": "reserveIn"
+        },
+        {
+          "id": "c",
+          "text": "amountIn"
+        },
+        {
+          "id": "d",
+          "text": "amountOut"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "reserveOut -- резервы токена, который трейдер получает (output token). reserveIn -- резервы токена, который трейдер вносит (input token). amountIn -- количество токенов, внесенных трейдером. amountOut -- результат вычисления (количество токенов, получаемых трейдером).",
       "bloomLevel": "applied"
     },
     {
-      "id": "defi03-q3",
+      "id": "crypto-defi03-q3",
       "type": "multiple-choice",
       "question": "Почему целочисленная арифметика предпочтительнее float в смарт-контрактах Solidity?",
       "options": [
-        { "id": "a", "text": "Float быстрее, но Solidity ограничивает скорость вычислений" },
-        { "id": "b", "text": "Целочисленная арифметика детерминирована и не имеет ошибок округления float (IEEE 754), что критично для финансовых контрактов, где каждый узел должен получить идентичный результат" },
-        { "id": "c", "text": "EVM поддерживает float, но gas-стоимость в 100 раз выше" },
-        { "id": "d", "text": "Целочисленная арифметика позволяет обрабатывать отрицательные числа" }
+        {
+          "id": "a",
+          "text": "Float быстрее, но Solidity ограничивает скорость вычислений"
+        },
+        {
+          "id": "b",
+          "text": "Целочисленная арифметика детерминирована и не имеет ошибок округления float (IEEE 754), что критично для финансовых контрактов, где каждый узел должен получить идентичный результат"
+        },
+        {
+          "id": "c",
+          "text": "EVM поддерживает float, но gas-стоимость в 100 раз выше"
+        },
+        {
+          "id": "d",
+          "text": "Целочисленная арифметика позволяет обрабатывать отрицательные числа"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "EVM не поддерживает float вообще. Но причина глубже: float (IEEE 754) имеет ошибки округления, которые могут отличаться на разных платформах. В блокчейне 10,000+ узлов должны получить ИДЕНТИЧНЫЙ результат для каждой транзакции. Целочисленная арифметика полностью детерминирована: uint256 деление всегда округляет вниз, результат одинаков на любом узле.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "defi03-q4",
+      "id": "crypto-defi03-q4",
       "type": "code-challenge",
       "question": "Реализуйте функцию solve(reserve_in_str, reserve_out_str, amount_in_str), которая вычисляет amountOut по формуле Uniswap V2: amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997). Используйте int() для преобразования строк в целые числа. Верните результат с 6 знаками после запятой.",
       "language": "python",
       "starterCode": "def solve(reserve_in_str, reserve_out_str, amount_in_str):\n    # 1. Конвертируйте строки в int\n    # 2. Вычислите amountOut по формуле V2:\n    #    amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997)\n    # 3. Верните f'{amount_out:.6f}'\n    pass",
       "solutionCode": "def solve(reserve_in_str, reserve_out_str, amount_in_str):\n    reserve_in = int(reserve_in_str)\n    reserve_out = int(reserve_out_str)\n    amount_in = int(amount_in_str)\n    numerator = reserve_out * amount_in * 997\n    denominator = reserve_in * 1000 + amount_in * 997\n    amount_out = numerator / denominator\n    return f'{amount_out:.6f}'",
       "testCases": [
-        { "id": "tc1", "description": "Пул 1000/2000000, swap 1", "input": "1000,2000000,1", "expectedOutput": "1993.011960", "hidden": false },
-        { "id": "tc2", "description": "Пул 1000/2000000, swap 100", "input": "1000,2000000,100", "expectedOutput": "181312.803224", "hidden": false },
-        { "id": "tc3", "description": "Пул 10/10000, swap 1", "input": "10,10000,1", "expectedOutput": "906.985604", "hidden": true }
+        {
+          "id": "tc1",
+          "description": "Пул 1000/2000000, swap 1",
+          "input": "1000,2000000,1",
+          "expectedOutput": "1993.011960",
+          "hidden": false
+        },
+        {
+          "id": "tc2",
+          "description": "Пул 1000/2000000, swap 100",
+          "input": "1000,2000000,100",
+          "expectedOutput": "181312.803224",
+          "hidden": false
+        },
+        {
+          "id": "tc3",
+          "description": "Пул 10/10000, swap 1",
+          "input": "10,10000,1",
+          "expectedOutput": "906.985604",
+          "hidden": true
+        }
       ],
       "correctAnswer": "code",
       "explanation": "Формула Uniswap V2 для свопа с комиссией 0.3%: amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997). Множитель 997 -- целочисленный эквивалент (1 - 0.003). Python int() обеспечивает точную целочисленную арифметику, а деление / дает float для форматирования.",

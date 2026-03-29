@@ -3,7 +3,7 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth03-q1",
+      "id": "crypto-eth03-q1",
       "type": "true-false",
       "question": "State root в заголовке блока Ethereum -- это корневой хеш Modified Merkle Patricia Trie (MPT), однозначно определяющий состояние всех аккаунтов сети.",
       "correctAnswer": true,
@@ -11,35 +11,59 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth03-q2",
+      "id": "crypto-eth03-q2",
       "type": "multiple-choice",
       "question": "Какие три типа узлов используются в Modified Merkle Patricia Trie?",
       "options": [
-        { "id": "a", "text": "Root, Internal, Leaf" },
-        { "id": "b", "text": "Branch, Extension, Leaf" },
-        { "id": "c", "text": "Hash, Data, Pointer" },
-        { "id": "d", "text": "Parent, Child, Sibling" }
+        {
+          "id": "a",
+          "text": "Root, Internal, Leaf"
+        },
+        {
+          "id": "b",
+          "text": "Hash, Data, Pointer"
+        },
+        {
+          "id": "c",
+          "text": "Branch, Extension, Leaf"
+        },
+        {
+          "id": "d",
+          "text": "Parent, Child, Sibling"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "c",
       "explanation": "MPT использует три типа узлов: Branch (17 элементов: 16 nibble-слотов + value), Extension (сжатый общий префикс + указатель на дочерний узел) и Leaf (оставшийся путь + RLP-кодированные данные аккаунта). Extension сжимает цепочки узлов с единственным потомком, оптимизируя хранение.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth03-q3",
+      "id": "crypto-eth03-q3",
       "type": "multiple-choice",
       "question": "Почему MPT позволяет light clients эффективно проверять состояние аккаунтов без скачивания полного дерева?",
       "options": [
-        { "id": "a", "text": "Light client хранит копию всего дерева в сжатом виде" },
-        { "id": "b", "text": "MPT объединяет свойства Patricia trie (быстрый поиск) и Merkle tree (криптографические доказательства), позволяя верифицировать proof размером ~2-3 KB по state root из заголовка блока" },
-        { "id": "c", "text": "Ethereum сервер подписывает каждый ответ цифровой подписью" },
-        { "id": "d", "text": "Light client запрашивает данные у нескольких нод и сравнивает ответы" }
+        {
+          "id": "a",
+          "text": "Light client хранит копию всего дерева в сжатом виде"
+        },
+        {
+          "id": "b",
+          "text": "Light client запрашивает данные у нескольких нод и сравнивает ответы"
+        },
+        {
+          "id": "c",
+          "text": "Ethereum сервер подписывает каждый ответ цифровой подписью"
+        },
+        {
+          "id": "d",
+          "text": "MPT объединяет свойства Patricia trie (быстрый поиск) и Merkle tree (криптографические доказательства), позволяя верифицировать proof размером ~2-3 KB по state root из заголовка блока"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "d",
       "explanation": "MPT сочетает Patricia trie (эффективный поиск по ключу O(k)) с Merkle tree (каждый узел содержит хеш потомков). Light client хранит только заголовки блоков (~500 байт каждый) и запрашивает Merkle proof (~2-3 KB) через eth_getProof. Proof верифицируется путём пересчёта хешей от leaf до root и сравнения с state root.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "eth03-q4",
+      "id": "crypto-eth03-q4",
       "type": "code-challenge",
       "question": "Реализуйте вычисление ключа в State Trie. Функция solve(address) получает строку Ethereum-адреса и возвращает её Keccak-256 хеш -- ключ, по которому аккаунт хранится в State Trie.",
       "language": "javascript",

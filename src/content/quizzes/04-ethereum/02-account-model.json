@@ -3,7 +3,7 @@
   "moduleId": "04-ethereum",
   "questions": [
     {
-      "id": "eth02-q1",
+      "id": "crypto-eth02-q1",
       "type": "true-false",
       "question": "Ethereum различает два типа аккаунтов: EOA (Externally Owned Account), контролируемый приватным ключом, и Contract Account, контролируемый байткодом.",
       "correctAnswer": true,
@@ -11,35 +11,59 @@
       "bloomLevel": "conceptual"
     },
     {
-      "id": "eth02-q2",
+      "id": "crypto-eth02-q2",
       "type": "multiple-choice",
       "question": "Какие поля присутствуют в Contract Account, но содержат нетривиальные значения, в отличие от EOA?",
       "options": [
-        { "id": "a", "text": "nonce и balance" },
-        { "id": "b", "text": "storageRoot и codeHash" },
-        { "id": "c", "text": "balance и codeHash" },
-        { "id": "d", "text": "nonce и storageRoot" }
+        {
+          "id": "a",
+          "text": "storageRoot и codeHash"
+        },
+        {
+          "id": "b",
+          "text": "nonce и balance"
+        },
+        {
+          "id": "c",
+          "text": "balance и codeHash"
+        },
+        {
+          "id": "d",
+          "text": "nonce и storageRoot"
+        }
       ],
-      "correctAnswer": "b",
+      "correctAnswer": "a",
       "explanation": "У EOA storageRoot -- хеш пустого trie, а codeHash -- keccak256 пустой строки. У Contract Account storageRoot -- корень storage trie с переменными контракта, а codeHash -- keccak256 байткода. Именно по codeHash == keccak256(\"\") определяется, является ли аккаунт EOA -- явного поля type не существует.",
       "bloomLevel": "applied"
     },
     {
-      "id": "eth02-q3",
+      "id": "crypto-eth02-q3",
       "type": "multiple-choice",
       "question": "Почему модель аккаунтов Ethereum хуже подходит для параллельной обработки транзакций по сравнению с UTXO?",
       "options": [
-        { "id": "a", "text": "Аккаунты Ethereum не поддерживают nonce для защиты от replay-атак" },
-        { "id": "b", "text": "Контракты имеют общее изменяемое состояние (shared mutable state), создающее зависимости между транзакциями" },
-        { "id": "c", "text": "Адреса Ethereum длиннее, чем адреса Bitcoin, что замедляет обработку" },
-        { "id": "d", "text": "EVM не поддерживает многопоточность из-за ограничений стека" }
+        {
+          "id": "a",
+          "text": "Аккаунты Ethereum не поддерживают nonce для защиты от replay-атак"
+        },
+        {
+          "id": "b",
+          "text": "Контракты имеют общее изменяемое состояние (shared mutable state), создающее зависимости между транзакциями"
+        },
+        {
+          "id": "c",
+          "text": "Адреса Ethereum длиннее, чем адреса Bitcoin, что замедляет обработку"
+        },
+        {
+          "id": "d",
+          "text": "EVM не поддерживает многопоточность из-за ограничений стека"
+        }
       ],
       "correctAnswer": "b",
       "explanation": "В модели UTXO каждый выход тратится ровно один раз, поэтому параллельная валидация транзакций безопасна. В модели аккаунтов Ethereum контракты могут читать и записывать общее состояние (storage), что создаёт зависимости: две транзакции к одному контракту могут конфликтовать. Это фундаментальный trade-off: UTXO лучше для параллелизма, аккаунты -- для смарт-контрактов.",
       "bloomLevel": "analytical"
     },
     {
-      "id": "eth02-q4",
+      "id": "crypto-eth02-q4",
       "type": "code-challenge",
       "question": "Реализуйте упрощённое вычисление адреса контракта. Функция solve(senderHex, nonceStr) получает hex-строку адреса отправителя и строку nonce. Вычислите keccak256(senderHex + nonceStr) и верните последние 40 hex-символов с префиксом '0x'.",
       "language": "javascript",
