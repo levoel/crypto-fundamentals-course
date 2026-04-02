@@ -7,18 +7,63 @@
   "language": "ru",
   "version": "1.0.0",
   "modules": [
-    { "id": "01-math-refresher", "title": "Math Refresher" },
-    { "id": "02-crypto-foundations", "title": "Криптографические основы" },
-    { "id": "03-bitcoin", "title": "Bitcoin Deep Dive" },
-    { "id": "04-ethereum", "title": "Ethereum Development" },
-    { "id": "05-solana", "title": "Solana Development" },
-    { "id": "06-defi", "title": "DeFi Protocols" },
-    { "id": "07-security", "title": "Security & Audit" },
-    { "id": "08-governance", "title": "Governance" },
-    { "id": "09-scalability", "title": "Scalability" },
-    { "id": "10-zero-knowledge", "title": "Zero-Knowledge Proofs" },
-    { "id": "11-data-indexing", "title": "Web3 Data Indexing" }
+    {
+      "id": "01-math-refresher",
+      "title": "Math Refresher"
+    },
+    {
+      "id": "02-crypto-foundations",
+      "title": "Криптографические основы"
+    },
+    {
+      "id": "03-bitcoin",
+      "title": "Bitcoin Deep Dive"
+    },
+    {
+      "id": "04-ethereum",
+      "title": "Ethereum Development"
+    },
+    {
+      "id": "05-solana",
+      "title": "Solana Development"
+    },
+    {
+      "id": "06-defi",
+      "title": "DeFi Protocols"
+    },
+    {
+      "id": "07-security",
+      "title": "Security & Audit"
+    },
+    {
+      "id": "08-governance",
+      "title": "Governance"
+    },
+    {
+      "id": "09-scalability",
+      "title": "Scalability"
+    },
+    {
+      "id": "10-zero-knowledge",
+      "title": "Zero-Knowledge Proofs"
+    },
+    {
+      "id": "11-data-indexing",
+      "title": "Web3 Data Indexing"
+    }
   ],
-  "tags": ["cryptography", "blockchain", "bitcoin", "ethereum", "solana", "defi", "smart-contracts", "zero-knowledge"],
-  "estimatedHours": 90
+  "tags": [
+    "cryptography",
+    "blockchain",
+    "bitcoin",
+    "ethereum",
+    "solana",
+    "defi",
+    "smart-contracts",
+    "zero-knowledge"
+  ],
+  "estimatedHours": 90,
+  "pricing": {
+    "type": "free"
+  }
 }
