@@ -1,51 +1,65 @@
-# Tool Versions
+# Course versions — Crypto Fundamentals
 
-Centralized version documentation for all tools and dependencies used in the crypto-fundamentals course lab environments.
+Last review: 2026-04-30
+Next review: 2026-10-30
 
-**Review cadence:** Quarterly. Check for new stable releases, security patches, and breaking changes.
+## Cadence
 
-## Pinned Versions
+Полугодовой — фундамент криптографии меняется медленно (примитивы, ECDSA, hash), но протокольный слой (Ethereum hard forks, Solana клиенты, zkVM, restaking) — раз в 6 месяцев требует ревизии.
+
+## Pinned baseline (April 2026)
+
+| Component | Version | Released | Course depth |
+|-----------|---------|----------|--------------|
+| Bitcoin Core | 30.2 | 2026-02 | full |
+| Ethereum (Pectra hard fork) | EIP-7702 / 2935 / 7691 | 2025-05 | full |
+| EigenLayer (restaking) | mainnet GA | 2025-04 | partial |
+| Solana Firedancer client | mainnet | 2025-10 | partial |
+| Solana Alpenglow (SIMD-0326) | testnet → mainnet planned | конец 2026 | mention |
+| RISC Zero R0VM | 2.0 | 2026-Q1 | partial |
+| SP1 zkVM | stable | 2026-Q1 | partial |
+| Foundry (Anvil/Forge/Cast) | latest (nightly) | rolling | full |
+| Hardhat | 3.1.7 | 2026-Q1 | full |
+| Anchor | 0.32.1 | 2026-Q1 | full |
+| ethers.js | 6.16.0 | 2026 | full |
+| viem | 2.45.1 | 2026 | full |
+| pycryptodome | 3.23.0 | 2026 | full |
+| cryptography (pyca) | 46.0.4 | 2026 | full |
+
+## Forthcoming (next review)
+
+- Ethereum Fusaka / Glamsterdam hard fork prep (PeerDAS, EOF) — следить за timeline.
+- Solana Alpenglow (SIMD-0326) — переход на BLS aggregation, снижение времени до finality.
+- zkVM ландшафт — RISC Zero, SP1, Jolt, Nexus сравнение и production-кейсы.
+- Native rollups / Based rollups — пересмотр модуля Scalability.
+- USDC/USDT enshrinement в L2 — обновить DeFi блок.
+
+## Recent updates
+
+- 2026-04-30 — Wave 1 P0 правки (Pectra, EigenLayer, Firedancer) + Wave 2 новые уроки (Alpenglow, R0VM 2.0, restaking) + Wave 3 cross-refs.
+
+## Lab tooling (Docker/host)
 
 | Tool | Version | Verified | Image / Package | Used In |
 |------|---------|----------|-----------------|---------|
 | Bitcoin Core | 30.2 | 2026-02-08 | bitcoin/bitcoin:30.2 | labs/bitcoin |
-| Foundry (Anvil/Forge/Cast) | latest (nightly) | 2026-02-08 | ghcr.io/foundry-rs/foundry:latest | labs/ethereum |
+| Foundry | latest (nightly) | 2026-02-08 | ghcr.io/foundry-rs/foundry:latest | labs/ethereum |
 | Hardhat | 3.1.7 | 2026-02-08 | npm: hardhat@^3.1.7 | labs/ethereum |
 | Solana Test Validator | latest (nightly) | 2026-02-08 | ghcr.io/beeman/solana-test-validator:latest | labs/solana |
 | Anchor | 0.32.1 | 2026-02-08 | cargo: anchor-cli@0.32.1 | labs/solana (host) |
 | Python | 3.12 | 2026-02-08 | quay.io/jupyter/scipy-notebook:2025-12-31 | labs/crypto |
-| Node.js | >= 22.10.0 | 2026-02-08 | Host machine requirement | labs/ethereum |
-| Rust | >= 1.75 | 2026-02-08 | Host machine requirement | labs/solana (host) |
-| pycryptodome | 3.23.0 | 2026-02-08 | pip: pycryptodome==3.23.0 | labs/crypto |
-| ecdsa | 0.19.1 | 2026-02-08 | pip: ecdsa==0.19.1 | labs/crypto |
-| python-bitcoinlib | 0.12.2 | 2026-02-08 | pip: python-bitcoinlib==0.12.2 | labs/crypto |
-| cryptography | 46.0.4 | 2026-02-08 | pip: cryptography==46.0.4 | labs/crypto |
-| ethers.js | 6.16.0 | 2026-02-08 | npm: ethers@^6.16.0 | labs/ethereum |
-| viem | 2.45.1 | 2026-02-08 | npm: viem@^2.45.1 | labs/ethereum |
+| Node.js | >= 22.10.0 | 2026-02-08 | host requirement | labs/ethereum |
+| Rust | >= 1.75 | 2026-02-08 | host requirement | labs/solana |
+| pycryptodome | 3.23.0 | 2026-02-08 | pip | labs/crypto |
+| ecdsa | 0.19.1 | 2026-02-08 | pip | labs/crypto |
+| python-bitcoinlib | 0.12.2 | 2026-02-08 | pip | labs/crypto |
+| cryptography | 46.0.4 | 2026-02-08 | pip | labs/crypto |
+| ethers.js | 6.16.0 | 2026-02-08 | npm | labs/ethereum |
+| viem | 2.45.1 | 2026-02-08 | npm | labs/ethereum |
 
-## Next Review Date
+## Known compatibility notes
 
-**2026-05-08** (quarterly from initial verification)
-
-## Known Compatibility Notes
-
-- **Solana Docker:** Requires `security_opt: seccomp:unconfined` in docker-compose.yml due to io_uring syscalls used by the Agave validator. Without this, the container will crash on startup.
-- **Hardhat 3:** Requires Node.js >= 22.10.0 (ESM-first architecture). Earlier Node versions will fail to load Hardhat 3 plugins.
-- **Jupyter base image:** Use `quay.io` registry (`quay.io/jupyter/scipy-notebook`), NOT Docker Hub. The Jupyter project migrated to quay.io; Docker Hub images are outdated and unmaintained.
-- **Anchor 0.32.1 + Agave v3:** Compatibility not yet tested inside Docker. Anchor runs on the host machine and deploys to the containerized Solana test-validator via RPC. Monitor Anchor releases for Agave v3 support.
-
-## How to Update
-
-1. Check official release pages for each tool:
-   - [Bitcoin Core](https://github.com/bitcoin/bitcoin/releases)
-   - [Foundry](https://github.com/foundry-rs/foundry/releases)
-   - [Hardhat](https://github.com/NomicFoundation/hardhat/releases)
-   - [Solana](https://github.com/anza-xyz/agave/releases)
-   - [Anchor](https://github.com/coral-xyz/anchor/releases)
-   - [Jupyter Docker Stacks](https://github.com/jupyter/docker-stacks/tags)
-2. Update `.env` files in the respective `labs/` directory with new image tags or versions.
-3. For custom images (labs/crypto): run `docker compose build --no-cache` to rebuild.
-4. For pre-built images: run `docker compose pull` to fetch the latest tags.
-5. Run `docker compose up` and verify the lab environment starts correctly.
-6. Update the "Verified" date in this file for each tool you updated.
-7. Set the next review date to 3 months from today.
+- **Solana Docker:** требует `security_opt: seccomp:unconfined` из-за io_uring syscalls в Agave. Без этого контейнер падает на старте.
+- **Hardhat 3:** требует Node.js >= 22.10.0 (ESM-first). Более ранние версии Node не загрузят плагины Hardhat 3.
+- **Jupyter base image:** используем `quay.io/jupyter/scipy-notebook`, НЕ Docker Hub. Jupyter мигрировал на quay.io; образы на Docker Hub устарели.
+- **Anchor 0.32.1 + Agave v3:** совместимость в Docker не протестирована. Anchor запускается на хосте и деплоит в контейнерный test-validator через RPC.

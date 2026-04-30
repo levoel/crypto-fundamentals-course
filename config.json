@@ -62,6 +62,10 @@
     "smart-contracts",
     "zero-knowledge"
   ],
+  "prerequisites": {
+    "courses": [],
+    "external": []
+  },
   "estimatedHours": 90,
   "pricing": {
     "type": "free"
