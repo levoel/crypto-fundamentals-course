@@ -40,12 +40,12 @@
       "title": "Governance"
     },
     {
-      "id": "09-scalability",
-      "title": "Scalability"
-    },
-    {
       "id": "10-zero-knowledge",
       "title": "Zero-Knowledge Proofs"
+    },
+    {
+      "id": "09-scalability",
+      "title": "Scalability"
     },
     {
       "id": "11-data-indexing",
