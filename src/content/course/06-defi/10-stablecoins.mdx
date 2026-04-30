@@ -236,3 +236,61 @@ Cross-border переводы в USDC: быстрее и дешевле, чем 
 По данным DeFiLlama, **>60% всего TVL** в DeFi связано со стейблкоинами -- напрямую или как часть торговых пар и lending-протоколов.
 
 > Стейблкоины -- мост между традиционными финансами и DeFi. Их стабильность критична для функционирования всей экосистемы. Выбор стейблкоина = выбор профиля рисков.
+
+## Ethena USDe: synthetic dollar через delta-neutral hedging
+
+Ethena -- **третий по величине стейблкоин** мира (TVL ~$6.95B на Q1 2026, пик 2025: $14B+). USDe не относится ни к fiat-backed, ни к crypto-collateralized, ни к чисто алгоритмическим. Это **новый класс**: synthetic dollar, обеспеченный криптой и одновременно short-перпами.
+
+### Делта-нейтральная модель
+
+```
+USDe minting:
+  1. User -> Ethena: 1 ETH (stETH)  -- спот long
+  2. Ethena -> CEX: открывает SHORT перп на 1 ETH с тем же notional
+  3. Net delta = 0 (price-insensitive)
+  4. Ethena эмитирует USDe = $value(stETH) пользователю
+
+Net P&L при движении ETH:
+  ETH +20%: spot +$X, perp -$X = 0
+  ETH -20%: spot -$X, perp +$X = 0
+
+Source of yield:
+  - ETH staking yield (~3-4% APR от stETH/LST)
+  - Funding rate от коротких перпов (исторически positive в bull-market: 5-15% APR)
+  -> sUSDe (staked USDe) аккумулирует этот yield
+```
+
+USDe сам по себе не приносит yield -- yield концентрируется в **sUSDe**. Это разделение по образцу MakerDAO: DAI (без yield) + DSR; USDe (без yield) + sUSDe.
+
+### Backing transparency
+
+Q1 2026 backing-ratio: **101.12%**, supply $6.3B. Источники прозрачности:
+
+| Слой | Что раскрывается |
+|------|------------------|
+| Custodian-Attested Reserves | Еженедельная публикация позиций у Copper, Ceffu, Fireblocks |
+| Monthly attestations | Audit-firm проверяет: spot collateral + perp short notional + reserve fund |
+| On-chain dashboards | Real-time supply, redemptions, sUSDe rate |
+
+В отличие от Tether, где attestation = "у нас столько-то активов", у Ethena есть **криптографически верифицируемый short** -- exchange API подтверждает позиции.
+
+### Риски (важно для 2026)
+
+1. **Sustained negative funding rate.** В bear-market shorts оплачивают long'ам -- yield становится отрицательным. Reserve fund Ethena = ~1.18% TVL, что покрывает несколько недель умеренно негативного funding, но не годы.
+2. **Custodial / counterparty risk.** Collateral хранится у custodians (Copper и др.), а short -- на CEX (Binance, Bybit, OKX). Падение CEX = заморозка perp-позиции.
+3. **Liquidation cascade.** Шок на ETH (gap) может спровоцировать частичную ликвидацию short-позиции, прежде чем margin будет долит.
+4. **Regulatory.** Synthetic dollar с derivatives backing -- серая зона между MiCA (EU) и SEC (US). Ethena уже релокализовалась в BVI.
+
+### USDe vs остальные
+
+| Свойство | USDC | DAI | UST (rip) | USDe |
+|----------|------|-----|-----------|------|
+| Backing | Cash + T-Bills | ETH/WBTC (over-coll) | LUNA (endogenous) | stETH + short perp |
+| Yield | 0 | DSR ~5% | Anchor 20% (subsidy) | sUSDe ~12-15% |
+| Centralization risk | Высокая (Circle) | Средняя (USDC залог) | -- | Высокая (CEX, custodian) |
+| Death-spiral risk | Низкий | Низкий | **Реализован** | Низкий-средний (если funding негативный долго) |
+
+<KnowledgeCheck
+  question="Чем delta-neutral модель Ethena USDe принципиально отличается от endogenous-залога UST/LUNA?"
+  answer="USDe держит реальный экзогенный актив (stETH) + равный по notional short на перпах. Long и short хеджируют друг друга, и при падении цены стоимость collateral стабильна в долларах. У UST не было экзогенного залога -- backing был эндогенным (LUNA), что создавало замкнутую круговую зависимость и death-spiral. У Ethena есть конкретный operational risk (negative funding, CEX) -- это совсем другой класс рисков, не алгоритмическая нестабильность."
+/>

@@ -245,6 +245,103 @@ V4 поддерживает нативный ETH без обертки в WETH. 
 
 > **Примечание:** V4 в этом курсе -- **концептуальный** материал. V2 math и V3 concentrated liquidity -- фундаментальные концепции. V4 -- эволюция архитектуры, а не формулы AMM.
 
+## V4 Hooks: production-паттерны (2025-2026)
+
+V4 запущен в январе 2025. К середине 2025 разработчики создали более **2 500 hook-enabled пулов**. Ниже -- production-паттерны, которые формируют новую DEX-индустрию.
+
+### Lifecycle: 10 точек расширения
+
+```solidity
+// 10 hook-флагов кодируются в адресе hook-контракта (3 младших бита x 4 пары + 2 bit для return delta)
+contract MyHook is BaseHook {
+    function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
+        return Hooks.Permissions({
+            beforeInitialize: false, afterInitialize: true,
+            beforeAddLiquidity: true, afterAddLiquidity: false,
+            beforeRemoveLiquidity: true, afterRemoveLiquidity: false,
+            beforeSwap: true, afterSwap: true,
+            beforeDonate: false, afterDonate: false,
+            beforeSwapReturnDelta: true,        // hook возвращает дельту -- меняет cashflow свопа
+            afterSwapReturnDelta: false,
+            afterAddLiquidityReturnDelta: false,
+            afterRemoveLiquidityReturnDelta: false
+        });
+    }
+}
+```
+
+PoolManager **проверяет адрес** hook-контракта: каждый бит адреса соответствует разрешению. Если бит не выставлен -- хук просто не вызовется. Это значит, что hook нельзя "подкрутить" после деплоя -- адрес фиксирует поведение.
+
+### Pattern 1: TWAMM (Time-Weighted AMM)
+
+**Проблема:** Большой ордер вызывает price impact и MEV-атаки. **Решение:** разбить его на множество маленьких свопов во времени.
+
+```
+Lifecycle TWAMM-хука:
+1. User: place_order(size=1000 USDC, duration=1h)
+2. beforeSwap (срабатывает на ЛЮБОМ свопе в пуле):
+   - hook рассчитывает, сколько USDC должен был торговаться с прошлого блока
+   - выполняет внутренний "виртуальный" своп через PoolManager
+3. После -- обычный пользовательский своп
+```
+
+TWAMM-ордера всегда первая активность в блоке -- это защищает от sandwich-атак. Реализован UF-командой как референс-хук.
+
+### Pattern 2: Dynamic Fees
+
+Fee меняется в зависимости от волатильности (или иной метрики):
+
+```solidity
+function beforeSwap(...) external returns (bytes4, BeforeSwapDelta, uint24 fee) {
+    uint24 dynamicFee = computeFee(volatility());  // 5 bps в стабильности, 100 bps в шторм
+    return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), dynamicFee | LPFeeLibrary.OVERRIDE_FEE_FLAG);
+}
+```
+
+LP-провайдеры получают компенсацию за impermanent loss во время волатильности -- их "цифровой spread" расширяется автоматически.
+
+### Pattern 3: JIT-mitigation
+
+**Just-In-Time liquidity** -- атака LP, который добавляет ликвидность непосредственно перед большим свопом, забирает fee и тут же выходит. Это вытесняет долгосрочных LP. Hook может:
+
+```
+beforeAddLiquidity: пометить позицию timestamp
+beforeRemoveLiquidity: если age < threshold (например 10 блоков) -- штраф 50% fees в пользу пула
+```
+
+### Pattern 4: MEV-rebate (Angstrom, SUClave)
+
+Hook проводит **аукцион на право быть first-to-trade**. Победитель платит LP-провайдерам, а не sandwich-боту. Sorella Labs (Angstrom) реализует это как app-specific sequencer на уровне hook -- LP получают 80%+ от MEV, который раньше уходил searchers.
+
+### Pattern 5: Savings vault + Brevis-attested hooks
+
+LP-позиция превращается в **yield-bearing vault**: hook автоматически реинвестирует комиссии в lending-протокол (Aave/Morpho). **Brevis-attested** хуки используют ZK-доказательства событий с других цепочек: например, hook начинает динамически снижать fee, если Brevis подтверждает большой volume на конкурирующей DEX.
+
+### Singleton + Flash Accounting: gas-математика
+
+```
+V3 swap (через 2 пула):
+  ETH -> USDC: ERC20.transferFrom(user, Pool1) + ERC20.transfer(Pool1, Router)
+  USDC -> DAI: ERC20.transferFrom(Router, Pool2) + ERC20.transfer(Pool2, user)
+  = 4 storage SSTORE на ERC-20 балансах = ~80K gas
+
+V4 swap (через PoolManager):
+  PoolManager.unlock() {
+    swap1: записать дельту в transient storage (TSTORE = 100 gas)
+    swap2: записать дельту в transient storage
+    settle(): один transferFrom от user, один transfer к user
+  }
+  = 2 ERC-20 трансфера + transient storage
+  ~ -30...-50% gas на multi-hop
+```
+
+`unlock` -- центральная семантика V4: между `unlock()` и моментом возврата управления `PoolManager` баланс пула может временно "не сходиться", но к концу транзакции дельты должны равняться нулю (`settle`/`take`). Это и есть flash accounting.
+
+<KnowledgeCheck
+  question="Почему permissions хука в V4 кодируются в адресе контракта, а не в storage?"
+  answer="Кодирование в адресе делает permissions неизменяемыми и проверяемыми за O(1) без SLOAD: PoolManager на каждый callback просто проверяет младшие биты адреса hook. Если бит не выставлен -- callback пропускается. Хук нельзя 'обновить' и тихо включить новые callback'и -- для этого нужен новый адрес, что заметно для пользователей и аудиторов."
+/>
+
 ## Математический уровень
 
 ### Tick math

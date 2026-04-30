@@ -308,3 +308,110 @@ print(f"P2TR адрес: {taproot_address.to_string()}")
 | **P2TR** | 2021 | Приватность, Schnorr, MAST | `bc1p...` |
 
 **Следующий урок:** Майнинг и Proof-of-Work -- как Bitcoin обеспечивает консенсус без центрального сервера.
+
+## Ordinals, Inscriptions, BRC-20 и Runes
+
+Taproot открыл Bitcoin для **произвольных данных**: witness может быть до ~4 МБ, и эта область получает 75% скидку по комиссии. На этом фундаменте в 2023-2024 выросла отдельная экосистема, которая к 2026 насчитывает **>90M inscriptions** и сотни миллионов долларов вторичных продаж в месяц.
+
+### Ordinal Theory (Casey Rodarmor, январь 2023)
+
+Idея: каждой из **2.1 квадриллиона satoshi** присваивается уникальный порядковый номер -- **ordinal**. Это не on-chain информация, а **off-chain интерпретация** последовательности транзакций по правилам:
+
+```
+Правила нумерации:
+  1. Sat нумеруются в порядке майнинга (первый sat в coinbase каждого блока имеет известный номер)
+  2. При трате UTXO: sat-ы идут "in order" -- FIFO от inputs к outputs
+  3. Любой клиент может детерминистически рассчитать, какие sat-ы лежат в каком UTXO
+
+Rarity tiers (произвольная классификация):
+  - common, uncommon (первый sat блока), rare (первый блока difficulty epoch),
+    epic (первый блока halving), legendary (первый цикла), mythic (genesis sat)
+```
+
+Сам Bitcoin консенсус ordinals **не знает**: это чисто индексер на стороне клиента. Это важно: ordinals не требуют softfork, они работают на любом полном узле.
+
+### Inscriptions: писать данные в Taproot witness
+
+Taproot script-path тратит даёт лазейку: можно положить произвольный payload в witness через `OP_FALSE OP_IF ... OP_ENDIF` (это "envelope" -- никогда не выполняется). По соглашению Ordinals:
+
+```
+Inscription envelope (упрощённо):
+  OP_FALSE
+  OP_IF
+    OP_PUSH "ord"           // protocol marker
+    OP_PUSH 1               // tag = content-type
+    OP_PUSH "image/png"
+    OP_PUSH 0               // tag = body
+    OP_PUSH <chunk_1>
+    OP_PUSH <chunk_2>       // данные нарезаются по 520 байт
+    ...
+  OP_ENDIF
+  <regular taproot script>
+```
+
+Inscription "привязывается" к первому sat первого input reveal-транзакции. **Двухэтапный процесс**:
+
+1. **Commit transaction:** обычный send на Taproot-адрес, derived от script с inscription envelope.
+2. **Reveal transaction:** трата того UTXO с раскрытием script-path -- envelope становится частью witness и попадает в blockchain.
+
+### BRC-20: токены через JSON-инскрипции
+
+Domo (март 2023) предложил **простейший token-стандарт без смарт-контрактов**: содержимое inscription -- это JSON.
+
+```json
+// deploy: создание токена
+{ "p": "brc-20", "op": "deploy", "tick": "ordi", "max": "21000000", "lim": "1000" }
+
+// mint: минт N токенов на адрес reveal
+{ "p": "brc-20", "op": "mint", "tick": "ordi", "amt": "1000" }
+
+// transfer: двухступенчатый -- inscribe + send sat
+{ "p": "brc-20", "op": "transfer", "tick": "ordi", "amt": "100" }
+```
+
+**Bitcoin не знает про BRC-20.** Балансы вычисляют off-chain индексеры (Unisat, OKX). Это значит: правда хранится в социальном консенсусе и в коде индексеров, а не в L1.
+
+### Runes: native UTXO commitments (апрель 2024)
+
+К 2024 BRC-20 создал серьёзный mempool-фоновый шум: каждый transfer = два шага inscriptions, плюс многочисленные "junk UTXO". Casey предложил **Runes** -- альтернативный фунгибл-стандарт.
+
+```
+Ключевая разница:
+  BRC-20:  данные в taproot witness, balances в индексере
+  Runes:   данные в OP_RETURN (макс 80 байт), balances в самих UTXO
+
+Runestone (упрощённый формат OP_RETURN):
+  OP_RETURN OP_PUSH("RUNE")
+  encoded edicts: [(rune_id, amount, output_index), ...]
+  
+  Каждый UTXO "содержит" определённое количество rune-токенов.
+  Send = создать output с edict, направляющим amount туда.
+```
+
+**Преимущества:**
+- **Native UTXO model:** транзакция выглядит как обычный Bitcoin перевод. Не нужно "transfer inscription, потом send sat".
+- **Меньше места:** OP_RETURN до 80 байт против ~1-2 КБ для BRC-20 transfer-цикла.
+- **Один индексер per chain:** Bitcoin Core видит OP_RETURN -- любой узел может построить state.
+
+К Q1 2026 Runes занимают **~35% всех metadata-транзакций** Bitcoin и в значительной мере вытеснили BRC-20 для активного трейдинга.
+
+### Экономический эффект на mempool и fees
+
+```
+2023 (Ordinals/BRC-20 boom):
+  Bitcoin mempool часто >300 MB
+  Median fee: $5-50/tx (vs ~$1 в спокойные периоды)
+  Halving 2024 + inscriptions => майнерская выручка 40% из fees (рекорд)
+
+2026:
+  Runes "очистили" mempool -- меньше witness-bloat
+  Inscriptions сместились в Stamps, Atomicals -- разные технологии
+  Fee market стал двусторонним: BTC payments vs metadata vs L2 settlements (Lightning, BitVM, rollups)
+```
+
+Для разработчика это означает: **fee estimation** теперь зависит не только от количества Bitcoin-платежей, но и от inscription-волн. Кошельки с агрессивной CPFP-логикой выигрывают, а статические fee из 2017 ломаются.
+
+<KnowledgeCheck
+  question="Чем Runes принципиально отличаются от BRC-20 в части on-chain представления данных?"
+  answer="BRC-20 кладёт JSON в taproot witness inscription, а балансы хранятся off-chain в индексерах -- Bitcoin консенсус про BRC-20 ничего не знает, и transfer стоит двух шагов (inscribe transfer + send sat). Runes пишут metadata в OP_RETURN (до 80 байт) и используют сам UTXO-граф: каждое UTXO 'несёт' заданное количество runes, а runestone в transaction перераспределяет их между outputs. Это native для Bitcoin UTXO модели, дешевле по weight и не создаёт junk-UTXO."
+/>

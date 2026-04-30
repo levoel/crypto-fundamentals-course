@@ -332,3 +332,89 @@ if account_info.value:
 ## Что дальше?
 
 В следующем уроке мы разберём **программы и инструкции** -- как формируются транзакции, как Sealevel обеспечивает параллельное выполнение и как программы вызывают друг друга через CPI (Cross-Program Invocation). Вы увидите, как разделение кода и данных делает возможным то, что невозможно в Ethereum.
+
+## Token-2022 и ZK Compression: эволюция аккаунтов
+
+Базовая модель аккаунтов Solana проста: 5 полей, owner-программа, фиксированный размер data. Но за 2023-2025 экосистема радикально расширила её двумя путями: **Token-2022 program** (богатые extensions внутри token-аккаунтов) и **ZK Compression** (масса аккаунтов, представленных компактным Merkle-корнем).
+
+### Token-2022: program extensions поверх 5 полей
+
+Оригинальная **SPL Token program** (`Tokenkeg...`) поддерживает только базовый ERC-20-подобный набор: mint, transfer, approve, freeze. Token-2022 (`TokenzQd...`) -- это **отдельная программа**, у которой токен-mint и token-account имеют **расширенный data layout** с опциональными "extensions". Mint при создании выбирает набор extensions, и они становятся неотъемлемой частью токена.
+
+**Ключевые extensions (Q1 2026):**
+
+| Extension | Что делает | Use case |
+|-----------|-----------|----------|
+| **Transfer Hooks** | На каждый transfer вызывается user-defined CPI на стороннюю программу | Allowlist, royalties, KYC-gate, on-transfer logging |
+| **Confidential Transfers** | Сумма зашифрована (ElGamal + ZK proof of validity) | Корпоративные платежи, payroll |
+| **Interest-Bearing** | Баланс автоматически растёт по заданной ставке (rebase в момент чтения) | Savings tokens, yield-bearing stablecoins |
+| **Transfer Fees** | Процент от transfer'а удерживается в pending fee account | Fee-on-transfer токены, royalties для fungible |
+| **Permanent Delegate** | Выделенный адрес может move/burn любые токены | Compliance, asset recovery |
+| **Non-Transferable** | Токен soulbound -- нельзя перевести | Бейджи, репутация, KYC-сертификаты |
+| **Metadata Pointer + Metadata** | Metadata живёт в самом mint, не нужен Metaplex | NFTs нативно через Token-2022 |
+| **Group + Member** | Mint = коллекция, другой mint = membership | Compressed-NFT collections |
+
+**Важная несовместимость (Q1 2026):** Confidential Transfers и Transfer Hooks **не работают одновременно** -- хук должен видеть amount, а confidential его шифрует. Кроме того, ZK ElGamal program временно отключена на mainnet до завершения security audit (с конца 2024). Confidential transfers конкретно сейчас "приземлены".
+
+```python
+# Token-2022 mint с двумя extensions (псевдокод spl-token CLI)
+spl-token create-token \
+  --program-id TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEbi \
+  --enable-transfer-fee 100 1000000 \   # 1% fee, max 1 token
+  --transfer-hook <hook_program_id>     # вызвать hook program на каждый transfer
+
+# DataLayout token-2022 mint:
+#   [base mint fields: 82 bytes]
+#   [extension TLV section: type, length, value]
+#     - TransferFeeConfig
+#     - TransferHook
+#   ...
+```
+
+### ZK Compression: миллионы "аккаунтов" по цене одного
+
+Проблема: rent-exempt минимум для маленького аккаунта = ~0.00089 SOL/byte. Для NFT-коллекции из 1 млн объектов это сотни тысяч долларов даже при $20 за SOL. ZK Compression (Light Protocol + Helius, июнь 2024) решает это радикально.
+
+```
+Идея:
+  Вместо 1M отдельных on-chain аккаунтов хранить:
+    - on-chain: ОДИН аккаунт с Merkle root всего state
+    - off-chain: actual data (хранят RPC-провайдеры, indexers, гарантия из Solana ledger)
+  При операции:
+    - клиент достаёт data + Merkle proof через RPC
+    - подаёт в транзакцию вместе с ZK proof валидности
+    - Light Protocol program обновляет root on-chain
+
+Стоимость:
+  Обычный аккаунт NFT (Metaplex):  ~$2 за NFT при $20/SOL
+  Compressed NFT (state compression): ~$0.0001 за NFT
+  -> 1 млрд NFT = ~$11 000 (вместо ~$2 млрд)
+  -> ~10 000-кратное снижение стоимости хранения
+```
+
+ZK Compression поддерживает не только NFT, но и **fungible tokens** (compressed token accounts), и любые **arbitrary structs**. ZK-proof здесь не privacy, а compression: один constant-size proof (~128 bytes) подтверждает изменение N аккаунтов независимо от N.
+
+### Trade-offs ZK Compression
+
+| Pro | Con |
+|-----|-----|
+| Радикальное снижение rent | Каждая операция требует Merkle proof в transaction (больше compute units) |
+| Совместимо с composability через "decompress" | Полный random-access невозможен -- нужен RPC index |
+| Native support в Helius/Triton RPC | Зависимость от индексера: если он offline, операции тормозят |
+| Идеально для airdrops, gaming items, attendance NFTs | Плохо для high-frequency state (DEX positions, perps) |
+
+**Когда выбирать что (Q1 2026):**
+
+```
+Регулярный SPL Token       -> просто, всё работает, MEV-friendly
+Token-2022 + Transfer Hook -> compliance, royalties для fungible
+Token-2022 + Interest-Bearing -> yield-bearing stablecoins (PYUSD-like)
+Compressed token accounts  -> массовые airdrops, stablecoin mass-distribution
+Compressed NFTs            -> большие коллекции, сертификаты, тикеты
+Regular Metaplex NFT       -> уникальные дорогие NFT с активной trading-историей
+```
+
+<KnowledgeCheck
+  question="Почему Token-2022 -- это отдельная program, а не extension существующей SPL Token program?"
+  answer="Solana program не upgradeable в смысле data layout без согласия всех holders. SPL Token (Tokenkeg...) имеет фиксированный 165-байтный layout token-аккаунта. Менять его -- сломать тысячи протоколов, которые делают raw byte parsing. Token-2022 -- отдельная программа с другим program_id и другим data layout (TLV-extensions). Старые SPL-токены работают как раньше; новые токены могут opt-in использовать Token-2022 с extensions, и интегратор должен явно поддержать оба program_id (через 'token program' аргумент)."
+/>

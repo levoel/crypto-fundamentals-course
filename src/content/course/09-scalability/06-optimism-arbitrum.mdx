@@ -399,3 +399,70 @@ Bisection эффективнее для больших execution traces. Single-
 | **Precompiles** | L2-специфичные (ArbSys, L1Block) | Не эмулируются в Anvil |
 
 **Что дальше:** В SCALE-07 мы перейдем к **ZK Rollups** -- альтернативному подходу, где вместо fraud proofs используются **validity proofs** (криптографические доказательства корректности). Быстрее финальность (часы вместо дней), но сложнее математика. zkSync Era и StarkNet -- две ведущие реализации.
+
+## L2Beat: Stage 0 / 1 / 2 классификация
+
+Когда вы открываете [l2beat.com](https://l2beat.com) -- TVL и список L2 -- рядом с каждым проектом стоит ярлык **Stage 0**, **Stage 1** или **Stage 2**. Это формальная **methodology Виталика Бутерина** (статья "Proposed milestones for rollups", 2022), которой L2Beat следует и регулярно пересматривает. Это самый объективный способ оценить, насколько rollup действительно децентрализован.
+
+### Что меряем
+
+Идея: rollup может **выдвинуть state-update**, а пользователь должен иметь **гарантированный путь к выводу средств**, даже если operator/sequencer/security-council злонамерен. Stage = "сколько ещё training wheels осталось".
+
+```
+Stage 0 -- "Full training wheels"
+  - State updates контролируются центральным operator
+  - Может не быть live fraud proofs или они проверяются Security Council
+  - Exit window: либо нет, либо очень короткий
+  - Risk: один компрометированный мультисиг = потеря всех средств
+
+Stage 1 -- "Limited training wheels"
+  - Permissionless fraud (или validity) proofs РАБОТАЮТ on-chain
+  - Security Council может override, НО только в течение exit window
+  - 7+ дней exit window: пользователи успевают вывести средства, если не согласны
+  - 6/8 multisig threshold с правилами disclosure для Council
+
+Stage 2 -- "No training wheels"
+  - Нет Security Council с привилегиями ускорения upgrades
+  - Только on-chain proofs управляют state
+  - Upgrades идут через ту же 7-дневную задержку, что и обычные withdrawals
+  - Decentralized provers/sequencers (или хотя бы permissionless force-include)
+```
+
+### Stage Q1 2026: где кто
+
+| Rollup | Stage | Почему |
+|--------|-------|--------|
+| **Arbitrum One** | Stage 1 | BoLD permissionless fraud proofs (2024), Security Council 9/12 для emergency |
+| **OP Mainnet (Optimism)** | Stage 1 | Cannon FPVM + permissionless game (2024) |
+| **Base** | Stage 1 | Тот же OP Stack + own Security Council (Coinbase + независимые) |
+| **zkSync Era** | Stage 0 | Validity proofs работают, но centralized prover + upgradable circuits без задержки |
+| **Linea** | Stage 0 | Centralized sequencer, нет force-inclusion, ConsenSys multisig может остановить вывод |
+| **StarkNet** | Stage 1 | Permissionless verifier + decentralized stake-based prover (Q4 2025) |
+| **Scroll** | Stage 1 | Permissionless validity proofs (с late-2024) |
+| **Mantle, Linea v1, Manta**| Stage 0 | Различные комбинации centralized prover + sequencer |
+
+### Что значит Stage 0 для пользователя
+
+```
+Сценарий: Linea (Stage 0) vs Arbitrum One (Stage 1)
+  
+Атака: prover/sequencer пушит invalid state.
+  - Linea (Stage 0): нет permissionless challenge. Вы зависите от ConsenSys multisig:
+    они должны заметить и откатить. Окно ~часы. Если они скомпрометированы -- средства потеряны.
+  - Arbitrum One (Stage 1): любой может подать fraud proof через BoLD.
+    Если успешно -- invalid state откатывается на L1. Окно 7 дней + challenge.
+    Security Council нужен только для bug в самих fraud proofs.
+```
+
+К Stage 2 на момент Q1 2026 не пришёл ни один major rollup -- это амбициозная цель на 2027+. Но **тренд однозначен**: за 2024-2025 практически все top-10 L2 прошли путь Stage 0 -> Stage 1.
+
+### Источники для самопроверки
+
+- **L2Beat Risk Analysis**: для каждого rollup есть подробная разбивка по 7 категориям (State validation, Data availability, Sequencer failure, Proposer failure, etc.).
+- **Vitalik's article** ([ethereum-magicians 2022](https://ethereum-magicians.org/t/proposed-milestones-for-rollups-taking-off-training-wheels)): первоисточник терминологии.
+- **Periodic L2Beat updates**: классификация регулярно пересматривается -- например, OP Mainnet был downgraded из Stage 1 обратно в Stage 0 на короткое время в 2024 из-за изменений в Security Council.
+
+<KnowledgeCheck
+  question="В чём ключевая разница между Stage 0 и Stage 1 с точки зрения прав Security Council?"
+  answer="В Stage 0 Security Council может в любой момент override state и upgrades без ограничений по времени -- это значит, что компрометация мультисига = немедленная потеря средств. В Stage 1 Council может вмешаться только в emergency и подчиняется тем же 7-дневным withdrawal window'ам, плюс работают permissionless fraud/validity proofs. То есть в Stage 1 у пользователя ВСЕГДА есть путь вывода, даже если Council злонамерен -- надо лишь вовремя инициировать withdrawal."
+/>
