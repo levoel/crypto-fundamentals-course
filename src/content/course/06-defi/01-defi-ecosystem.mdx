@@ -69,6 +69,36 @@ DeFi экосистема состоит из семи основных кате
 
 **Ключевые протоколы:** Yearn, Convex, Lido (liquid staking).
 
+### 8. Restaking и Liquid Restaking Tokens (LRT)
+
+Отдельная категория DeFi, выросшая в 2024-2025 годах. **EigenLayer** ввёл примитив **restaking**: валидатор Ethereum (или держатель LST вроде stETH) повторно "ставит" свои ETH в качестве экономической безопасности для других протоколов -- так называемых **AVS (Actively Validated Services)**: oracle networks, data availability layers, sequencers L2, bridges.
+
+```
+Без restaking:           С restaking (EigenLayer):
+ETH stake -> Ethereum    ETH stake -> Ethereum + AVS_1 + AVS_2 + ...
+1 источник дохода        N источников дохода (но N штрафов slashing)
+1 риск slashing          composable crypto-economic security
+```
+
+Ключевые факты на 2026 год:
+- **EigenLayer mainnet slashing активирован 17 апреля 2025**, redistribution -- летом 2025, multi-chain verification (включая Base) -- следом. До этого был только "soft" режим без штрафов.
+- Пик TVL рестейкинга превысил **$28B** в 2025 году; после переоценки рисков (slashing repricing) экосистема стабилизировалась около $15-19B, EigenLayer удерживает >90% доли.
+- Каждый AVS задаёт **Operator Sets** и **Unique Stake** -- какую долю ETH-стейка операторы могут потерять за нарушение конкретного AVS, без каскадного slashing других сервисов.
+- Появились конкуренты с другой моделью риска: **Symbiotic** (permissionless collateral), **Karak** (multi-asset), **Babylon** (Bitcoin-restaking).
+
+Над EigenLayer построен слой **Liquid Restaking Tokens (LRT)** -- те же "квитанции" о депозите, что и LST, но для restaked ETH. Пользователь получает токен, который автоматически собирает доходность с базового стейкинга и от выбранных операторами AVS, остаётся ликвидным и используется как collateral в Aave/Pendle:
+
+| Протокол | Токен | TVL (2025) | Особенность |
+|----------|-------|------------|-------------|
+| Ether.fi | eETH / weETH | ~$3.2B | Лидер LRT, native restaking + AVS-fee aggregation |
+| Renzo | ezETH | ~$2B | Strategy manager поверх EigenLayer |
+| Puffer | pufETH | ~$1.3B | Anti-slashing pre-confirmation hardware |
+| Kelp DAO | rsETH | ~$0.7B | Multi-LST basket (stETH + ETHx) |
+
+> **Системный риск.** LRT добавляют леверидж: если LRT депонирован в Aave как collateral, slashing-инцидент в одном из AVS приводит к каскаду ликвидаций. Это новый вектор атак, не существовавший до 2024 года, и одна из главных тем DeFi-аудитов 2025-2026.
+
+**Ключевые протоколы:** EigenLayer, Symbiotic, Karak (restaking-платформы); Ether.fi, Renzo, Kelp, Puffer (LRT-обёртки).
+
 <KnowledgeCheck
   question="К какой категории DeFi-протоколов относятся Uniswap, Curve и Balancer?"
   answer="DEX (Decentralized Exchanges) -- биржи, использующие AMM (Automated Market Makers) вместо ордер-бука для обмена токенов через пулы ликвидности."

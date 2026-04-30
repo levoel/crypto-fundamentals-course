@@ -187,16 +187,19 @@ base_reward = 32e9 * 64 / (sqrt(33e15) * 4) ≈ 8904 gwei / эпоха
 
 ## Pectra: эволюция PoS
 
-Обновление Pectra (май 2025) внесло важные изменения в механику PoS:
+Обновление Pectra активировано на mainnet **7 мая 2025 года** (epoch 364032). Это самый крупный hard fork со времён The Merge -- одновременно выкатили **11 EIP**, ниже самые значимые для PoS:
 
 | EIP | Изменение | Значение |
 |-----|-----------|----------|
 | EIP-7251 | Макс. эффективный баланс 32 → 2048 ETH | Консолидация валидаторов: вместо 64 валидаторов можно запустить 1 с 2048 ETH |
 | EIP-6110 | Обработка депозитов на Execution Layer | Активация ускорена с ~13 часов до ~13 минут |
 | EIP-7002 | Выход через Execution Layer | Смарт-контракты могут управлять выходом валидаторов |
+| EIP-7549 | Перенос committee index из attestation message в `aggregation_bits` | Эффективная агрегация одинаковых аттестаций |
+| EIP-7685 | Generic execution layer requests | Стандартизированный канал для execution-layer триггеров |
+| EIP-2935 | Сохранение последних 8192 block hashes в storage | Stateless-friendly доступ к историческим блокам из контрактов |
 | EIP-7691 | Удвоение blob-пропускной способности | target 3→6, max 6→9 (для L2 rollups) |
 
-Pectra -- это шаг к более эффективной и масштабируемой PoS системе.
+После Pectra Ethereum продолжил roadmap: **Fusaka** (декабрь 2025) расширил blob-throughput и добавил PeerDAS-подготовку, **Glamsterdam** (середина 2026) нацелен на ePBS и Block-level Access Lists, **Hegota** (конец 2026) -- на Verkle-trees и statelessness.
 
 ## Связь с предыдущими темами
 

@@ -195,6 +195,51 @@ STARK prover выполняет **field operations + hashing** -- арифмет
 - Оптимизирован для account-based модели
 - Использует Miden VM (stack-based, STARK-friendly)
 
+## zkVM: новая парадигма ZK-разработки
+
+Уроки ZK-04 и ZK-07/08 учили писать **circuits** в DSL (Circom, Cairo, Halo2) -- описывать вычисление в виде квадратичных constraints. Это академически чистый подход, но требует переписать программу под язык схем и думать в терминах "constraints на gate".
+
+В 2024-2025 годах мейнстримом стал альтернативный подход -- **zkVM (Zero-Knowledge Virtual Machine)**: prover доказывает корректное выполнение **обычного скомпилированного кода** на стандартной ISA (чаще всего RISC-V). Разработчик пишет Rust (или Go, или C), компилирует в RISC-V, отдаёт zkVM -- получает STARK/SNARK proof, что эта программа выполнилась корректно на заданных входах.
+
+```
+Подход через circuit (Circom):
+    задача -> DSL -> circuit -> R1CS/PLONK -> proof
+    (нужно "переписать" задачу в язык схем)
+
+Подход через zkVM (RISC Zero, SP1, Jolt):
+    задача -> Rust/C -> RISC-V bytecode -> AIR -> proof
+    (обычный код, прувер сам строит execution trace)
+```
+
+### Мейнстрим zkVMs (2025-2026)
+
+| zkVM | Команда | ISA / proof system | Особенность |
+|------|---------|--------------------|-------------|
+| **RISC Zero (R0VM 2.0)** | RISC Zero | RISC-V + Plonky3-based STARK | Real-time proving: Ethereum-блок за ~44 секунды (с 35 минут в 1.0); GPU-prover лидирует по throughput |
+| **SP1 / SP1 Turbo** | Succinct Labs | RISC-V + Plonky3 STARK + SNARK wrapper | Самая зрелая production-сборка, активно используется в Ethereum L1 zkEVM proving roadmap |
+| **Jolt** | a16z crypto | RISC-V + lookup-only (Lasso) | "Just-One-Lookup-Table"; в бенчмарках до 5x быстрее RISC Zero на части workload |
+| **OpenVM** | Axiom | RISC-V, modular extensions | Модульные расширения instruction set |
+| **ZisK** | Polygon | RISC-V + Plonky3, GPU-first | Latency-оптимизированный, fast recursion |
+| **Airbender** | Matter Labs (zkSync) | RISC-V | Часть нового zkSync proving stack |
+
+### Лежащие в основе toolkits
+
+zkVMs не пишут криптографию с нуля -- они построены поверх **prover toolkits**:
+
+- **Plonky3** (Polygon, open-source) -- mainstream toolkit для AIR-based STARK provers; питает SP1, Valida, ряд zkVMs. На бенчмарках Plonky3 удерживает лидерство по hashes-per-second против Stwo и Halo2.
+- **Halo2** (изначально Zcash, форк PSE/Privacy Scaling Explorations) -- production-используется в Zcash, Axiom, Scroll zkEVM, Taiko. Halo2 -- это Plonk-based система с recursive proofs без trusted setup.
+- **Stwo** (StarkWare) -- next-gen STARK prover на смену Stone; ставка на Mersenne-31 простое поле и SIMD-векторизацию. С 2025 года это основной prover Starknet, ускоривший proving на порядок.
+
+### Когда circuit, когда zkVM
+
+| Сценарий | Лучший подход |
+|----------|---------------|
+| Маленькая, чётко выделенная функция (Merkle proof, signature) | Circuit (Circom/Halo2): меньший proof, быстрее prover на 10-100x |
+| Сложная программа без переписывания (zkML, zkEVM, custom rollup) | zkVM (RISC Zero/SP1): обычный Rust, готовая verifier-инфра |
+| Production zkEVM L2 | Hybrid: zkVM на высоком уровне + custom circuit для горячих путей (precompiles) |
+
+zkVM не "заменяет" circuit-подход -- они сосуществуют. Для Crypto Fundamentals важно знать обе парадигмы: circuits (ZK-07/08) дают понимание того, что **происходит внутри** prover-машины; zkVMs (этот раздел) -- то, как на этом строится продакшен 2025-2026.
+
 ## Гибридные подходы
 
 Современные системы часто комбинируют SNARK и STARK:
