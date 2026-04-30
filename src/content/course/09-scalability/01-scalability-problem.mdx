@@ -200,3 +200,12 @@ Trilemma:
 | **Pectra upgrade** | 6 blobs per block | Удвоение blob throughput (2025) |
 
 **Что дальше:** В SCALE-02 мы классифицируем все типы Layer 2 решений: state channels, Plasma, rollups (optimistic и ZK), validiums и sidechains. Ключевой вопрос: что отличает настоящий L2 от сайдчейна?
+
+Альтернативный подход к трилемме -- параллельное исполнение на L1 через actor-model. TON масштабируется не вынесением execution в L2, а тем, что каждый контракт изначально проектируется как независимый актор с асинхронными сообщениями. Глубокий разбор этой парадигмы -- в системном дизайне TON.
+
+<CrossCourseRef
+  courseId="sd-ton-developer"
+  lessonSlug="03-actor-model/01-actor-model-fundamentals"
+  label="System Design TON: actor model"
+  preview="Actor-model как способ масштабирования L1: независимые контракты, асинхронные сообщения, параллельное исполнение между шардами"
+/>

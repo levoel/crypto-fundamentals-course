@@ -291,3 +291,12 @@ cast chain-id --rpc-url http://localhost:8546
 ```
 
 Fork позволяет тестировать взаимодействие с реальными контрактами Uniswap, Aave, Chainlink без реальных средств. Мы будем активно использовать это в следующих уроках.
+
+DeFi на TON устроен иначе: из-за асинхронных сообщений swap-операции состоят из нескольких транзакций (нет atomic call между контрактами). Как из-за этого меняются паттерны DEX, лендинга и оракулов -- разобрано в курсе по TON.
+
+<CrossCourseRef
+  courseId="ton-blockchain"
+  lessonSlug="06-defi-on-ton/01-defi-overview-ton"
+  label="DeFi на TON: обзор"
+  preview="Как асинхронные сообщения и actor-model меняют дизайн DEX, лендинга и оракулов на TON"
+/>

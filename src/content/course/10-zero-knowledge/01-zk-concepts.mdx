@@ -190,3 +190,12 @@ ZK_PROTOCOL(Prover, Verifier, statement, witness):
 | **Interactive vs Non-Interactive** | Диалог vs одно сообщение | Non-interactive = блокчейн-совместимый |
 
 **Что дальше:** В ZK-02 мы изучим **commitment schemes** -- строительные блоки ZK-доказательств. Hash-based и Pedersen commitments, свойства binding и hiding, гомоморфность. Это подготовит нас к пониманию Sigma протоколов в ZK-03.
+
+В TON commitment schemes и Merkle-доказательства встроены прямо в модель данных через cells: Pruned Branch заменяет поддерево хешем, Merkle Proof доказывает включение, Merkle Update -- изменение состояния. Это пример того, как commitments и proofs становятся первоклассными примитивами на уровне VM.
+
+<CrossCourseRef
+  courseId="ton-blockchain"
+  lessonSlug="01-ton-architecture/04-cells-boc"
+  label="TON cells и Merkle proofs"
+  preview="Pruned Branch, Merkle Proof и Merkle Update как первоклассные примитивы TVM"
+/>
