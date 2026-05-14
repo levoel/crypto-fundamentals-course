@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Bridge Diagrams (SCALE-10)
  *
@@ -7,7 +8,7 @@
  * - InteropComparisonDiagram: HTML table comparing LayerZero, Wormhole, Axelar, Native Bridges (8 rows)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -84,8 +85,8 @@ const BRIDGE_STEP_TOOLTIPS = [
  * 5 steps, history array, step/back/reset controls.
  */
 export function BridgeArchitectureDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < BRIDGE_STEPS.length - 1) {
@@ -93,8 +94,8 @@ export function BridgeArchitectureDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -105,50 +106,49 @@ export function BridgeArchitectureDiagram() {
   return (
     <DiagramContainer title="Bridge Architecture: attack surface" color="red">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {BRIDGE_STEPS.map((st, i) => (
           <div
-            key={i}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background: i <= current ? st.color : 'rgba(255,255,255,0.08)',
-              transition: 'background 0.3s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'background': i <= current ? st.color : 'rgba(255,255,255,0.08)',
+              'transition': 'background 0.3s',
             }}
           />
         ))}
       </div>
 
       {/* Flow icons */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'margin-bottom': '16px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         {BRIDGE_STEPS.map((st, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
             <DiagramTooltip content={BRIDGE_STEP_TOOLTIPS[i]}>
               <div style={{
-                width: 46,
-                height: 46,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: i <= current ? '#fff' : colors.textMuted,
-                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.3s',
+                'width': '46px',
+                'height': '46px',
+                'border-radius': '8px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '10px',
+                'font-weight': '700',
+                'font-family': 'monospace',
+                'color': i <= current ? '#fff' : colors.textMuted,
+                'background': i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                'border': `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                'transition': 'all 0.3s',
               }}>
                 {st.icon}
               </div>
             </DiagramTooltip>
             {i < BRIDGE_STEPS.length - 1 && (
               <div style={{
-                width: 18,
-                height: 2,
-                background: i < current ? `${BRIDGE_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
-                transition: 'background 0.3s',
+                'width': '18px',
+                'height': '2px',
+                'background': i < current ? `${BRIDGE_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
+                'transition': 'background 0.3s',
               }} />
             )}
           </div>
@@ -158,49 +158,49 @@ export function BridgeArchitectureDiagram() {
       {/* Current step detail */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 8,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
+        'padding': '16px',
+        'margin-bottom': '8px',
+        'border': `1px solid ${s.color}30`,
+        'background': `${s.color}08`,
+        'border-radius': '8px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': s.color,
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${s.color}15`,
+            'border': `1px solid ${s.color}30`,
           }}>
             {s.label}
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+          <span style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text }}>
             {s.title}
           </span>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '10px' }}>
           {s.description}
         </div>
 
         {/* Attack surface annotation */}
         <div style={{
-          padding: 8,
-          borderRadius: 4,
-          background: 'rgba(244,63,94,0.08)',
-          border: '1px solid rgba(244,63,94,0.2)',
+          'padding': '8px',
+          'border-radius': '4px',
+          'background': 'rgba(244,63,94,0.08)',
+          'border': '1px solid rgba(244,63,94,0.2)',
         }}>
           <div style={{
-            fontSize: 9,
-            fontWeight: 700,
-            color: '#f43f5e',
-            fontFamily: 'monospace',
-            marginBottom: 3,
+            'font-size': '9px',
+            'font-weight': '700',
+            'color': '#f43f5e',
+            'font-family': 'monospace',
+            'margin-bottom': '3px',
           }}>
             ATTACK SURFACE
           </div>
-          <div style={{ fontSize: 11, color: '#fca5a5', lineHeight: 1.4 }}>
+          <div style={{ 'font-size': '11px', 'color': '#fca5a5', 'line-height': '1.4' }}>
             {s.attackSurface}
           </div>
         </div>
@@ -209,23 +209,23 @@ export function BridgeArchitectureDiagram() {
       {/* Summary: all attack surfaces */}
       {isSummary && (
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 6,
-          marginBottom: 12,
+          'display': 'grid',
+          'grid-template-columns': 'repeat(2, 1fr)',
+          'gap': '6px',
+          'margin-bottom': '12px',
         }}>
           {BRIDGE_STEPS.slice(0, 4).map((st, i) => (
-            <div key={i} style={{
+            <div style={{
               ...glassStyle,
-              padding: 8,
-              borderRadius: 4,
-              border: '1px solid rgba(244,63,94,0.2)',
-              background: 'rgba(244,63,94,0.05)',
+              'padding': '8px',
+              'border-radius': '4px',
+              'border': '1px solid rgba(244,63,94,0.2)',
+              'background': 'rgba(244,63,94,0.05)',
             }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: st.color, fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '700', 'color': st.color, 'font-family': 'monospace' }}>
                 {st.title}
               </div>
-              <div style={{ fontSize: 9, color: '#fca5a5', lineHeight: 1.3, marginTop: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': '#fca5a5', 'line-height': '1.3', 'margin-top': '2px' }}>
                 {st.attackSurface}
               </div>
             </div>
@@ -234,26 +234,25 @@ export function BridgeArchitectureDiagram() {
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px' }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
+          { label: 'Back', action: back, disabled: history().length <= 1 },
           { label: `Step ${current + 1}/${BRIDGE_STEPS.length}`, action: step, disabled: current >= BRIDGE_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          { label: 'Reset', action: reset, disabled: history().length <= 1 },
         ].map((btn) => (
           <button
-            key={btn.label}
             onClick={btn.action}
             disabled={btn.disabled}
             style={{
               ...glassStyle,
-              padding: '6px 14px',
-              cursor: btn.disabled ? 'default' : 'pointer',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 6,
-              opacity: btn.disabled ? 0.5 : 1,
+              'padding': '6px 14px',
+              'cursor': btn.disabled ? 'default' : 'pointer',
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+              'border': '1px solid rgba(255,255,255,0.1)',
+              'border-radius': '6px',
+              'opacity': btn.disabled ? 0.5 : 1,
             }}
           >
             {btn.label}
@@ -350,84 +349,84 @@ export function BridgeHacksTimelineDiagram() {
   return (
     <DiagramContainer title="Хронология взломов мостов" color="red">
       {/* Timeline */}
-      <div style={{ position: 'relative', marginBottom: 14 }}>
+      <div style={{ 'position': 'relative', 'margin-bottom': '14px' }}>
         {/* Timeline line */}
         <div style={{
-          position: 'absolute',
-          top: 20,
-          left: 20,
-          right: 20,
-          height: 2,
-          background: 'rgba(255,255,255,0.1)',
-          zIndex: 0,
+          'position': 'absolute',
+          'top': '20px',
+          'left': '20px',
+          'right': '20px',
+          'height': '2px',
+          'background': 'rgba(255,255,255,0.1)',
+          'z-index': '0',
         }} />
 
         {/* Hack entries */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'position': 'relative', 'z-index': '1' }}>
           {BRIDGE_HACKS.map((hack) => (
-            <DiagramTooltip key={hack.name} content={hack.tooltipRu}>
+            <DiagramTooltip content={hack.tooltipRu}>
               <div
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  flex: 1,
-                  cursor: 'pointer',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'align-items': 'center',
+                  'flex': '1',
+                  'cursor': 'pointer',
                 }}
               >
                 {/* Date */}
                 <div style={{
-                  fontSize: 8,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginBottom: 6,
+                  'font-size': '8px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-bottom': '6px',
                 }}>
                   {hack.date}
                 </div>
 
                 {/* Dot */}
                 <div style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: `${hack.tagColor}60`,
-                  border: `2px solid ${hack.tagColor}`,
-                  marginBottom: 8,
-                  transition: 'all 0.2s',
+                  'width': '12px',
+                  'height': '12px',
+                  'border-radius': '50%',
+                  'background': `${hack.tagColor}60`,
+                  'border': `2px solid ${hack.tagColor}`,
+                  'margin-bottom': '8px',
+                  'transition': 'all 0.2s',
                 }} />
 
                 {/* Name + Loss */}
                 <div style={{
-                  textAlign: 'center',
-                  padding: '6px 4px',
-                  borderRadius: 4,
-                  minWidth: 60,
+                  'text-align': 'center',
+                  'padding': '6px 4px',
+                  'border-radius': '4px',
+                  'min-width': '60px',
                 }}>
                   <div style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: colors.text,
-                    lineHeight: 1.3,
+                    'font-size': '10px',
+                    'font-weight': '700',
+                    'color': colors.text,
+                    'line-height': '1.3',
                   }}>
                     {hack.name}
                   </div>
                   <div style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#f43f5e',
-                    fontFamily: 'monospace',
-                    marginTop: 2,
+                    'font-size': '12px',
+                    'font-weight': '700',
+                    'color': '#f43f5e',
+                    'font-family': 'monospace',
+                    'margin-top': '2px',
                   }}>
                     {hack.loss}
                   </div>
                   <span style={{
-                    fontSize: 8,
-                    color: hack.tagColor,
-                    fontFamily: 'monospace',
-                    padding: '1px 4px',
-                    borderRadius: 2,
-                    background: `${hack.tagColor}15`,
-                    border: `1px solid ${hack.tagColor}30`,
+                    'font-size': '8px',
+                    'color': hack.tagColor,
+                    'font-family': 'monospace',
+                    'padding': '1px 4px',
+                    'border-radius': '2px',
+                    'background': `${hack.tagColor}15`,
+                    'border': `1px solid ${hack.tagColor}30`,
                   }}>
                     {hack.mechanismTag}
                   </span>
@@ -439,21 +438,21 @@ export function BridgeHacksTimelineDiagram() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'margin-bottom': '12px', 'flex-wrap': 'wrap' }}>
         {[
           { tag: 'Key Compromise', color: '#f43f5e', tooltipRu: 'Компрометация приватных ключей валидаторов/multisig. Самый разрушительный тип атаки: полный контроль над bridge.' },
           { tag: 'Verification Bug', color: '#f59e0b', tooltipRu: 'Баги в верификации подписей или proof. Позволяют обойти проверки и подделать сообщения/доказательства.' },
           { tag: 'Logic Flaw', color: '#8b5cf6', tooltipRu: 'Логические ошибки в обработке сообщений. Позволяют несанкционированные операции (mint, transfer) без корректных условий.' },
         ].map((item) => (
-          <DiagramTooltip key={item.tag} content={item.tooltipRu}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+          <DiagramTooltip content={item.tooltipRu}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'cursor': 'pointer' }}>
               <div style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: item.color,
+                'width': '8px',
+                'height': '8px',
+                'border-radius': '50%',
+                'background': item.color,
               }} />
-              <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
+              <span style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                 {item.tag}
               </span>
             </div>
@@ -512,34 +511,34 @@ export function InteropComparisonDiagram() {
 
   return (
     <DiagramContainer title="Протоколы интероперабельности: сравнение" color="purple">
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 12,
-          fontFamily: 'monospace',
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-size': '12px',
+          'font-family': 'monospace',
         }}>
           <thead>
             <tr>
               <th style={{
-                padding: '8px 10px',
-                textAlign: 'left',
-                fontSize: 10,
-                color: colors.textMuted,
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                minWidth: 90,
+                'padding': '8px 10px',
+                'text-align': 'left',
+                'font-size': '10px',
+                'color': colors.textMuted,
+                'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                'min-width': '90px',
               }}>
                 Параметр
               </th>
               {headers.map((protocol) => (
-                <th key={protocol} style={{
-                  padding: '8px 10px',
-                  textAlign: 'left',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: PROTOCOL_COLORS[protocol],
-                  borderBottom: `2px solid ${PROTOCOL_COLORS[protocol]}40`,
-                  minWidth: 110,
+                <th style={{
+                  'padding': '8px 10px',
+                  'text-align': 'left',
+                  'font-size': '10px',
+                  'font-weight': '600',
+                  'color': PROTOCOL_COLORS[protocol],
+                  'border-bottom': `2px solid ${PROTOCOL_COLORS[protocol]}40`,
+                  'min-width': '110px',
                 }}>
                   {protocol}
                 </th>
@@ -551,56 +550,55 @@ export function InteropComparisonDiagram() {
               const isMarketShare = row.category === 'Market Share';
               return (
                 <tr
-                  key={i}
                   style={{
-                    transition: 'background 0.15s',
+                    'transition': 'background 0.15s',
                   }}
                 >
                   <td style={{
-                    padding: '7px 10px',
-                    color: colors.textMuted,
-                    fontWeight: 600,
-                    fontSize: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    'padding': '7px 10px',
+                    'color': colors.textMuted,
+                    'font-weight': '600',
+                    'font-size': '10px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
                   }}>
                     <DiagramTooltip content={row.tooltipRu}>
-                      <span style={{ borderBottom: '1px dotted rgba(255,255,255,0.3)', cursor: 'help' }}>{row.category}</span>
+                      <span style={{ 'border-bottom': '1px dotted rgba(255,255,255,0.3)', 'cursor': 'help' }}>{row.category}</span>
                     </DiagramTooltip>
                   </td>
                   <td style={{
-                    padding: '7px 10px',
-                    color: isMarketShare ? PROTOCOL_COLORS.LayerZero : colors.text,
-                    fontWeight: isMarketShare ? 700 : 400,
-                    fontSize: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
+                    'padding': '7px 10px',
+                    'color': isMarketShare ? PROTOCOL_COLORS.LayerZero : colors.text,
+                    'font-weight': isMarketShare ? 700 : 400,
+                    'font-size': '10px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'line-height': '1.4',
                   }}>
                     {row.layerzero}
                   </td>
                   <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
+                    'padding': '7px 10px',
+                    'color': colors.text,
+                    'font-size': '10px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'line-height': '1.4',
                   }}>
                     {row.wormhole}
                   </td>
                   <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
+                    'padding': '7px 10px',
+                    'color': colors.text,
+                    'font-size': '10px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'line-height': '1.4',
                   }}>
                     {row.axelar}
                   </td>
                   <td style={{
-                    padding: '7px 10px',
-                    color: colors.text,
-                    fontSize: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    lineHeight: 1.4,
+                    'padding': '7px 10px',
+                    'color': colors.text,
+                    'font-size': '10px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'line-height': '1.4',
                   }}>
                     {row.native}
                   </td>
@@ -611,7 +609,7 @@ export function InteropComparisonDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DataBox
           label="Рынок 2025"
           value="LayerZero доминирует (~75% volume). Wormhole восстанавливается после хака. Native bridges -- самые безопасные для L1<->L2."

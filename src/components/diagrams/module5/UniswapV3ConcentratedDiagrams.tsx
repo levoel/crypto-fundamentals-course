@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Uniswap V3 Concentrated Liquidity Diagrams (DEFI-04)
  *
@@ -7,7 +8,7 @@
  * - V4HooksOverviewDiagram: V4 singleton + hooks architecture with V2/V3/V4 table (DiagramTooltip)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -24,14 +25,14 @@ import { colors, glassStyle } from '@primitives/shared';
  * Shows price(i) = 1.0001^i, current price marker, in-range/out-of-range.
  */
 export function TickRangeDiagram() {
-  const [tickLower, setTickLower] = useState(74000); // ~1500 USDC
-  const [tickUpper, setTickUpper] = useState(78000); // ~2500 USDC
+  const [tickLower, setTickLower] = createSignal(74000); // ~1500 USDC
+  const [tickUpper, setTickUpper] = createSignal(78000); // ~2500 USDC
   const currentTick = 76012; // ~2000 USDC
 
-  const priceLower = Math.pow(1.0001, tickLower);
-  const priceUpper = Math.pow(1.0001, tickUpper);
+  const priceLower = Math.pow(1.0001, tickLower());
+  const priceUpper = Math.pow(1.0001, tickUpper());
   const currentPrice = Math.pow(1.0001, currentTick);
-  const inRange = currentTick >= tickLower && currentTick <= tickUpper;
+  const inRange = currentTick >= tickLower() && currentTick <= tickUpper();
 
   // SVG
   const svgW = 320;
@@ -46,15 +47,15 @@ export function TickRangeDiagram() {
   const tickMax = 82000;
   const toSvgX = (tick: number) => padL + ((tick - tickMin) / (tickMax - tickMin)) * plotW;
 
-  const lowerX = toSvgX(tickLower);
-  const upperX = toSvgX(tickUpper);
+  const lowerX = toSvgX(tickLower());
+  const upperX = toSvgX(tickUpper());
   const currentX = toSvgX(currentTick);
 
   return (
     <DiagramContainer title="Uniswap V3: тики и ценовые диапазоны" color="blue">
       {/* SVG tick line */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Base line */}
           <line
             x1={padL}
@@ -101,69 +102,69 @@ export function TickRangeDiagram() {
       </div>
 
       {/* Sliders */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px', 'margin-bottom': '16px' }}>
         <div>
           <DiagramTooltip content="Tick: дискретная точка на ценовой оси. price = 1.0001^tick. Tick spacing (60 для 0.3% fee) определяет гранулярность позиций.">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_lower:</span>
-              <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickLower}</span>
+            <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '4px' }}>
+              <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>tick_lower:</span>
+              <span style={{ 'font-size': '11px', 'color': colors.primary, 'font-family': 'monospace' }}>{tickLower()}</span>
             </div>
           </DiagramTooltip>
           <input
             type="range"
             min={70000}
             max={76000}
-            value={tickLower}
+            value={tickLower()}
             onChange={(e) => setTickLower(Number(e.target.value))}
-            style={{ width: '100%', accentColor: colors.primary }}
+            style={{ 'width': '100%', 'accent-color': colors.primary }}
           />
         </div>
         <div>
           <DiagramTooltip content="Range [tickLower, tickUpper]: интервал, в котором LP предоставляет ликвидность. Ликвидность активна только когда текущая цена в range.">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>tick_upper:</span>
-              <span style={{ fontSize: 11, color: colors.primary, fontFamily: 'monospace' }}>{tickUpper}</span>
+            <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '4px' }}>
+              <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>tick_upper:</span>
+              <span style={{ 'font-size': '11px', 'color': colors.primary, 'font-family': 'monospace' }}>{tickUpper()}</span>
             </div>
           </DiagramTooltip>
           <input
             type="range"
             min={76000}
             max={82000}
-            value={tickUpper}
+            value={tickUpper()}
             onChange={(e) => setTickUpper(Number(e.target.value))}
-            style={{ width: '100%', accentColor: colors.primary }}
+            style={{ 'width': '100%', 'accent-color': colors.primary }}
           />
         </div>
       </div>
 
       {/* Values */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
         <DiagramTooltip content="Tick: дискретная точка на ценовой оси. price = 1.0001^tick. Tick spacing (60 для 0.3% fee) определяет гранулярность позиций.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-              price(tick_lower) = 1.0001^{tickLower}
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
+              price(tick_lower) = 1.0001^{tickLower()}
             </div>
-            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': colors.primary, 'font-family': 'monospace', 'font-weight': '600' }}>
               ${priceLower.toFixed(2)}
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Range [tickLower, tickUpper]: интервал, в котором LP предоставляет ликвидность. Ликвидность активна только когда текущая цена в range.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
-              price(tick_upper) = 1.0001^{tickUpper}
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
+              price(tick_upper) = 1.0001^{tickUpper()}
             </div>
-            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': colors.primary, 'font-family': 'monospace', 'font-weight': '600' }}>
               ${priceUpper.toFixed(2)}
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Текущая цена определяется текущим тиком. Если цена внутри range -- LP зарабатывает fees. Вне range -- позиция неактивна.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Текущая цена (tick {currentTick})
             </div>
-            <div style={{ fontSize: 13, color: inRange ? colors.success : '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': inRange ? colors.success : '#f43f5e', 'font-family': 'monospace', 'font-weight': '600' }}>
               ${currentPrice.toFixed(2)}
             </div>
           </div>
@@ -171,15 +172,15 @@ export function TickRangeDiagram() {
         <DiagramTooltip content="Узкий range = выше concentration = больше fee income, но выше риск выхода за пределы. Широкий range = безопаснее, но меньше доход.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            background: inRange ? 'rgba(34,197,94,0.06)' : 'rgba(244,63,94,0.06)',
-            border: `1px solid ${inRange ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
+            'padding': '10px',
+            'background': inRange ? 'rgba(34,197,94,0.06)' : 'rgba(244,63,94,0.06)',
+            'border': `1px solid ${inRange ? 'rgba(34,197,94,0.2)' : 'rgba(244,63,94,0.2)'}`,
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Ширина диапазона
             </div>
-            <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace', fontWeight: 600 }}>
-              {(tickUpper - tickLower).toLocaleString()} тиков
+            <div style={{ 'font-size': '13px', 'color': colors.text, 'font-family': 'monospace', 'font-weight': '600' }}>
+              {(tickUpper() - tickLower()).toLocaleString()} тиков
             </div>
           </div>
         </DiagramTooltip>
@@ -223,7 +224,7 @@ export function ConcentratedVsFullRangeDiagram() {
   const toSvgY = (yVal: number) => padT + plotH - ((yVal - yMin) / (yMax - yMin)) * plotH;
 
   // Full curve
-  const fullCurve = useMemo(() => {
+  const fullCurve = createMemo(() => {
     const pts: string[] = [];
     for (let xv = xMin; xv <= xMax; xv += 5) {
       const yv = k / xv;
@@ -232,13 +233,13 @@ export function ConcentratedVsFullRangeDiagram() {
       }
     }
     return pts.join(' ');
-  }, []);
+  });
 
   // Concentrated range: x from 400-1000 (price_a to price_b)
   const concXmin = 400;
   const concXmax = 1000;
 
-  const concCurve = useMemo(() => {
+  const concCurve = createMemo(() => {
     const pts: string[] = [];
     for (let xv = concXmin; xv <= concXmax; xv += 5) {
       const yv = k / xv;
@@ -247,10 +248,10 @@ export function ConcentratedVsFullRangeDiagram() {
       }
     }
     return pts.join(' ');
-  }, []);
+  });
 
   // Shaded area for concentrated range
-  const shadedPath = useMemo(() => {
+  const shadedPath = createMemo(() => {
     const pts: string[] = [];
     for (let xv = concXmin; xv <= concXmax; xv += 5) {
       const yv = k / xv;
@@ -262,13 +263,13 @@ export function ConcentratedVsFullRangeDiagram() {
     pts.push(`${toSvgX(concXmax).toFixed(1)},${toSvgY(yMin).toFixed(1)}`);
     pts.push(`${toSvgX(concXmin).toFixed(1)},${toSvgY(yMin).toFixed(1)}`);
     return pts.join(' ');
-  }, []);
+  });
 
   return (
     <DiagramContainer title="Concentrated Liquidity: реальные vs виртуальные резервы" color="green">
       {/* SVG */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Axes */}
           <line x1={padL} y1={padT} x2={padL} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
           <line x1={padL} y1={padT + plotH} x2={padL + plotW} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
@@ -311,40 +312,40 @@ export function ConcentratedVsFullRangeDiagram() {
       </div>
 
       {/* Zone explanations with DiagramTooltip */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-bottom': '12px' }}>
         <DiagramTooltip content="Full range [0, infinity): V2-style. Капитал распределён по всем ценам. Безопасно (всегда in range), но неэффективно.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            fontSize: 12,
-            color: colors.text,
-            lineHeight: 1.5,
+            'padding': '10px',
+            'font-size': '12px',
+            'color': colors.text,
+            'line-height': '1.5',
           }}>
-            <strong style={{ color: 'rgba(255,255,255,0.5)' }}>V2 (full range):</strong> Ликвидность по всей кривой [0, infinity). Виртуальные резервы = реальные резервы.
+            <strong style={{ 'color': 'rgba(255,255,255,0.5)' }}>V2 (full range):</strong> Ликвидность по всей кривой [0, infinity). Виртуальные резервы = реальные резервы.
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Narrow range (+-2%): высокая concentration. 100x+ эффективнее full range. Но требует активного management -- цена может выйти за пределы.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            fontSize: 12,
-            color: colors.text,
-            lineHeight: 1.5,
-            background: `${colors.success}08`,
-            border: `1px solid ${colors.success}30`,
+            'padding': '10px',
+            'font-size': '12px',
+            'color': colors.text,
+            'line-height': '1.5',
+            'background': `${colors.success}08`,
+            'border': `1px solid ${colors.success}30`,
           }}>
-            <strong style={{ color: colors.success }}>V3 (concentrated):</strong> LP размещает ликвидность только между p_a и p_b. Реальных токенов нужно значительно меньше.
+            <strong style={{ 'color': colors.success }}>V3 (concentrated):</strong> LP размещает ликвидность только между p_a и p_b. Реальных токенов нужно значительно меньше.
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Out of range: позиция неактивна. LP не зарабатывает fees. Позиция конвертируется в один токен (100% token X или 100% token Y).">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            fontSize: 12,
-            color: colors.textMuted,
-            lineHeight: 1.5,
+            'padding': '10px',
+            'font-size': '12px',
+            'color': colors.textMuted,
+            'line-height': '1.5',
           }}>
-            <strong style={{ color: '#f43f5e' }}>Out of range:</strong> Позиция неактивна, LP не зарабатывает fees. Конвертируется в 100% одного токена.
+            <strong style={{ 'color': '#f43f5e' }}>Out of range:</strong> Позиция неактивна, LP не зарабатывает fees. Конвертируется в 100% одного токена.
           </div>
         </DiagramTooltip>
       </div>
@@ -409,52 +410,52 @@ export function V4HooksOverviewDiagram() {
       <DiagramTooltip content="V3: отдельный контракт на каждый пул. V4: Singleton (один контракт для всех пулов). Flash accounting через transient storage (EIP-1153).">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 16,
-          background: 'rgba(168,85,247,0.06)',
-          border: '1px solid rgba(168,85,247,0.2)',
+          'padding': '14px',
+          'margin-bottom': '16px',
+          'background': 'rgba(168,85,247,0.06)',
+          'border': '1px solid rgba(168,85,247,0.2)',
         }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.accent, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Singleton Pattern
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
-            V2/V3: каждый пул -- отдельный контракт (Factory + create2). V4: ВСЕ пулы живут в одном контракте <span style={{ color: colors.accent }}>PoolManager</span>. Создание пула = запись в mapping, не деплой контракта.
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.5', 'margin-bottom': '8px' }}>
+            V2/V3: каждый пул -- отдельный контракт (Factory + create2). V4: ВСЕ пулы живут в одном контракте <span style={{ 'color': colors.accent }}>PoolManager</span>. Создание пула = запись в mapping, не деплой контракта.
           </div>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>V2/V3</div>
-              <div style={{ fontSize: 20, marginTop: 4 }}>{'{ } { } { }'}</div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>N контрактов</div>
+          <div style={{ 'display': 'flex', 'gap': '12px', 'justify-content': 'center' }}>
+            <div style={{ ...glassStyle, 'padding': '8px', 'text-align': 'center', 'flex': '1' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>V2/V3</div>
+              <div style={{ 'font-size': '20px', 'margin-top': '4px' }}>{'{ } { } { }'}</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>N контрактов</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', color: colors.textMuted }}>-&gt;</div>
-            <div style={{ ...glassStyle, padding: 8, textAlign: 'center', flex: 1, background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.3)' }}>
-              <div style={{ fontSize: 10, color: colors.accent, fontFamily: 'monospace' }}>V4</div>
-              <div style={{ fontSize: 20, marginTop: 4 }}>{'{ }'}</div>
-              <div style={{ fontSize: 9, color: colors.accent, fontFamily: 'monospace' }}>1 контракт</div>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'color': colors.textMuted }}>-&gt;</div>
+            <div style={{ ...glassStyle, 'padding': '8px', 'text-align': 'center', 'flex': '1', 'background': 'rgba(168,85,247,0.08)', 'border': '1px solid rgba(168,85,247,0.3)' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.accent, 'font-family': 'monospace' }}>V4</div>
+              <div style={{ 'font-size': '20px', 'margin-top': '4px' }}>{'{ }'}</div>
+              <div style={{ 'font-size': '9px', 'color': colors.accent, 'font-family': 'monospace' }}>1 контракт</div>
             </div>
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Hooks lifecycle */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.text, fontFamily: 'monospace', marginBottom: 8 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.text, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
           Hooks: 10 точек кастомизации
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div style={{ 'display': 'flex', 'flex-wrap': 'wrap', 'gap': '4px' }}>
           {HOOKS_LIST.map((hook, i) => {
             const isBefore = hook.name.startsWith('before');
             return (
-              <DiagramTooltip key={i} content={hook.tooltip}>
+              <DiagramTooltip content={hook.tooltip}>
                 <div
                   style={{
                     ...glassStyle,
-                    padding: '4px 8px',
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                    color: isBefore ? colors.primary : colors.success,
-                    background: isBefore ? 'rgba(99,102,241,0.05)' : 'rgba(34,197,94,0.05)',
-                    transition: 'all 0.15s',
+                    'padding': '4px 8px',
+                    'font-size': '10px',
+                    'font-family': 'monospace',
+                    'color': isBefore ? colors.primary : colors.success,
+                    'background': isBefore ? 'rgba(99,102,241,0.05)' : 'rgba(34,197,94,0.05)',
+                    'transition': 'all 0.15s',
                   }}
                 >
                   {hook.name}
@@ -466,17 +467,17 @@ export function V4HooksOverviewDiagram() {
       </div>
 
       {/* Comparison table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, fontFamily: 'monospace' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'collapse', 'font-size': '11px', 'font-family': 'monospace' }}>
           <thead>
             <tr>
               {['Feature', 'V2', 'V3', 'V4'].map((h) => (
-                <th key={h} style={{
-                  padding: '8px 6px',
-                  borderBottom: '1px solid rgba(255,255,255,0.1)',
-                  textAlign: 'left',
-                  color: h === 'V4' ? colors.accent : colors.textMuted,
-                  fontWeight: h === 'V4' ? 600 : 400,
+                <th style={{
+                  'padding': '8px 6px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                  'text-align': 'left',
+                  'color': h === 'V4' ? colors.accent : colors.textMuted,
+                  'font-weight': h === 'V4' ? 600 : 400,
                 }}>
                   {h}
                 </th>
@@ -486,23 +487,22 @@ export function V4HooksOverviewDiagram() {
           <tbody>
             {V4_COMPARISON.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  transition: 'all 0.15s',
+                  'transition': 'all 0.15s',
                 }}
               >
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.text, fontWeight: 600 }}>
+                <td style={{ 'padding': '8px 6px', 'border-bottom': '1px solid rgba(255,255,255,0.05)', 'color': colors.text, 'font-weight': '600' }}>
                   <DiagramTooltip content={row.tooltip}>
                     <span>{row.feature}</span>
                   </DiagramTooltip>
                 </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.textMuted }}>
+                <td style={{ 'padding': '8px 6px', 'border-bottom': '1px solid rgba(255,255,255,0.05)', 'color': colors.textMuted }}>
                   {row.v2}
                 </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.textMuted }}>
+                <td style={{ 'padding': '8px 6px', 'border-bottom': '1px solid rgba(255,255,255,0.05)', 'color': colors.textMuted }}>
                   {row.v3}
                 </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: colors.accent, fontWeight: 600 }}>
+                <td style={{ 'padding': '8px 6px', 'border-bottom': '1px solid rgba(255,255,255,0.05)', 'color': colors.accent, 'font-weight': '600' }}>
                   {row.v4}
                 </td>
               </tr>
@@ -511,7 +511,7 @@ export function V4HooksOverviewDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DataBox
           label="V4 запущен 30 января 2025"
           value="Singleton + hooks + flash accounting (EIP-1153 transient storage). V2 math и V3 concentrated liquidity -- фундаментальные концепции, V4 -- эволюция архитектуры."

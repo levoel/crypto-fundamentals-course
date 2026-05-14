@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Finite Field Diagrams
  *
@@ -7,7 +8,7 @@
  * - GroupPropertyDiagram: Visual showing closure, identity, inverse, associativity
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { createEffect, createSignal, onCleanup } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -64,25 +65,25 @@ const PRIMES = [2, 3, 5, 7, 11, 13];
  * Highlights g^0, g^1, g^2, ... showing how generator visits all elements.
  */
 export function CyclicGroupVisualization() {
-  const [p, setP] = useState(7);
-  const [g, setG] = useState(3);
-  const [animStep, setAnimStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [p, setP] = createSignal(7);
+  const [g, setG] = createSignal(3);
+  const [animStep, setAnimStep] = createSignal(0);
+  const [isPlaying, setIsPlaying] = createSignal(false);
+  let timerRef: ReturnType<typeof setInterval> | null = null;
 
-  const order = p - 1; // |Z*_p|
+  const order = p() - 1; // |Z*_p|
   const elements = Array.from({ length: order }, (_, i) => i + 1); // 1..p-1
   const powers: number[] = [];
   for (let i = 0; i < order; i++) {
-    powers.push(modPow(g, i, p));
+    powers.push(modPow(g(), i, p()));
   }
 
-  const genIsValid = isGenerator(g, p);
+  const genIsValid = isGenerator(g(), p());
 
   // Animation
-  useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
+  createEffect(() => {
+    if (isPlaying()) {
+      timerRef = setInterval(() => {
         setAnimStep((s) => {
           if (s >= order - 1) {
             setIsPlaying(false);
@@ -92,12 +93,12 @@ export function CyclicGroupVisualization() {
         });
       }, 600);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, order]);
+    onCleanup(() => {
+      if (timerRef) clearInterval(timerRef);
+    });
+  });
 
-  const handlePrimeChange = useCallback((v: number) => {
+  const handlePrimeChange = (v: number) => {
     // Snap to nearest prime
     const nearest = PRIMES.reduce((prev, curr) =>
       Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev
@@ -106,7 +107,7 @@ export function CyclicGroupVisualization() {
     setG(2);
     setAnimStep(0);
     setIsPlaying(false);
-  }, []);
+  };
 
   const cx = 140;
   const cy = 140;
@@ -117,27 +118,27 @@ export function CyclicGroupVisualization() {
       title="Циклическая группа и генераторы"
       color="blue"
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         <DiagramTooltip content="Циклическая группа Z*_p: мультипликативная группа ненулевых элементов поля GF(p). Порядок группы = p - 1.">
           <InteractiveValue
-            value={p}
+            value={p()}
             onChange={handlePrimeChange}
             min={2}
             max={13}
-            label={`Простое p = ${p}`}
+            label={`Простое p = ${p()}`}
           />
         </DiagramTooltip>
         <DiagramTooltip content="Циклическая группа: все элементы генерируются из одного генератора g. Порядок группы -- наименьшее n, при котором g^n = 1 (mod p).">
           <InteractiveValue
-            value={g}
+            value={g()}
             onChange={(v) => { setG(v); setAnimStep(0); setIsPlaying(false); }}
             min={2}
-            max={p - 1}
-            label={`Генератор g = ${g}${genIsValid ? ' (генератор)' : ' (не генератор)'}`}
+            max={p() - 1}
+            label={`Генератор g = ${g()}${genIsValid ? ' (генератор)' : ' (не генератор)'}`}
           />
         </DiagramTooltip>
 
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
           <svg width={280} height={280} viewBox="0 0 280 280">
             <circle cx={cx} cy={cy} r={radius} fill="none" stroke={colors.border} strokeWidth={1.5} />
 
@@ -148,16 +149,16 @@ export function CyclicGroupVisualization() {
               const y = cy + radius * Math.sin(angle);
 
               // Check if this element has been visited in animation
-              const visitedIndex = powers.slice(0, animStep + 1).indexOf(el);
-              const isVisited = visitedIndex !== -1 && visitedIndex <= animStep;
-              const isCurrent = powers[animStep] === el;
+              const visitedIndex = powers.slice(0, animStep() + 1).indexOf(el);
+              const isVisited = visitedIndex !== -1 && visitedIndex <= animStep();
+              const isCurrent = powers[animStep()] === el;
 
               let fillColor = 'rgba(255,255,255,0.05)';
               if (isCurrent) fillColor = colors.primary + '70';
               else if (isVisited) fillColor = colors.accent + '40';
 
               return (
-                <g key={el}>
+                <g>
                   <circle
                     cx={x}
                     cy={y}
@@ -182,7 +183,7 @@ export function CyclicGroupVisualization() {
             })}
 
             {/* Draw arrows between consecutive powers */}
-            {powers.slice(0, animStep + 1).map((_, i) => {
+            {powers.slice(0, animStep() + 1).map((_, i) => {
               if (i === 0) return null;
               const prevEl = powers[i - 1];
               const currEl = powers[i];
@@ -197,7 +198,6 @@ export function CyclicGroupVisualization() {
 
               return (
                 <line
-                  key={`arrow-${i}`}
                   x1={x1}
                   y1={y1}
                   x2={x2}
@@ -217,42 +217,42 @@ export function CyclicGroupVisualization() {
             </defs>
 
             <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill={colors.textMuted} fontSize={11} fontFamily="monospace">
-              Z*_{p}
+              Z*_{p()}
             </text>
           </svg>
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <button
             onClick={() => { setAnimStep(0); setIsPlaying(false); }}
-            style={{ ...glassStyle, padding: '6px 14px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+            style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
           >
             Сброс
           </button>
           <button
             onClick={() => {
-              if (isPlaying) {
+              if (isPlaying()) {
                 setIsPlaying(false);
               } else {
-                if (animStep >= order - 1) setAnimStep(0);
+                if (animStep() >= order - 1) setAnimStep(0);
                 setIsPlaying(true);
               }
             }}
-            style={{ ...glassStyle, padding: '6px 14px', cursor: 'pointer', color: colors.primary, fontSize: 13 }}
+            style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': 'pointer', 'color': colors.primary, 'font-size': '13px' }}
           >
-            {isPlaying ? 'Пауза' : 'Анимация'}
+            {isPlaying() ? 'Пауза' : 'Анимация'}
           </button>
           <button
             onClick={() => setAnimStep((s) => Math.min(order - 1, s + 1))}
-            disabled={animStep >= order - 1}
+            disabled={animStep() >= order - 1}
             style={{
               ...glassStyle,
-              padding: '6px 14px',
-              cursor: animStep >= order - 1 ? 'not-allowed' : 'pointer',
-              color: animStep >= order - 1 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: animStep >= order - 1 ? 0.5 : 1,
+              'padding': '6px 14px',
+              'cursor': animStep() >= order - 1 ? 'not-allowed' : 'pointer',
+              'color': animStep() >= order - 1 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': animStep() >= order - 1 ? 0.5 : 1,
             }}
           >
             Шаг
@@ -261,33 +261,33 @@ export function CyclicGroupVisualization() {
 
         {/* Power sequence */}
         <DiagramTooltip content="Последовательность степеней генератора: g^0 = 1, g^1, g^2, ... Если g -- генератор, он посещает все элементы Z*_p ровно по одному разу.">
-          <div style={{ ...glassStyle, padding: 12 }}>
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
-              Степени g = {g}:
+          <div style={{ ...glassStyle, 'padding': '12px' }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '6px' }}>
+              Степени g = {g()}:
             </div>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', fontFamily: 'monospace', fontSize: 12 }}>
-              {powers.slice(0, animStep + 1).map((val, i) => (
-                <span key={i} style={{
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: `${colors.primary}20`,
-                  border: `1px solid ${colors.primary}30`,
-                  color: colors.primary,
+            <div style={{ 'display': 'flex', 'gap': '4px', 'flex-wrap': 'wrap', 'font-family': 'monospace', 'font-size': '12px' }}>
+              {powers.slice(0, animStep() + 1).map((val, i) => (
+                <span style={{
+                  'padding': '2px 6px',
+                  'border-radius': '4px',
+                  'background': `${colors.primary}20`,
+                  'border': `1px solid ${colors.primary}30`,
+                  'color': colors.primary,
                 }}>
-                  {g}^{i} = {val}
+                  {g()}^{i} = {val}
                 </span>
               ))}
             </div>
           </div>
         </DiagramTooltip>
 
-        {animStep >= order - 1 && (
+        {animStep() >= order - 1 && (
           <DiagramTooltip content="Генератор порождает всю группу: каждый ненулевой элемент поля представим как степень генератора. Это свойство используется в протоколе Диффи-Хеллмана.">
             <DataBox
               label="Результат"
               value={genIsValid
-                ? `g = ${g} является генератором Z*_${p}: посещает все ${order} элементов`
-                : `g = ${g} НЕ является генератором Z*_${p}: посещает ${new Set(powers).size} из ${order} элементов`
+                ? `g = ${g()} является генератором Z*_${p()}: посещает все ${order} элементов`
+                : `g = ${g()} НЕ является генератором Z*_${p()}: посещает ${new Set(powers).size} из ${order} элементов`
               }
               variant="highlight"
             />
@@ -312,16 +312,16 @@ const heatmapColors = [
  * FiniteFieldGrid - GF(p) multiplication table heatmap.
  */
 export function FiniteFieldGrid() {
-  const [p, setP] = useState(7);
+  const [p, setP] = createSignal(7);
 
-  const handlePrimeChange = useCallback((v: number) => {
+  const handlePrimeChange = (v: number) => {
     const nearest = PRIMES.reduce((prev, curr) =>
       Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev
     );
     setP(nearest);
-  }, []);
+  };
 
-  const elements = Array.from({ length: p }, (_, i) => i);
+  const elements = Array.from({ length: p() }, (_, i) => i);
 
   return (
     <DiagramContainer
@@ -330,34 +330,33 @@ export function FiniteFieldGrid() {
     >
       <DiagramTooltip content="Таблица умножения в конечном поле GF(p). Каждая ячейка (i,j) содержит i * j mod p. Замкнутость: результат всегда в [0, p-1].">
         <InteractiveValue
-          value={p}
+          value={p()}
           onChange={handlePrimeChange}
           min={2}
           max={13}
-          label={`Простое p = ${p}`}
+          label={`Простое p = ${p()}`}
         />
       </DiagramTooltip>
 
-      <div style={{ overflowX: 'auto', marginTop: 12 }}>
-        <table style={{ borderCollapse: 'collapse', fontFamily: 'monospace', fontSize: p > 7 ? 10 : 13 }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-top': '12px' }}>
+        <table style={{ 'border-collapse': 'collapse', 'font-family': 'monospace', 'font-size': p() > 7 ? 10 : 13 }}>
           <thead>
             <tr>
               <th style={{
-                padding: '6px 10px',
-                color: colors.textMuted,
-                fontSize: 11,
-                borderBottom: `1px solid ${colors.border}`,
-                borderRight: `1px solid ${colors.border}`,
+                'padding': '6px 10px',
+                'color': colors.textMuted,
+                'font-size': '11px',
+                'border-bottom': `1px solid ${colors.border}`,
+                'border-right': `1px solid ${colors.border}`,
               }}>
                 *
               </th>
               {elements.map((col) => (
                 <th
-                  key={col}
                   style={{
-                    padding: '6px 10px',
-                    color: colors.textMuted,
-                    borderBottom: `1px solid ${colors.border}`,
+                    'padding': '6px 10px',
+                    'color': colors.textMuted,
+                    'border-bottom': `1px solid ${colors.border}`,
                   }}
                 >
                   {col}
@@ -367,31 +366,30 @@ export function FiniteFieldGrid() {
           </thead>
           <tbody>
             {elements.map((row) => (
-              <tr key={row}>
+              <tr>
                 <td style={{
-                  padding: '6px 10px',
-                  color: colors.textMuted,
-                  fontWeight: 600,
-                  borderRight: `1px solid ${colors.border}`,
+                  'padding': '6px 10px',
+                  'color': colors.textMuted,
+                  'font-weight': '600',
+                  'border-right': `1px solid ${colors.border}`,
                 }}>
                   {row}
                 </td>
                 {elements.map((col) => {
-                  const product = (row * col) % p;
-                  const colorIdx = Math.min(Math.floor((product / (p - 1 || 1)) * (heatmapColors.length - 1)), heatmapColors.length - 1);
+                  const product = (row * col) % p();
+                  const colorIdx = Math.min(Math.floor((product / (p() - 1 || 1)) * (heatmapColors.length - 1)), heatmapColors.length - 1);
 
                   return (
                     <td
-                      key={col}
                       style={{
-                        padding: '6px 10px',
-                        textAlign: 'center',
-                        background: heatmapColors[colorIdx],
-                        color: colors.text,
-                        border: `1px solid rgba(255,255,255,0.05)`,
+                        'padding': '6px 10px',
+                        'text-align': 'center',
+                        'background': heatmapColors[colorIdx],
+                        'color': colors.text,
+                        'border': `1px solid rgba(255,255,255,0.05)`,
                       }}
                     >
-                      <DiagramTooltip content={`${row} * ${col} = ${product} (mod ${p}). Результат умножения в конечном поле GF(${p}).`}>
+                      <DiagramTooltip content={`${row} * ${col} = ${product} (mod ${p()}). Результат умножения в конечном поле GF(${p()}).`}>
                         <span>{product}</span>
                       </DiagramTooltip>
                     </td>
@@ -460,7 +458,7 @@ export function GroupPropertyDiagram() {
       color="emerald"
       description="Четыре аксиомы группы на примере Z*_7 = {1, 2, 3, 4, 5, 6}"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(auto-fit, minmax(250px, 1fr))', 'gap': '12px' }}>
         {groupProperties.map((prop) => {
           const tooltipContent: Record<string, string> = {
             closure: 'Замкнутость: для любых a, b из группы, a * b также принадлежит группе. В GF(p): (a * b) mod p -- результат всегда в поле.',
@@ -469,41 +467,41 @@ export function GroupPropertyDiagram() {
             associativity: 'Ассоциативность: (a * b) * c = a * (b * c). Позволяет вычислять в любом порядке. Критично для multi-party computation.',
           };
           return (
-            <DiagramTooltip key={prop.name} content={tooltipContent[prop.name]}>
+            <DiagramTooltip content={tooltipContent[prop.name]}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: 16,
-                  borderColor: `${prop.color}30`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
+                  'padding': '16px',
+                  'border-color': `${prop.color}30`,
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
                   <div style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: prop.color,
+                    'width': '8px',
+                    'height': '8px',
+                    'border-radius': '50%',
+                    'background': prop.color,
                   }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: prop.color }}>
+                  <span style={{ 'font-size': '14px', 'font-weight': '600', 'color': prop.color }}>
                     {prop.nameRu}
                   </span>
                 </div>
 
-                <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '13px', 'color': colors.text, 'font-family': 'monospace' }}>
                   {prop.formula}
                 </div>
 
                 <div style={{
-                  fontSize: 12,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  padding: '6px 10px',
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 6,
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  'font-size': '12px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'padding': '6px 10px',
+                  'background': 'rgba(255,255,255,0.03)',
+                  'border-radius': '6px',
+                  'border': '1px solid rgba(255,255,255,0.06)',
                 }}>
                   {prop.example}
                 </div>
@@ -514,7 +512,7 @@ export function GroupPropertyDiagram() {
       </div>
 
       <DiagramTooltip content="Эти четыре аксиомы определяют группу. Z*_p с операцией умножения mod p удовлетворяет всем четырём -- это конечная абелева группа.">
-        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'margin-top': '16px', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <FlowNode variant="primary" size="sm">Z*_7</FlowNode>
           <Arrow direction="right" label="замкнутость" />
           <FlowNode variant="accent" size="sm">Единица: 1</FlowNode>

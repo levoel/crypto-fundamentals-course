@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Indexing Concept Diagrams (INDEX-01)
  *
@@ -7,7 +8,7 @@
  * - EventTopicsDiagram: EVM event structure anatomy with raw hex / decoded toggle (interactive)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -85,8 +86,8 @@ const RPC_STEPS: RPCStep[] = [
 ];
 
 export function RPCvsIndexerDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = RPC_STEPS[step];
 
   const handleNext = () => {
@@ -95,8 +96,8 @@ export function RPCvsIndexerDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -104,17 +105,17 @@ export function RPCvsIndexerDiagram() {
   return (
     <DiagramContainer title="Зачем нужна индексация: RPC vs Indexer" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {RPC_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -122,21 +123,21 @@ export function RPCvsIndexerDiagram() {
       </div>
 
       {/* Visual area */}
-      <div style={{ ...glassStyle, padding: 16, marginBottom: 12, border: `1px solid ${current.color}25`, minHeight: 120 }}>
+      <div style={{ ...glassStyle, 'padding': '16px', 'margin-bottom': '12px', 'border': `1px solid ${current.color}25`, 'min-height': '120px' }}>
         {/* Step 0: Scenario -- dApp wanting data */}
         {step === 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'center', 'gap': '16px', 'align-items': 'center' }}>
             <DiagramTooltip content="dApp хочет показать историю Transfer-событий: отправители, получатели, суммы. Типичная задача для любого DeFi или NFT проекта.">
-              <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>dApp</div>
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>Transfer History?</div>
+              <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(148,163,184,0.3)', 'text-align': 'center' }}>
+                <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': '#94a3b8', 'font-family': 'monospace' }}>dApp</div>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>Transfer History?</div>
               </div>
             </DiagramTooltip>
-            <div style={{ fontSize: 18, color: colors.textMuted }}>?</div>
+            <div style={{ 'font-size': '18px', 'color': colors.textMuted }}>?</div>
             <DiagramTooltip content="Ethereum mainnet содержит 20+ миллионов блоков. Прямой запрос всех событий через RPC -- технически невозможен за разумное время.">
-              <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(148,163,184,0.3)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace' }}>Blockchain</div>
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>20M+ блоков</div>
+              <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(148,163,184,0.3)', 'text-align': 'center' }}>
+                <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': '#94a3b8', 'font-family': 'monospace' }}>Blockchain</div>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>20M+ блоков</div>
               </div>
             </DiagramTooltip>
           </div>
@@ -145,16 +146,16 @@ export function RPCvsIndexerDiagram() {
         {/* Step 1: RPC approach */}
         {step === 1 && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace' }}>dApp</div>
+            <div style={{ 'display': 'flex', 'justify-content': 'center', 'gap': '16px', 'align-items': 'center', 'margin-bottom': '12px' }}>
+              <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(245,158,11,0.3)', 'text-align': 'center' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace' }}>dApp</div>
               </div>
-              <div style={{ fontSize: 14, color: '#f59e0b' }}>&rarr;</div>
-              <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(245,158,11,0.3)', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace' }}>RPC Node</div>
+              <div style={{ 'font-size': '14px', 'color': '#f59e0b' }}>&rarr;</div>
+              <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(245,158,11,0.3)', 'text-align': 'center' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace' }}>RPC Node</div>
               </div>
             </div>
-            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'monospace', fontSize: 9, color: '#f59e0b' }}>
+            <div style={{ ...glassStyle, 'padding': '8px', 'border': '1px solid rgba(255,255,255,0.08)', 'font-family': 'monospace', 'font-size': '9px', 'color': '#f59e0b' }}>
               eth_getLogs({'{'} topics: [Transfer.topic], fromBlock: 0, toBlock: &apos;latest&apos; {'}'})
             </div>
           </div>
@@ -163,22 +164,22 @@ export function RPCvsIndexerDiagram() {
         {/* Step 2: Problem 1 -- timeout */}
         {step === 2 && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ 'display': 'flex', 'justify-content': 'center', 'gap': '8px', 'align-items': 'center', 'margin-bottom': '12px', 'flex-wrap': 'wrap' }}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} style={{
+                <div style={{
                   ...glassStyle,
-                  padding: '4px 8px',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  fontSize: 8,
-                  fontFamily: 'monospace',
-                  color: '#ef4444',
+                  'padding': '4px 8px',
+                  'border': '1px solid rgba(239,68,68,0.2)',
+                  'font-size': '8px',
+                  'font-family': 'monospace',
+                  'color': '#ef4444',
                 }}>
                   {i === 0 ? '0-2000' : i === 5 ? '...' : `${i * 2000}-${(i + 1) * 2000}`}
                 </div>
               ))}
             </div>
-            <div style={{ textAlign: 'center', fontSize: 18, color: '#ef4444', marginBottom: 8 }}>TIMEOUT</div>
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
+            <div style={{ 'text-align': 'center', 'font-size': '18px', 'color': '#ef4444', 'margin-bottom': '8px' }}>TIMEOUT</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center' }}>
               Тысячи мелких запросов вместо одного
             </div>
           </div>
@@ -186,18 +187,18 @@ export function RPCvsIndexerDiagram() {
 
         {/* Step 3: Problem 2 -- raw data */}
         {step === 3 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(239,68,68,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#ef4444', fontFamily: 'monospace', marginBottom: 6 }}>JSON-RPC (RAW)</div>
-              <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, lineHeight: 1.6 }}>
+          <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px' }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#ef4444', 'font-family': 'monospace', 'margin-bottom': '6px' }}>JSON-RPC (RAW)</div>
+              <div style={{ 'font-size': '8px', 'font-family': 'monospace', 'color': colors.textMuted, 'line-height': '1.6' }}>
                 0x000...ddf252ad1be2c89b69...<br />
                 0x000...00000000000000a5f3...<br />
                 data: 0x00000000000186a0
               </div>
             </div>
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(34,197,94,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 6 }}>Нужно (SQL)</div>
-              <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, lineHeight: 1.6 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '6px' }}>Нужно (SQL)</div>
+              <div style={{ 'font-size': '8px', 'font-family': 'monospace', 'color': colors.textMuted, 'line-height': '1.6' }}>
                 SELECT from, to, value<br />
                 GROUP BY from<br />
                 ORDER BY timestamp DESC
@@ -208,32 +209,32 @@ export function RPCvsIndexerDiagram() {
 
         {/* Step 4: Problem 3 -- duplication */}
         {step === 4 && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ 'text-align': 'center' }}>
+            <div style={{ 'display': 'flex', 'justify-content': 'center', 'gap': '4px', 'margin-bottom': '8px', 'flex-wrap': 'wrap' }}>
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} style={{
+                <div style={{
                   ...glassStyle,
-                  padding: '3px 6px',
-                  border: '1px solid rgba(239,68,68,0.15)',
-                  fontSize: 8,
-                  fontFamily: 'monospace',
-                  color: '#ef4444',
+                  'padding': '3px 6px',
+                  'border': '1px solid rgba(239,68,68,0.15)',
+                  'font-size': '8px',
+                  'font-family': 'monospace',
+                  'color': '#ef4444',
                 }}>
                   User {i + 1}
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 4 }}>x 1000</div>
-            <div style={{ fontSize: 18, color: '#ef4444' }}>&darr;</div>
-            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(239,68,68,0.3)', display: 'inline-block' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#ef4444', fontFamily: 'monospace' }}>RPC Node</div>
+            <div style={{ 'font-size': '12px', 'color': '#ef4444', 'margin-bottom': '4px' }}>x 1000</div>
+            <div style={{ 'font-size': '18px', 'color': '#ef4444' }}>&darr;</div>
+            <div style={{ ...glassStyle, 'padding': '8px', 'border': '1px solid rgba(239,68,68,0.3)', 'display': 'inline-block' }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#ef4444', 'font-family': 'monospace' }}>RPC Node</div>
             </div>
           </div>
         )}
 
         {/* Step 5: Solution -- indexer pipeline */}
         {step === 5 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'center', 'gap': '8px', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
             {[
               { label: 'Blockchain', color: '#a78bfa', tip: 'Источник данных: блоки, транзакции и event logs. Индексатор читает их через RPC или специализированный Data Lake.' },
               { label: 'Indexer', color: '#3b82f6', tip: 'Процессор фильтрует нужные события, декодирует ABI и трансформирует данные в структурированные сущности.' },
@@ -241,13 +242,13 @@ export function RPCvsIndexerDiagram() {
               { label: 'GraphQL', color: '#f59e0b', tip: 'GraphQL API автоматически генерируется из схемы. Поддерживает фильтрацию, пагинацию и подписки.' },
               { label: 'dApp', color: '#06b6d4', tip: 'Фронтенд делает один GraphQL-запрос вместо тысяч RPC-вызовов. Данные уже обработаны и готовы к отображению.' },
             ].map((box, i, arr) => (
-              <div key={box.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
                 <DiagramTooltip content={box.tip}>
-                  <div style={{ ...glassStyle, padding: '8px 12px', border: `1px solid ${box.color}30`, textAlign: 'center' }}>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: box.color, fontFamily: 'monospace' }}>{box.label}</div>
+                  <div style={{ ...glassStyle, 'padding': '8px 12px', 'border': `1px solid ${box.color}30`, 'text-align': 'center' }}>
+                    <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': box.color, 'font-family': 'monospace' }}>{box.label}</div>
                   </div>
                 </DiagramTooltip>
-                {i < arr.length - 1 && <div style={{ fontSize: 14, color: '#22c55e' }}>&rarr;</div>}
+                {i < arr.length - 1 && <div style={{ 'font-size': '14px', 'color': '#22c55e' }}>&rarr;</div>}
               </div>
             ))}
           </div>
@@ -255,19 +256,19 @@ export function RPCvsIndexerDiagram() {
 
         {/* Step 6: Benefits */}
         {step === 6 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(239,68,68,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#ef4444', fontFamily: 'monospace', marginBottom: 6 }}>Без индексатора</div>
-              <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted, lineHeight: 1.6 }}>
+          <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px' }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#ef4444', 'font-family': 'monospace', 'margin-bottom': '6px' }}>Без индексатора</div>
+              <div style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.textMuted, 'line-height': '1.6' }}>
                 1000+ RPC-вызовов<br />
                 RAW hex данные<br />
                 Нет агрегаций<br />
                 Медленно
               </div>
             </div>
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>С индексатором</div>
-              <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted, lineHeight: 1.6 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '6px' }}>С индексатором</div>
+              <div style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.textMuted, 'line-height': '1.6' }}>
                 1 GraphQL запрос<br />
                 Структурированные данные<br />
                 JOIN, GROUP BY, сортировка<br />
@@ -279,16 +280,16 @@ export function RPCvsIndexerDiagram() {
 
         {/* Step 7: Tools overview */}
         {step === 7 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr', 'gap': '8px' }}>
             {[
               { name: 'Subsquid', lang: 'TypeScript', trait: 'Быстрый (50K бл/сек)', color: '#3b82f6' },
               { name: 'The Graph', lang: 'AssemblyScript', trait: 'Децентрализованный', color: '#a78bfa' },
               { name: 'SubQuery', lang: 'TypeScript', trait: 'Мультисеть', color: '#22c55e' },
             ].map((tool) => (
-              <div key={tool.name} style={{ ...glassStyle, padding: 12, border: `1px solid ${tool.color}30`, textAlign: 'center' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: tool.color, fontFamily: 'monospace' }}>{tool.name}</div>
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>{tool.lang}</div>
-                <div style={{ fontSize: 9, color: colors.text, fontFamily: 'monospace', marginTop: 4 }}>{tool.trait}</div>
+              <div style={{ ...glassStyle, 'padding': '12px', 'border': `1px solid ${tool.color}30`, 'text-align': 'center' }}>
+                <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': tool.color, 'font-family': 'monospace' }}>{tool.name}</div>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>{tool.lang}</div>
+                <div style={{ 'font-size': '9px', 'color': colors.text, 'font-family': 'monospace', 'margin-top': '4px' }}>{tool.trait}</div>
               </div>
             ))}
           </div>
@@ -303,67 +304,67 @@ export function RPCvsIndexerDiagram() {
       }>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${current.color}30`,
+          'padding': '14px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${current.color}30`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': current.color, 'font-family': 'monospace' }}>
               {step + 1}. {current.title}: {current.subtitle}
             </div>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${current.color}15`,
-            color: current.color,
-            border: `1px solid ${current.color}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${current.color}15`,
+            'color': current.color,
+            'border': `1px solid ${current.color}30`,
           }}>
             {current.phase === 'problem' ? 'Проблема' : 'Решение'} | Шаг {step + 1}/{RPC_STEPS.length}
           </span>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
           {current.description}
         </div>
       </div>
       </DiagramTooltip>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
+        <button onClick={handleBack} disabled={history().length <= 1} style={{
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': history().length > 1 ? colors.text : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
         }}>
           Back
         </button>
         <button onClick={handleNext} disabled={step >= RPC_STEPS.length - 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: `1px solid ${step < RPC_STEPS.length - 1 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`,
-          background: step < RPC_STEPS.length - 1 ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < RPC_STEPS.length - 1 ? '#3b82f6' : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: step < RPC_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': `1px solid ${step < RPC_STEPS.length - 1 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`,
+          'background': step < RPC_STEPS.length - 1 ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
+          'color': step < RPC_STEPS.length - 1 ? '#3b82f6' : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': step < RPC_STEPS.length - 1 ? 'pointer' : 'not-allowed',
         }}>
           Step
         </button>
         <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': 'pointer',
         }}>
           Reset
         </button>
@@ -405,32 +406,32 @@ export function IndexingPipelineDiagram() {
   return (
     <DiagramContainer title="Конвейер индексации: от блокчейна до dApp" color="green">
       {/* Horizontal pipeline */}
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 16, overflowX: 'auto', paddingBottom: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'align-items': 'center', 'margin-bottom': '16px', 'overflow-x': 'auto', 'padding-bottom': '8px' }}>
         {PIPELINE_STAGES.map((stage, i) => (
-          <div key={stage.label} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'flex-shrink': '0' }}>
             <DiagramTooltip content={PIPELINE_TOOLTIPS[stage.label]}>
               <div style={{
                 ...glassStyle,
-                padding: '10px 12px',
-                border: `1px solid ${stage.color}30`,
-                textAlign: 'center',
-                minWidth: 100,
+                'padding': '10px 12px',
+                'border': `1px solid ${stage.color}30`,
+                'text-align': 'center',
+                'min-width': '100px',
               }}>
-                <div style={{ fontSize: 16, marginBottom: 4 }}>{stage.icon}</div>
-                <div style={{ fontSize: 9, fontWeight: 600, color: stage.color, fontFamily: 'monospace', marginBottom: 4 }}>
+                <div style={{ 'font-size': '16px', 'margin-bottom': '4px' }}>{stage.icon}</div>
+                <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': stage.color, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                   {stage.label}
                 </div>
-                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace', 'line-height': '1.4' }}>
                   {stage.description}
                 </div>
               </div>
             </DiagramTooltip>
             {i < PIPELINE_STAGES.length - 1 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+              <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '2px' }}>
+                <div style={{ 'font-size': '7px', 'color': colors.textMuted, 'font-family': 'monospace', 'white-space': 'nowrap' }}>
                   {ARROW_LABELS[i]}
                 </div>
-                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+                <div style={{ 'font-size': '14px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
               </div>
             )}
           </div>
@@ -499,25 +500,24 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
 };
 
 export function EventTopicsDiagram() {
-  const [viewMode, setViewMode] = useState<'raw' | 'decoded'>('decoded');
+  const [viewMode, setViewMode] = createSignal<'raw' | 'decoded'>('decoded');
 
   return (
     <DiagramContainer title="Анатомия EVM события: topics и data" color="purple">
       {/* Toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px' }}>
         {(['decoded', 'raw'] as const).map((mode) => (
           <button
-            key={mode}
             onClick={() => setViewMode(mode)}
             style={{
-              padding: '6px 14px',
-              borderRadius: 6,
-              border: `1px solid ${viewMode === mode ? '#a78bfa50' : 'rgba(255,255,255,0.1)'}`,
-              background: viewMode === mode ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-              color: viewMode === mode ? '#a78bfa' : colors.textMuted,
-              fontSize: 10,
-              fontFamily: 'monospace',
-              cursor: 'pointer',
+              'padding': '6px 14px',
+              'border-radius': '6px',
+              'border': `1px solid ${viewMode() === mode ? '#a78bfa50' : 'rgba(255,255,255,0.1)'}`,
+              'background': viewMode() === mode ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+              'color': viewMode() === mode ? '#a78bfa' : colors.textMuted,
+              'font-size': '10px',
+              'font-family': 'monospace',
+              'cursor': 'pointer',
             }}
           >
             {mode === 'decoded' ? 'Декодированный' : 'RAW hex'}
@@ -526,37 +526,37 @@ export function EventTopicsDiagram() {
       </div>
 
       {/* Event log entries */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px', 'margin-bottom': '16px' }}>
         {TOPIC_ENTRIES.map((entry) => (
-          <DiagramTooltip key={entry.label} content={TOPIC_TOOLTIPS[entry.label]}>
+          <DiagramTooltip content={TOPIC_TOOLTIPS[entry.label]}>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              border: `1px solid ${entry.color}25`,
-              display: 'flex',
-              gap: 12,
-              alignItems: 'flex-start',
+              'padding': '10px',
+              'border': `1px solid ${entry.color}25`,
+              'display': 'flex',
+              'gap': '12px',
+              'align-items': 'flex-start',
             }}>
-              <div style={{ minWidth: 60 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: entry.color, fontFamily: 'monospace' }}>
+              <div style={{ 'min-width': '60px' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': entry.color, 'font-family': 'monospace' }}>
                   {entry.label}
                 </div>
-                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
                   {entry.description}
                 </div>
               </div>
               <div style={{
-                flex: 1,
-                fontSize: viewMode === 'raw' ? 8 : 10,
-                fontFamily: 'monospace',
-                color: entry.color,
-                wordBreak: 'break-all',
-                lineHeight: 1.5,
-                padding: '4px 8px',
-                background: `${entry.color}08`,
-                borderRadius: 4,
+                'flex': '1',
+                'font-size': viewMode() === 'raw' ? 8 : 10,
+                'font-family': 'monospace',
+                'color': entry.color,
+                'word-break': 'break-all',
+                'line-height': '1.5',
+                'padding': '4px 8px',
+                'background': `${entry.color}08`,
+                'border-radius': '4px',
               }}>
-                {viewMode === 'raw' ? entry.rawHex : entry.decoded}
+                {viewMode() === 'raw' ? entry.rawHex : entry.decoded}
               </div>
             </div>
           </DiagramTooltip>
@@ -565,11 +565,11 @@ export function EventTopicsDiagram() {
 
       {/* Explanation */}
       <DiagramTooltip content="EVM событие -- это запись в transaction receipt. Topics индексируются Bloom-фильтром на уровне блока, что позволяет быстро определить, содержит ли блок нужное событие.">
-        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(167,139,250,0.15)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 6 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(167,139,250,0.15)' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#a78bfa', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Как это работает:
           </div>
-          <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.6' }}>
             Topic0 = keccak256(&apos;Transfer(address,address,uint256)&apos;) = 0xddf252ad...
             Индексированные параметры попадают в topics (быстрый поиск по B-tree).
             Неиндексированные -- в data. Именно так Subsquid и The Graph находят нужные события.
@@ -579,22 +579,22 @@ export function EventTopicsDiagram() {
 
       {/* Filter code */}
       <DiagramTooltip content="addLog() -- метод процессора для подписки на события. Процессор пропускает блоки без нужных событий, что драматически ускоряет индексацию.">
-        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Как процессор фильтрует:
           </div>
           <div style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: '#3b82f6',
-            padding: '8px 10px',
-            background: 'rgba(59,130,246,0.08)',
-            borderRadius: 4,
-            lineHeight: 1.5,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': '#3b82f6',
+            'padding': '8px 10px',
+            'background': 'rgba(59,130,246,0.08)',
+            'border-radius': '4px',
+            'line-height': '1.5',
           }}>
             addLog({'{'} topic0: [TRANSFER_TOPIC] {'}'})
           </div>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 6, lineHeight: 1.5 }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '6px', 'line-height': '1.5' }}>
             Процессор читает ТОЛЬКО блоки с Transfer событиями, пропуская остальные.
           </div>
         </div>

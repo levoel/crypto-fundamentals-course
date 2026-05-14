@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Reentrancy Diagrams (SEC-02)
  *
@@ -7,7 +8,7 @@
  * - ReadOnlyReentrancyDiagram: 5-step step-through showing read-only reentrancy via view function
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -30,34 +31,28 @@ interface ReentrancyStep {
   callStack: string[];
 }
 
-function StepNavigation({
-  steps,
-  stepIndex,
-  setStepIndex,
-  accentColor,
-}: {
+function StepNavigation(props: {
   steps: ReentrancyStep[];
   stepIndex: number;
   setStepIndex: (fn: (s: number) => number) => void;
   accentColor: string;
 }) {
-  const step = steps[stepIndex];
+  const step = () => props.steps[props.stepIndex];
 
   return (
     <>
       {/* Step progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-        {steps.map((_, i) => (
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
+        {props.steps.map((_, i) => (
           <div
-            key={i}
-            onClick={() => setStepIndex(() => i)}
+            onClick={() => props.setStepIndex(() => i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? accentColor : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= props.stepIndex ? props.accentColor : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -65,39 +60,39 @@ function StepNavigation({
 
       {/* Step title */}
       <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
+        'font-size': '14px',
+        'font-weight': '600',
+        'color': colors.text,
+        'margin-bottom': '8px',
+        'font-family': 'monospace',
       }}>
-        {step.title}
+        {step().title}
       </div>
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
-        {step.description}
+        {step().description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '12px',
       }}>
-        {step.values.map((v, i) => (
-          <DiagramTooltip key={i} content={`${v.label}: ${v.value}. Отслеживайте как меняется это значение на каждом шаге атаки reentrancy.`}>
-            <div style={{ ...glassStyle, padding: 10 }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+        {step().values.map((v, i) => (
+          <DiagramTooltip content={`${v.label}: ${v.value}. Отслеживайте как меняется это значение на каждом шаге атаки reentrancy.`}>
+            <div style={{ ...glassStyle, 'padding': '10px' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 {v.label}
               </div>
-              <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+              <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
                 {v.value}
               </div>
             </div>
@@ -106,19 +101,19 @@ function StepNavigation({
       </div>
 
       {/* Call stack visualization */}
-      {step.callStack.length > 0 && (
-        <DiagramTooltip content={`Call stack глубина ${step.callStack.length}. Каждый уровень вложенности -- это рекурсивный вызов. Чем глубже стек, тем больше ETH украдено до обновления состояния.`}>
-          <div style={{ ...glassStyle, padding: 12, marginBottom: 14 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
-              Call Stack (depth: {step.callStack.length})
+      {step().callStack.length > 0 && (
+        <DiagramTooltip content={`Call stack глубина ${step().callStack.length}. Каждый уровень вложенности -- это рекурсивный вызов. Чем глубже стек, тем больше ETH украдено до обновления состояния.`}>
+          <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '14px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
+              Call Stack (depth: {step().callStack.length})
             </div>
-            {step.callStack.map((frame, i) => (
-              <div key={i} style={{
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: i === step.callStack.length - 1 ? accentColor : colors.text,
-                paddingLeft: i * 12,
-                marginBottom: 2,
+            {step().callStack.map((frame, i) => (
+              <div style={{
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'color': i === step().callStack.length - 1 ? props.accentColor : colors.text,
+                'padding-left': i * 12,
+                'margin-bottom': '2px',
               }}>
                 {i > 0 ? '-> ' : ''}{frame}
               </div>
@@ -128,17 +123,17 @@ function StepNavigation({
       )}
 
       {/* Navigation buttons */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <DiagramTooltip content="Сбросить демонстрацию к начальному состоянию контракта.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
-              onClick={() => setStepIndex(() => 0)}
+              onClick={() => props.setStepIndex(() => 0)}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                color: colors.text,
-                fontSize: 13,
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'color': colors.text,
+                'font-size': '13px',
               }}
             >
               Сброс
@@ -146,17 +141,17 @@ function StepNavigation({
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу атаки reentrancy.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
-              onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-              disabled={stepIndex === 0}
+              onClick={() => props.setStepIndex((s) => Math.max(0, s - 1))}
+              disabled={props.stepIndex === 0}
               style={{
                 ...glassStyle,
-                padding: '8px 20px',
-                cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-                color: stepIndex === 0 ? colors.textMuted : colors.text,
-                fontSize: 13,
-                opacity: stepIndex === 0 ? 0.5 : 1,
+                'padding': '8px 20px',
+                'cursor': props.stepIndex === 0 ? 'not-allowed' : 'pointer',
+                'color': props.stepIndex === 0 ? colors.textMuted : colors.text,
+                'font-size': '13px',
+                'opacity': props.stepIndex === 0 ? 0.5 : 1,
               }}
             >
               Назад
@@ -164,17 +159,17 @@ function StepNavigation({
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу -- от начального состояния через рекурсивные вызовы до защиты.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
-              onClick={() => setStepIndex((s) => Math.min(steps.length - 1, s + 1))}
-              disabled={stepIndex >= steps.length - 1}
+              onClick={() => props.setStepIndex((s) => Math.min(props.steps.length - 1, s + 1))}
+              disabled={props.stepIndex >= props.steps.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 20px',
-                cursor: stepIndex >= steps.length - 1 ? 'not-allowed' : 'pointer',
-                color: stepIndex >= steps.length - 1 ? colors.textMuted : accentColor,
-                fontSize: 13,
-                opacity: stepIndex >= steps.length - 1 ? 0.5 : 1,
+                'padding': '8px 20px',
+                'cursor': props.stepIndex >= props.steps.length - 1 ? 'not-allowed' : 'pointer',
+                'color': props.stepIndex >= props.steps.length - 1 ? colors.textMuted : props.accentColor,
+                'font-size': '13px',
+                'opacity': props.stepIndex >= props.steps.length - 1 ? 0.5 : 1,
               }}
             >
               Далее
@@ -266,18 +261,18 @@ const SINGLE_REENTRANCY_HISTORY: ReentrancyStep[] = [
  * attack on VulnerableVault with call stack depth visualization.
  */
 export function SingleReentrancyDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = createSignal(0);
 
   return (
     <DiagramContainer title="Single-function Reentrancy: атака на VulnerableVault" color="rose">
       <StepNavigation
         steps={SINGLE_REENTRANCY_HISTORY}
-        stepIndex={stepIndex}
+        stepIndex={stepIndex()}
         setStepIndex={setStepIndex}
         accentColor="#f43f5e"
       />
-      {stepIndex >= SINGLE_REENTRANCY_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= SINGLE_REENTRANCY_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="CEI (Check-Effects-Interactions) -- главный паттерн защиты. Обновляйте состояние ДО внешних вызовов. ReentrancyGuard добавляет mutex. EIP-1153 (transient storage) снижает стоимость guard с ~7100 до ~200 gas.">
             <DataBox
               label="Защита"
@@ -360,18 +355,18 @@ const CROSS_FUNCTION_HISTORY: ReentrancyStep[] = [
  * using withdraw() + transfer() to double-spend.
  */
 export function CrossFunctionReentrancyDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = createSignal(0);
 
   return (
     <DiagramContainer title="Cross-function Reentrancy: withdraw() + transfer()" color="amber">
       <StepNavigation
         steps={CROSS_FUNCTION_HISTORY}
-        stepIndex={stepIndex}
+        stepIndex={stepIndex()}
         setStepIndex={setStepIndex}
         accentColor="#f59e0b"
       />
-      {stepIndex >= CROSS_FUNCTION_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= CROSS_FUNCTION_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Cross-function reentrancy -- более сложный вариант: атакующий вызывает ДРУГУЮ функцию (transfer) из fallback вместо повторного withdraw. CEI в одной функции не помогает, нужен общий ReentrancyGuard.">
             <DataBox
               label="Ключевой вывод"
@@ -454,18 +449,18 @@ const READ_ONLY_HISTORY: ReentrancyStep[] = [
  * view function returns stale state during external call.
  */
 export function ReadOnlyReentrancyDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = createSignal(0);
 
   return (
     <DiagramContainer title="Read-only Reentrancy: view-функция и stale state" color="purple">
       <StepNavigation
         steps={READ_ONLY_HISTORY}
-        stepIndex={stepIndex}
+        stepIndex={stepIndex()}
         setStepIndex={setStepIndex}
         accentColor="#a78bfa"
       />
-      {stepIndex >= READ_ONLY_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= READ_ONLY_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Read-only reentrancy эксплуатирует view-функции, которые читают временно неконсистентное состояние во время external call. nonReentrant на view не работает -- нужен явный lock check или TWAP оракул.">
             <DataBox
               label="Ключевой вывод"

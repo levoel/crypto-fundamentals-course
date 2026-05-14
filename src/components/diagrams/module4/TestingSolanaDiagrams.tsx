@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Testing Solana Diagrams (SOL-08)
  *
@@ -6,7 +7,7 @@
  * - AnchorTestArchitectureDiagram: 5-layer test stack (Mocha -> Anchor Client -> RPC -> Validator -> Runtime)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -116,46 +117,46 @@ const ARTIFACT_TOOLTIPS: Record<string, string> = {
  * build -> keys sync -> deploy -> test -> verify
  */
 export function TestWorkflowDiagram() {
-  const [selectedPhase, setSelectedPhase] = useState<number>(0);
+  const [selectedPhase, setSelectedPhase] = createSignal<number>(0);
 
-  const current = WORKFLOW_PHASES[selectedPhase];
+  const current = WORKFLOW_PHASES[selectedPhase()];
 
   return (
     <DiagramContainer title="Anchor: workflow разработки и тестирования" color="blue">
       {/* Phase pipeline */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '2px', 'margin-bottom': '16px' }}>
         {WORKFLOW_PHASES.map((p, i) => {
-          const isActive = i === selectedPhase;
-          const isPast = i < selectedPhase;
+          const isActive = i === selectedPhase();
+          const isPast = i < selectedPhase();
           return (
-            <DiagramTooltip key={i} content={p.tooltip}>
+            <DiagramTooltip content={p.tooltip}>
               <div
                 onClick={() => setSelectedPhase(i)}
                 style={{
-                  flex: 1,
-                  padding: '10px 6px',
+                  'flex': '1',
+                  'padding': '10px 6px',
                   ...glassStyle,
-                  background: isActive ? `${p.color}20` : isPast ? `${p.color}08` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isActive ? p.color : isPast ? p.color + '30' : 'rgba(255,255,255,0.06)'}`,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
-                  position: 'relative',
+                  'background': isActive ? `${p.color}20` : isPast ? `${p.color}08` : 'rgba(255,255,255,0.03)',
+                  'border': `1px solid ${isActive ? p.color : isPast ? p.color + '30' : 'rgba(255,255,255,0.06)'}`,
+                  'cursor': 'pointer',
+                  'text-align': 'center',
+                  'transition': 'all 0.2s',
+                  'position': 'relative',
                 }}
               >
                 <div style={{
-                  fontSize: 10,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginBottom: 2,
+                  'font-size': '10px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-bottom': '2px',
                 }}>
                   Step {p.step}
                 </div>
                 <div style={{
-                  fontSize: 13,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? p.color : isPast ? p.color + 'bb' : colors.textMuted,
-                  fontFamily: 'monospace',
+                  'font-size': '13px',
+                  'font-weight': isActive ? 700 : 500,
+                  'color': isActive ? p.color : isPast ? p.color + 'bb' : colors.textMuted,
+                  'font-family': 'monospace',
                 }}>
                   {p.name}
                 </div>
@@ -169,21 +170,21 @@ export function TestWorkflowDiagram() {
       <DiagramTooltip content={current.commandTooltip}>
         <div style={{
           ...glassStyle,
-          padding: 12,
-          background: `${current.color}10`,
-          border: `1px solid ${current.color}30`,
-          marginBottom: 10,
-          textAlign: 'center',
+          'padding': '12px',
+          'background': `${current.color}10`,
+          'border': `1px solid ${current.color}30`,
+          'margin-bottom': '10px',
+          'text-align': 'center',
         }}>
-          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>$ </span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: current.color, fontFamily: 'monospace' }}>
+          <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>$ </span>
+          <span style={{ 'font-size': '14px', 'font-weight': '600', 'color': current.color, 'font-family': 'monospace' }}>
             {current.command}
           </span>
         </div>
       </DiagramTooltip>
 
       {/* Description */}
-      <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
+      <div style={{ 'font-size': '13px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '12px' }}>
         {current.what}
       </div>
 
@@ -191,25 +192,25 @@ export function TestWorkflowDiagram() {
       <DiagramTooltip content="Артефакты, создаваемые на данном шаге. Каждый артефакт используется на последующих этапах workflow: .so для деплоя, IDL для клиента, типы для тестов.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          marginBottom: 10,
+          'padding': '12px',
+          'background': 'rgba(255,255,255,0.02)',
+          'border': '1px solid rgba(255,255,255,0.08)',
+          'margin-bottom': '10px',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Артефакты:
           </div>
           {current.artifacts.map((a, i) => (
-            <div key={i} style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: current.color,
-              marginBottom: 4,
-              lineHeight: 1.4,
-              paddingLeft: 12,
-              position: 'relative',
+            <div style={{
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'color': current.color,
+              'margin-bottom': '4px',
+              'line-height': '1.4',
+              'padding-left': '12px',
+              'position': 'relative',
             }}>
-              <span style={{ position: 'absolute', left: 0, color: colors.textMuted }}>-</span>
+              <span style={{ 'position': 'absolute', 'left': '0', 'color': colors.textMuted }}>-</span>
               {a}
             </div>
           ))}
@@ -217,7 +218,7 @@ export function TestWorkflowDiagram() {
       </DiagramTooltip>
 
       {/* Duration */}
-      <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+      <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
         Время: {current.duration}
       </div>
 
@@ -301,55 +302,55 @@ const ARCH_LAYERS: ArchLayer[] = [
  * Click each layer to see details.
  */
 export function AnchorTestArchitectureDiagram() {
-  const [selectedLayer, setSelectedLayer] = useState<number>(0);
+  const [selectedLayer, setSelectedLayer] = createSignal<number>(0);
 
-  const current = ARCH_LAYERS[selectedLayer];
+  const current = ARCH_LAYERS[selectedLayer()];
 
   return (
     <DiagramContainer title="Архитектура Anchor-тестов: 5 уровней" color="purple">
       {/* Layer stack visualization */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '3px', 'margin-bottom': '16px' }}>
         {ARCH_LAYERS.map((l, i) => {
-          const isActive = i === selectedLayer;
+          const isActive = i === selectedLayer();
           return (
-            <DiagramTooltip key={i} content={l.tooltip}>
+            <DiagramTooltip content={l.tooltip}>
               <div
                 onClick={() => setSelectedLayer(i)}
                 style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  background: isActive ? `${l.color}15` : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isActive ? l.color : 'rgba(255,255,255,0.06)'}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  'padding': '10px 14px',
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'background': isActive ? `${l.color}15` : 'rgba(255,255,255,0.02)',
+                  'border': `1px solid ${isActive ? l.color : 'rgba(255,255,255,0.06)'}`,
+                  'cursor': 'pointer',
+                  'transition': 'all 0.2s',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px' }}>
                   <span style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: l.color,
-                    fontFamily: 'monospace',
-                    width: 20,
+                    'font-size': '12px',
+                    'font-weight': '700',
+                    'color': l.color,
+                    'font-family': 'monospace',
+                    'width': '20px',
                   }}>
                     {l.layer}
                   </span>
                   <span style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? l.color : colors.text,
-                    fontFamily: 'monospace',
+                    'font-size': '13px',
+                    'font-weight': isActive ? 600 : 400,
+                    'color': isActive ? l.color : colors.text,
+                    'font-family': 'monospace',
                   }}>
                     {l.name}
                   </span>
                 </div>
                 <span style={{
-                  fontSize: 11,
-                  color: isActive ? l.color : colors.textMuted,
-                  fontFamily: 'monospace',
+                  'font-size': '11px',
+                  'color': isActive ? l.color : colors.textMuted,
+                  'font-family': 'monospace',
                 }}>
                   {l.tech}
                 </span>
@@ -360,12 +361,12 @@ export function AnchorTestArchitectureDiagram() {
       </div>
 
       {/* Arrow between layers hint */}
-      <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', marginBottom: 12, fontFamily: 'monospace' }}>
+      <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'margin-bottom': '12px', 'font-family': 'monospace' }}>
         Layer {current.layer}: {current.name}
       </div>
 
       {/* Role description */}
-      <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
+      <div style={{ 'font-size': '13px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '12px' }}>
         {current.role}
       </div>
 
@@ -373,18 +374,18 @@ export function AnchorTestArchitectureDiagram() {
       <DiagramTooltip content={`Пример кода для уровня "${current.name}" (${current.tech}). Каждый слой абстрагирует нижележащий: Mocha определяет тесты, Anchor строит инструкции, Web3 подписывает, RPC передаёт, Validator исполняет.`}>
         <div style={{
           ...glassStyle,
-          padding: 12,
-          background: `${current.color}08`,
-          border: `1px solid ${current.color}20`,
-          marginBottom: 10,
+          'padding': '12px',
+          'background': `${current.color}08`,
+          'border': `1px solid ${current.color}20`,
+          'margin-bottom': '10px',
         }}>
           <pre style={{
-            margin: 0,
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: current.color,
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.5,
+            'margin': '0',
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'color': current.color,
+            'white-space': 'pre-wrap',
+            'line-height': '1.5',
           }}>
             {current.example}
           </pre>

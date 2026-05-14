@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Comparison Diagrams (INDEX-08)
  *
@@ -7,7 +8,7 @@
  * - DecisionTreeDiagram: Interactive decision tree for choosing an indexer (clickable nodes)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -53,31 +54,29 @@ const COMPARISON_DATA: ComparisonRow[] = [
 ];
 
 export function ToolComparisonTableDiagram() {
-  const [showDetailed, setShowDetailed] = useState(false);
+  const [showDetailed, setShowDetailed] = createSignal(false);
 
-  const visibleRows = useMemo(
-    () => showDetailed ? COMPARISON_DATA : COMPARISON_DATA.filter((r) => !r.detailed),
-    [showDetailed],
-  );
+  const visibleRows = createMemo(
+    () => showDetailed() ? COMPARISON_DATA : COMPARISON_DATA.filter((r) => !r.detailed),
+    [showDetailed()]);
 
   return (
     <DiagramContainer title="Subsquid vs The Graph vs SubQuery: полное сравнение" color="green">
       {/* Toggle */}
       <DiagramTooltip content="Краткий обзор показывает 8 ключевых параметров. Подробное сравнение добавляет off-chain данные, deployment, стоимость, сообщество и документацию -- всего 13 параметров.">
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px' }}>
           {([false, true] as const).map((detailed) => (
             <button
-              key={String(detailed)}
               onClick={() => setShowDetailed(detailed)}
               style={{
-                padding: '6px 14px',
-                borderRadius: 6,
-                border: `1px solid ${showDetailed === detailed ? '#22c55e50' : 'rgba(255,255,255,0.1)'}`,
-                background: showDetailed === detailed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-                color: showDetailed === detailed ? '#22c55e' : colors.textMuted,
-                fontSize: 10,
-                fontFamily: 'monospace',
-                cursor: 'pointer',
+                'padding': '6px 14px',
+                'border-radius': '6px',
+                'border': `1px solid ${showDetailed() === detailed ? '#22c55e50' : 'rgba(255,255,255,0.1)'}`,
+                'background': showDetailed() === detailed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+                'color': showDetailed() === detailed ? '#22c55e' : colors.textMuted,
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'cursor': 'pointer',
               }}
             >
               {detailed ? 'Подробное сравнение' : 'Краткий обзор'}
@@ -87,24 +86,24 @@ export function ToolComparisonTableDiagram() {
       </DiagramTooltip>
 
       {/* Comparison table */}
-      <div style={{ overflowX: 'auto', marginBottom: 16 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, fontFamily: 'monospace' }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-bottom': '16px' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'collapse', 'font-size': '9px', 'font-family': 'monospace' }}>
           <thead>
             <tr>
-              <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)', color: colors.textMuted, fontWeight: 600 }}>
+              <th style={{ 'padding': '6px 8px', 'text-align': 'left', 'border-bottom': '1px solid rgba(255,255,255,0.1)', 'color': colors.textMuted, 'font-weight': '600' }}>
                 Аспект
               </th>
-              <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', fontWeight: 600 }}>
+              <th style={{ 'padding': '6px 8px', 'text-align': 'left', 'border-bottom': '1px solid rgba(59,130,246,0.2)', 'color': '#3b82f6', 'font-weight': '600' }}>
                 <DiagramTooltip content="Subsquid -- самый быстрый индексатор. TypeScript, батч-обработка, SQD Network для ускорения. Бесплатный self-hosted, опциональный SQD Cloud.">
                   <span>Subsquid</span>
                 </DiagramTooltip>
               </th>
-              <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(167,139,250,0.2)', color: '#a78bfa', fontWeight: 600 }}>
+              <th style={{ 'padding': '6px 8px', 'text-align': 'left', 'border-bottom': '1px solid rgba(167,139,250,0.2)', 'color': '#a78bfa', 'font-weight': '600' }}>
                 <DiagramTooltip content="The Graph -- децентрализованная сеть индексирования. AssemblyScript маппинги, GRT стейкинг, крупнейшее сообщество. Стандарт индустрии.">
                   <span>The Graph</span>
                 </DiagramTooltip>
               </th>
-              <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid rgba(34,197,94,0.2)', color: '#22c55e', fontWeight: 600 }}>
+              <th style={{ 'padding': '6px 8px', 'text-align': 'left', 'border-bottom': '1px solid rgba(34,197,94,0.2)', 'color': '#22c55e', 'font-weight': '600' }}>
                 <DiagramTooltip content="SubQuery -- мультисетевой индексатор. TypeScript маппинги, нативная поддержка мультичейн-манифестов. Изначально создан для Polkadot, расширен на EVM.">
                   <span>SubQuery</span>
                 </DiagramTooltip>
@@ -113,17 +112,17 @@ export function ToolComparisonTableDiagram() {
           </thead>
           <tbody>
             {visibleRows.map((row) => (
-              <tr key={row.aspect}>
-                <td style={{ padding: '5px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', color: colors.text }}>
+              <tr>
+                <td style={{ 'padding': '5px 8px', 'border-bottom': '1px solid rgba(255,255,255,0.04)', 'color': colors.text }}>
                   {row.aspect}
                 </td>
-                <td style={{ padding: '5px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', color: RATING_COLORS[row.subsquidRating] }}>
+                <td style={{ 'padding': '5px 8px', 'border-bottom': '1px solid rgba(255,255,255,0.04)', 'color': RATING_COLORS[row.subsquidRating] }}>
                   {row.subsquid}
                 </td>
-                <td style={{ padding: '5px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', color: RATING_COLORS[row.theGraphRating] }}>
+                <td style={{ 'padding': '5px 8px', 'border-bottom': '1px solid rgba(255,255,255,0.04)', 'color': RATING_COLORS[row.theGraphRating] }}>
                   {row.theGraph}
                 </td>
-                <td style={{ padding: '5px 8px', borderBottom: '1px solid rgba(255,255,255,0.04)', color: RATING_COLORS[row.subqueryRating] }}>
+                <td style={{ 'padding': '5px 8px', 'border-bottom': '1px solid rgba(255,255,255,0.04)', 'color': RATING_COLORS[row.subqueryRating] }}>
                   {row.subquery}
                 </td>
               </tr>
@@ -176,60 +175,60 @@ const LATENCY_DATA: (LatencyEntry & { tooltip: string })[] = [
 
 export function IndexingSpeedDiagram() {
   // Log scale: map speed to percentage width (log10)
-  const maxLog = useMemo(() => Math.log10(50000), []);
+  const maxLog = createMemo(() => Math.log10(50000));
 
   return (
     <DiagramContainer title="Скорость индексации: количественное сравнение" color="blue">
       {/* Speed bar chart */}
-      <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 10 }}>
+      <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '10px' }}>
           Скорость индексации (блоков/сек, log шкала):
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '10px' }}>
           {SPEED_DATA.map((entry) => {
             const minWidth = (Math.log10(entry.minSpeed) / maxLog) * 100;
             const maxWidth = (Math.log10(entry.maxSpeed) / maxLog) * 100;
             return (
-              <DiagramTooltip key={entry.label} content={entry.tooltip}>
+              <DiagramTooltip content={entry.tooltip}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: entry.color, fontFamily: 'monospace' }}>
+                  <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '4px' }}>
+                    <span style={{ 'font-size': '10px', 'font-weight': '600', 'color': entry.color, 'font-family': 'monospace' }}>
                       {entry.label}
                     </span>
-                    <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                    <span style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                       {entry.minSpeed.toLocaleString()}-{entry.maxSpeed.toLocaleString()} бл/сек
                     </span>
                   </div>
                   <div style={{
-                    width: '100%',
-                    height: 16,
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 4,
-                    position: 'relative',
-                    overflow: 'hidden',
+                    'width': '100%',
+                    'height': '16px',
+                    'background': 'rgba(255,255,255,0.03)',
+                    'border-radius': '4px',
+                    'position': 'relative',
+                    'overflow': 'hidden',
                   }}>
                     {/* Min bar */}
                     <div style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      height: '100%',
-                      width: `${minWidth}%`,
-                      background: `${entry.color}30`,
-                      borderRadius: 4,
+                      'position': 'absolute',
+                      'left': '0',
+                      'top': '0',
+                      'height': '100%',
+                      'width': `${minWidth}%`,
+                      'background': `${entry.color}30`,
+                      'border-radius': '4px',
                     }} />
                     {/* Max bar */}
                     <div style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      height: '100%',
-                      width: `${maxWidth}%`,
-                      background: `${entry.color}50`,
-                      borderRadius: 4,
+                      'position': 'absolute',
+                      'left': '0',
+                      'top': '0',
+                      'height': '100%',
+                      'width': `${maxWidth}%`,
+                      'background': `${entry.color}50`,
+                      'border-radius': '4px',
                     }} />
                   </div>
-                  <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                  <div style={{ 'font-size': '7px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
                     {entry.note}
                   </div>
                 </div>
@@ -240,25 +239,25 @@ export function IndexingSpeedDiagram() {
       </div>
 
       {/* Latency comparison */}
-      <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 10 }}>
+      <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '10px' }}>
           Latency до свежих данных:
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
           {LATENCY_DATA.map((entry) => (
-            <DiagramTooltip key={entry.label} content={entry.tooltip}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 600, color: entry.color, fontFamily: 'monospace', minWidth: 70 }}>
+            <DiagramTooltip content={entry.tooltip}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
+                <span style={{ 'font-size': '9px', 'font-weight': '600', 'color': entry.color, 'font-family': 'monospace', 'min-width': '70px' }}>
                   {entry.label}
                 </span>
                 <div style={{
-                  height: 12,
-                  width: `${entry.barWidth}%`,
-                  background: `${entry.color}50`,
-                  borderRadius: 4,
-                  minWidth: 4,
+                  'height': '12px',
+                  'width': `${entry.barWidth}%`,
+                  'background': `${entry.color}50`,
+                  'border-radius': '4px',
+                  'min-width': '4px',
                 }} />
-                <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   {entry.latency}
                 </span>
               </div>
@@ -389,9 +388,9 @@ const TREE_NODES: (TreeNode & { tooltip?: string })[] = [
 ];
 
 export function DecisionTreeDiagram() {
-  const [path, setPath] = useState<string[]>(['root']);
+  const [path, setPath] = createSignal<string[]>(['root']);
 
-  const currentId = path[path.length - 1];
+  const currentId = path()[path().length - 1];
   const currentNode = TREE_NODES.find((n) => n.id === currentId);
 
   const handleChoice = (nextId: string) => {
@@ -403,29 +402,29 @@ export function DecisionTreeDiagram() {
   };
 
   const handleBack = () => {
-    if (path.length > 1) {
-      setPath(path.slice(0, -1));
+    if (path().length > 1) {
+      setPath(path().slice(0, -1));
     }
   };
 
   return (
     <DiagramContainer title="Дерево решений: какой индексатор использовать?" color="orange">
       {/* Path breadcrumb */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
-        {path.map((nodeId, i) => {
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
+        {path().map((nodeId, i) => {
           const node = TREE_NODES.find((n) => n.id === nodeId);
           if (!node) return null;
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {i > 0 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</span>}
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
+              {i > 0 && <span style={{ 'font-size': '10px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</span>}
               <span style={{
-                fontSize: 8,
-                fontFamily: 'monospace',
-                padding: '3px 6px',
-                borderRadius: 4,
-                background: node.isEnd ? `${node.resultColor}15` : 'rgba(255,255,255,0.05)',
-                color: node.isEnd ? node.resultColor : colors.textMuted,
-                border: `1px solid ${node.isEnd ? `${node.resultColor}30` : 'rgba(255,255,255,0.08)'}`,
+                'font-size': '8px',
+                'font-family': 'monospace',
+                'padding': '3px 6px',
+                'border-radius': '4px',
+                'background': node.isEnd ? `${node.resultColor}15` : 'rgba(255,255,255,0.05)',
+                'color': node.isEnd ? node.resultColor : colors.textMuted,
+                'border': `1px solid ${node.isEnd ? `${node.resultColor}30` : 'rgba(255,255,255,0.08)'}`,
               }}>
                 {node.isEnd ? node.result : (node.question.length > 25 ? node.question.slice(0, 25) + '...' : node.question)}
               </span>
@@ -439,39 +438,38 @@ export function DecisionTreeDiagram() {
         <DiagramTooltip content={currentNode.tooltip || ''}>
           <div style={{
             ...glassStyle,
-            padding: 16,
-            marginBottom: 12,
-            border: `1px solid ${currentNode.isEnd ? `${currentNode.resultColor}30` : 'rgba(245,158,11,0.2)'}`,
-            background: currentNode.isEnd ? `${currentNode.resultColor}06` : 'rgba(255,255,255,0.02)',
+            'padding': '16px',
+            'margin-bottom': '12px',
+            'border': `1px solid ${currentNode.isEnd ? `${currentNode.resultColor}30` : 'rgba(245,158,11,0.2)'}`,
+            'background': currentNode.isEnd ? `${currentNode.resultColor}06` : 'rgba(255,255,255,0.02)',
           }}>
             {currentNode.isEnd ? (
               <>
-                <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                   Рекомендация:
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentNode.resultColor, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': currentNode.resultColor, 'font-family': 'monospace' }}>
                   {currentNode.result}
                 </div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 12 }}>
+                <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': '#f59e0b', 'font-family': 'monospace', 'margin-bottom': '12px' }}>
                   {currentNode.question}
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
                   {currentNode.options.map((opt) => (
                     <button
-                      key={opt.nextId}
                       onClick={() => handleChoice(opt.nextId)}
                       style={{
-                        padding: '8px 16px',
-                        borderRadius: 6,
-                        border: '1px solid rgba(245,158,11,0.3)',
-                        background: 'rgba(245,158,11,0.1)',
-                        color: '#f59e0b',
-                        fontSize: 11,
-                        fontFamily: 'monospace',
-                        cursor: 'pointer',
+                        'padding': '8px 16px',
+                        'border-radius': '6px',
+                        'border': '1px solid rgba(245,158,11,0.3)',
+                        'background': 'rgba(245,158,11,0.1)',
+                        'color': '#f59e0b',
+                        'font-size': '11px',
+                        'font-family': 'monospace',
+                        'cursor': 'pointer',
                       }}
                     >
                       {opt.label}
@@ -485,28 +483,28 @@ export function DecisionTreeDiagram() {
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={handleBack} disabled={path.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: path.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: path.length > 1 ? 'pointer' : 'not-allowed',
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '12px' }}>
+        <button onClick={handleBack} disabled={path().length <= 1} style={{
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': path().length > 1 ? colors.text : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': path().length > 1 ? 'pointer' : 'not-allowed',
         }}>
           Back
         </button>
         <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': 'pointer',
         }}>
           Reset
         </button>

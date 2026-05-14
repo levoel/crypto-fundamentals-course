@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Tower BFT Diagrams (SOL-03)
  *
@@ -6,7 +7,7 @@
  * - LeaderScheduleDiagram: Leader schedule + Gulf Stream flow (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -16,7 +17,7 @@ import { colors, glassStyle } from '@primitives/shared';
 /*  Shared button style                                                */
 /* ================================================================== */
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -111,12 +112,12 @@ const CONFIRMATION_TOOLTIPS: Record<string, string> = {
 };
 
 export function VoteTowerDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   const steps = buildTowerSteps();
-  const currentStep = steps[step];
+  const currentStep = steps[step()];
 
-  const canBack = step > 0;
-  const canForward = step < steps.length - 1;
+  const canBack = step() > 0;
+  const canForward = step() < steps.length - 1;
 
   // Color gradient: deeper votes = darker green
   const voteColor = (depth: number, total: number): string => {
@@ -127,19 +128,19 @@ export function VoteTowerDiagram() {
   return (
     <DiagramContainer title="Tower BFT: башня голосований" color="purple">
       {/* Vote tower visualization */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: 420 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px', 'width': '100%', 'max-width': '420px' }}>
           {currentStep.votes.length === 0 ? (
             <DiagramTooltip content="Пустая башня голосований. Валидатор ещё не участвовал в консенсусе. После первого голоса начнётся экспоненциальный механизм lockout.">
               <div style={{
                 ...glassStyle,
-                padding: '24px 16px',
-                borderRadius: 8,
-                textAlign: 'center',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px dashed rgba(255,255,255,0.15)',
+                'padding': '24px 16px',
+                'border-radius': '8px',
+                'text-align': 'center',
+                'background': 'rgba(255,255,255,0.03)',
+                'border': '1px dashed rgba(255,255,255,0.15)',
               }}>
-                <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   Башня пуста -- нет голосов
                 </span>
               </div>
@@ -153,47 +154,47 @@ export function VoteTowerDiagram() {
               const isNewest = visualIdx === 0;
 
               return (
-                <DiagramTooltip key={vote.slot} content={voteLevelTooltip(vote, depth)}>
+                <DiagramTooltip content={voteLevelTooltip(vote, depth)}>
                   <div
                     style={{
                       ...glassStyle,
-                      padding: '10px 16px',
-                      borderRadius: 8,
-                      background: bgColor,
-                      border: `1px solid rgba(34,197,94,${0.2 + depth * 0.1})`,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      'padding': '10px 16px',
+                      'border-radius': '8px',
+                      'background': bgColor,
+                      'border': `1px solid rgba(34,197,94,${0.2 + depth * 0.1})`,
+                      'display': 'flex',
+                      'justify-content': 'space-between',
+                      'align-items': 'center',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px' }}>
                       <span style={{
-                        fontSize: 12, fontFamily: 'monospace', fontWeight: 700,
-                        color: '#22c55e',
+                        'font-size': '12px', 'font-family': 'monospace', 'font-weight': '700',
+                        'color': '#22c55e',
                       }}>
                         Slot {vote.slot}
                       </span>
                       {isNewest && (
                         <span style={{
-                          fontSize: 9, fontFamily: 'monospace',
-                          color: colors.primary,
-                          background: `${colors.primary}20`,
-                          padding: '1px 6px', borderRadius: 3,
+                          'font-size': '9px', 'font-family': 'monospace',
+                          'color': colors.primary,
+                          'background': `${colors.primary}20`,
+                          'padding': '1px 6px', 'border-radius': '3px',
                         }}>
                           НОВЫЙ
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>lockout</div>
-                        <div style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700, color: colors.text }}>
+                    <div style={{ 'display': 'flex', 'gap': '16px' }}>
+                      <div style={{ 'text-align': 'center' }}>
+                        <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>lockout</div>
+                        <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'font-weight': '700', 'color': colors.text }}>
                           {vote.lockout}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>confirms</div>
-                        <div style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700, color: colors.text }}>
+                      <div style={{ 'text-align': 'center' }}>
+                        <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>confirms</div>
+                        <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'font-weight': '700', 'color': colors.text }}>
                           {vote.confirmations}
                         </div>
                       </div>
@@ -208,7 +209,7 @@ export function VoteTowerDiagram() {
 
       {/* Confirmation levels summary (final step) */}
       {currentStep.showConfirmationLevels && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-bottom': '12px' }}>
           {[
             {
               level: 'Processed',
@@ -229,29 +230,29 @@ export function VoteTowerDiagram() {
               detail: 'Голос получил 32+ подтверждений, lockout достиг максимума. Эквивалент финализации в Ethereum.',
             },
           ].map((item) => (
-            <DiagramTooltip key={item.level} content={CONFIRMATION_TOOLTIPS[item.level]}>
+            <DiagramTooltip content={CONFIRMATION_TOOLTIPS[item.level]}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  background: `${item.color}08`,
-                  border: `1px solid ${item.color}25`,
+                  'padding': '10px 14px',
+                  'border-radius': '8px',
+                  'background': `${item.color}08`,
+                  'border': `1px solid ${item.color}25`,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '4px' }}>
                   <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: item.color,
+                    'width': '8px', 'height': '8px', 'border-radius': '50%',
+                    'background': item.color,
                   }} />
-                  <span style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 700, color: item.color }}>
+                  <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'font-weight': '700', 'color': item.color }}>
                     {item.level}
                   </span>
-                  <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                     -- {item.desc}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', paddingLeft: 16, lineHeight: 1.4 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'padding-left': '16px', 'line-height': '1.4' }}>
                   {item.detail}
                 </div>
               </div>
@@ -264,7 +265,7 @@ export function VoteTowerDiagram() {
       {currentStep.message && (
         <DiagramTooltip content="Пошаговое описание механизма Tower BFT. Каждый голос увеличивает lockout предыдущих, создавая экспоненциально растущую стоимость отката.">
           <DataBox
-            label={`Шаг ${step + 1} из ${steps.length}`}
+            label={`Шаг ${step() + 1} из ${steps.length}`}
             value={currentStep.message}
             variant="highlight"
           />
@@ -272,13 +273,13 @@ export function VoteTowerDiagram() {
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <DiagramTooltip content="Сброс к начальному состоянию — пустой башне голосований.">
           <div>
             <button
               onClick={() => setStep(0)}
-              style={btnStyle(step > 0, colors.text)}
-              disabled={step === 0}
+              style={btnStyle(step() > 0, colors.text)}
+              disabled={step() === 0}
             >
               Сброс
             </button>
@@ -349,31 +350,31 @@ export function LeaderScheduleDiagram() {
         <div
           style={{
             ...glassStyle,
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 12,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.15s',
-            cursor: 'default',
+            'padding': '16px',
+            'border-radius': '10px',
+            'margin-bottom': '12px',
+            'background': 'rgba(255,255,255,0.05)',
+            'border': '1px solid rgba(255,255,255,0.08)',
+            'transition': 'all 0.15s',
+            'cursor': 'default',
           }}
         >
           <div style={{
-            fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-            color: '#3b82f6', marginBottom: 10,
+            'font-size': '11px', 'font-family': 'monospace', 'font-weight': '700',
+            'color': '#3b82f6', 'margin-bottom': '10px',
           }}>
             Epoch = 432,000 слотов (~2-3 дня). Каждый лидер получает 4 слота (~1.6s).
           </div>
 
           {/* Leader legend */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '12px', 'margin-bottom': '10px', 'flex-wrap': 'wrap' }}>
             {LEADERS.map((leader) => (
-              <div key={leader.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
                 <div style={{
-                  width: 10, height: 10, borderRadius: 3,
-                  background: leader.color, opacity: 0.7,
+                  'width': '10px', 'height': '10px', 'border-radius': '3px',
+                  'background': leader.color, 'opacity': '0.7',
                 }} />
-                <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   {leader.label}
                 </span>
               </div>
@@ -381,30 +382,30 @@ export function LeaderScheduleDiagram() {
           </div>
 
           {/* Slot timeline */}
-          <div style={{ display: 'flex', gap: 3, overflowX: 'auto' }}>
+          <div style={{ 'display': 'flex', 'gap': '3px', 'overflow-x': 'auto' }}>
             {Array.from({ length: TOTAL_SLOTS }, (_, i) => {
               const leader = LEADERS.find((l) => i >= l.startSlot && i <= l.endSlot);
               const leaderColor = leader?.color || colors.textMuted;
               const isFirstInGroup = leader && i === leader.startSlot;
 
               return (
-                <DiagramTooltip key={i} content={slotTooltip(i, leader)}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <DiagramTooltip content={slotTooltip(i, leader)}>
+                  <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '4px' }}>
                     <div style={{
                       ...glassStyle,
-                      width: 40, height: 36,
-                      borderRadius: 4,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: `${leaderColor}15`,
-                      border: `1px solid ${leaderColor}30`,
-                      borderLeft: isFirstInGroup ? `3px solid ${leaderColor}` : undefined,
+                      'width': '40px', 'height': '36px',
+                      'border-radius': '4px',
+                      'display': 'flex', 'align-items': 'center', 'justify-content': 'center',
+                      'background': `${leaderColor}15`,
+                      'border': `1px solid ${leaderColor}30`,
+                      'border-left': isFirstInGroup ? `3px solid ${leaderColor}` : undefined,
                     }}>
-                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: leaderColor, fontWeight: 600 }}>
+                      <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': leaderColor, 'font-weight': '600' }}>
                         {i}
                       </span>
                     </div>
                     {isFirstInGroup && (
-                      <span style={{ fontSize: 8, fontFamily: 'monospace', color: leaderColor }}>
+                      <span style={{ 'font-size': '8px', 'font-family': 'monospace', 'color': leaderColor }}>
                         {leader.label.split(' ')[1]}
                       </span>
                     )}
@@ -421,55 +422,55 @@ export function LeaderScheduleDiagram() {
         <div
           style={{
             ...glassStyle,
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 12,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.15s',
-            cursor: 'default',
+            'padding': '16px',
+            'border-radius': '10px',
+            'margin-bottom': '12px',
+            'background': 'rgba(255,255,255,0.05)',
+            'border': '1px solid rgba(255,255,255,0.08)',
+            'transition': 'all 0.15s',
+            'cursor': 'default',
           }}
         >
           <div style={{
-            fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-            color: '#22c55e', marginBottom: 12,
+            'font-size': '11px', 'font-family': 'monospace', 'font-weight': '700',
+            'color': '#22c55e', 'margin-bottom': '12px',
           }}>
             Gulf Stream: транзакции без mempool
           </div>
 
           {/* Solana flow */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ 'margin-bottom': '16px' }}>
+            <div style={{ 'font-size': '10px', 'color': '#22c55e', 'font-family': 'monospace', 'font-weight': '600', 'margin-bottom': '8px' }}>
               Solana:
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'flex-wrap': 'wrap' }}>
               {[
                 { label: 'Клиент', color: colors.text, tooltip: 'Клиент отправляет транзакцию напрямую текущему лидеру, минуя мемпул. Это возможно благодаря тому, что расписание лидеров известно заранее.' },
                 { label: 'Текущий лидер', color: '#22c55e', tooltip: 'Текущий лидер получает транзакцию и включает её в блок. Одновременно пересылает (forwards) транзакцию следующему лидеру на случай, если текущий слот завершится.' },
                 { label: 'Следующий лидер', color: '#3b82f6', tooltip: 'Следующий лидер в расписании получает транзакцию заранее через Gulf Stream. Если текущий лидер не успел её обработать, следующий подхватит без задержки.' },
               ].map((node, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
                   <DiagramTooltip content={node.tooltip}>
                     <div style={{
                       ...glassStyle,
-                      padding: '6px 12px', borderRadius: 6,
-                      background: `${node.color}10`,
-                      border: `1px solid ${node.color}30`,
+                      'padding': '6px 12px', 'border-radius': '6px',
+                      'background': `${node.color}10`,
+                      'border': `1px solid ${node.color}30`,
                     }}>
-                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: node.color, fontWeight: 600 }}>
+                      <span style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': node.color, 'font-weight': '600' }}>
                         {node.label}
                       </span>
                     </div>
                   </DiagramTooltip>
                   {i < 2 && (
-                    <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>{'\u2192'}</span>
+                    <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{'\u2192'}</span>
                   )}
                 </div>
               ))}
             </div>
             <div style={{
-              fontSize: 10, color: colors.textMuted, fontFamily: 'monospace',
-              marginTop: 6, paddingLeft: 4,
+              'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace',
+              'margin-top': '6px', 'padding-left': '4px',
             }}>
               Транзакции пересылаются заранее следующему лидеру
             </div>
@@ -477,37 +478,37 @@ export function LeaderScheduleDiagram() {
 
           {/* Ethereum flow (contrast) */}
           <div>
-            <div style={{ fontSize: 10, color: '#8b5cf6', fontFamily: 'monospace', fontWeight: 600, marginBottom: 8 }}>
+            <div style={{ 'font-size': '10px', 'color': '#8b5cf6', 'font-family': 'monospace', 'font-weight': '600', 'margin-bottom': '8px' }}>
               Ethereum (для сравнения):
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'flex-wrap': 'wrap' }}>
               {[
                 { label: 'Клиент', color: colors.textMuted, tooltip: 'В Ethereum клиент отправляет транзакцию в сеть, где она попадает в мемпул — общую очередь ожидающих транзакций.' },
                 { label: 'Mempool', color: '#f59e0b', tooltip: 'Мемпул — пул ожидающих транзакций. Транзакции ждут, пока пропозер не включит их в блок. Это создаёт задержку и позволяет MEV-ботам манипулировать порядком.' },
                 { label: 'Ожидание блока...', color: '#8b5cf6', tooltip: 'В Ethereum блоки производятся каждые ~12 секунд. Транзакция может ждать один или несколько блоков до включения, что создаёт значительную задержку по сравнению с Solana (~400мс).' },
               ].map((node, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
                   <DiagramTooltip content={node.tooltip}>
                     <div style={{
                       ...glassStyle,
-                      padding: '6px 12px', borderRadius: 6,
-                      background: `${node.color}10`,
-                      border: `1px solid ${node.color}30`,
+                      'padding': '6px 12px', 'border-radius': '6px',
+                      'background': `${node.color}10`,
+                      'border': `1px solid ${node.color}30`,
                     }}>
-                      <span style={{ fontSize: 11, fontFamily: 'monospace', color: node.color, fontWeight: 600 }}>
+                      <span style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': node.color, 'font-weight': '600' }}>
                         {node.label}
                       </span>
                     </div>
                   </DiagramTooltip>
                   {i < 2 && (
-                    <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>{'\u2192'}</span>
+                    <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{'\u2192'}</span>
                   )}
                 </div>
               ))}
             </div>
             <div style={{
-              fontSize: 10, color: colors.textMuted, fontFamily: 'monospace',
-              marginTop: 6, paddingLeft: 4,
+              'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace',
+              'margin-top': '6px', 'padding-left': '4px',
             }}>
               Транзакции ждут в mempool, пока пропозер их не включит
             </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Anchor Development Diagrams (SOL-07)
  *
@@ -6,7 +7,7 @@
  * - ConstraintValidationDiagram: 7-step constraint validation flow (discriminator through all checks)
  */
 
-import { useState } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -16,7 +17,7 @@ import { colors, glassStyle } from '@primitives/shared';
 /*  Shared helpers                                                      */
 /* ================================================================== */
 
-function navBtnStyle(enabled: boolean, accentColor: string): React.CSSProperties {
+function navBtnStyle(enabled: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 20px',
@@ -118,37 +119,37 @@ const STATE_FIELD_TOOLTIPS: Record<string, string> = {
  * non-existent -> init -> use -> realloc -> close
  */
 export function AccountLifecycleDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = LIFECYCLE_STEPS[step];
+  const current = LIFECYCLE_STEPS[step()];
 
   return (
     <DiagramContainer title="Жизненный цикл аккаунта: init -> use -> close" color="blue">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '3px', 'margin-bottom': '16px' }}>
         {LIFECYCLE_STEPS.map((s, i) => {
-          const isActive = i === step;
-          const isPast = i < step;
+          const isActive = i === step();
+          const isPast = i < step();
           return (
-            <DiagramTooltip key={i} content={s.tooltip}>
+            <DiagramTooltip content={s.tooltip}>
               <div
                 onClick={() => setStep(i)}
                 style={{
-                  flex: 1,
-                  padding: '8px 6px',
+                  'flex': '1',
+                  'padding': '8px 6px',
                   ...glassStyle,
-                  background: isActive ? `${s.color}20` : isPast ? `${s.color}08` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isActive ? s.color : isPast ? s.color + '30' : 'rgba(255,255,255,0.06)'}`,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
+                  'background': isActive ? `${s.color}20` : isPast ? `${s.color}08` : 'rgba(255,255,255,0.03)',
+                  'border': `1px solid ${isActive ? s.color : isPast ? s.color + '30' : 'rgba(255,255,255,0.06)'}`,
+                  'cursor': 'pointer',
+                  'text-align': 'center',
+                  'transition': 'all 0.2s',
                 }}
               >
                 <div style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? s.color : isPast ? s.color + 'aa' : colors.textMuted,
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'font-weight': isActive ? 600 : 400,
+                  'color': isActive ? s.color : isPast ? s.color + 'aa' : colors.textMuted,
                 }}>
                   {s.phase}
                 </div>
@@ -159,7 +160,7 @@ export function AccountLifecycleDiagram() {
       </div>
 
       {/* Current step title */}
-      <div style={{ fontSize: 16, fontWeight: 600, color: current.color, marginBottom: 8 }}>
+      <div style={{ 'font-size': '16px', 'font-weight': '600', 'color': current.color, 'margin-bottom': '8px' }}>
         {current.title}
       </div>
 
@@ -168,17 +169,17 @@ export function AccountLifecycleDiagram() {
         <DiagramTooltip content={`Anchor-макрос для фазы "${current.phase}". Каждый атрибут (init, mut, seeds, bump, has_one, close) генерирует проверки, которые выполняются ДО вашего handler-кода.`}>
           <div style={{
             ...glassStyle,
-            padding: 10,
-            background: `${current.color}08`,
-            border: `1px solid ${current.color}25`,
-            marginBottom: 10,
+            'padding': '10px',
+            'background': `${current.color}08`,
+            'border': `1px solid ${current.color}25`,
+            'margin-bottom': '10px',
           }}>
             <pre style={{
-              margin: 0,
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: current.color,
-              whiteSpace: 'pre-wrap',
+              'margin': '0',
+              'font-size': '12px',
+              'font-family': 'monospace',
+              'color': current.color,
+              'white-space': 'pre-wrap',
             }}>
               {current.code}
             </pre>
@@ -187,7 +188,7 @@ export function AccountLifecycleDiagram() {
       )}
 
       {/* Description */}
-      <div style={{ fontSize: 13, color: colors.text, lineHeight: 1.6, marginBottom: 14 }}>
+      <div style={{ 'font-size': '13px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '14px' }}>
         {current.description}
       </div>
 
@@ -195,29 +196,29 @@ export function AccountLifecycleDiagram() {
       <DiagramTooltip content="Состояние аккаунта на данном этапе жизненного цикла. Каждое поле (exists, owner, data, lamports) отражает текущее значение на блокчейне после выполнения инструкции.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          marginBottom: 14,
+          'padding': '12px',
+          'background': 'rgba(255,255,255,0.02)',
+          'border': '1px solid rgba(255,255,255,0.08)',
+          'margin-bottom': '14px',
         }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Состояние аккаунта:
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '6px' }}>
             {[
               { label: 'exists', value: current.state.exists ? 'true' : 'false', c: current.state.exists ? colors.success : '#f43f5e' },
               { label: 'owner', value: current.state.owner, c: colors.accent },
               { label: 'data', value: current.state.data, c: colors.primary },
               { label: 'lamports', value: current.state.lamports, c: colors.success },
             ].map((f) => (
-              <DiagramTooltip key={f.label} content={STATE_FIELD_TOOLTIPS[f.label]}>
+              <DiagramTooltip content={STATE_FIELD_TOOLTIPS[f.label]}>
                 <div style={{
                   ...glassStyle,
-                  padding: '6px 8px',
-                  background: 'rgba(0,0,0,0.2)',
+                  'padding': '6px 8px',
+                  'background': 'rgba(0,0,0,0.2)',
                 }}>
-                  <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>{f.label}</div>
-                  <div style={{ fontSize: 11, color: f.c, fontFamily: 'monospace', marginTop: 2 }}>{f.value}</div>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{f.label}</div>
+                  <div style={{ 'font-size': '11px', 'color': f.c, 'font-family': 'monospace', 'margin-top': '2px' }}>{f.value}</div>
                 </div>
               </DiagramTooltip>
             ))}
@@ -226,27 +227,27 @@ export function AccountLifecycleDiagram() {
       </DiagramTooltip>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <DiagramTooltip content="Вернуться к предыдущей фазе жизненного цикла аккаунта.">
           <div>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              style={navBtnStyle(step > 0, current.color)}
+              disabled={step() === 0}
+              style={navBtnStyle(step() > 0, current.color)}
             >
               Назад
             </button>
           </div>
         </DiagramTooltip>
-        <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace', alignSelf: 'center' }}>
-          {step + 1} / {LIFECYCLE_STEPS.length}
+        <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace', 'align-self': 'center' }}>
+          {step() + 1} / {LIFECYCLE_STEPS.length}
         </span>
         <DiagramTooltip content="Перейти к следующей фазе: увидеть, как изменяется состояние аккаунта.">
           <div>
             <button
               onClick={() => setStep((s) => Math.min(LIFECYCLE_STEPS.length - 1, s + 1))}
-              disabled={step >= LIFECYCLE_STEPS.length - 1}
-              style={navBtnStyle(step < LIFECYCLE_STEPS.length - 1, current.color)}
+              disabled={step() >= LIFECYCLE_STEPS.length - 1}
+              style={navBtnStyle(step() < LIFECYCLE_STEPS.length - 1, current.color)}
             >
               Далее
             </button>
@@ -254,7 +255,7 @@ export function AccountLifecycleDiagram() {
         </DiagramTooltip>
       </div>
 
-      {step >= LIFECYCLE_STEPS.length - 1 && (
+      {step() >= LIFECYCLE_STEPS.length - 1 && (
         <DiagramTooltip content="Полный цикл жизни аккаунта Solana: от математического PDA-адреса через инициализацию, использование и опциональный realloc до закрытия с возвратом lamports.">
           <DataBox
             label="Полный цикл"
@@ -354,28 +355,28 @@ const VALIDATION_STEPS: ValidationStep[] = [
  * processing #[account(mut, seeds, bump, has_one)] constraint.
  */
 export function ConstraintValidationDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = VALIDATION_STEPS[step];
+  const current = VALIDATION_STEPS[step()];
 
   return (
     <DiagramContainer title="Порядок валидации constraints" color="purple">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '3px', 'margin-bottom': '16px' }}>
         {VALIDATION_STEPS.map((s, i) => {
-          const isActive = i === step;
-          const isPast = i < step;
+          const isActive = i === step();
+          const isPast = i < step();
           return (
-            <DiagramTooltip key={i} content={s.tooltip}>
+            <DiagramTooltip content={s.tooltip}>
               <div
                 onClick={() => setStep(i)}
                 style={{
-                  flex: 1,
-                  height: 6,
-                  borderRadius: 3,
-                  background: isActive ? s.color : isPast ? s.color + '60' : 'rgba(255,255,255,0.08)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  'flex': '1',
+                  'height': '6px',
+                  'border-radius': '3px',
+                  'background': isActive ? s.color : isPast ? s.color + '60' : 'rgba(255,255,255,0.08)',
+                  'cursor': 'pointer',
+                  'transition': 'all 0.2s',
                 }}
               />
             </DiagramTooltip>
@@ -384,24 +385,24 @@ export function ConstraintValidationDiagram() {
       </div>
 
       {/* Step header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px', 'margin-bottom': '12px' }}>
         <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: '50%',
-          background: `${current.color}20`,
-          border: `2px solid ${current.color}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.color,
-          fontFamily: 'monospace',
+          'width': '32px',
+          'height': '32px',
+          'border-radius': '50%',
+          'background': `${current.color}20`,
+          'border': `2px solid ${current.color}`,
+          'display': 'flex',
+          'align-items': 'center',
+          'justify-content': 'center',
+          'font-size': '14px',
+          'font-weight': '700',
+          'color': current.color,
+          'font-family': 'monospace',
         }}>
           {current.order}
         </div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: current.color }}>
+        <div style={{ 'font-size': '16px', 'font-weight': '600', 'color': current.color }}>
           {current.name}
         </div>
       </div>
@@ -410,21 +411,21 @@ export function ConstraintValidationDiagram() {
       <DiagramTooltip content={`Проверка #${current.order}: ${current.name}. Anchor генерирует этот код из макроса #[account(...)]. Если проверка не пройдена, транзакция автоматически откатывается.`}>
         <div style={{
           ...glassStyle,
-          padding: 12,
-          background: `${current.color}08`,
-          border: `1px solid ${current.color}25`,
-          marginBottom: 12,
+          'padding': '12px',
+          'background': `${current.color}08`,
+          'border': `1px solid ${current.color}25`,
+          'margin-bottom': '12px',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             Проверка:
           </div>
           <pre style={{
-            margin: 0,
-            fontSize: 12,
-            fontFamily: 'monospace',
-            color: current.color,
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.5,
+            'margin': '0',
+            'font-size': '12px',
+            'font-family': 'monospace',
+            'color': current.color,
+            'white-space': 'pre-wrap',
+            'line-height': '1.5',
           }}>
             {current.check}
           </pre>
@@ -432,18 +433,18 @@ export function ConstraintValidationDiagram() {
       </DiagramTooltip>
 
       {/* Pass / Fail outcomes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '14px' }}>
         <DiagramTooltip content="Успешная проверка: constraint выполнен, данные аккаунта корректны. Anchor переходит к следующей проверке или вызывает handler.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            background: `${colors.success}08`,
-            border: `1px solid ${colors.success}20`,
+            'padding': '10px',
+            'background': `${colors.success}08`,
+            'border': `1px solid ${colors.success}20`,
           }}>
-            <div style={{ fontSize: 10, color: colors.success, fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.success, 'font-family': 'monospace', 'margin-bottom': '4px', 'font-weight': '600' }}>
               PASS
             </div>
-            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.5' }}>
               {current.pass}
             </div>
           </div>
@@ -451,14 +452,14 @@ export function ConstraintValidationDiagram() {
         <DiagramTooltip content="Неудачная проверка: constraint нарушен. Anchor возвращает ошибку, транзакция откатывается (revert), никакие данные не изменяются. Это защита от уязвимостей.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            background: '#f43f5e08',
-            border: '1px solid #f43f5e20',
+            'padding': '10px',
+            'background': '#f43f5e08',
+            'border': '1px solid #f43f5e20',
           }}>
-            <div style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4, fontWeight: 600 }}>
+            <div style={{ 'font-size': '10px', 'color': '#f43f5e', 'font-family': 'monospace', 'margin-bottom': '4px', 'font-weight': '600' }}>
               FAIL
             </div>
-            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.5' }}>
               {current.fail}
             </div>
           </div>
@@ -466,27 +467,27 @@ export function ConstraintValidationDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <DiagramTooltip content="Вернуться к предыдущей проверке в цепочке валидации constraints.">
           <div>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              style={navBtnStyle(step > 0, current.color)}
+              disabled={step() === 0}
+              style={navBtnStyle(step() > 0, current.color)}
             >
               Назад
             </button>
           </div>
         </DiagramTooltip>
-        <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace', alignSelf: 'center' }}>
-          {step + 1} / {VALIDATION_STEPS.length}
+        <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace', 'align-self': 'center' }}>
+          {step() + 1} / {VALIDATION_STEPS.length}
         </span>
         <DiagramTooltip content="Перейти к следующей проверке: увидеть, какой constraint Anchor проверяет далее.">
           <div>
             <button
               onClick={() => setStep((s) => Math.min(VALIDATION_STEPS.length - 1, s + 1))}
-              disabled={step >= VALIDATION_STEPS.length - 1}
-              style={navBtnStyle(step < VALIDATION_STEPS.length - 1, current.color)}
+              disabled={step() >= VALIDATION_STEPS.length - 1}
+              style={navBtnStyle(step() < VALIDATION_STEPS.length - 1, current.color)}
             >
               Далее
             </button>
@@ -494,7 +495,7 @@ export function ConstraintValidationDiagram() {
         </DiagramTooltip>
       </div>
 
-      {step >= VALIDATION_STEPS.length - 1 && (
+      {step() >= VALIDATION_STEPS.length - 1 && (
         <DiagramTooltip content="Все 7 constraint-проверок выполняются автоматически до вызова вашего handler. Порядок проверок оптимизирован: самые быстрые (discriminator) — первые, самые тяжёлые (десериализация) — последние.">
           <DataBox
             label="Все 7 проверок пройдены"

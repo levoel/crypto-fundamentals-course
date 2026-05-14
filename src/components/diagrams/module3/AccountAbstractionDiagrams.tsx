@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Account Abstraction Diagrams (ETH-12)
  *
@@ -6,7 +7,7 @@
  *   Covers: problem, UserOp creation, alt-mempool, bundler, EntryPoint, validateUserOp, Paymaster, execute + EIP-7702 comparison
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { createEffect, createSignal, onCleanup } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -102,26 +103,26 @@ const FLOW_COMPONENTS = [
 ];
 
 export function UserOperationFlowDiagram() {
-  const [step, setStep] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [step, setStep] = createSignal(0);
+  const [autoPlay, setAutoPlay] = createSignal(false);
+  let intervalRef: ReturnType<typeof setInterval> | null = null;
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setStep((s) => Math.min(s + 1, AA_STEPS.length - 1));
-  }, []);
+  };
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
     setStep((s) => Math.max(s - 1, 0));
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
     setAutoPlay(false);
-  }, []);
+  };
 
-  useEffect(() => {
-    if (autoPlay) {
-      intervalRef.current = setInterval(() => {
+  createEffect(() => {
+    if (autoPlay()) {
+      intervalRef = setInterval(() => {
         setStep((s) => {
           if (s >= AA_STEPS.length - 1) {
             setAutoPlay(false);
@@ -131,44 +132,44 @@ export function UserOperationFlowDiagram() {
         });
       }, 3500);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [autoPlay]);
+    onCleanup(() => {
+      if (intervalRef) clearInterval(intervalRef);
+    });
+  });
 
-  const current = AA_STEPS[step];
+  const current = AA_STEPS[step()];
 
   return (
     <DiagramContainer title="ERC-4337: путь UserOperation" color="purple">
       {/* Flow architecture -- horizontal node chain */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 2,
-        flexWrap: 'wrap',
-        marginBottom: 16,
-        padding: '8px 0',
+        'display': 'flex',
+        'align-items': 'center',
+        'justify-content': 'center',
+        'gap': '2px',
+        'flex-wrap': 'wrap',
+        'margin-bottom': '16px',
+        'padding': '8px 0',
       }}>
         {FLOW_COMPONENTS.map((comp, i) => {
           const isActive = comp.id === current.activeComponent;
-          const isPast = i < step;
+          const isPast = i < step();
 
           return (
-            <div key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '2px' }}>
               <DiagramTooltip content={comp.tooltip}>
                 <div
                   style={{
-                    padding: '4px 8px',
-                    borderRadius: 6,
-                    fontSize: 9,
-                    fontWeight: isActive ? 700 : 500,
-                    background: isActive ? `${current.color}20` : isPast ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-                    border: `1.5px solid ${isActive ? current.color : isPast ? colors.textMuted + '40' : 'rgba(255,255,255,0.08)'}`,
-                    color: isActive ? current.color : isPast ? colors.textMuted : `${colors.textMuted}80`,
-                    transition: 'all 0.3s',
-                    minWidth: 44,
-                    textAlign: 'center' as const,
+                    'padding': '4px 8px',
+                    'border-radius': '6px',
+                    'font-size': '9px',
+                    'font-weight': isActive ? 700 : 500,
+                    'background': isActive ? `${current.color}20` : isPast ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+                    'border': `1.5px solid ${isActive ? current.color : isPast ? colors.textMuted + '40' : 'rgba(255,255,255,0.08)'}`,
+                    'color': isActive ? current.color : isPast ? colors.textMuted : `${colors.textMuted}80`,
+                    'transition': 'all 0.3s',
+                    'min-width': '44px',
+                    'text-align': 'center' as const,
                   }}
                 >
                   {comp.short}
@@ -176,9 +177,9 @@ export function UserOperationFlowDiagram() {
               </DiagramTooltip>
               {i < FLOW_COMPONENTS.length - 1 && (
                 <span style={{
-                  color: isPast || isActive ? current.color + '60' : colors.border,
-                  fontSize: 10,
-                  transition: 'color 0.3s',
+                  'color': isPast || isActive ? current.color + '60' : colors.border,
+                  'font-size': '10px',
+                  'transition': 'color 0.3s',
                 }}>
                   →
                 </span>
@@ -189,23 +190,23 @@ export function UserOperationFlowDiagram() {
       </div>
 
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'justify-content': 'center', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {AA_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={s.title}>
+          <DiagramTooltip content={s.title}>
             <div
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontWeight: 600,
-                background: i <= step ? `${AA_STEPS[i].color}25` : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${i <= step ? AA_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
-                color: i <= step ? AA_STEPS[i].color : colors.textMuted,
-                transition: 'all 0.3s',
+                'width': '26px',
+                'height': '26px',
+                'border-radius': '50%',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '10px',
+                'font-weight': '600',
+                'background': i <= step() ? `${AA_STEPS[i].color}25` : 'rgba(255,255,255,0.05)',
+                'border': `2px solid ${i <= step() ? AA_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
+                'color': i <= step() ? AA_STEPS[i].color : colors.textMuted,
+                'transition': 'all 0.3s',
               }}
             >
               {i + 1}
@@ -217,33 +218,33 @@ export function UserOperationFlowDiagram() {
       {/* Current step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        borderColor: `${current.color}40`,
-        marginBottom: 16,
-        transition: 'border-color 0.3s',
+        'padding': '16px',
+        'border-color': `${current.color}40`,
+        'margin-bottom': '16px',
+        'transition': 'border-color 0.3s',
       }}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.color,
-          marginBottom: 8,
+          'font-size': '14px',
+          'font-weight': '700',
+          'color': current.color,
+          'margin-bottom': '8px',
         }}>
           {current.title}
         </div>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '12px', 'line-height': '1.6' }}>
           {current.description}
         </div>
 
         {/* Technical detail */}
         <div style={{
-          padding: '10px 12px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
-          fontFamily: 'monospace',
-          fontSize: 11,
-          color: colors.text,
-          lineHeight: 1.6,
-          whiteSpace: 'pre-wrap',
+          'padding': '10px 12px',
+          'background': 'rgba(255,255,255,0.03)',
+          'border-radius': '6px',
+          'font-family': 'monospace',
+          'font-size': '11px',
+          'color': colors.text,
+          'line-height': '1.6',
+          'white-space': 'pre-wrap',
         }}>
           {current.detail}
         </div>
@@ -251,16 +252,16 @@ export function UserOperationFlowDiagram() {
         {/* EIP-7702 comparison (only on last step) */}
         {current.comparison && (
           <div style={{
-            marginTop: 12,
-            padding: '10px 12px',
-            background: `${colors.accent}10`,
-            border: `1px solid ${colors.accent}30`,
-            borderRadius: 6,
-            fontFamily: 'monospace',
-            fontSize: 11,
-            color: colors.accent,
-            lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
+            'margin-top': '12px',
+            'padding': '10px 12px',
+            'background': `${colors.accent}10`,
+            'border': `1px solid ${colors.accent}30`,
+            'border-radius': '6px',
+            'font-family': 'monospace',
+            'font-size': '11px',
+            'color': colors.accent,
+            'line-height': '1.6',
+            'white-space': 'pre-wrap',
           }}>
             {current.comparison}
           </div>
@@ -268,19 +269,19 @@ export function UserOperationFlowDiagram() {
       </div>
 
       {/* Comparison table on last step */}
-      {step === AA_STEPS.length - 1 && (
-        <div style={{ marginBottom: 16 }}>
+      {step() === AA_STEPS.length - 1 && (
+        <div style={{ 'margin-bottom': '16px' }}>
           <Grid columns={2} gap={8}>
             <DiagramTooltip content="ERC-4337: стандарт Account Abstraction без изменения протокола. Smart account -- постоянный контракт с произвольной логикой валидации, Paymaster спонсированием и session keys.">
               <div style={{
                 ...glassStyle,
-                padding: 12,
-                borderColor: `${colors.primary}30`,
+                'padding': '12px',
+                'border-color': `${colors.primary}30`,
               }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: colors.primary, marginBottom: 8 }}>
+                <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': colors.primary, 'margin-bottom': '8px' }}>
                   ERC-4337
                 </div>
-                <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.6' }}>
                   <div>Постоянный smart account</div>
                   <div>Любая схема подписей</div>
                   <div>Paymaster спонсирование</div>
@@ -292,13 +293,13 @@ export function UserOperationFlowDiagram() {
             <DiagramTooltip content="EIP-7702 (Pectra): EOA временно делегирует код контракту на одну транзакцию (type 0x04). Batch операции и спонсирование газа без deploy контракта.">
               <div style={{
                 ...glassStyle,
-                padding: 12,
-                borderColor: `${colors.accent}30`,
+                'padding': '12px',
+                'border-color': `${colors.accent}30`,
               }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: colors.accent, marginBottom: 8 }}>
+                <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': colors.accent, 'margin-bottom': '8px' }}>
                   EIP-7702 (Pectra)
                 </div>
-                <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.6' }}>
                   <div>Временная делегация EOA</div>
                   <div>Batch транзакции</div>
                   <div>Спонсирование газа</div>
@@ -312,84 +313,84 @@ export function UserOperationFlowDiagram() {
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={handleReset}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'font-size': '12px',
+            'color': colors.textMuted,
+            'border': '1px solid rgba(255,255,255,0.1)',
+            'background': 'rgba(255,255,255,0.05)',
           }}
         >
           Сброс
         </button>
         <button
           onClick={handlePrev}
-          disabled={step <= 0}
+          disabled={step() <= 0}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step <= 0 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step <= 0 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step <= 0 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() <= 0 ? 'default' : 'pointer',
+            'font-size': '12px',
+            'color': step() <= 0 ? colors.textMuted : colors.accent,
+            'border': `1px solid ${step() <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+            'background': step() <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+            'opacity': step() <= 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={handleNext}
-          disabled={step >= AA_STEPS.length - 1}
+          disabled={step() >= AA_STEPS.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= AA_STEPS.length - 1 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= AA_STEPS.length - 1 ? colors.textMuted : colors.primary,
-            border: `1px solid ${step >= AA_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
-            background: step >= AA_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
-            opacity: step >= AA_STEPS.length - 1 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() >= AA_STEPS.length - 1 ? 'default' : 'pointer',
+            'font-size': '12px',
+            'color': step() >= AA_STEPS.length - 1 ? colors.textMuted : colors.primary,
+            'border': `1px solid ${step() >= AA_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
+            'background': step() >= AA_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
+            'opacity': step() >= AA_STEPS.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
         <button
           onClick={() => {
-            if (step >= AA_STEPS.length - 1) setStep(0);
-            setAutoPlay(!autoPlay);
+            if (step() >= AA_STEPS.length - 1) setStep(0);
+            setAutoPlay(!autoPlay());
           }}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: autoPlay ? colors.warning : colors.success,
-            border: `1px solid ${autoPlay ? colors.warning : colors.success}`,
-            background: `${autoPlay ? colors.warning : colors.success}15`,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'font-size': '12px',
+            'color': autoPlay() ? colors.warning : colors.success,
+            'border': `1px solid ${autoPlay() ? colors.warning : colors.success}`,
+            'background': `${autoPlay() ? colors.warning : colors.success}15`,
           }}
         >
-          {autoPlay ? 'Стоп' : 'Авто'}
+          {autoPlay() ? 'Стоп' : 'Авто'}
         </button>
       </div>
 
       {/* Reference note */}
       <DiagramTooltip content="OpenZeppelin Contracts 5.x: IAccount -- интерфейс ERC-4337, AccountCore -- базовая реализация с validateUserOp(), AccountERC7579 -- модульный стандарт. ERC7702Utils -- утилиты для EIP-7702 делегации.">
         <div style={{
-          marginTop: 16,
+          'margin-top': '16px',
           ...glassStyle,
-          padding: '10px 14px',
-          fontSize: 11,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-          textAlign: 'center',
+          'padding': '10px 14px',
+          'font-size': '11px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
+          'text-align': 'center',
         }}>
-          <strong style={{ color: colors.primary }}>OpenZeppelin Contracts 5.x:</strong>{' '}
+          <strong style={{ 'color': colors.primary }}>OpenZeppelin Contracts 5.x:</strong>{' '}
           предоставляет базовые реализации Account (IAccount, AccountCore, AccountERC7579) для создания совместимых smart accounts. EIP-7702 поддержка: ERC7702Utils.
         </div>
       </DiagramTooltip>

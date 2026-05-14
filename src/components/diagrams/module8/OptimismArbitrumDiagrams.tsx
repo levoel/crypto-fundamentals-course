@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Optimism & Arbitrum Diagrams (SCALE-06)
  *
@@ -9,7 +10,7 @@
  * - StylusArchDiagram: Visual Stylus dual-VM architecture replacing ASCII art
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -101,41 +102,41 @@ export function OPStackDiagram() {
   return (
     <DiagramContainer title="OP Stack: модульная архитектура" color="red">
       {/* 4-layer stack */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
           OP Stack = модульный rollup framework. Каждый layer может быть заменен.
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {OP_STACK_LAYERS.map((layer, i) => (
-            <DiagramTooltip key={i} content={layer.tooltipRu}>
+            <DiagramTooltip content={layer.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  border: `1px solid ${layer.color}25`,
-                  borderRadius: 6,
-                  borderLeft: `4px solid ${layer.color}`,
-                  transition: 'all 0.2s',
-                  background: 'rgba(255,255,255,0.02)',
+                  'padding': '10px 14px',
+                  'border': `1px solid ${layer.color}25`,
+                  'border-radius': '6px',
+                  'border-left': `4px solid ${layer.color}`,
+                  'transition': 'all 0.2s',
+                  'background': 'rgba(255,255,255,0.02)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: layer.color, fontFamily: 'monospace' }}>
+                <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'flex-wrap': 'wrap', 'gap': '4px' }}>
+                  <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': layer.color, 'font-family': 'monospace' }}>
                     {layer.name}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <span style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
+                  <div style={{ 'display': 'flex', 'gap': '6px', 'align-items': 'center' }}>
+                    <span style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace' }}>
                       {layer.component}
                     </span>
                     {layer.swappable && (
                       <span style={{
-                        fontSize: 8,
-                        padding: '1px 5px',
-                        borderRadius: 3,
-                        background: '#f59e0b15',
-                        color: '#f59e0b',
-                        border: '1px solid #f59e0b30',
-                        fontFamily: 'monospace',
+                        'font-size': '8px',
+                        'padding': '1px 5px',
+                        'border-radius': '3px',
+                        'background': '#f59e0b15',
+                        'color': '#f59e0b',
+                        'border': '1px solid #f59e0b30',
+                        'font-family': 'monospace',
                       }}>
                         swappable
                       </span>
@@ -151,33 +152,33 @@ export function OPStackDiagram() {
       {/* Superchain */}
       <div style={{
         ...glassStyle,
-        padding: 14,
-        marginBottom: 14,
-        border: '1px solid #ef444430',
-        borderRadius: 8,
+        'padding': '14px',
+        'margin-bottom': '14px',
+        'border': '1px solid #ef444430',
+        'border-radius': '8px',
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', fontFamily: 'monospace', marginBottom: 8 }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': '#ef4444', 'font-family': 'monospace', 'margin-bottom': '8px' }}>
           Superchain Vision
         </div>
-        <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.5, marginBottom: 10 }}>
+        <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.5', 'margin-bottom': '10px' }}>
           Множество OP Stack сетей, объединенных общей безопасностью и интероперабельностью.
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           {SUPERCHAIN_MEMBERS.map((member) => (
-            <DiagramTooltip key={member.name} content={member.tooltipRu}>
+            <DiagramTooltip content={member.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: `1px solid ${member.color}30`,
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  cursor: 'pointer',
+                  'padding': '6px 12px',
+                  'border-radius': '6px',
+                  'border': `1px solid ${member.color}30`,
+                  'font-size': '10px',
+                  'font-family': 'monospace',
+                  'cursor': 'pointer',
                 }}
               >
-                <span style={{ color: member.color, fontWeight: 600 }}>{member.name}</span>
-                <span style={{ color: colors.textMuted, marginLeft: 6 }}>{member.tvl}</span>
+                <span style={{ 'color': member.color, 'font-weight': '600' }}>{member.name}</span>
+                <span style={{ 'color': colors.textMuted, 'margin-left': '6px' }}>{member.tvl}</span>
               </div>
             </DiagramTooltip>
           ))}
@@ -185,18 +186,18 @@ export function OPStackDiagram() {
       </div>
 
       {/* Milestones */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+      <div style={{ 'margin-bottom': '14px' }}>
+        <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
           Ключевые milestones:
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(2, 1fr)', 'gap': '6px' }}>
           {OP_MILESTONES.map((ms, i) => (
-            <DiagramTooltip key={i} content={ms.tooltipRu}>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'baseline', cursor: 'pointer' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: ms.color, fontFamily: 'monospace', flexShrink: 0 }}>
+            <DiagramTooltip content={ms.tooltipRu}>
+              <div style={{ 'display': 'flex', 'gap': '6px', 'align-items': 'baseline', 'cursor': 'pointer' }}>
+                <span style={{ 'font-size': '10px', 'font-weight': '700', 'color': ms.color, 'font-family': 'monospace', 'flex-shrink': '0' }}>
                   {ms.year}
                 </span>
-                <span style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                <span style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.4' }}>
                   {ms.event}
                 </span>
               </div>
@@ -241,38 +242,38 @@ const NITRO_PIPELINE: NitroPipelineStep[] = [
  * Stylus WASM panel. Orbit framework note. DiagramTooltip on pipeline steps.
  */
 export function NitroDiagram() {
-  const [showStylus, setShowStylus] = useState(false);
+  const [showStylus, setShowStylus] = createSignal(false);
 
   return (
     <DiagramContainer title="Arbitrum Nitro: архитектура" color="blue">
       {/* Pipeline */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+      <div style={{ 'margin-bottom': '14px' }}>
+        <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
           Nitro Pipeline: TX {'->'} Execution {'->'} STF {'->'} Compress {'->'} Proof {'->'} L1
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
           {NITRO_PIPELINE.map((step, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ 'display': 'flex', 'align-items': 'flex-start', 'gap': '8px' }}>
               {/* Step number with connector */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: 24 }}>
+              <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'flex-shrink': '0', 'width': '24px' }}>
                 <div style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: `${step.color}20`,
-                  border: `2px solid ${step.color}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  color: step.color,
+                  'width': '20px',
+                  'height': '20px',
+                  'border-radius': '50%',
+                  'background': `${step.color}20`,
+                  'border': `2px solid ${step.color}`,
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  'font-size': '9px',
+                  'font-family': 'monospace',
+                  'font-weight': '700',
+                  'color': step.color,
                 }}>
                   {i + 1}
                 </div>
                 {i < NITRO_PIPELINE.length - 1 && (
-                  <div style={{ width: 2, height: 16, background: `${step.color}30`, marginTop: 2 }} />
+                  <div style={{ 'width': '2px', 'height': '16px', 'background': `${step.color}30`, 'margin-top': '2px' }} />
                 )}
               </div>
 
@@ -281,18 +282,18 @@ export function NitroDiagram() {
                 <div
                   style={{
                     ...glassStyle,
-                    padding: '8px 12px',
-                    flex: 1,
-                    border: `1px solid rgba(255,255,255,0.06)`,
-                    borderRadius: 6,
-                    transition: 'all 0.2s',
-                    cursor: 'pointer',
+                    'padding': '8px 12px',
+                    'flex': '1',
+                    'border': `1px solid rgba(255,255,255,0.06)`,
+                    'border-radius': '6px',
+                    'transition': 'all 0.2s',
+                    'cursor': 'pointer',
                   }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 600, color: step.color, fontFamily: 'monospace' }}>
+                  <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': step.color, 'font-family': 'monospace' }}>
                     {step.name}
                   </div>
-                  <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4, lineHeight: 1.5 }}>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px', 'line-height': '1.5' }}>
                     {step.description}
                   </div>
                 </div>
@@ -305,43 +306,43 @@ export function NitroDiagram() {
       {/* Stylus panel */}
       <DiagramTooltip content="Stylus -- WASM VM рядом с EVM. Контракты на Rust, C, C++ с 10-100x экономией для compute-heavy задач. Одинаковая безопасность с Solidity контрактами.">
         <div
-          onClick={() => setShowStylus(!showStylus)}
+          onClick={() => setShowStylus(!showStylus())}
           style={{
             ...glassStyle,
-            padding: 14,
-            marginBottom: 12,
-            border: `1px solid ${showStylus ? '#10b98150' : '#10b98125'}`,
-            borderRadius: 8,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
+            'padding': '14px',
+            'margin-bottom': '12px',
+            'border': `1px solid ${showStylus() ? '#10b98150' : '#10b98125'}`,
+            'border-radius': '8px',
+            'cursor': 'pointer',
+            'transition': 'all 0.2s',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#10b981', fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': '#10b981', 'font-family': 'monospace' }}>
               Stylus: WASM VM
             </div>
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
-              {showStylus ? '[-]' : '[+]'}
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+              {showStylus() ? '[-]' : '[+]'}
             </span>
           </div>
-          <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', marginTop: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'margin-top': '4px' }}>
             WASM VM alongside EVM. Контракты на Rust, C, C++ рядом с Solidity.
           </div>
-          {showStylus && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                <div style={{ ...glassStyle, padding: 8, borderRadius: 6, border: '1px solid #6366f130' }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', fontFamily: 'monospace', marginBottom: 2 }}>EVM</div>
-                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Solidity, Vyper</div>
-                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Standard execution</div>
+          {showStylus() && (
+            <div style={{ 'margin-top': '10px', 'padding-top': '10px', 'border-top': '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '8px' }}>
+                <div style={{ ...glassStyle, 'padding': '8px', 'border-radius': '6px', 'border': '1px solid #6366f130' }}>
+                  <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#6366f1', 'font-family': 'monospace', 'margin-bottom': '2px' }}>EVM</div>
+                  <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Solidity, Vyper</div>
+                  <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Standard execution</div>
                 </div>
-                <div style={{ ...glassStyle, padding: 8, borderRadius: 6, border: '1px solid #10b98130' }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 2 }}>WASM (Stylus)</div>
-                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Rust, C, C++</div>
-                  <div style={{ fontSize: 9, color: '#10b981', fontFamily: 'monospace' }}>10-100x дешевле</div>
+                <div style={{ ...glassStyle, 'padding': '8px', 'border-radius': '6px', 'border': '1px solid #10b98130' }}>
+                  <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#10b981', 'font-family': 'monospace', 'margin-bottom': '2px' }}>WASM (Stylus)</div>
+                  <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Rust, C, C++</div>
+                  <div style={{ 'font-size': '9px', 'color': '#10b981', 'font-family': 'monospace' }}>10-100x дешевле</div>
                 </div>
               </div>
-              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.5' }}>
                 Stylus контракты деплоятся рядом с Solidity контрактами на той же сети. Одинаковая безопасность. Compute-heavy задачи (crypto, ML inference, complex math) -- в 10-100x дешевле.
               </div>
             </div>
@@ -353,16 +354,16 @@ export function NitroDiagram() {
       <DiagramTooltip content="Orbit -- фреймворк для запуска собственных L2/L3 на технологии Arbitrum. AnyTrust mode хранит данные off-chain через DAC (дешевле, но слабее безопасность). Используется для gaming chains.">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          marginBottom: 14,
-          borderRadius: 6,
-          border: '1px solid #a78bfa25',
-          cursor: 'pointer',
+          'padding': '10px',
+          'margin-bottom': '14px',
+          'border-radius': '6px',
+          'border': '1px solid #a78bfa25',
+          'cursor': 'pointer',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#a78bfa', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             Orbit Framework
           </div>
-          <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.5 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.5' }}>
             L2/L3 chains на технологии Arbitrum. AnyTrust mode: off-chain DA через Data Availability Committee (дешевле, но слабее безопасность).
           </div>
         </div>
@@ -505,45 +506,45 @@ export function OPvsARBDiagram() {
   return (
     <DiagramContainer title="Optimism vs Arbitrum: сравнение" color="purple">
       {/* Table */}
-      <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-bottom': '14px' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontFamily: 'monospace',
-          fontSize: 10,
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-family': 'monospace',
+          'font-size': '10px',
         }}>
           <thead>
             <tr>
               <th style={{
-                textAlign: 'left',
-                padding: '8px 10px',
-                borderBottom: '2px solid rgba(255,255,255,0.15)',
-                color: colors.textMuted,
-                fontSize: 10,
-                fontWeight: 600,
-                width: '25%',
+                'text-align': 'left',
+                'padding': '8px 10px',
+                'border-bottom': '2px solid rgba(255,255,255,0.15)',
+                'color': colors.textMuted,
+                'font-size': '10px',
+                'font-weight': '600',
+                'width': '25%',
               }}>
                 Категория
               </th>
               <th style={{
-                textAlign: 'left',
-                padding: '8px 10px',
-                borderBottom: '2px solid #ef444450',
-                color: '#ef4444',
-                fontSize: 10,
-                fontWeight: 600,
-                width: '37.5%',
+                'text-align': 'left',
+                'padding': '8px 10px',
+                'border-bottom': '2px solid #ef444450',
+                'color': '#ef4444',
+                'font-size': '10px',
+                'font-weight': '600',
+                'width': '37.5%',
               }}>
                 Optimism
               </th>
               <th style={{
-                textAlign: 'left',
-                padding: '8px 10px',
-                borderBottom: '2px solid #2563eb50',
-                color: '#2563eb',
-                fontSize: 10,
-                fontWeight: 600,
-                width: '37.5%',
+                'text-align': 'left',
+                'padding': '8px 10px',
+                'border-bottom': '2px solid #2563eb50',
+                'color': '#2563eb',
+                'font-size': '10px',
+                'font-weight': '600',
+                'width': '37.5%',
               }}>
                 Arbitrum
               </th>
@@ -552,40 +553,39 @@ export function OPvsARBDiagram() {
           <tbody>
             {COMPARISON_ROWS.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  transition: 'background 0.15s',
+                  'transition': 'background 0.15s',
                 }}
               >
                 <td style={{
-                  padding: '8px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: colors.textMuted,
-                  fontWeight: 600,
-                  verticalAlign: 'top',
+                  'padding': '8px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                  'color': colors.textMuted,
+                  'font-weight': '600',
+                  'vertical-align': 'top',
                 }}>
                   <DiagramTooltip content={row.categoryTooltipRu}>
-                    <span style={{ borderBottom: '1px dotted rgba(255,255,255,0.3)', cursor: 'help' }}>{row.category}</span>
+                    <span style={{ 'border-bottom': '1px dotted rgba(255,255,255,0.3)', 'cursor': 'help' }}>{row.category}</span>
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '8px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: row.opAdvantage ? '#10b981' : colors.text,
-                  verticalAlign: 'top',
+                  'padding': '8px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                  'color': row.opAdvantage ? '#10b981' : colors.text,
+                  'vertical-align': 'top',
                 }}>
                   <DiagramTooltip content={row.opTooltip}>
-                    <span style={{ cursor: 'help' }}>{row.optimism}</span>
+                    <span style={{ 'cursor': 'help' }}>{row.optimism}</span>
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '8px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  color: row.arbAdvantage ? '#10b981' : colors.text,
-                  verticalAlign: 'top',
+                  'padding': '8px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                  'color': row.arbAdvantage ? '#10b981' : colors.text,
+                  'vertical-align': 'top',
                 }}>
                   <DiagramTooltip content={row.arbTooltip}>
-                    <span style={{ cursor: 'help' }}>{row.arbitrum}</span>
+                    <span style={{ 'cursor': 'help' }}>{row.arbitrum}</span>
                   </DiagramTooltip>
                 </td>
               </tr>
@@ -654,62 +654,62 @@ const SUPERCHAIN_TREE: SuperchainNode = {
   ],
 };
 
-function SuperchainNodeBox({ node, isRoot }: { node: SuperchainNode; isRoot?: boolean }) {
+function SuperchainNodeBox(props: { node: SuperchainNode; isRoot?: boolean }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <DiagramTooltip content={node.tooltipRu}>
+    <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center' }}>
+      <DiagramTooltip content={props.node.tooltipRu}>
         <div style={{
           ...glassStyle,
-          padding: isRoot ? '12px 20px' : '8px 14px',
-          borderRadius: isRoot ? 10 : 8,
-          border: `1px solid ${node.color}${isRoot ? '50' : '30'}`,
-          borderTop: `3px solid ${node.color}`,
-          background: `${node.color}08`,
-          textAlign: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.15s',
-          minWidth: isRoot ? 180 : 120,
+          'padding': props.isRoot ? '12px 20px' : '8px 14px',
+          'border-radius': props.isRoot ? 10 : 8,
+          'border': `1px solid ${props.node.color}${props.isRoot ? '50' : '30'}`,
+          'border-top': `3px solid ${props.node.color}`,
+          'background': `${props.node.color}08`,
+          'text-align': 'center',
+          'cursor': 'pointer',
+          'transition': 'all 0.15s',
+          'min-width': props.isRoot ? 180 : 120,
         }}>
-          <div style={{ fontSize: isRoot ? 13 : 11, fontWeight: 700, color: node.color, fontFamily: 'monospace' }}>
-            {node.name}
+          <div style={{ 'font-size': props.isRoot ? 13 : 11, 'font-weight': '700', 'color': props.node.color, 'font-family': 'monospace' }}>
+            {props.node.name}
           </div>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
-            {node.detail}
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
+            {props.node.detail}
           </div>
-          {node.tvl && (
-            <div style={{ fontSize: 9, color: colors.text, fontFamily: 'monospace', marginTop: 2 }}>
-              {node.tvl}
+          {props.node.tvl && (
+            <div style={{ 'font-size': '9px', 'color': colors.text, 'font-family': 'monospace', 'margin-top': '2px' }}>
+              {props.node.tvl}
             </div>
           )}
         </div>
       </DiagramTooltip>
 
-      {node.children && node.children.length > 0 && (
+      {props.node.children && props.node.children.length > 0 && (
         <>
           {/* Vertical connector down */}
-          <div style={{ width: 2, height: 14, background: `${node.color}30` }} />
+          <div style={{ 'width': '2px', 'height': '14px', 'background': `${props.node.color}30` }} />
 
           {/* Horizontal bar spanning children */}
-          {node.children.length > 1 && (
+          {props.node.children.length > 1 && (
             <div style={{
-              height: 2,
-              background: 'rgba(255,255,255,0.12)',
-              alignSelf: 'stretch',
-              margin: '0 12%',
+              'height': '2px',
+              'background': 'rgba(255,255,255,0.12)',
+              'align-self': 'stretch',
+              'margin': '0 12%',
             }} />
           )}
 
           {/* Children row */}
           <div style={{
-            display: 'flex',
-            gap: 10,
-            justifyContent: 'center',
-            marginTop: node.children.length > 1 ? 0 : undefined,
+            'display': 'flex',
+            'gap': '10px',
+            'justify-content': 'center',
+            'margin-top': props.node.children.length > 1 ? 0 : undefined,
           }}>
-            {node.children.map((child, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {node.children!.length > 1 && (
-                  <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.12)' }} />
+            {props.node.children.map((child, i) => (
+              <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center' }}>
+                {props.node.children!.length > 1 && (
+                  <div style={{ 'width': '2px', 'height': '10px', 'background': 'rgba(255,255,255,0.12)' }} />
                 )}
                 <SuperchainNodeBox node={child} />
               </div>
@@ -777,74 +777,74 @@ export function StylusArchDiagram() {
       <DiagramTooltip content="Arbitrum One — основная сеть Arbitrum с двумя виртуальными машинами. EVM для совместимости с Ethereum, Stylus WASM VM для высокопроизводительных контрактов на Rust/C/C++.">
         <div style={{
           ...glassStyle,
-          padding: '10px 16px',
-          borderRadius: 10,
-          border: '1px solid rgba(255,255,255,0.15)',
-          textAlign: 'center',
-          marginBottom: 16,
-          cursor: 'pointer',
+          'padding': '10px 16px',
+          'border-radius': '10px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'text-align': 'center',
+          'margin-bottom': '16px',
+          'cursor': 'pointer',
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: colors.text, fontFamily: 'monospace' }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text, 'font-family': 'monospace' }}>
             Arbitrum One Network
           </div>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
             Оба VM работают на одной сети — полная интероперабельность
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Connector */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-        <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.15)' }} />
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '4px' }}>
+        <div style={{ 'width': '2px', 'height': '10px', 'background': 'rgba(255,255,255,0.15)' }} />
       </div>
       <div style={{
-        height: 2,
-        background: 'rgba(255,255,255,0.12)',
-        margin: '0 15%',
-        marginBottom: 4,
+        'height': '2px',
+        'background': 'rgba(255,255,255,0.12)',
+        'margin': '0 15%',
+        'margin-bottom': '4px',
       }} />
 
       {/* Two VMs side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '10px' }}>
         {STYLUS_VMS.map((vm, i) => (
-          <DiagramTooltip key={i} content={vm.tooltipRu}>
+          <DiagramTooltip content={vm.tooltipRu}>
             <div style={{
               ...glassStyle,
-              padding: 14,
-              borderRadius: 10,
-              border: `1px solid ${vm.color}30`,
-              borderTop: `3px solid ${vm.color}`,
-              cursor: 'pointer',
-              transition: 'all 0.15s',
+              'padding': '14px',
+              'border-radius': '10px',
+              'border': `1px solid ${vm.color}30`,
+              'border-top': `3px solid ${vm.color}`,
+              'cursor': 'pointer',
+              'transition': 'all 0.15s',
             }}>
               {/* VM connector dot */}
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: -22 }}>
-                <div style={{ width: 2, height: 10, background: 'rgba(255,255,255,0.12)' }} />
+              <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-top': '-22px' }}>
+                <div style={{ 'width': '2px', 'height': '10px', 'background': 'rgba(255,255,255,0.12)' }} />
               </div>
 
-              <div style={{ fontSize: 12, fontWeight: 700, color: vm.color, fontFamily: 'monospace', marginBottom: 8 }}>
+              <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': vm.color, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
                 {vm.name}
               </div>
 
               {/* Languages */}
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+              <div style={{ 'display': 'flex', 'gap': '4px', 'flex-wrap': 'wrap', 'margin-bottom': '8px' }}>
                 {vm.languages.map((lang) => (
-                  <span key={lang} style={{
-                    fontSize: 9,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    background: `${vm.color}15`,
-                    color: vm.color,
-                    border: `1px solid ${vm.color}25`,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
+                  <span style={{
+                    'font-size': '9px',
+                    'padding': '2px 8px',
+                    'border-radius': '4px',
+                    'background': `${vm.color}15`,
+                    'color': vm.color,
+                    'border': `1px solid ${vm.color}25`,
+                    'font-family': 'monospace',
+                    'font-weight': '600',
                   }}>
                     {lang}
                   </span>
                 ))}
               </div>
 
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'line-height': '1.5' }}>
                 {vm.detail}
               </div>
             </div>
@@ -852,7 +852,7 @@ export function StylusArchDiagram() {
         ))}
       </div>
 
-      <div style={{ marginTop: 14 }}>
+      <div style={{ 'margin-top': '14px' }}>
         <DataBox
           label="Интероперабельность"
           value="Stylus контракты вызывают Solidity контракты и наоборот. Один shared state на одной сети."

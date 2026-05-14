@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * DAO Concept Diagrams (GOV-01)
  *
@@ -41,14 +42,13 @@ export function DAOArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура DAO: от идеи до исполнения" color="blue">
       {/* Flow diagram */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-        <svg width={600} height={120} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '20px' }}>
+        <svg width={600} height={120} style={{ 'overflow': 'visible' }}>
           {/* Arrows between nodes */}
           {ARCH_NODES.slice(0, -1).map((node, i) => {
             const next = ARCH_NODES[i + 1];
             return (
               <line
-                key={i}
                 x1={node.x + 50}
                 y1={node.y + 12}
                 x2={next.x - 2}
@@ -68,7 +68,7 @@ export function DAOArchitectureDiagram() {
 
           {/* Nodes */}
           {ARCH_NODES.map((node, i) => (
-            <g key={i}>
+            <g>
               <rect
                 x={node.x - 8}
                 y={node.y - 18}
@@ -115,27 +115,27 @@ export function DAOArchitectureDiagram() {
 
       {/* Comparison table */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '12px',
+        'margin-bottom': '12px',
       }}>
         <DiagramTooltip content="Традиционная организация управляется советом директоров и CEO. Решения принимаются за закрытыми дверями, акционеры голосуют редко. Прозрачность минимальна, NDA защищают информацию от публичного доступа.">
           <div style={{
             ...glassStyle,
-            padding: 14,
-            border: '1px solid rgba(239,68,68,0.2)',
+            'padding': '14px',
+            'border': '1px solid rgba(239,68,68,0.2)',
           }}>
             <div style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#ef4444',
-              fontFamily: 'monospace',
-              marginBottom: 6,
+              'font-size': '12px',
+              'font-weight': '600',
+              'color': '#ef4444',
+              'font-family': 'monospace',
+              'margin-bottom': '6px',
             }}>
               Traditional Organization
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.6' }}>
               Board of Directors decides. Shareholders vote rarely.
               CEO executes decisions. Hierarchy, NDAs, closed meetings.
             </div>
@@ -144,19 +144,19 @@ export function DAOArchitectureDiagram() {
         <DiagramTooltip content="DAO -- децентрализованная автономная организация, где владельцы токенов предлагают и голосуют за решения. Смарт-контракт автоматически исполняет результат голосования. Всё прозрачно: код открыт, голоса на блокчейне, казна под контролем сообщества.">
           <div style={{
             ...glassStyle,
-            padding: 14,
-            border: '1px solid rgba(34,197,94,0.2)',
+            'padding': '14px',
+            'border': '1px solid rgba(34,197,94,0.2)',
           }}>
             <div style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#22c55e',
-              fontFamily: 'monospace',
-              marginBottom: 6,
+              'font-size': '12px',
+              'font-weight': '600',
+              'color': '#22c55e',
+              'font-family': 'monospace',
+              'margin-bottom': '6px',
             }}>
               DAO (Decentralized Autonomous Organization)
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.6' }}>
               Token holders propose and vote. Smart contract executes.
               Open governance, transparent voting, code is law.
             </div>
@@ -228,14 +228,13 @@ export function DAOCategoriesDiagram() {
   return (
     <DiagramContainer title="Категории DAO" color="purple">
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: 12,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
+        'gap': '12px',
+        'margin-bottom': '12px',
       }}>
         {DAO_CATEGORIES.map((cat, i) => (
           <DiagramTooltip
-            key={i}
             content={`${cat.nameRu}: ${cat.description}. Примеры: ${cat.examples.join(', ')}. ${
               cat.name === 'Protocol DAOs'
                 ? 'Крупнейшие по казне -- Uniswap ($6B+), Aave, MakerDAO/Sky. Управляют параметрами протоколов, обновлениями и распределением средств.'
@@ -248,32 +247,32 @@ export function DAOCategoriesDiagram() {
           >
             <div style={{
               ...glassStyle,
-              padding: 16,
-              cursor: 'default',
-              border: `1px solid rgba(255,255,255,0.08)`,
-              background: 'rgba(255,255,255,0.03)',
-              transition: 'all 0.2s',
+              'padding': '16px',
+              'cursor': 'default',
+              'border': `1px solid rgba(255,255,255,0.08)`,
+              'background': 'rgba(255,255,255,0.03)',
+              'transition': 'all 0.2s',
             }}>
               <div style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: cat.color,
-                fontFamily: 'monospace',
-                marginBottom: 4,
+                'font-size': '13px',
+                'font-weight': '600',
+                'color': cat.color,
+                'font-family': 'monospace',
+                'margin-bottom': '4px',
               }}>
                 {cat.name}
               </div>
               <div style={{
-                fontSize: 11,
-                color: colors.textMuted,
-                marginBottom: 8,
+                'font-size': '11px',
+                'color': colors.textMuted,
+                'margin-bottom': '8px',
               }}>
                 {cat.nameRu}
               </div>
               <div style={{
-                fontSize: 11,
-                color: colors.text,
-                lineHeight: 1.5,
+                'font-size': '11px',
+                'color': colors.text,
+                'line-height': '1.5',
               }}>
                 {cat.description}
               </div>

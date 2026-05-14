@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * EdDSA and Schnorr Signature Diagrams
  *
@@ -106,51 +107,51 @@ export function SchnorrVsECDSADiagram() {
         <DiagramTooltip content="ECDSA (Elliptic Curve Digital Signature Algorithm): стандарт с 1992 года. Нелинейная формула из-за k^(-1). Используется в Bitcoin (legacy), Ethereum, всех EVM.">
           <div style={{
             ...glassStyle,
-            padding: 14,
-            borderColor: `${colors.warning}30`,
-            textAlign: 'center',
+            'padding': '14px',
+            'border-color': `${colors.warning}30`,
+            'text-align': 'center',
           }}>
             <div style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: colors.warning,
-              marginBottom: 8,
+              'font-size': '14px',
+              'font-weight': '700',
+              'color': colors.warning,
+              'margin-bottom': '8px',
             }}>
               ECDSA
             </div>
           <div style={{
-            fontSize: 11,
-            color: colors.textMuted,
-            marginBottom: 6,
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'margin-bottom': '6px',
           }}>
             Подпись:
           </div>
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colors.text,
-            padding: '6px 8px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
-            marginBottom: 8,
+            'font-family': 'monospace',
+            'font-size': '12px',
+            'color': colors.text,
+            'padding': '6px 8px',
+            'background': 'rgba(255,255,255,0.03)',
+            'border-radius': '6px',
+            'margin-bottom': '8px',
           }}>
             R = kG, r = R.x mod n<br />
             s = k<sup>-1</sup>(h + rd) mod n
           </div>
           <div style={{
-            fontSize: 11,
-            color: colors.textMuted,
-            marginBottom: 6,
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'margin-bottom': '6px',
           }}>
             Верификация:
           </div>
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colors.text,
-            padding: '6px 8px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
+            'font-family': 'monospace',
+            'font-size': '12px',
+            'color': colors.text,
+            'padding': '6px 8px',
+            'background': 'rgba(255,255,255,0.03)',
+            'border-radius': '6px',
           }}>
             u1 = hs<sup>-1</sup>, u2 = rs<sup>-1</sup><br />
             P.x mod n == r ?
@@ -161,52 +162,52 @@ export function SchnorrVsECDSADiagram() {
         <DiagramTooltip content="Schnorr подписи линейны: подписи можно складывать (key aggregation). Это основа MuSig2 (Bitcoin Taproot) и threshold signatures. Доказуемо безопасны в модели случайного оракула.">
           <div style={{
             ...glassStyle,
-            padding: 14,
-            borderColor: `${colors.accent}30`,
-            textAlign: 'center',
+            'padding': '14px',
+            'border-color': `${colors.accent}30`,
+            'text-align': 'center',
           }}>
             <div style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: colors.accent,
-              marginBottom: 8,
+              'font-size': '14px',
+              'font-weight': '700',
+              'color': colors.accent,
+              'margin-bottom': '8px',
             }}>
               Schnorr
             </div>
           <div style={{
-            fontSize: 11,
-            color: colors.textMuted,
-            marginBottom: 6,
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'margin-bottom': '6px',
           }}>
             Подпись:
           </div>
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colors.text,
-            padding: '6px 8px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
-            marginBottom: 8,
+            'font-family': 'monospace',
+            'font-size': '12px',
+            'color': colors.text,
+            'padding': '6px 8px',
+            'background': 'rgba(255,255,255,0.03)',
+            'border-radius': '6px',
+            'margin-bottom': '8px',
           }}>
             R = kG<br />
             e = H(R || P || m)<br />
             s = k + e*d mod n
           </div>
           <div style={{
-            fontSize: 11,
-            color: colors.textMuted,
-            marginBottom: 6,
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'margin-bottom': '6px',
           }}>
             Верификация:
           </div>
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: colors.text,
-            padding: '6px 8px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
+            'font-family': 'monospace',
+            'font-size': '12px',
+            'color': colors.text,
+            'padding': '6px 8px',
+            'background': 'rgba(255,255,255,0.03)',
+            'border-radius': '6px',
           }}>
             sG == R + eP ?
           </div>
@@ -215,43 +216,43 @@ export function SchnorrVsECDSADiagram() {
       </Grid>
 
       {/* Detailed comparison table */}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ 'margin-top': '16px' }}>
         {/* Header */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1.2fr 1.5fr 1.5fr',
-          gap: 2,
-          marginBottom: 2,
+          'display': 'grid',
+          'grid-template-columns': '1.2fr 1.5fr 1.5fr',
+          'gap': '2px',
+          'margin-bottom': '2px',
         }}>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: colors.textMuted,
-            borderColor: 'rgba(255,255,255,0.08)',
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'font-weight': '700',
+            'color': colors.textMuted,
+            'border-color': 'rgba(255,255,255,0.08)',
           }}>
             Свойство
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: colors.warning,
-            borderColor: `${colors.warning}30`,
-            textAlign: 'center',
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'font-weight': '700',
+            'color': colors.warning,
+            'border-color': `${colors.warning}30`,
+            'text-align': 'center',
           }}>
             ECDSA
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 11,
-            fontWeight: 700,
-            color: colors.accent,
-            borderColor: `${colors.accent}30`,
-            textAlign: 'center',
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'font-weight': '700',
+            'color': colors.accent,
+            'border-color': `${colors.accent}30`,
+            'text-align': 'center',
           }}>
             Schnorr
           </div>
@@ -263,44 +264,43 @@ export function SchnorrVsECDSADiagram() {
           const schnorrHighlight = row.advantage === 'schnorr';
           return (
             <div
-              key={i}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '1.2fr 1.5fr 1.5fr',
-                gap: 2,
-                marginBottom: 2,
+                'display': 'grid',
+                'grid-template-columns': '1.2fr 1.5fr 1.5fr',
+                'gap': '2px',
+                'margin-bottom': '2px',
               }}
             >
               <DiagramTooltip content={COMPARISON_TOOLTIPS[row.label] ?? row.label}>
                 <div style={{
                   ...glassStyle,
-                  padding: '6px 10px',
-                  fontSize: 11,
-                  color: colors.text,
-                  borderColor: 'rgba(255,255,255,0.05)',
+                  'padding': '6px 10px',
+                  'font-size': '11px',
+                  'color': colors.text,
+                  'border-color': 'rgba(255,255,255,0.05)',
                 }}>
                   {row.label}
                 </div>
               </DiagramTooltip>
               <div style={{
                 ...glassStyle,
-                padding: '6px 10px',
-                fontSize: 11,
-                color: ecdsaHighlight ? colors.warning : colors.textMuted,
-                borderColor: ecdsaHighlight ? `${colors.warning}20` : 'rgba(255,255,255,0.05)',
-                background: ecdsaHighlight ? `${colors.warning}08` : undefined,
-                fontWeight: ecdsaHighlight ? 600 : 400,
+                'padding': '6px 10px',
+                'font-size': '11px',
+                'color': ecdsaHighlight ? colors.warning : colors.textMuted,
+                'border-color': ecdsaHighlight ? `${colors.warning}20` : 'rgba(255,255,255,0.05)',
+                'background': ecdsaHighlight ? `${colors.warning}08` : undefined,
+                'font-weight': ecdsaHighlight ? 600 : 400,
               }}>
                 {row.ecdsa}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '6px 10px',
-                fontSize: 11,
-                color: schnorrHighlight ? colors.accent : colors.textMuted,
-                borderColor: schnorrHighlight ? `${colors.accent}20` : 'rgba(255,255,255,0.05)',
-                background: schnorrHighlight ? `${colors.accent}08` : undefined,
-                fontWeight: schnorrHighlight ? 600 : 400,
+                'padding': '6px 10px',
+                'font-size': '11px',
+                'color': schnorrHighlight ? colors.accent : colors.textMuted,
+                'border-color': schnorrHighlight ? `${colors.accent}20` : 'rgba(255,255,255,0.05)',
+                'background': schnorrHighlight ? `${colors.accent}08` : undefined,
+                'font-weight': schnorrHighlight ? 600 : 400,
               }}>
                 {row.schnorr}
               </div>
@@ -312,21 +312,21 @@ export function SchnorrVsECDSADiagram() {
       {/* Key insight: linearity */}
       <DiagramTooltip content="Линейность s = k + e*d позволяет: 1) MuSig2 -- мультиподписи за 2 раунда коммуникации, 2) Adaptor signatures -- атомарные свопы, 3) Scriptless scripts -- приватные смарт-контракты в Bitcoin.">
         <div style={{
-          marginTop: 14,
-          padding: 12,
+          'margin-top': '14px',
+          'padding': '12px',
           ...glassStyle,
-          borderColor: `${colors.accent}30`,
-          background: `${colors.accent}08`,
+          'border-color': `${colors.accent}30`,
+          'background': `${colors.accent}08`,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, marginBottom: 6 }}>
+          <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.accent, 'margin-bottom': '6px' }}>
             Ключевое преимущество Schnorr: линейность
           </div>
-        <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.6' }}>
           Подпись Schnorr линейна: s = k + e*d. Это позволяет складывать подписи.
           Если s1 = k1 + e*d1 и s2 = k2 + e*d2, то s1 + s2 = (k1+k2) + e*(d1+d2) --
           валидная подпись для агрегированного ключа P1 + P2. ECDSA так не может из-за k<sup>-1</sup> в формуле.
           <br /><br />
-          <strong style={{ color: colors.accent }}>В Bitcoin Taproot (BIP 340)</strong> это используется для MuSig2 --
+          <strong style={{ 'color': colors.accent }}>В Bitcoin Taproot (BIP 340)</strong> это используется для MuSig2 --
           мультиподписей, которые выглядят как обычная одиночная подпись в блокчейне.
         </div>
         </div>
@@ -396,47 +396,47 @@ const TIMELINE: TimelineEntry[] = [
 export function SignatureSchemeTimeline() {
   return (
     <DiagramContainer title="Эволюция схем цифровых подписей" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
         {TIMELINE.map((entry, i) => (
-          <div key={i}>
+          <div>
             {/* Timeline entry */}
             <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 12,
+              'display': 'flex',
+              'align-items': 'flex-start',
+              'gap': '12px',
             }}>
               {/* Year + dot */}
               <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                minWidth: 56,
-                flexShrink: 0,
+                'display': 'flex',
+                'flex-direction': 'column',
+                'align-items': 'center',
+                'min-width': '56px',
+                'flex-shrink': '0',
               }}>
                 <div style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: 'monospace',
-                  color: entry.color,
-                  marginBottom: 4,
+                  'font-size': '12px',
+                  'font-weight': '700',
+                  'font-family': 'monospace',
+                  'color': entry.color,
+                  'margin-bottom': '4px',
                 }}>
                   {entry.year}
                 </div>
                 <div style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: `${entry.color}30`,
-                  border: `2px solid ${entry.color}`,
-                  flexShrink: 0,
+                  'width': '12px',
+                  'height': '12px',
+                  'border-radius': '50%',
+                  'background': `${entry.color}30`,
+                  'border': `2px solid ${entry.color}`,
+                  'flex-shrink': '0',
                 }} />
                 {/* Connecting line */}
                 {i < TIMELINE.length - 1 && (
                   <div style={{
-                    width: 2,
-                    height: 24,
-                    background: `${entry.color}30`,
-                    marginTop: 4,
+                    'width': '2px',
+                    'height': '24px',
+                    'background': `${entry.color}30`,
+                    'margin-top': '4px',
                   }} />
                 )}
               </div>
@@ -445,35 +445,35 @@ export function SignatureSchemeTimeline() {
               <DiagramTooltip content={entry.description}>
                 <div style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  borderColor: `${entry.color}30`,
-                  flex: 1,
+                  'padding': '10px 14px',
+                  'border-color': `${entry.color}30`,
+                  'flex': '1',
                 }}>
                   <div style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: entry.color,
-                    marginBottom: 4,
+                    'font-size': '13px',
+                    'font-weight': '700',
+                    'color': entry.color,
+                    'margin-bottom': '4px',
                   }}>
                     {entry.name}
                   </div>
                   <div style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
-                    lineHeight: 1.5,
+                    'font-size': '11px',
+                    'color': colors.textMuted,
+                    'line-height': '1.5',
                   }}>
                     {entry.description}
                   </div>
                   {entry.blockchain && (
                     <div style={{
-                      marginTop: 6,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: entry.color,
-                      padding: '3px 8px',
-                      background: `${entry.color}15`,
-                      borderRadius: 4,
-                      display: 'inline-block',
+                      'margin-top': '6px',
+                      'font-size': '10px',
+                      'font-weight': '600',
+                      'color': entry.color,
+                      'padding': '3px 8px',
+                      'background': `${entry.color}15`,
+                      'border-radius': '4px',
+                      'display': 'inline-block',
                     }}>
                       {entry.blockchain}
                     </div>
@@ -488,16 +488,16 @@ export function SignatureSchemeTimeline() {
       {/* Patent note */}
       <DiagramTooltip content="Патент Шнорра US4995082 (1989-2008) заблокировал использование Schnorr подписей на 19 лет. NIST разработал DSA (1991) как свободную альтернативу. Taproot (BIP 340/341/342) активирован в Bitcoin в ноябре 2021.">
         <div style={{
-          marginTop: 14,
-          padding: 10,
+          'margin-top': '14px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: `${colors.info}20`,
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-          textAlign: 'center',
+          'border-color': `${colors.info}20`,
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
+          'text-align': 'center',
         }}>
-          <strong style={{ color: colors.info }}>Почему Schnorr пришел в Bitcoin так поздно?</strong>{' '}
+          <strong style={{ 'color': colors.info }}>Почему Schnorr пришел в Bitcoin так поздно?</strong>{' '}
           Патент Шнорра (1989-2008) вынудил создать DSA/ECDSA как альтернативу. Сатоши в 2009 году выбрал
           ECDSA (secp256k1). Только после истечения патента Schnorr стал доступен для Bitcoin через Taproot (2021).
         </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Solidity Basics Diagrams (ETH-06)
  *
@@ -6,7 +7,7 @@
  * - SolidityTypesDiagram: Visual overview of Solidity types and their byte sizes
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -73,9 +74,9 @@ const STORAGE_LAYOUTS: Record<string, StorageSlot[]> = {
  * Toggle between simple (no packing) and packed layout.
  */
 export function ContractStorageLayoutDiagram() {
-  const [layout, setLayout] = useState<'simple' | 'packed'>('simple');
+  const [layout, setLayout] = createSignal<'simple' | 'packed'>('simple');
 
-  const slots = STORAGE_LAYOUTS[layout];
+  const slots = STORAGE_LAYOUTS[layout()];
   const slotWidth = 320;
   const slotHeight = 52;
 
@@ -95,20 +96,19 @@ export function ContractStorageLayoutDiagram() {
   return (
     <DiagramContainer title="Storage Layout: слоты контракта" color="blue">
       {/* Layout toggle */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px' }}>
         {(['simple', 'packed'] as const).map((l) => (
           <button
-            key={l}
             onClick={() => setLayout(l)}
             style={{
               ...glassStyle,
-              padding: '6px 16px',
-              cursor: 'pointer',
-              background: layout === l ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${layout === l ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: layout === l ? colors.primary : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
+              'padding': '6px 16px',
+              'cursor': 'pointer',
+              'background': layout() === l ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+              'border': `1px solid ${layout() === l ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+              'color': layout() === l ? colors.primary : colors.text,
+              'font-size': '13px',
+              'font-family': 'monospace',
             }}
           >
             {l === 'simple' ? 'Без упаковки' : 'С упаковкой (packed)'}
@@ -117,28 +117,28 @@ export function ContractStorageLayoutDiagram() {
       </div>
 
       {/* Slot diagram */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {slots.map((slot) => (
-          <div key={slot.slot} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '12px' }}>
             {/* Slot label */}
             <div style={{
-              width: 70,
-              textAlign: 'right',
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: colors.textMuted,
+              'width': '70px',
+              'text-align': 'right',
+              'font-size': '12px',
+              'font-family': 'monospace',
+              'color': colors.textMuted,
             }}>
               Slot {slot.slot}
             </div>
 
             {/* 32-byte bar */}
             <div style={{
-              width: slotWidth,
-              height: slotHeight,
-              position: 'relative',
+              'width': slotWidth,
+              'height': slotHeight,
+              'position': 'relative',
               ...glassStyle,
-              display: 'flex',
-              overflow: 'hidden',
+              'display': 'flex',
+              'overflow': 'hidden',
             }}>
               {slot.variables.map((v) => {
                 const widthPct = (v.bytes / 32) * 100;
@@ -147,23 +147,23 @@ export function ContractStorageLayoutDiagram() {
                 const c = varColors[idx % varColors.length];
 
                 return (
-                  <DiagramTooltip key={v.name} content={varTooltips[v.name] || `${v.type} = ${v.value} | ${v.bytes} bytes | SLOAD slot ${slot.slot}`}>
+                  <DiagramTooltip content={varTooltips[v.name] || `${v.type} = ${v.value} | ${v.bytes} bytes | SLOAD slot ${slot.slot}`}>
                     <div
                       style={{
-                        width: `${widthPct}%`,
-                        height: '100%',
-                        background: `${c}20`,
-                        borderRight: `1px solid ${c}60`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        'width': `${widthPct}%`,
+                        'height': '100%',
+                        'background': `${c}20`,
+                        'border-right': `1px solid ${c}60`,
+                        'display': 'flex',
+                        'flex-direction': 'column',
+                        'align-items': 'center',
+                        'justify-content': 'center',
                       }}
                     >
-                      <span style={{ fontSize: 11, color: c, fontFamily: 'monospace', fontWeight: 600 }}>
+                      <span style={{ 'font-size': '11px', 'color': c, 'font-family': 'monospace', 'font-weight': '600' }}>
                         {v.name}
                       </span>
-                      <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                      <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                         {v.type} ({v.bytes}B)
                       </span>
                     </div>
@@ -178,14 +178,14 @@ export function ContractStorageLayoutDiagram() {
                 if (freeBytes <= 0) return null;
                 return (
                   <div style={{
-                    width: `${(freeBytes / 32) * 100}%`,
-                    height: '100%',
-                    background: 'rgba(255,255,255,0.02)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    'width': `${(freeBytes / 32) * 100}%`,
+                    'height': '100%',
+                    'background': 'rgba(255,255,255,0.02)',
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'justify-content': 'center',
                   }}>
-                    <span style={{ fontSize: 10, color: colors.textMuted, opacity: 0.5, fontFamily: 'monospace' }}>
+                    <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'opacity': '0.5', 'font-family': 'monospace' }}>
                       {freeBytes}B free
                     </span>
                   </div>
@@ -194,7 +194,7 @@ export function ContractStorageLayoutDiagram() {
             </div>
 
             {/* 32 bytes label */}
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               32 bytes
             </div>
           </div>
@@ -202,12 +202,12 @@ export function ContractStorageLayoutDiagram() {
       </div>
 
       {/* Explanation */}
-      <DiagramTooltip content={layout === 'simple'
+      <DiagramTooltip content={layout() === 'simple'
         ? 'Без упаковки: каждая переменная в отдельном slot (32 байта). Неиспользованные байты теряются. Gas: 1 SLOAD на переменную.'
         : 'С упаковкой: мелкие типы объединяются в один slot. Порядок объявления критичен -- Solidity упаковывает только последовательные переменные.'
       }>
-        <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-          {layout === 'simple' ? (
+        <div style={{ 'margin-top': '12px', 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
+          {layout() === 'simple' ? (
             <>Каждая переменная занимает отдельный слот (32 байта). <code>address</code> (20 байт) тратит 12 байт впустую.</>
           ) : (
             <>Переменные размером {'<'} 32 байт упаковываются в один слот. Порядок объявления важен: <code>bool + uint8 + uint16 + address = 24 байта</code> в одном слоте.</>
@@ -252,12 +252,10 @@ const SOLIDITY_TYPES: TypeInfo[] = [
  * Visual reference for Solidity types: byte sizes, ranges, and slot usage.
  */
 export function SolidityTypesDiagram() {
-  const [filter, setFilter] = useState<'all' | 'Value' | 'Reference'>('all');
+  const [filter, setFilter] = createSignal<'all' | 'Value' | 'Reference'>('all');
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? SOLIDITY_TYPES : SOLIDITY_TYPES.filter((t) => t.category === filter)),
-    [filter]
-  );
+  const filtered = createMemo(
+    () => (filter() === 'all' ? SOLIDITY_TYPES : SOLIDITY_TYPES.filter((t) => t.category === filter())));
 
   const typeTooltips: Record<string, string> = {
     bool: 'bool (1 байт): true/false. Может упаковываться с другими мелкими типами в один storage slot.',
@@ -277,20 +275,19 @@ export function SolidityTypesDiagram() {
   return (
     <DiagramContainer title="Типы Solidity: размеры и слоты" color="purple">
       {/* Filter buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px' }}>
         {(['all', 'Value', 'Reference'] as const).map((f) => (
           <button
-            key={f}
             onClick={() => setFilter(f)}
             style={{
               ...glassStyle,
-              padding: '5px 14px',
-              cursor: 'pointer',
-              background: filter === f ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${filter === f ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: filter === f ? colors.primary : colors.text,
-              fontSize: 12,
-              fontFamily: 'monospace',
+              'padding': '5px 14px',
+              'cursor': 'pointer',
+              'background': filter() === f ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+              'border': `1px solid ${filter() === f ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+              'color': filter() === f ? colors.primary : colors.text,
+              'font-size': '12px',
+              'font-family': 'monospace',
             }}
           >
             {f === 'all' ? 'Все' : f === 'Value' ? 'Value-типы' : 'Reference-типы'}
@@ -300,34 +297,34 @@ export function SolidityTypesDiagram() {
 
       {/* Type cards */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-        gap: 10,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(240px, 1fr))',
+        'gap': '10px',
       }}>
         {filtered.map((t) => {
           const barWidth = Math.max((t.bytes / 32) * 100, 8);
 
           return (
-            <DiagramTooltip key={t.name} content={typeTooltips[t.name] || `${t.name}: ${t.bytes} байт, ${t.category} тип.`}>
+            <DiagramTooltip content={typeTooltips[t.name] || `${t.name}: ${t.bytes} байт, ${t.category} тип.`}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: 12,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  'padding': '12px',
+                  'background': 'rgba(255,255,255,0.03)',
+                  'border': '1px solid rgba(255,255,255,0.08)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 600, color: t.color }}>
+                <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '6px' }}>
+                  <span style={{ 'font-size': '14px', 'font-family': 'monospace', 'font-weight': '600', 'color': t.color }}>
                     {t.name}
                   </span>
                   <span style={{
-                    fontSize: 10,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    background: `${t.color}20`,
-                    color: t.color,
-                    fontFamily: 'monospace',
+                    'font-size': '10px',
+                    'padding': '2px 6px',
+                    'border-radius': '4px',
+                    'background': `${t.color}20`,
+                    'color': t.color,
+                    'font-family': 'monospace',
                   }}>
                     {t.bytes}B
                   </span>
@@ -335,33 +332,33 @@ export function SolidityTypesDiagram() {
 
                 {/* Size bar */}
                 <div style={{
-                  height: 6,
-                  borderRadius: 3,
-                  background: 'rgba(255,255,255,0.05)',
-                  marginBottom: 6,
-                  overflow: 'hidden',
+                  'height': '6px',
+                  'border-radius': '3px',
+                  'background': 'rgba(255,255,255,0.05)',
+                  'margin-bottom': '6px',
+                  'overflow': 'hidden',
                 }}>
                   <div style={{
-                    height: '100%',
-                    width: `${barWidth}%`,
-                    background: t.color,
-                    borderRadius: 3,
-                    opacity: 0.6,
+                    'height': '100%',
+                    'width': `${barWidth}%`,
+                    'background': t.color,
+                    'border-radius': '3px',
+                    'opacity': '0.6',
                   }} />
                 </div>
 
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                   {t.range}
                 </div>
 
                 <div style={{
-                  marginTop: 6,
-                  padding: '6px 8px',
-                  borderRadius: 4,
-                  background: 'rgba(0,0,0,0.3)',
-                  fontSize: 11,
-                  color: colors.text,
-                  fontFamily: 'monospace',
+                  'margin-top': '6px',
+                  'padding': '6px 8px',
+                  'border-radius': '4px',
+                  'background': 'rgba(0,0,0,0.3)',
+                  'font-size': '11px',
+                  'color': colors.text,
+                  'font-family': 'monospace',
                 }}>
                   {t.example}
                 </div>
@@ -372,7 +369,7 @@ export function SolidityTypesDiagram() {
       </div>
 
       <DiagramTooltip content="Value types копируются при присваивании, хранятся в stack/storage напрямую. Reference types хранят ссылку -- важно указать data location: storage, memory, calldata.">
-        <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+        <div style={{ 'margin-top': '12px', 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
           <strong>Value-типы</strong> хранятся непосредственно в слоте. <strong>Reference-типы</strong> (string, bytes, mapping) хранят указатель; данные -- по keccak256(slot).
         </div>
       </DiagramTooltip>

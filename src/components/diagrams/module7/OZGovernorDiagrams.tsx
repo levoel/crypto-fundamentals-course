@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * OpenZeppelin Governor Diagrams (GOV-05)
  *
@@ -73,8 +74,8 @@ export function GovernorArchitectureDiagram() {
 
   return (
     <DiagramContainer title="OpenZeppelin Governor v5: модульная архитектура" color="green">
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={600} height={280} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={600} height={280} style={{ 'overflow': 'visible' }}>
           <defs>
             <marker id="arrowArch" viewBox="0 0 10 10" refX="9" refY="5"
               markerWidth={5} markerHeight={5} orient="auto-start-auto">
@@ -108,7 +109,7 @@ export function GovernorArchitectureDiagram() {
             const extCx = ext.x + boxW / 2;
             const extCy = ext.y + 22;
             return (
-              <g key={i}>
+              <g>
                 {/* Arrow from extension to center */}
                 <line
                   x1={extCx}
@@ -177,29 +178,29 @@ export function GovernorArchitectureDiagram() {
       </div>
 
       {/* Core extension tags (HTML, wrappable with DiagramTooltip) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
         <DiagramTooltip content="GovernorCountingSimple реализует подсчет голосов по схеме For/Against/Abstain. Каждый голосующий выбирает одну из трёх опций. Abstain засчитывается для quorum, но не влияет на результат (For vs Against). Это стандартный и наиболее распространенный модуль подсчета.">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace' }}>GovernorCountingSimple</div>
-            <div style={{ fontSize: 9, color: colors.textMuted }}>Vote counting (For/Against/Abstain)</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace' }}>GovernorCountingSimple</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>Vote counting (For/Against/Abstain)</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="GovernorVotes подключает Governor к токену, реализующему интерфейс IVotes (обычно ERC20Votes). Считывает voting power через getVotes() и getPastVotes(). Поддерживает как ERC20Votes, так и ERC721Votes (NFT governance).">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(34,197,94,0.2)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace' }}>GovernorVotes</div>
-            <div style={{ fontSize: 9, color: colors.textMuted }}>Token-based voting power (IVotes)</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace' }}>GovernorVotes</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>Token-based voting power (IVotes)</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="GovernorVotesQuorumFraction задает quorum как процент от total supply. Стандартное значение 4% означает, что минимум 4% всех токенов должны участвовать в голосовании. Quorum пересчитывается автоматически при изменении total supply (mint/burn).">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(168,85,247,0.2)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#a855f7', fontFamily: 'monospace' }}>GovernorVotesQuorumFraction</div>
-            <div style={{ fontSize: 9, color: colors.textMuted }}>Quorum as % of total supply (4%)</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(168,85,247,0.2)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#a855f7', 'font-family': 'monospace' }}>GovernorVotesQuorumFraction</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>Quorum as % of total supply (4%)</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="GovernorTimelockControl направляет исполнение proposal через TimelockController. Все одобренные предложения проходят задержку (обычно 1-2 дня) перед исполнением. Это дает сообществу время отреагировать на потенциально вредоносные предложения.">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(249,115,22,0.2)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#f97316', fontFamily: 'monospace' }}>GovernorTimelockControl</div>
-            <div style={{ fontSize: 9, color: colors.textMuted }}>Execution through TimelockController</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(249,115,22,0.2)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#f97316', 'font-family': 'monospace' }}>GovernorTimelockControl</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>Execution through TimelockController</div>
           </div>
         </DiagramTooltip>
       </div>
@@ -208,23 +209,23 @@ export function GovernorArchitectureDiagram() {
       <DiagramTooltip content="Дополнительные модули OpenZeppelin Governor: GovernorSettings позволяет изменять votingDelay/votingPeriod/proposalThreshold через governance. GovernorPreventLateQuorum продлевает голосование если quorum достигнут поздно. GovernorStorage хранит proposal данные on-chain. GovernorProposalGuardian добавляет роль guardian для экстренной отмены.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: '1px solid rgba(255,255,255,0.06)',
+          'padding': '12px',
+          'margin-bottom': '12px',
+          'border': '1px solid rgba(255,255,255,0.06)',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Optional extensions:
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '6px', 'flex-wrap': 'wrap' }}>
             {OPTIONAL_EXTENSIONS.map((ext, i) => (
-              <span key={i} style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: 'rgba(255,255,255,0.05)',
-                color: colors.textMuted,
-                border: '1px solid rgba(255,255,255,0.1)',
+              <span style={{
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'background': 'rgba(255,255,255,0.05)',
+                'color': colors.textMuted,
+                'border': '1px solid rgba(255,255,255,0.1)',
               }}>
                 {ext}
               </span>

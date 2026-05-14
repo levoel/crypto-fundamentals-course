@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Tokenomics Diagrams (DEFI-12)
  *
@@ -6,7 +7,7 @@
  * - VestingScheduleDiagram: Vesting timeline with cliff and linear vesting (DiagramTooltip on period cards)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -97,12 +98,12 @@ const PROTOCOL_DATA: ProtocolTokenomics[] = [
  * Legend items wrapped with DiagramTooltip (SVG path hover removed).
  */
 export function TokenDistributionDiagram() {
-  const [protocolIdx, setProtocolIdx] = useState(0);
+  const [protocolIdx, setProtocolIdx] = createSignal(0);
 
-  const protocol = PROTOCOL_DATA[protocolIdx];
+  const protocol = PROTOCOL_DATA[protocolIdx()];
 
   // Calculate pie chart segments
-  const sectors = useMemo(() => {
+  const sectors = createMemo(() => {
     const result: Array<{
       startAngle: number;
       endAngle: number;
@@ -122,7 +123,7 @@ export function TokenDistributionDiagram() {
       currentAngle += angle;
     });
     return result;
-  }, [protocolIdx]);
+  });
 
   const cx = 130;
   const cy = 130;
@@ -145,22 +146,21 @@ export function TokenDistributionDiagram() {
   return (
     <DiagramContainer title="\u0420\u0430\u0441\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0442\u043e\u043a\u0435\u043d\u043e\u0432" color="green">
       {/* Protocol selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {PROTOCOL_DATA.map((p, i) => (
           <button
-            key={i}
             onClick={() => setProtocolIdx(i)}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              background: protocolIdx === i ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${protocolIdx === i ? colors.success : 'rgba(255,255,255,0.08)'}`,
-              color: protocolIdx === i ? colors.success : colors.textMuted,
-              fontSize: 13,
-              fontFamily: 'monospace',
-              fontWeight: protocolIdx === i ? 600 : 400,
-              borderRadius: 6,
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'background': protocolIdx() === i ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
+              'border': `1px solid ${protocolIdx() === i ? colors.success : 'rgba(255,255,255,0.08)'}`,
+              'color': protocolIdx() === i ? colors.success : colors.textMuted,
+              'font-size': '13px',
+              'font-family': 'monospace',
+              'font-weight': protocolIdx() === i ? 600 : 400,
+              'border-radius': '6px',
             }}
           >
             {p.symbol}
@@ -168,21 +168,21 @@ export function TokenDistributionDiagram() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap', 'margin-bottom': '16px' }}>
         {/* Pie chart */}
-        <div style={{ ...glassStyle, padding: 12, minWidth: 280 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'min-width': '280px' }}>
           <svg width="260" height="260" viewBox="0 0 260 260">
             {sectors.map((s) => {
               const midAngle = (s.startAngle + s.endAngle) / 2;
 
               return (
-                <g key={s.index}>
+                <g>
                   <path
                     d={sectorPath(s.startAngle, s.endAngle, innerR, outerR)}
                     fill={`${s.allocation.color}80`}
                     stroke="rgba(0,0,0,0.3)"
                     strokeWidth={1}
-                    style={{ transition: 'all 0.2s' }}
+                    style={{ 'transition': 'all 0.2s' }}
                   />
                   {/* Percentage label */}
                   {s.allocation.percentage > 5 && (
@@ -213,19 +213,19 @@ export function TokenDistributionDiagram() {
         </div>
 
         {/* Legend + details */}
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ 'flex': '1', 'min-width': '200px' }}>
           {/* Protocol info */}
           <DiagramTooltip content={`${protocol.name} (${protocol.symbol}): Total Supply ${protocol.totalSupply}. ${protocol.governance}. Vesting: ${protocol.vestingDuration}.`}>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              marginBottom: 10,
-              background: `${colors.success}05`,
+              'padding': '10px',
+              'margin-bottom': '10px',
+              'background': `${colors.success}05`,
             }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: colors.text, marginBottom: 4 }}>
+              <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.text, 'margin-bottom': '4px' }}>
                 {protocol.name} ({protocol.symbol})
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.5' }}>
                 Total Supply: {protocol.totalSupply}<br />
                 Vesting: {protocol.vestingDuration}<br />
                 Governance: {protocol.governance}
@@ -234,50 +234,50 @@ export function TokenDistributionDiagram() {
           </DiagramTooltip>
 
           {/* Allocation legend -- DiagramTooltip replaces hoveredSector */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
             {protocol.allocations.map((alloc, i) => (
-              <DiagramTooltip key={i} content={alloc.tooltipRu}>
+              <DiagramTooltip content={alloc.tooltipRu}>
                 <div
                   style={{
                     ...glassStyle,
-                    padding: '8px 10px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    transition: 'all 0.2s',
+                    'padding': '8px 10px',
+                    'background': 'rgba(255,255,255,0.02)',
+                    'border': '1px solid rgba(255,255,255,0.06)',
+                    'transition': 'all 0.2s',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
                     <div style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 2,
-                      background: alloc.color,
-                      flexShrink: 0,
+                      'width': '10px',
+                      'height': '10px',
+                      'border-radius': '2px',
+                      'background': alloc.color,
+                      'flex-shrink': '0',
                     }} />
                     <span style={{
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      fontWeight: 600,
-                      color: colors.text,
-                      flex: 1,
+                      'font-size': '12px',
+                      'font-family': 'monospace',
+                      'font-weight': '600',
+                      'color': colors.text,
+                      'flex': '1',
                     }}>
                       {alloc.category}
                     </span>
                     <span style={{
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      fontWeight: 600,
-                      color: colors.textMuted,
+                      'font-size': '12px',
+                      'font-family': 'monospace',
+                      'font-weight': '600',
+                      'color': colors.textMuted,
                     }}>
                       {alloc.percentage}%
                     </span>
                   </div>
                   <div style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
-                    marginTop: 6,
-                    marginLeft: 18,
-                    lineHeight: 1.5,
+                    'font-size': '11px',
+                    'color': colors.textMuted,
+                    'margin-top': '6px',
+                    'margin-left': '18px',
+                    'line-height': '1.5',
                   }}>
                     Amount: {alloc.amount}<br />
                     Vesting: {alloc.vesting}
@@ -360,7 +360,7 @@ const TOTAL_MONTHS = 48;
  */
 export function VestingScheduleDiagram() {
   // Calculate cumulative unlock percentages at each month
-  const monthlyUnlocks = useMemo(() => {
+  const monthlyUnlocks = createMemo(() => {
     const unlocks: number[] = Array(TOTAL_MONTHS + 1).fill(0);
     // TGE
     unlocks[0] = 10;
@@ -374,7 +374,7 @@ export function VestingScheduleDiagram() {
       unlocks[m] = 35 + linearPerMonth * (m - 12);
     }
     return unlocks;
-  }, []);
+  });
 
   const svgW = 500;
   const svgH = 180;
@@ -401,14 +401,14 @@ export function VestingScheduleDiagram() {
       {/* SVG Timeline */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        marginBottom: 16,
-        background: 'rgba(255,255,255,0.02)',
+        'padding': '12px',
+        'margin-bottom': '16px',
+        'background': 'rgba(255,255,255,0.02)',
       }}>
-        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: 'block' }}>
+        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ 'display': 'block' }}>
           {/* Grid */}
           {[25, 50, 75, 100].map((pct) => (
-            <g key={pct}>
+            <g>
               <line
                 x1={padL}
                 x2={svgW - padR}
@@ -426,7 +426,6 @@ export function VestingScheduleDiagram() {
           {/* X-axis labels */}
           {[0, 12, 24, 36, 48].map((m) => (
             <text
-              key={m}
               x={toX(m)}
               y={svgH - 5}
               textAnchor="middle"
@@ -467,58 +466,58 @@ export function VestingScheduleDiagram() {
       </div>
 
       {/* Period cards -- DiagramTooltip replaces hoveredIdx */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-bottom': '16px' }}>
         {VESTING_PERIODS.map((period, i) => (
-          <DiagramTooltip key={i} content={period.detail}>
+          <DiagramTooltip content={period.detail}>
             <div
               style={{
                 ...glassStyle,
-                padding: '10px 14px',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                transition: 'all 0.2s',
+                'padding': '10px 14px',
+                'background': 'rgba(255,255,255,0.02)',
+                'border': '1px solid rgba(255,255,255,0.06)',
+                'transition': 'all 0.2s',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
                   <div style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: period.color,
-                    flexShrink: 0,
+                    'width': '8px',
+                    'height': '8px',
+                    'border-radius': '50%',
+                    'background': period.color,
+                    'flex-shrink': '0',
                   }} />
                   <span style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    fontFamily: 'monospace',
-                    color: colors.text,
+                    'font-size': '12px',
+                    'font-weight': '600',
+                    'font-family': 'monospace',
+                    'color': colors.text,
                   }}>
                     {period.label}
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
+                <div style={{ 'display': 'flex', 'gap': '12px' }}>
+                  <span style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.textMuted }}>
                     {period.startMonth === period.endMonth
                       ? `Month ${period.startMonth}`
                       : `Month ${period.startMonth}-${period.endMonth}`}
                   </span>
                   <span style={{
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    color: colors.textMuted,
+                    'font-size': '11px',
+                    'font-family': 'monospace',
+                    'font-weight': '600',
+                    'color': colors.textMuted,
                   }}>
                     {period.percentage > 0 ? `${period.percentage}%` : 'Locked'}
                   </span>
                 </div>
               </div>
               <div style={{
-                fontSize: 11,
-                color: colors.textMuted,
-                marginTop: 6,
-                marginLeft: 16,
-                lineHeight: 1.6,
+                'font-size': '11px',
+                'color': colors.textMuted,
+                'margin-top': '6px',
+                'margin-left': '16px',
+                'line-height': '1.6',
               }}>
                 {period.description}
               </div>

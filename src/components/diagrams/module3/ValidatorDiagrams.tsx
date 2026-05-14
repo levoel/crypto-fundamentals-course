@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Validator Diagrams (ETH-11)
  *
@@ -7,7 +8,7 @@
  * - SlashingConditionsDiagram: 4 slashing conditions (static with DiagramTooltip)
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { createEffect, createSignal, onCleanup } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -83,26 +84,26 @@ const LIFECYCLE_STEPS: LifecycleStep[] = [
 ];
 
 export function ValidatorLifecycleDiagram() {
-  const [step, setStep] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [step, setStep] = createSignal(0);
+  const [autoPlay, setAutoPlay] = createSignal(false);
+  let intervalRef: ReturnType<typeof setInterval> | null = null;
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setStep((s) => Math.min(s + 1, LIFECYCLE_STEPS.length - 1));
-  }, []);
+  };
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
     setStep((s) => Math.max(s - 1, 0));
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
     setAutoPlay(false);
-  }, []);
+  };
 
-  useEffect(() => {
-    if (autoPlay) {
-      intervalRef.current = setInterval(() => {
+  createEffect(() => {
+    if (autoPlay()) {
+      intervalRef = setInterval(() => {
         setStep((s) => {
           if (s >= LIFECYCLE_STEPS.length - 1) {
             setAutoPlay(false);
@@ -112,27 +113,27 @@ export function ValidatorLifecycleDiagram() {
         });
       }, 3000);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [autoPlay]);
+    onCleanup(() => {
+      if (intervalRef) clearInterval(intervalRef);
+    });
+  });
 
-  const current = LIFECYCLE_STEPS[step];
+  const current = LIFECYCLE_STEPS[step()];
 
   return (
     <DiagramContainer title="Жизненный цикл валидатора Ethereum" color="purple">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'justify-content': 'center', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {LIFECYCLE_STEPS.map((s, i) => {
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
               {i === 5 && (
                 <div style={{
-                  fontSize: 9,
-                  color: '#ef4444',
-                  fontWeight: 600,
-                  marginRight: 2,
-                  writingMode: 'horizontal-tb',
+                  'font-size': '9px',
+                  'color': '#ef4444',
+                  'font-weight': '600',
+                  'margin-right': '2px',
+                  'writing-mode': 'horizontal-tb',
                 }}>
                   ALT
                 </div>
@@ -140,19 +141,19 @@ export function ValidatorLifecycleDiagram() {
               <DiagramTooltip content={LIFECYCLE_STEPS[i].description}>
                 <div
                   style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    background: i <= step ? `${LIFECYCLE_STEPS[i].statusColor}30` : 'rgba(255,255,255,0.05)',
-                    border: `2px solid ${i <= step ? LIFECYCLE_STEPS[i].statusColor : 'rgba(255,255,255,0.1)'}`,
-                    color: i <= step ? LIFECYCLE_STEPS[i].statusColor : colors.textMuted,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
+                    'width': '30px',
+                    'height': '30px',
+                    'border-radius': '50%',
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'justify-content': 'center',
+                    'font-size': '11px',
+                    'font-weight': '600',
+                    'background': i <= step() ? `${LIFECYCLE_STEPS[i].statusColor}30` : 'rgba(255,255,255,0.05)',
+                    'border': `2px solid ${i <= step() ? LIFECYCLE_STEPS[i].statusColor : 'rgba(255,255,255,0.1)'}`,
+                    'color': i <= step() ? LIFECYCLE_STEPS[i].statusColor : colors.textMuted,
+                    'cursor': 'pointer',
+                    'transition': 'all 0.3s',
                   }}
                   onClick={() => setStep(i)}
                 >
@@ -161,10 +162,10 @@ export function ValidatorLifecycleDiagram() {
               </DiagramTooltip>
               {i < 4 && (
                 <div style={{
-                  width: 12,
-                  height: 2,
-                  background: i < step ? LIFECYCLE_STEPS[i].statusColor : colors.border,
-                  transition: 'background 0.3s',
+                  'width': '12px',
+                  'height': '2px',
+                  'background': i < step() ? LIFECYCLE_STEPS[i].statusColor : colors.border,
+                  'transition': 'background 0.3s',
                 }} />
               )}
             </div>
@@ -173,22 +174,22 @@ export function ValidatorLifecycleDiagram() {
       </div>
 
       {/* Status badge + balance */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'justify-content': 'center', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         <div style={{
           ...glassStyle,
-          padding: '6px 14px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          borderColor: `${current.statusColor}40`,
+          'padding': '6px 14px',
+          'display': 'inline-flex',
+          'align-items': 'center',
+          'gap': '8px',
+          'border-color': `${current.statusColor}40`,
         }}>
           <div style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: current.statusColor,
+            'width': '8px',
+            'height': '8px',
+            'border-radius': '50%',
+            'background': current.statusColor,
           }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: current.statusColor, fontFamily: 'monospace' }}>
+          <span style={{ 'font-size': '12px', 'font-weight': '700', 'color': current.statusColor, 'font-family': 'monospace' }}>
             {current.status}
           </span>
         </div>
@@ -198,33 +199,33 @@ export function ValidatorLifecycleDiagram() {
       {/* Current step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        borderColor: `${current.statusColor}40`,
-        marginBottom: 16,
-        transition: 'border-color 0.3s',
+        'padding': '16px',
+        'border-color': `${current.statusColor}40`,
+        'margin-bottom': '16px',
+        'transition': 'border-color 0.3s',
       }}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.statusColor,
-          marginBottom: 8,
+          'font-size': '14px',
+          'font-weight': '700',
+          'color': current.statusColor,
+          'margin-bottom': '8px',
         }}>
           {current.title}
         </div>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '12px', 'line-height': '1.6' }}>
           {current.description}
         </div>
 
         {/* Technical detail */}
         <div style={{
-          padding: '8px 12px',
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
-          marginBottom: current.pectraNote ? 12 : 0,
-          fontSize: 12,
-          color: colors.text,
-          lineHeight: 1.6,
-          fontFamily: 'monospace',
+          'padding': '8px 12px',
+          'background': 'rgba(255,255,255,0.03)',
+          'border-radius': '6px',
+          'margin-bottom': current.pectraNote ? 12 : 0,
+          'font-size': '12px',
+          'color': colors.text,
+          'line-height': '1.6',
+          'font-family': 'monospace',
         }}>
           {current.detail}
         </div>
@@ -232,13 +233,13 @@ export function ValidatorLifecycleDiagram() {
         {/* Pectra upgrade note */}
         {current.pectraNote && (
           <div style={{
-            padding: '8px 12px',
-            background: `${colors.accent}10`,
-            border: `1px solid ${colors.accent}30`,
-            borderRadius: 6,
-            fontSize: 12,
-            color: colors.accent,
-            lineHeight: 1.6,
+            'padding': '8px 12px',
+            'background': `${colors.accent}10`,
+            'border': `1px solid ${colors.accent}30`,
+            'border-radius': '6px',
+            'font-size': '12px',
+            'color': colors.accent,
+            'line-height': '1.6',
           }}>
             <strong>Pectra (май 2025):</strong> {current.pectraNote.replace(/^.*Pectra\)?:\s*/, '')}
           </div>
@@ -247,43 +248,43 @@ export function ValidatorLifecycleDiagram() {
 
       {/* Visual flow */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 2,
-        flexWrap: 'wrap',
-        marginBottom: 16,
+        'display': 'flex',
+        'align-items': 'center',
+        'justify-content': 'center',
+        'gap': '2px',
+        'flex-wrap': 'wrap',
+        'margin-bottom': '16px',
       }}>
         {['Депозит', 'Очередь', 'Активный', 'Награды', 'Выход'].map((label, i) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '2px' }}>
             <div style={{
-              padding: '4px 8px',
-              borderRadius: 6,
-              fontSize: 10,
-              fontWeight: 600,
-              background: i <= step && step < 5 ? `${LIFECYCLE_STEPS[Math.min(i, 4)].statusColor}20` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${i <= step && step < 5 ? LIFECYCLE_STEPS[Math.min(i, 4)].statusColor + '40' : 'rgba(255,255,255,0.1)'}`,
-              color: i <= step && step < 5 ? LIFECYCLE_STEPS[Math.min(i, 4)].statusColor : colors.textMuted,
-              transition: 'all 0.3s',
+              'padding': '4px 8px',
+              'border-radius': '6px',
+              'font-size': '10px',
+              'font-weight': '600',
+              'background': i <= step() && step() < 5 ? `${LIFECYCLE_STEPS[Math.min(i, 4)].statusColor}20` : 'rgba(255,255,255,0.05)',
+              'border': `1px solid ${i <= step() && step() < 5 ? LIFECYCLE_STEPS[Math.min(i, 4)].statusColor + '40' : 'rgba(255,255,255,0.1)'}`,
+              'color': i <= step() && step() < 5 ? LIFECYCLE_STEPS[Math.min(i, 4)].statusColor : colors.textMuted,
+              'transition': 'all 0.3s',
             }}>
               {label}
             </div>
             {i < 4 && (
-              <span style={{ color: colors.border, fontSize: 10 }}>→</span>
+              <span style={{ 'color': colors.border, 'font-size': '10px' }}>→</span>
             )}
           </div>
         ))}
-        {step === 5 && (
+        {step() === 5 && (
           <>
-            <span style={{ color: '#ef4444', fontSize: 10, marginLeft: 8 }}>|</span>
+            <span style={{ 'color': '#ef4444', 'font-size': '10px', 'margin-left': '8px' }}>|</span>
             <div style={{
-              padding: '4px 8px',
-              borderRadius: 6,
-              fontSize: 10,
-              fontWeight: 700,
-              background: 'rgba(239,68,68,0.2)',
-              border: '1px solid rgba(239,68,68,0.4)',
-              color: '#ef4444',
+              'padding': '4px 8px',
+              'border-radius': '6px',
+              'font-size': '10px',
+              'font-weight': '700',
+              'background': 'rgba(239,68,68,0.2)',
+              'border': '1px solid rgba(239,68,68,0.4)',
+              'color': '#ef4444',
             }}>
               SLASHED
             </div>
@@ -292,69 +293,69 @@ export function ValidatorLifecycleDiagram() {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={handleReset}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: colors.textMuted,
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'font-size': '12px',
+            'color': colors.textMuted,
+            'border': '1px solid rgba(255,255,255,0.1)',
+            'background': 'rgba(255,255,255,0.05)',
           }}
         >
           Сброс
         </button>
         <button
           onClick={handlePrev}
-          disabled={step <= 0}
+          disabled={step() <= 0}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step <= 0 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step <= 0 ? colors.textMuted : colors.accent,
-            border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-            background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-            opacity: step <= 0 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() <= 0 ? 'default' : 'pointer',
+            'font-size': '12px',
+            'color': step() <= 0 ? colors.textMuted : colors.accent,
+            'border': `1px solid ${step() <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+            'background': step() <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+            'opacity': step() <= 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={handleNext}
-          disabled={step >= LIFECYCLE_STEPS.length - 1}
+          disabled={step() >= LIFECYCLE_STEPS.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= LIFECYCLE_STEPS.length - 1 ? 'default' : 'pointer',
-            fontSize: 12,
-            color: step >= LIFECYCLE_STEPS.length - 1 ? colors.textMuted : colors.primary,
-            border: `1px solid ${step >= LIFECYCLE_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
-            background: step >= LIFECYCLE_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
-            opacity: step >= LIFECYCLE_STEPS.length - 1 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() >= LIFECYCLE_STEPS.length - 1 ? 'default' : 'pointer',
+            'font-size': '12px',
+            'color': step() >= LIFECYCLE_STEPS.length - 1 ? colors.textMuted : colors.primary,
+            'border': `1px solid ${step() >= LIFECYCLE_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
+            'background': step() >= LIFECYCLE_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
+            'opacity': step() >= LIFECYCLE_STEPS.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
         <button
           onClick={() => {
-            if (step >= LIFECYCLE_STEPS.length - 1) setStep(0);
-            setAutoPlay(!autoPlay);
+            if (step() >= LIFECYCLE_STEPS.length - 1) setStep(0);
+            setAutoPlay(!autoPlay());
           }}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 12,
-            color: autoPlay ? colors.warning : colors.success,
-            border: `1px solid ${autoPlay ? colors.warning : colors.success}`,
-            background: `${autoPlay ? colors.warning : colors.success}15`,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'font-size': '12px',
+            'color': autoPlay() ? colors.warning : colors.success,
+            'border': `1px solid ${autoPlay() ? colors.warning : colors.success}`,
+            'background': `${autoPlay() ? colors.warning : colors.success}15`,
           }}
         >
-          {autoPlay ? 'Стоп' : 'Авто'}
+          {autoPlay() ? 'Стоп' : 'Авто'}
         </button>
       </div>
     </DiagramContainer>
@@ -412,44 +413,44 @@ const SLASHING_CONDITIONS: SlashingCondition[] = [
 export function SlashingConditionsDiagram() {
   return (
     <DiagramContainer title="4 условия слешинга (Slashing Conditions)" color="red">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '10px' }}>
         {SLASHING_CONDITIONS.map((cond, i) => (
-          <DiagramTooltip key={i} content={cond.description}>
+          <DiagramTooltip content={cond.description}>
             <div
               style={{
                 ...glassStyle,
-                padding: 14,
-                borderColor: `${cond.color}20`,
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.2s',
-                cursor: 'default',
+                'padding': '14px',
+                'border-color': `${cond.color}20`,
+                'background': 'rgba(255,255,255,0.02)',
+                'transition': 'all 0.2s',
+                'cursor': 'default',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px', 'margin-bottom': '8px' }}>
                 {/* Number badge */}
                 <div style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: `${cond.color}25`,
-                  border: `2px solid ${cond.color}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: cond.color,
-                  flexShrink: 0,
+                  'width': '28px',
+                  'height': '28px',
+                  'border-radius': '50%',
+                  'background': `${cond.color}25`,
+                  'border': `2px solid ${cond.color}`,
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  'font-size': '12px',
+                  'font-weight': '700',
+                  'color': cond.color,
+                  'flex-shrink': '0',
                 }}>
                   {i + 1}
                 </div>
 
                 {/* Title */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: cond.color }}>
+                <div style={{ 'flex': '1' }}>
+                  <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': cond.color }}>
                     {cond.name}
                   </div>
-                  <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                  <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-top': '2px' }}>
                     {cond.description}
                   </div>
                 </div>
@@ -457,28 +458,28 @@ export function SlashingConditionsDiagram() {
 
               {/* Visual representation */}
               <div style={{
-                padding: '6px 10px',
-                background: `${cond.color}10`,
-                border: `1px solid ${cond.color}25`,
-                borderRadius: 6,
-                fontFamily: 'monospace',
-                fontSize: 11,
-                color: cond.color,
-                marginBottom: 6,
+                'padding': '6px 10px',
+                'background': `${cond.color}10`,
+                'border': `1px solid ${cond.color}25`,
+                'border-radius': '6px',
+                'font-family': 'monospace',
+                'font-size': '11px',
+                'color': cond.color,
+                'margin-bottom': '6px',
               }}>
                 {cond.visual}
               </div>
 
               {/* Always-visible details */}
               <div style={{
-                fontSize: 11,
-                color: colors.textMuted,
-                lineHeight: 1.5,
-                paddingTop: 6,
-                borderTop: `1px solid ${cond.color}15`,
+                'font-size': '11px',
+                'color': colors.textMuted,
+                'line-height': '1.5',
+                'padding-top': '6px',
+                'border-top': `1px solid ${cond.color}15`,
               }}>
-                <div><strong style={{ color: colors.text }}>Пример:</strong> {cond.example}</div>
-                <div style={{ marginTop: 4 }}><strong style={{ color: cond.color }}>Наказание:</strong> {cond.severity}</div>
+                <div><strong style={{ 'color': colors.text }}>Пример:</strong> {cond.example}</div>
+                <div style={{ 'margin-top': '4px' }}><strong style={{ 'color': cond.color }}>Наказание:</strong> {cond.severity}</div>
               </div>
             </div>
           </DiagramTooltip>
@@ -487,15 +488,15 @@ export function SlashingConditionsDiagram() {
 
       {/* Penalty mechanics summary */}
       <div style={{
-        marginTop: 16,
+        'margin-top': '16px',
         ...glassStyle,
-        padding: '12px 14px',
-        borderColor: `${colors.danger}20`,
+        'padding': '12px 14px',
+        'border-color': `${colors.danger}20`,
       }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: colors.danger, marginBottom: 8 }}>
+        <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.danger, 'margin-bottom': '8px' }}>
           Механика наказания (Pectra)
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <DataBox
             label="Начальный штраф"
             value="balance / 4096 (~0.008 ETH)"
@@ -513,10 +514,10 @@ export function SlashingConditionsDiagram() {
           />
         </div>
         <div style={{
-          marginTop: 10,
-          fontSize: 11,
-          color: colors.textMuted,
-          lineHeight: 1.6,
+          'margin-top': '10px',
+          'font-size': '11px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
         }}>
           Корреляционный штраф рассчитывается через ~18 дней: чем больше валидаторов нарушили правила в тот же период, тем выше штраф (до полной конфискации стейка). Принудительный выход через ~36 дней.
         </div>

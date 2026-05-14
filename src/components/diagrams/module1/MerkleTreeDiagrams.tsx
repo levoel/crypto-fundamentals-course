@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Merkle Tree Diagrams (DIAG-10)
  *
@@ -7,7 +8,7 @@
  * - MerkleRootCommitmentDiagram: Changing one leaf changes root (commitment property)
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal, mergeProps, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -79,7 +80,7 @@ function buildMerkleTree(txLabels: string[]): string[][] {
 /*  Shared button style helpers                                         */
 /* ================================================================== */
 
-function btnStyle(active: boolean, color: string): React.CSSProperties {
+function btnStyle(active: boolean, color: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -109,19 +110,13 @@ interface SVGTreeProps {
   txLabels?: string[];
 }
 
-function SVGTreeRenderer({
-  levels,
-  highlightLevel,
-  highlightPath,
-  highlightColor = colors.warning,
-  dimOthers = false,
-  nodeLabels,
-  width = 700,
-  height = 320,
-  txLabels,
-}: SVGTreeProps) {
-  const totalLevels = levels.length;
-  const levelHeight = height / (totalLevels + 0.5);
+function SVGTreeRenderer(rawProps: SVGTreeProps) {
+  const p = mergeProps(
+    { highlightColor: colors.warning, dimOthers: false, width: 700, height: 320 },
+    rawProps,
+  );
+  const totalLevels = p.levels.length;
+  const levelHeight = p.height / (totalLevels + 0.5);
   const nodeWidth = 72;
   const nodeHeight = 32;
 
@@ -129,15 +124,15 @@ function SVGTreeRenderer({
   const positions: { x: number; y: number; hash: string; level: number; index: number }[][] = [];
 
   for (let lvl = 0; lvl < totalLevels; lvl++) {
-    const nodesInLevel = levels[lvl].length;
-    const yPos = height - (lvl + 1) * levelHeight;
-    const spacing = width / (nodesInLevel + 1);
+    const nodesInLevel = p.levels[lvl].length;
+    const yPos = p.height - (lvl + 1) * levelHeight;
+    const spacing = p.width / (nodesInLevel + 1);
     const levelPositions: typeof positions[0] = [];
     for (let idx = 0; idx < nodesInLevel; idx++) {
       levelPositions.push({
         x: spacing * (idx + 1),
         y: yPos,
-        hash: levels[lvl][idx],
+        hash: p.levels[lvl][idx],
         level: lvl,
         index: idx,
       });
@@ -148,10 +143,10 @@ function SVGTreeRenderer({
   // Determine node color
   const getNodeColor = (lvl: number, idx: number): string => {
     const key = `${lvl}-${idx}`;
-    if (highlightPath?.has(key)) return highlightColor;
-    if (highlightLevel !== undefined) {
-      if (lvl === highlightLevel) return colors.primary;
-      if (lvl < highlightLevel) return colors.success + 'cc';
+    if (p.highlightPath?.has(key)) return p.highlightColor;
+    if (p.highlightLevel !== undefined) {
+      if (lvl === p.highlightLevel) return colors.primary;
+      if (lvl < p.highlightLevel) return colors.success + 'cc';
       return colors.textMuted + '40';
     }
     // Default coloring by level
@@ -162,15 +157,15 @@ function SVGTreeRenderer({
 
   const getNodeOpacity = (lvl: number, idx: number): number => {
     const key = `${lvl}-${idx}`;
-    if (highlightPath && dimOthers && !highlightPath.has(key)) return 0.25;
-    if (highlightLevel !== undefined && lvl > highlightLevel) return 0.2;
+    if (p.highlightPath && p.dimOthers && !p.highlightPath.has(key)) return 0.25;
+    if (p.highlightLevel !== undefined && lvl > p.highlightLevel) return 0.2;
     return 1;
   };
 
   return (
     <svg
-      viewBox={`0 0 ${width} ${height}`}
-      style={{ width: '100%', maxHeight: height }}
+      viewBox={`0 0 ${p.width} ${p.height}`}
+      style={{ 'width': '100%', 'max-height': p.height }}
     >
       {/* Lines connecting parents to children */}
       {positions.map((levelPos, lvl) => {
@@ -187,16 +182,16 @@ function SVGTreeRenderer({
           const leftKey = `${lvl - 1}-${leftChildIdx}`;
           const rightKey = `${lvl - 1}-${rightChildIdx}`;
 
-          const lineOpacity = highlightPath
-            ? (highlightPath.has(parentKey) && highlightPath.has(leftKey) ? 0.8 : (dimOthers ? 0.1 : 0.3))
-            : (highlightLevel !== undefined && lvl > highlightLevel ? 0.1 : 0.3);
+          const lineOpacity = p.highlightPath
+            ? (p.highlightPath.has(parentKey) && p.highlightPath.has(leftKey) ? 0.8 : (p.dimOthers ? 0.1 : 0.3))
+            : (p.highlightLevel !== undefined && lvl > p.highlightLevel ? 0.1 : 0.3);
 
-          const lineOpacityR = highlightPath
-            ? (highlightPath.has(parentKey) && highlightPath.has(rightKey) ? 0.8 : (dimOthers ? 0.1 : 0.3))
+          const lineOpacityR = p.highlightPath
+            ? (p.highlightPath.has(parentKey) && p.highlightPath.has(rightKey) ? 0.8 : (p.dimOthers ? 0.1 : 0.3))
             : lineOpacity;
 
           return (
-            <g key={`line-${lvl}-${idx}`}>
+            <g>
               <line
                 x1={parent.x}
                 y1={parent.y + nodeHeight / 2}
@@ -228,11 +223,11 @@ function SVGTreeRenderer({
           const key = `${lvl}-${idx}`;
           const nodeColor = getNodeColor(lvl, idx);
           const opacity = getNodeOpacity(lvl, idx);
-          const label = nodeLabels?.get(key);
+          const label = p.nodeLabels?.get(key);
           const isRoot = lvl === totalLevels - 1;
 
           return (
-            <g key={key} opacity={opacity} style={{ transition: 'opacity 400ms ease' }}>
+            <g opacity={opacity} style={{ 'transition': 'opacity 400ms ease' }}>
               <rect
                 x={node.x - nodeWidth / 2}
                 y={node.y - nodeHeight / 2}
@@ -255,7 +250,7 @@ function SVGTreeRenderer({
                 {label || node.hash.slice(0, 8)}
               </text>
               {/* Show tx label below leaf nodes */}
-              {lvl === 0 && txLabels && txLabels[idx] && (
+              {lvl === 0 && p.txLabels && p.txLabels[idx] && (
                 <text
                   x={node.x}
                   y={node.y + nodeHeight / 2 + 14}
@@ -264,7 +259,7 @@ function SVGTreeRenderer({
                   fontSize={9}
                   fontFamily="monospace"
                 >
-                  {txLabels[idx]}
+                  {p.txLabels[idx]}
                 </text>
               )}
               {/* Root label */}
@@ -309,27 +304,27 @@ const STEP_DESCRIPTIONS = [
  * construction from raw transactions up to the Merkle root.
  */
 export function MerkleTreeBuildAnimation() {
-  const [step, setStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [step, setStep] = createSignal(0);
+  const [isPlaying, setIsPlaying] = createSignal(false);
 
   const maxStep = BUILD_TOTAL_LEVELS; // steps 0..4
 
-  const advance = useCallback(() => {
+  const advance = () => {
     setStep(s => Math.min(maxStep, s + 1));
-  }, [maxStep]);
+  };
 
-  const goBack = useCallback(() => {
+  const goBack = () => {
     setStep(s => Math.max(0, s - 1));
-  }, []);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setStep(0);
     setIsPlaying(false);
-  }, []);
+  };
 
-  const toggleAutoplay = useCallback(() => {
+  const toggleAutoplay = () => {
     setIsPlaying(prev => {
-      if (!prev && step < maxStep) {
+      if (!prev && step() < maxStep) {
         const interval = setInterval(() => {
           setStep(s => {
             if (s >= maxStep) {
@@ -348,21 +343,21 @@ export function MerkleTreeBuildAnimation() {
         return false;
       }
     });
-  }, [step, maxStep]);
+  };
 
   // Build visible levels: for step N, show levels 0..N-1
   // step=0: show raw txs (no tree yet)
   // step=1: show level 0 (leaves)
   // step=2: show levels 0-1
   // ...
-  const visibleLevels = step === 0 ? [] : BUILD_TREE.slice(0, step);
+  const visibleLevels = step() === 0 ? [] : BUILD_TREE.slice(0, step());
 
   // Computation description for current step
   const getComputationHint = (): string => {
-    if (step === 0) return '';
-    if (step === 1) return `H("tx1") = ${BUILD_TREE[0][0].slice(0, 8)}...`;
-    if (step <= BUILD_TOTAL_LEVELS) {
-      const lvl = step - 1;
+    if (step() === 0) return '';
+    if (step() === 1) return `H("tx1") = ${BUILD_TREE[0][0].slice(0, 8)}...`;
+    if (step() <= BUILD_TOTAL_LEVELS) {
+      const lvl = step() - 1;
       const childLevel = BUILD_TREE[lvl - 1];
       if (childLevel && childLevel.length >= 2) {
         return `H(${childLevel[0].slice(0, 8)} || ${childLevel[1].slice(0, 8)}) = ${BUILD_TREE[lvl][0].slice(0, 8)}...`;
@@ -373,29 +368,29 @@ export function MerkleTreeBuildAnimation() {
 
   return (
     <DiagramContainer title="Построение дерева Меркла" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Step description */}
         <DiagramTooltip content="Шаг 1: каждый элемент данных (транзакция) хешируется индивидуально. Шаг 2+: пары хешей конкатенируются и хешируются вверх до корня.">
           <DataBox
-            label={`Шаг ${step} / ${maxStep}`}
-            value={STEP_DESCRIPTIONS[step] || ''}
+            label={`Шаг ${step()} / ${maxStep}`}
+            value={STEP_DESCRIPTIONS[step()] || ''}
             variant="highlight"
           />
         </DiagramTooltip>
 
         {/* Raw transaction display when step == 0 */}
-        {step === 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {step() === 0 && (
+          <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
             {BUILD_TX_LABELS.map((tx, i) => (
-              <DiagramTooltip key={i} content={`Транзакция ${tx}: исходные данные, которые будут захешированы для создания листа дерева Меркла.`}>
+              <DiagramTooltip content={`Транзакция ${tx}: исходные данные, которые будут захешированы для создания листа дерева Меркла.`}>
                 <div
                   style={{
                     ...glassStyle,
-                    padding: '8px 14px',
-                    fontSize: 13,
-                    fontFamily: 'monospace',
-                    color: colors.accent,
-                    border: `1px solid ${colors.accent}40`,
+                    'padding': '8px 14px',
+                    'font-size': '13px',
+                    'font-family': 'monospace',
+                    'color': colors.accent,
+                    'border': `1px solid ${colors.accent}40`,
                   }}
                 >
                   {tx}
@@ -409,7 +404,7 @@ export function MerkleTreeBuildAnimation() {
         {visibleLevels.length > 0 && (
           <SVGTreeRenderer
             levels={visibleLevels}
-            highlightLevel={step - 1}
+            highlightLevel={step() - 1}
             txLabels={BUILD_TX_LABELS}
           />
         )}
@@ -419,11 +414,11 @@ export function MerkleTreeBuildAnimation() {
           <DiagramTooltip content="Пары хешей конкатенируются и хешируются: H(H(tx1) || H(tx2)). Процесс повторяется вверх до корня.">
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 12,
-              fontFamily: 'monospace',
-              color: colors.accent,
-              textAlign: 'center',
+              'padding': '8px 12px',
+              'font-size': '12px',
+              'font-family': 'monospace',
+              'color': colors.accent,
+              'text-align': 'center',
             }}>
               {getComputationHint()}
             </div>
@@ -431,7 +426,7 @@ export function MerkleTreeBuildAnimation() {
         )}
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Вернуться к исходным транзакциям.">
             <div>
               <button onClick={reset} style={btnStyle(true, colors.text)}>
@@ -441,14 +436,14 @@ export function MerkleTreeBuildAnimation() {
           </DiagramTooltip>
           <DiagramTooltip content="Перейти к предыдущему уровню дерева.">
             <div>
-              <button onClick={goBack} style={btnStyle(step > 0, colors.text)}>
+              <button onClick={goBack} style={btnStyle(step() > 0, colors.text)}>
                 Назад
               </button>
             </div>
           </DiagramTooltip>
           <DiagramTooltip content="Вычислить следующий уровень дерева Меркла.">
             <div>
-              <button onClick={advance} style={btnStyle(step < maxStep, colors.primary)}>
+              <button onClick={advance} style={btnStyle(step() < maxStep, colors.primary)}>
                 Далее
               </button>
             </div>
@@ -457,18 +452,18 @@ export function MerkleTreeBuildAnimation() {
             <div>
               <button
                 onClick={toggleAutoplay}
-                style={btnStyle(true, isPlaying ? colors.warning : colors.accent)}
+                style={btnStyle(true, isPlaying() ? colors.warning : colors.accent)}
               >
-                {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
+                {isPlaying() ? 'Стоп' : 'Автовоспроизведение'}
               </button>
             </div>
           </DiagramTooltip>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Шаг {step} из {maxStep} |{' '}
-          <span style={{ color: colors.primary }}>Синие</span> = текущий уровень,{' '}
-          <span style={{ color: colors.success }}>зеленые</span> = вычислены ранее
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Шаг {step()} из {maxStep} |{' '}
+          <span style={{ 'color': colors.primary }}>Синие</span> = текущий уровень,{' '}
+          <span style={{ 'color': colors.success }}>зеленые</span> = вычислены ранее
         </div>
       </div>
     </DiagramContainer>
@@ -496,7 +491,7 @@ const LEVEL_LABELS: Record<number, string> = {
 export function MerkleTreeStructureDiagram() {
   return (
     <DiagramContainer title="Структура дерева Меркла" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         <SVGTreeRenderer
           levels={STRUCT_TREE}
           txLabels={STRUCT_TX}
@@ -504,7 +499,7 @@ export function MerkleTreeStructureDiagram() {
         />
 
         {/* Level labels legend */}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           {Object.entries(LEVEL_LABELS).map(([lvl, label]) => {
             const lvlNum = parseInt(lvl, 10);
             const c = lvlNum === 0 ? colors.success
@@ -516,13 +511,13 @@ export function MerkleTreeStructureDiagram() {
               ? 'Merkle Root: единственный хеш, представляющий все данные дерева. Изменение любого листа меняет root. В Bitcoin хранится в заголовке блока.'
               : 'Внутренний узел: H(left_child || right_child). Каждый уровень дерева уменьшает количество хешей вдвое.';
             return (
-              <DiagramTooltip key={lvl} content={tooltipContent}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <DiagramTooltip content={tooltipContent}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
                   <div style={{
-                    width: 12, height: 12, borderRadius: 3,
-                    background: c + '30', border: `1px solid ${c}`,
+                    'width': '12px', 'height': '12px', 'border-radius': '3px',
+                    'background': c + '30', 'border': `1px solid ${c}`,
                   }} />
-                  <span style={{ fontSize: 12, color: colors.textMuted }}>{label}</span>
+                  <span style={{ 'font-size': '12px', 'color': colors.textMuted }}>{label}</span>
                 </div>
               </DiagramTooltip>
             );
@@ -574,27 +569,27 @@ const CHANGED_NODES = findChangedNodes(COMMIT_TREE_ORIG, COMMIT_TREE_MOD);
 export function MerkleRootCommitmentDiagram() {
   return (
     <DiagramContainer title="Изменение одного листа меняет корень" color="green">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '16px' }}>
         <DiagramTooltip content="Merkle root как commitment: публикуя root, вы фиксируете набор данных. Позже можно доказать принадлежность любого элемента без раскрытия остальных (Merkle proof).">
-          <div style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
-            Изменяем <span style={{ color: colors.danger, fontWeight: 600 }}>tx3</span> на{' '}
-            <span style={{ color: colors.danger, fontWeight: 600 }}>tx3*</span>.
+          <div style={{ 'font-size': '13px', 'color': colors.textMuted, 'text-align': 'center' }}>
+            Изменяем <span style={{ 'color': colors.danger, 'font-weight': '600' }}>tx3</span> на{' '}
+            <span style={{ 'color': colors.danger, 'font-weight': '600' }}>tx3*</span>.
             Все узлы на пути от листа к корню (красные) пересчитываются.
           </div>
         </DiagramTooltip>
 
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap' }}>
           {/* Original tree */}
-          <div style={{ flex: 1, minWidth: 300 }}>
+          <div style={{ 'flex': '1', 'min-width': '300px' }}>
             <DiagramTooltip content="Оригинальное дерево с неизмененными данными. Merkle Root вычислен из всех 4 транзакций.">
               <div style={{
-                fontSize: 12, color: colors.success, textAlign: 'center',
-                marginBottom: 6, fontWeight: 600,
+                'font-size': '12px', 'color': colors.success, 'text-align': 'center',
+                'margin-bottom': '6px', 'font-weight': '600',
               }}>
                 Оригинальное дерево
               </div>
             </DiagramTooltip>
-            <div style={{ ...glassStyle, padding: 8 }}>
+            <div style={{ ...glassStyle, 'padding': '8px' }}>
               <SVGTreeRenderer
                 levels={COMMIT_TREE_ORIG}
                 txLabels={COMMIT_TX_ORIGINAL}
@@ -603,24 +598,24 @@ export function MerkleRootCommitmentDiagram() {
               />
             </div>
             <div style={{
-              textAlign: 'center', fontSize: 11, fontFamily: 'monospace',
-              color: colors.textMuted, marginTop: 4,
+              'text-align': 'center', 'font-size': '11px', 'font-family': 'monospace',
+              'color': colors.textMuted, 'margin-top': '4px',
             }}>
               Root: {COMMIT_TREE_ORIG[COMMIT_TREE_ORIG.length - 1][0].slice(0, 8)}
             </div>
           </div>
 
           {/* Modified tree */}
-          <div style={{ flex: 1, minWidth: 300 }}>
+          <div style={{ 'flex': '1', 'min-width': '300px' }}>
             <DiagramTooltip content="Измененное дерево: tx3 заменена на tx3*. Красные узлы -- все пересчитанные хеши на пути от измененного листа к корню.">
               <div style={{
-                fontSize: 12, color: colors.danger, textAlign: 'center',
-                marginBottom: 6, fontWeight: 600,
+                'font-size': '12px', 'color': colors.danger, 'text-align': 'center',
+                'margin-bottom': '6px', 'font-weight': '600',
               }}>
                 Измененное дерево (tx3 -&gt; tx3*)
               </div>
             </DiagramTooltip>
-            <div style={{ ...glassStyle, padding: 8 }}>
+            <div style={{ ...glassStyle, 'padding': '8px' }}>
               <SVGTreeRenderer
                 levels={COMMIT_TREE_MOD}
                 highlightPath={CHANGED_NODES}
@@ -632,8 +627,8 @@ export function MerkleRootCommitmentDiagram() {
               />
             </div>
             <div style={{
-              textAlign: 'center', fontSize: 11, fontFamily: 'monospace',
-              color: colors.danger, marginTop: 4,
+              'text-align': 'center', 'font-size': '11px', 'font-family': 'monospace',
+              'color': colors.danger, 'margin-top': '4px',
             }}>
               Root: {COMMIT_TREE_MOD[COMMIT_TREE_MOD.length - 1][0].slice(0, 8)}
             </div>

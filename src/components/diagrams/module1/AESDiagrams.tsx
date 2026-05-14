@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * AES Diagrams
  *
@@ -7,7 +8,7 @@
  * - AESKeySizeDiagram: Key size comparison for AES-128, AES-192, AES-256
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -26,8 +27,8 @@ import { colors, glassStyle } from '@primitives/shared';
  * Round count varies by key size (10/12/14 for 128/192/256-bit keys).
  */
 export function AESOverviewDiagram() {
-  const [keySize, setKeySize] = useState<128 | 192 | 256>(256);
-  const rounds = keySize === 128 ? 10 : keySize === 192 ? 12 : 14;
+  const [keySize, setKeySize] = createSignal<128 | 192 | 256>(256);
+  const rounds = keySize() === 128 ? 10 : keySize() === 192 ? 12 : 14;
 
   return (
     <DiagramContainer
@@ -35,21 +36,21 @@ export function AESOverviewDiagram() {
       color="blue"
     >
       {/* Key size selector */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {([128, 192, 256] as const).map((ks) => (
-          <DiagramTooltip key={ks} content={ks === 128 ? 'AES-128: 10 раундов, 128-бит ключ. Достаточен для большинства применений. Используется в TLS, WPA2.' : ks === 192 ? 'AES-192: 12 раундов, 192-бит ключ. Промежуточный вариант, редко используется на практике.' : 'AES-256: 14 раундов, 256-бит ключ. Post-quantum secure (Grover сокращает до 2^128). Используется для секретных данных.'}>
-          <div style={{ display: 'inline-block' }}>
+          <DiagramTooltip content={ks === 128 ? 'AES-128: 10 раундов, 128-бит ключ. Достаточен для большинства применений. Используется в TLS, WPA2.' : ks === 192 ? 'AES-192: 12 раундов, 192-бит ключ. Промежуточный вариант, редко используется на практике.' : 'AES-256: 14 раундов, 256-бит ключ. Post-quantum secure (Grover сокращает до 2^128). Используется для секретных данных.'}>
+          <div style={{ 'display': 'inline-block' }}>
           <button
             onClick={() => setKeySize(ks)}
             style={{
               ...glassStyle,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              background: keySize === ks ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${keySize === ks ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-              color: keySize === ks ? colors.primary : colors.text,
-              fontSize: 13,
-              fontFamily: 'monospace',
+              'padding': '6px 14px',
+              'cursor': 'pointer',
+              'background': keySize() === ks ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+              'border': `1px solid ${keySize() === ks ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+              'color': keySize() === ks ? colors.primary : colors.text,
+              'font-size': '13px',
+              'font-family': 'monospace',
             }}
           >
             AES-{ks}
@@ -60,12 +61,12 @@ export function AESOverviewDiagram() {
       </div>
 
       {/* Flow diagram */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px', 'flex-wrap': 'wrap' }}>
         <DiagramTooltip content="Открытый текст (plaintext): 128-бит блок данных (16 байт). AES работает с фиксированным размером блока независимо от длины ключа.">
         <FlowNode variant="primary" size="sm">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>Открытый текст</div>
-            <div style={{ fontSize: 10, opacity: 0.7 }}>128 бит</div>
+          <div style={{ 'text-align': 'center' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600' }}>Открытый текст</div>
+            <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>128 бит</div>
           </div>
         </FlowNode>
         </DiagramTooltip>
@@ -73,17 +74,17 @@ export function AESOverviewDiagram() {
         <DiagramTooltip content="Key schedule: из исходного ключа генерируются раундовые ключи через RotWord, SubWord, XOR с Rcon. Количество раундовых ключей зависит от размера ключа.">
         <div style={{
           ...glassStyle,
-          padding: '8px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          borderColor: `${colors.accent}40`,
+          'padding': '8px 12px',
+          'display': 'flex',
+          'align-items': 'center',
+          'gap': '4px',
+          'border-color': `${colors.accent}40`,
         }}>
-          <span style={{ fontSize: 11, color: colors.textMuted }}>+</span>
+          <span style={{ 'font-size': '11px', 'color': colors.textMuted }}>+</span>
           <FlowNode variant="accent" size="sm">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>Ключ</div>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>{keySize} бит</div>
+            <div style={{ 'text-align': 'center' }}>
+              <div style={{ 'font-size': '12px', 'font-weight': '600' }}>Ключ</div>
+              <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>{keySize()} бит</div>
             </div>
           </FlowNode>
         </div>
@@ -93,76 +94,76 @@ export function AESOverviewDiagram() {
 
       {/* Rounds visualization */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-        margin: '16px 0',
-        flexWrap: 'wrap',
+        'display': 'flex',
+        'align-items': 'center',
+        'justify-content': 'center',
+        'gap': '4px',
+        'margin': '16px 0',
+        'flex-wrap': 'wrap',
       }}>
         {Array.from({ length: Math.min(rounds, 5) }, (_, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
             <div style={{
               ...glassStyle,
-              padding: '10px 14px',
-              borderColor: `${colors.primary}30`,
-              textAlign: 'center',
-              minWidth: 60,
+              'padding': '10px 14px',
+              'border-color': `${colors.primary}30`,
+              'text-align': 'center',
+              'min-width': '60px',
             }}>
-              <div style={{ fontSize: 12, color: colors.primary, fontWeight: 600 }}>
+              <div style={{ 'font-size': '12px', 'color': colors.primary, 'font-weight': '600' }}>
                 Раунд {i + 1}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'margin-top': '2px' }}>
                 SubBytes
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted }}>ShiftRows</div>
-              <div style={{ fontSize: 9, color: colors.textMuted }}>MixColumns</div>
-              <div style={{ fontSize: 9, color: colors.textMuted }}>AddRoundKey</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>ShiftRows</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>MixColumns</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>AddRoundKey</div>
             </div>
             {i < Math.min(rounds, 5) - 1 && (
-              <span style={{ color: colors.textMuted, fontSize: 16 }}>...</span>
+              <span style={{ 'color': colors.textMuted, 'font-size': '16px' }}>...</span>
             )}
           </div>
         ))}
         {rounds > 5 && (
           <>
-            <span style={{ color: colors.textMuted, fontSize: 16, padding: '0 4px' }}>...</span>
+            <span style={{ 'color': colors.textMuted, 'font-size': '16px', 'padding': '0 4px' }}>...</span>
             <div style={{
               ...glassStyle,
-              padding: '10px 14px',
-              borderColor: `${colors.primary}30`,
-              textAlign: 'center',
-              minWidth: 60,
+              'padding': '10px 14px',
+              'border-color': `${colors.primary}30`,
+              'text-align': 'center',
+              'min-width': '60px',
             }}>
-              <div style={{ fontSize: 12, color: colors.primary, fontWeight: 600 }}>
+              <div style={{ 'font-size': '12px', 'color': colors.primary, 'font-weight': '600' }}>
                 Раунд {rounds}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'margin-top': '2px' }}>
                 SubBytes
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted }}>ShiftRows</div>
-              <div style={{ fontSize: 9, color: colors.textMuted, textDecoration: 'line-through' }}>MixColumns</div>
-              <div style={{ fontSize: 9, color: colors.textMuted }}>AddRoundKey</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>ShiftRows</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'text-decoration': 'line-through' }}>MixColumns</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>AddRoundKey</div>
             </div>
           </>
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px' }}>
         <Arrow direction="right" />
         <DiagramTooltip content="Шифротекст (ciphertext): результат раундов трансформации. Неотличим от случайных данных при корректном ключе. Размер блока всегда 128 бит.">
         <FlowNode variant="success" size="sm">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 600 }}>Шифротекст</div>
-            <div style={{ fontSize: 10, opacity: 0.7 }}>128 бит</div>
+          <div style={{ 'text-align': 'center' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600' }}>Шифротекст</div>
+            <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>128 бит</div>
           </div>
         </FlowNode>
         </DiagramTooltip>
       </div>
 
-      <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-        AES-{keySize}: ключ {keySize} бит, блок 128 бит, {rounds} раундов.
-        {keySize === 256 && ' Рекомендуется для криптографических приложений.'}
+      <div style={{ 'margin-top': '12px', 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+        AES-{keySize()}: ключ {keySize()} бит, блок 128 бит, {rounds} раундов.
+        {keySize() === 256 && ' Рекомендуется для криптографических приложений.'}
       </div>
     </DiagramContainer>
   );
@@ -175,46 +176,41 @@ export function AESOverviewDiagram() {
 /**
  * Render a 4x4 byte grid (AES state matrix).
  */
-function StateGrid({
-  values,
-  highlight,
-  label,
-}: {
+function StateGrid(props: {
   values: string[][];
   highlight?: Set<string>;
   label: string;
 }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>{label}</div>
+    <div style={{ 'text-align': 'center' }}>
+      <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>{props.label}</div>
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 2,
-        width: 'fit-content',
-        margin: '0 auto',
+        'display': 'grid',
+        'grid-template-columns': 'repeat(4, 1fr)',
+        'gap': '2px',
+        'width': 'fit-content',
+        'margin': '0 auto',
       }}>
-        {values.flat().map((val, idx) => {
+        {props.values.flat().map((val, idx) => {
           const row = Math.floor(idx / 4);
           const col = idx % 4;
           const key = `${row}-${col}`;
-          const isHighlighted = highlight?.has(key);
+          const isHighlighted = props.highlight?.has(key);
           return (
             <div
-              key={idx}
               style={{
-                width: 36,
-                height: 28,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                borderRadius: 4,
-                background: isHighlighted ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${isHighlighted ? colors.primary + '60' : 'rgba(255,255,255,0.1)'}`,
-                color: isHighlighted ? colors.primary : colors.text,
-                transition: 'all 0.2s',
+                'width': '36px',
+                'height': '28px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'border-radius': '4px',
+                'background': isHighlighted ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                'border': `1px solid ${isHighlighted ? colors.primary + '60' : 'rgba(255,255,255,0.1)'}`,
+                'color': isHighlighted ? colors.primary : colors.text,
+                'transition': 'all 0.2s',
               }}
             >
               {val}
@@ -314,27 +310,27 @@ export function AESRoundDiagram() {
       color="purple"
     >
       <div style={{
-        display: 'flex',
-        gap: 12,
-        overflowX: 'auto',
-        paddingBottom: 8,
-        alignItems: 'flex-start',
+        'display': 'flex',
+        'gap': '12px',
+        'overflow-x': 'auto',
+        'padding-bottom': '8px',
+        'align-items': 'flex-start',
       }}>
         {operations.map((op, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'flex-shrink': '0' }}>
             <DiagramTooltip content={op.tooltip}>
             <div style={{
               ...glassStyle,
-              padding: 12,
-              borderColor: `${op.color}30`,
-              minWidth: 170,
+              'padding': '12px',
+              'border-color': `${op.color}30`,
+              'min-width': '170px',
             }}>
               <div style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: op.color,
-                marginBottom: 8,
-                textAlign: 'center',
+                'font-size': '12px',
+                'font-weight': '600',
+                'color': op.color,
+                'margin-bottom': '8px',
+                'text-align': 'center',
               }}>
                 {op.name}
               </div>
@@ -344,18 +340,18 @@ export function AESRoundDiagram() {
                 label=""
               />
               <div style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                marginTop: 8,
-                textAlign: 'center',
-                lineHeight: 1.4,
+                'font-size': '10px',
+                'color': colors.textMuted,
+                'margin-top': '8px',
+                'text-align': 'center',
+                'line-height': '1.4',
               }}>
                 {op.description}
               </div>
             </div>
             </DiagramTooltip>
             {i < operations.length - 1 && (
-              <span style={{ fontSize: 20, color: colors.textMuted, flexShrink: 0 }}>
+              <span style={{ 'font-size': '20px', 'color': colors.textMuted, 'flex-shrink': '0' }}>
                 {'\u2192'}
               </span>
             )}
@@ -364,15 +360,15 @@ export function AESRoundDiagram() {
       </div>
 
       <div style={{
-        marginTop: 16,
-        padding: 12,
+        'margin-top': '16px',
+        'padding': '12px',
         ...glassStyle,
-        borderColor: `${colors.primary}20`,
+        'border-color': `${colors.primary}20`,
       }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-          <strong style={{ color: colors.primary }}>SubBytes</strong> {'\u2014'} обеспечивает <em>нелинейность</em> (confusion).{' '}
-          <strong style={{ color: colors.accent }}>ShiftRows</strong> + <strong style={{ color: colors.success }}>MixColumns</strong> {'\u2014'} обеспечивают <em>диффузию</em> (diffusion).{' '}
-          <strong style={{ color: colors.warning }}>AddRoundKey</strong> {'\u2014'} вносит зависимость от ключа.
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
+          <strong style={{ 'color': colors.primary }}>SubBytes</strong> {'\u2014'} обеспечивает <em>нелинейность</em> (confusion).{' '}
+          <strong style={{ 'color': colors.accent }}>ShiftRows</strong> + <strong style={{ 'color': colors.success }}>MixColumns</strong> {'\u2014'} обеспечивают <em>диффузию</em> (diffusion).{' '}
+          <strong style={{ 'color': colors.warning }}>AddRoundKey</strong> {'\u2014'} вносит зависимость от ключа.
           Последний раунд пропускает MixColumns.
         </div>
       </div>
@@ -440,45 +436,45 @@ export function AESKeySizeDiagram() {
     >
       <Grid columns={3} gap={12}>
         {aesVariants.map((variant) => (
-          <DiagramTooltip key={variant.name} content={variant.tooltip}>
+          <DiagramTooltip content={variant.tooltip}>
           <div
             style={{
               ...glassStyle,
-              padding: 16,
-              borderColor: variant.recommended ? `${colors.success}50` : 'rgba(255,255,255,0.08)',
-              background: variant.recommended ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-              position: 'relative',
+              'padding': '16px',
+              'border-color': variant.recommended ? `${colors.success}50` : 'rgba(255,255,255,0.08)',
+              'background': variant.recommended ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
+              'position': 'relative',
             }}
           >
             {variant.recommended && (
               <div style={{
-                position: 'absolute',
-                top: -8,
-                right: 12,
-                background: colors.success,
-                color: '#000',
-                fontSize: 9,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 4,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
+                'position': 'absolute',
+                'top': '-8px',
+                'right': '12px',
+                'background': colors.success,
+                'color': '#000',
+                'font-size': '9px',
+                'font-weight': '700',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'text-transform': 'uppercase',
+                'letter-spacing': '1px',
               }}>
                 Рекомендуется
               </div>
             )}
 
             <div style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: variant.recommended ? colors.success : colors.text,
-              marginBottom: 12,
-              fontFamily: 'monospace',
+              'font-size': '16px',
+              'font-weight': '700',
+              'color': variant.recommended ? colors.success : colors.text,
+              'margin-bottom': '12px',
+              'font-family': 'monospace',
             }}>
               {variant.name}
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
               <DataBox label="Размер ключа" value={`${variant.keyBits} бит`} variant="default" />
               <DataBox label="Размер блока" value={`${variant.blockBits} бит`} variant="default" />
               <DataBox label="Раундов" value={`${variant.rounds}`} variant="default" />
@@ -490,10 +486,10 @@ export function AESKeySizeDiagram() {
             </div>
 
             <div style={{
-              marginTop: 10,
-              fontSize: 11,
-              color: colors.textMuted,
-              lineHeight: 1.4,
+              'margin-top': '10px',
+              'font-size': '11px',
+              'color': colors.textMuted,
+              'line-height': '1.4',
             }}>
               {variant.useCase}
             </div>
@@ -503,10 +499,10 @@ export function AESKeySizeDiagram() {
       </Grid>
 
       <div style={{
-        marginTop: 12,
-        fontSize: 12,
-        color: colors.textMuted,
-        textAlign: 'center',
+        'margin-top': '12px',
+        'font-size': '12px',
+        'color': colors.textMuted,
+        'text-align': 'center',
       }}>
         Ethereum keystore файлы используют AES-128-CTR. Bitcoin wallet.dat использует AES-256-CBC.
       </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Primes & Divisibility Diagrams (MATH-02)
  *
@@ -7,7 +8,7 @@
  * - GCDVisualization: Step-through Euclidean algorithm with rectangle subdivision
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { createMemo, createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -63,31 +64,31 @@ function isPrimeSieve(n: number): boolean {
  * History array pattern with forward/backward navigation.
  */
 export function PrimesSieveDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
   // step 0 = initial (all white), steps 1-4 = sieving by 2,3,5,7, step 5 = done
   const maxStep = SIEVE_STEPS.length + 1;
 
-  const eliminatedUpToStep = useMemo(() => {
+  const eliminatedUpToStep = createMemo(() => {
     const set = new Set<number>();
-    for (let i = 0; i < Math.min(step, SIEVE_STEPS.length); i++) {
+    for (let i = 0; i < Math.min(step(), SIEVE_STEPS.length); i++) {
       SIEVE_STEPS[i].eliminated.forEach((n) => set.add(n));
     }
     return set;
-  }, [step]);
+  });
 
-  const currentStepEliminated = useMemo(() => {
-    if (step === 0 || step > SIEVE_STEPS.length) return new Set<number>();
-    return SIEVE_STEPS[step - 1].eliminated;
-  }, [step]);
+  const currentStepEliminated = createMemo(() => {
+    if (step() === 0 || step() > SIEVE_STEPS.length) return new Set<number>();
+    return SIEVE_STEPS[step() - 1].eliminated;
+  });
 
-  const currentPrime = step > 0 && step <= SIEVE_STEPS.length ? SIEVE_STEPS[step - 1].prime : null;
+  const currentPrime = step() > 0 && step() <= SIEVE_STEPS.length ? SIEVE_STEPS[step() - 1].prime : null;
 
   const numbers = Array.from({ length: 49 }, (_, i) => i + 2);
   const primesFound = numbers.filter((n) => isPrimeSieve(n) && !eliminatedUpToStep.has(n));
 
   const getNumberColor = (n: number): { bg: string; border: string; text: string } => {
-    if (step === maxStep - 1 && isPrimeSieve(n)) {
+    if (step() === maxStep - 1 && isPrimeSieve(n)) {
       return { bg: `${colors.success}30`, border: `${colors.success}60`, text: colors.success };
     }
     if (currentStepEliminated.has(n)) {
@@ -102,42 +103,41 @@ export function PrimesSieveDiagram() {
     return { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', text: colors.text };
   };
 
-  const stepDescription = step === 0
+  const stepDescription = step() === 0
     ? 'Начало: все числа от 2 до 50'
-    : step <= SIEVE_STEPS.length
-      ? SIEVE_STEPS[step - 1].description
+    : step() <= SIEVE_STEPS.length
+      ? SIEVE_STEPS[step() - 1].description
       : `Готово! Найдено ${numbers.filter(isPrimeSieve).length} простых чисел`;
 
   return (
     <DiagramContainer title="Решето Эратосфена" color="green">
       <DiagramTooltip content="Решето Эратосфена -- древний алгоритм нахождения всех простых чисел до заданной границы. Последовательно вычёркивает составные числа. Простые числа -- основа RSA: безопасность шифрования зависит от сложности факторизации произведения двух больших простых чисел.">
-        <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
-          Шаг {step}/{maxStep - 1}: {stepDescription}
+        <div style={{ 'font-size': '13px', 'color': colors.textMuted, 'margin-bottom': '12px' }}>
+          Шаг {step()}/{maxStep - 1}: {stepDescription}
         </div>
       </DiagramTooltip>
 
       {/* Number grid 10 columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(10, 1fr)', 'gap': '4px' }}>
         {numbers.map((n) => {
           const c = getNumberColor(n);
           const isEliminated = eliminatedUpToStep.has(n) && !currentStepEliminated.has(n);
           return (
             <div
-              key={n}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px 0',
-                borderRadius: 6,
-                background: c.bg,
-                border: `1px solid ${c.border}`,
-                fontFamily: 'monospace',
-                fontSize: 13,
-                color: c.text,
-                opacity: isEliminated ? 0.4 : 1,
-                textDecoration: isEliminated ? 'line-through' : 'none',
-                transition: 'all 0.2s',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'padding': '6px 0',
+                'border-radius': '6px',
+                'background': c.bg,
+                'border': `1px solid ${c.border}`,
+                'font-family': 'monospace',
+                'font-size': '13px',
+                'color': c.text,
+                'opacity': isEliminated ? 0.4 : 1,
+                'text-decoration': isEliminated ? 'line-through' : 'none',
+                'transition': 'all 0.2s',
               }}
             >
               {n}
@@ -147,44 +147,44 @@ export function PrimesSieveDiagram() {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <button
           onClick={() => setStep(0)}
-          style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+          style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
+          disabled={step() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step === 0 ? 'not-allowed' : 'pointer',
-            color: step === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: step === 0 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+            'color': step() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': step() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStep((s) => Math.min(maxStep - 1, s + 1))}
-          disabled={step >= maxStep - 1}
+          disabled={step() >= maxStep - 1}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: step >= maxStep - 1 ? 'not-allowed' : 'pointer',
-            color: step >= maxStep - 1 ? colors.textMuted : colors.primary,
-            fontSize: 13,
-            opacity: step >= maxStep - 1 ? 0.5 : 1,
+            'padding': '8px 16px',
+            'cursor': step() >= maxStep - 1 ? 'not-allowed' : 'pointer',
+            'color': step() >= maxStep - 1 ? colors.textMuted : colors.primary,
+            'font-size': '13px',
+            'opacity': step() >= maxStep - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {step === maxStep - 1 && (
+      {step() === maxStep - 1 && (
         <DiagramTooltip content="Все простые числа от 2 до 50. В RSA используются простые числа длиной 1024+ бит (>300 десятичных цифр). Перебор таких чисел невозможен -- используются вероятностные тесты простоты (Miller-Rabin).">
           <DataBox
             label="Простые числа от 2 до 50"
@@ -297,7 +297,6 @@ function renderTreeNodes(node: TreeNode): JSX.Element[] {
       if (child.x !== undefined && child.y !== undefined) {
         elements.push(
           <line
-            key={`edge-${node.value}-${child.value}-${child.x}`}
             x1={node.x}
             y1={node.y + 14}
             x2={child.x}
@@ -316,7 +315,7 @@ function renderTreeNodes(node: TreeNode): JSX.Element[] {
   const borderColor = node.isPrime ? nodeColor + '60' : colors.border;
 
   elements.push(
-    <g key={`node-${node.value}-${node.x}-${node.y}`}>
+    <g>
       <rect
         x={node.x - 20}
         y={node.y - 14}
@@ -357,17 +356,17 @@ function renderTreeNodes(node: TreeNode): JSX.Element[] {
  * Input a number (2-1000), see its factorization as a binary tree.
  */
 export function FactorizationTreeDiagram() {
-  const [value, setValue] = useState(360);
+  const [value, setValue] = createSignal(360);
 
-  const tree = useMemo(() => {
-    const raw = buildFactorizationTree(value);
+  const tree = createMemo(() => {
+    const raw = buildFactorizationTree(value());
     const depth = getTreeDepth(raw);
     const spread = Math.min(120, 60 + depth * 20);
     return layoutTree(raw, 200, 30, spread);
-  }, [value]);
+  });
 
-  const factors = useMemo(() => getFactorization(value), [value]);
-  const bounds = useMemo(() => getTreeBounds(tree), [tree]);
+  const factors = createMemo(() => getFactorization(value()));
+  const bounds = createMemo(() => getTreeBounds(tree));
   const svgPad = 30;
   const svgMinX = bounds.minX - svgPad;
   const svgWidth = bounds.maxX - bounds.minX + svgPad * 2;
@@ -379,9 +378,9 @@ export function FactorizationTreeDiagram() {
 
   return (
     <DiagramContainer title="Дерево простого разложения" color="blue">
-      <InteractiveValue value={value} onChange={setValue} min={2} max={1000} label="Число" />
+      <InteractiveValue value={value()} onChange={setValue} min={2} max={1000} label="Число" />
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12, overflowX: 'auto' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-top': '12px', 'overflow-x': 'auto' }}>
         <svg width="100%" height={svgHeight} viewBox={`${svgMinX} 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMin meet">
           {renderTreeNodes(tree)}
         </svg>
@@ -390,30 +389,29 @@ export function FactorizationTreeDiagram() {
       <DiagramTooltip content="Основная теорема арифметики: каждое число > 1 раскладывается на простые множители единственным образом (с точностью до порядка). В RSA число n = p * q, и вся безопасность основана на том, что факторизация больших n вычислительно неосуществима.">
         <DataBox
           label="Разложение"
-          value={`${value} = ${factorizationStr}`}
+          value={`${value()} = ${factorizationStr}`}
           variant="highlight"
         />
       </DiagramTooltip>
 
       {/* Color legend for primes used */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-top': '8px' }}>
         {Array.from(factors.keys()).map((p) => (
           <DiagramTooltip
-            key={p}
             content={`Простой множитель ${p}. Входит в разложение ${factors.get(p)} раз(а). В RSA-2048 простые множители p и q имеют длину ~1024 бита -- перебор невозможен.`}
           >
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: getPrimeColor(p) + '20',
-                border: `1px solid ${getPrimeColor(p)}40`,
-                fontSize: 12,
-                fontFamily: 'monospace',
-                color: getPrimeColor(p),
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '4px',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'background': getPrimeColor(p) + '20',
+                'border': `1px solid ${getPrimeColor(p)}40`,
+                'font-size': '12px',
+                'font-family': 'monospace',
+                'color': getPrimeColor(p),
               }}
             >
               {p}
@@ -473,39 +471,38 @@ function computeGCDSteps(a: number, b: number): GCDStep[] {
  * Shows division equations and rectangle subdivision visualization.
  */
 export function GCDVisualization() {
-  const [a, setA] = useState(252);
-  const [b, setB] = useState(105);
-  const [step, setStep] = useState(0);
+  const [a, setA] = createSignal(252);
+  const [b, setB] = createSignal(105);
+  const [step, setStep] = createSignal(0);
 
-  const steps = useMemo(() => computeGCDSteps(a, b), [a, b]);
+  const steps = createMemo(() => computeGCDSteps(a(), b()));
   const maxStep = steps.length;
 
-  const handleChangeA = useCallback((v: number) => { setA(v); setStep(0); }, []);
-  const handleChangeB = useCallback((v: number) => { setB(v); setStep(0); }, []);
+  const handleChangeA = (v: number) => { setA(v); setStep(0); };
+  const handleChangeB = (v: number) => { setB(v); setStep(0); };
 
-  const gcd = steps.length > 0 ? steps[steps.length - 1].b : Math.max(a, b);
-  const visibleSteps = steps.slice(0, step + 1);
+  const gcd = steps.length > 0 ? steps[steps.length - 1].b : Math.max(a(), b());
+  const visibleSteps = steps.slice(0, step() + 1);
 
   // Rectangle subdivision for current step
-  const currentA = step < steps.length ? steps[step].a : 0;
-  const currentB = step < steps.length ? steps[step].b : 0;
-  const currentQ = step < steps.length ? steps[step].q : 0;
-  const currentR = step < steps.length ? steps[step].r : 0;
+  const currentA = step() < steps.length ? steps[step()].a : 0;
+  const currentB = step() < steps.length ? steps[step()].b : 0;
+  const currentQ = step() < steps.length ? steps[step()].q : 0;
+  const currentR = step() < steps.length ? steps[step()].r : 0;
 
   const rectWidth = 360;
   const rectHeight = currentA > 0 ? Math.max(30, (currentB / currentA) * rectWidth) : 60;
 
   return (
     <DiagramContainer title="Алгоритм Евклида (НОД)" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <InteractiveValue value={a} onChange={handleChangeA} min={1} max={999} label="a" />
-        <InteractiveValue value={b} onChange={handleChangeB} min={0} max={999} label="b" />
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
+        <InteractiveValue value={a()} onChange={handleChangeA} min={1} max={999} label="a" />
+        <InteractiveValue value={b()} onChange={handleChangeB} min={0} max={999} label="b" />
 
         {/* Step equations */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {visibleSteps.map((s, i) => (
             <DiagramTooltip
-              key={i}
               content={s.r === 0
                 ? `Остаток равен нулю -- алгоритм завершён! НОД = ${s.b}. Расширенный алгоритм Евклида также находит коэффициенты ax + by = НОД(a,b), что критично для вычисления модулярного обратного в RSA.`
                 : `Деление с остатком: ${s.a} = ${s.q} * ${s.b} + ${s.r}. На каждом шаге большее число заменяется остатком. Алгоритм Евклида работает за O(log(min(a,b))) шагов -- эффективнее полного перебора.`
@@ -514,25 +511,25 @@ export function GCDVisualization() {
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  background: i === step ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${i === step ? colors.secondary + '40' : 'rgba(255,255,255,0.08)'}`,
+                  'padding': '8px 12px',
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'background': i === step() ? `${colors.secondary}15` : 'rgba(255,255,255,0.03)',
+                  'border': `1px solid ${i === step() ? colors.secondary + '40' : 'rgba(255,255,255,0.08)'}`,
                 }}
               >
-                <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   Шаг {i + 1}
                 </span>
-                <span style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '13px', 'color': colors.text, 'font-family': 'monospace' }}>
                   {s.equation}
                 </span>
                 <span style={{
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  color: s.r === 0 ? colors.success : colors.textMuted,
-                  fontWeight: s.r === 0 ? 700 : 400,
+                  'font-size': '12px',
+                  'font-family': 'monospace',
+                  'color': s.r === 0 ? colors.success : colors.textMuted,
+                  'font-weight': s.r === 0 ? 700 : 400,
                 }}>
                   r = {s.r}
                 </span>
@@ -542,8 +539,8 @@ export function GCDVisualization() {
         </div>
 
         {/* Rectangle subdivision visualization */}
-        {step < steps.length && currentB > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+        {step() < steps.length && currentB > 0 && (
+          <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-top': '8px' }}>
             <svg width={rectWidth + 20} height={rectHeight + 20} viewBox={`0 0 ${rectWidth + 20} ${rectHeight + 20}`}>
               {/* Main rectangle a x b */}
               <rect
@@ -560,7 +557,6 @@ export function GCDVisualization() {
                 const squareWidth = (currentB / currentA) * rectWidth;
                 return (
                   <rect
-                    key={i}
                     x={10 + i * squareWidth}
                     y={10}
                     width={squareWidth}
@@ -597,55 +593,55 @@ export function GCDVisualization() {
         )}
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <button
             onClick={() => setStep(0)}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+            style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
           >
             Сброс
           </button>
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
-            disabled={step === 0}
+            disabled={step() === 0}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: step === 0 ? 'not-allowed' : 'pointer',
-              color: step === 0 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: step === 0 ? 0.5 : 1,
+              'padding': '8px 16px',
+              'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+              'color': step() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': step() === 0 ? 0.5 : 1,
             }}
           >
             Назад
           </button>
           <button
             onClick={() => setStep((s) => Math.min(maxStep - 1, s + 1))}
-            disabled={step >= maxStep - 1}
+            disabled={step() >= maxStep - 1}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: step >= maxStep - 1 ? 'not-allowed' : 'pointer',
-              color: step >= maxStep - 1 ? colors.textMuted : colors.primary,
-              fontSize: 13,
-              opacity: step >= maxStep - 1 ? 0.5 : 1,
+              'padding': '8px 16px',
+              'cursor': step() >= maxStep - 1 ? 'not-allowed' : 'pointer',
+              'color': step() >= maxStep - 1 ? colors.textMuted : colors.primary,
+              'font-size': '13px',
+              'opacity': step() >= maxStep - 1 ? 0.5 : 1,
             }}
           >
             Далее
           </button>
         </div>
 
-        {step >= maxStep - 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {step() >= maxStep - 1 && (
+          <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
             <DiagramTooltip content="Наибольший общий делитель. НОД используется для проверки взаимной простоты чисел (НОД=1). В RSA: e и phi(n) должны быть взаимно просты. Расширенный алгоритм Евклида находит d = e^(-1) mod phi(n) -- приватный ключ.">
               <DataBox
                 label="Результат"
-                value={`НОД(${a}, ${b}) = ${gcd}`}
+                value={`НОД(${a()}, ${b()}) = ${gcd}`}
                 variant="highlight"
               />
             </DiagramTooltip>
             <DiagramTooltip content="Python предоставляет встроенную функцию math.gcd(). Для расширенного алгоритма Евклида используйте pow(e, -1, phi_n) в Python 3.8+ для вычисления модулярного обратного.">
-              <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
-                Python: math.gcd({a}, {b}) = {gcd}
+              <div style={{ ...glassStyle, 'padding': '8px 12px', 'font-size': '12px', 'font-family': 'monospace', 'color': colors.accent }}>
+                Python: math.gcd({a()}, {b()}) = {gcd}
               </div>
             </DiagramTooltip>
           </div>

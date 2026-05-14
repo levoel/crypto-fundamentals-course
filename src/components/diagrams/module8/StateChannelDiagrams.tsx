@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * State Channel Diagrams (SCALE-03)
  *
@@ -6,7 +7,7 @@
  * - PaymentChannelDiagram: Interactive slider for payment channel balance redistribution
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -104,9 +105,9 @@ const CHANNEL_STEPS: ChannelStep[] = [
  * History array pattern with Step/Back/Reset navigation.
  */
 export function ChannelLifecycleDiagram() {
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = createSignal(0);
 
-  const step = CHANNEL_STEPS[stepIdx];
+  const step = CHANNEL_STEPS[stepIdx()];
   const totalBalance = 10;
 
   const goNext = () => setStepIdx((i) => Math.min(i + 1, CHANNEL_STEPS.length - 1));
@@ -116,26 +117,26 @@ export function ChannelLifecycleDiagram() {
   return (
     <DiagramContainer title="Жизненный цикл state channel" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '14px', 'flex-wrap': 'wrap' }}>
         {CHANNEL_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={s.tooltipRu}>
+          <DiagramTooltip content={s.tooltipRu}>
             <div
               onClick={() => setStepIdx(i)}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: i === stepIdx ? 700 : 400,
-                cursor: 'pointer',
-                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-                transition: 'all 0.2s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '6px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'font-weight': i === stepIdx() ? 700 : 400,
+                'cursor': 'pointer',
+                'background': i === stepIdx() ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                'color': i === stepIdx() ? s.highlight : i < stepIdx() ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                'border': `1px solid ${i === stepIdx() ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                'transition': 'all 0.2s',
               }}
             >
               {i + 1}
@@ -147,26 +148,26 @@ export function ChannelLifecycleDiagram() {
       {/* Step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 14,
-        border: `1px solid ${step.highlight}30`,
+        'padding': '16px',
+        'margin-bottom': '14px',
+        'border': `1px solid ${step.highlight}30`,
       }}>
         {/* Title and phase */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px', 'flex-wrap': 'wrap', 'gap': '8px' }}>
           <DiagramTooltip content={step.tooltipRu}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: step.highlight, fontFamily: 'monospace' }}>
-              Step {stepIdx + 1}: {step.title}
+            <span style={{ 'font-size': '13px', 'font-weight': '600', 'color': step.highlight, 'font-family': 'monospace' }}>
+              Step {stepIdx() + 1}: {step.title}
             </span>
           </DiagramTooltip>
           <DiagramTooltip content={step.onChain ? 'On-chain транзакция записывается в блокчейн. Требует газ и время на подтверждение. Дорого, но финально.' : 'Off-chain операция не записывается в блокчейн. Мгновенно, бесплатно, приватно. Но требует подписей обеих сторон.'}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: step.onChain ? '#10b98115' : '#6366f115',
-              color: step.onChain ? '#10b981' : '#6366f1',
-              border: `1px solid ${step.onChain ? '#10b98130' : '#6366f130'}`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': step.onChain ? '#10b98115' : '#6366f115',
+              'color': step.onChain ? '#10b981' : '#6366f1',
+              'border': `1px solid ${step.onChain ? '#10b98130' : '#6366f130'}`,
             }}>
               {step.phase}
             </span>
@@ -174,73 +175,73 @@ export function ChannelLifecycleDiagram() {
         </div>
 
         {/* Description */}
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 14 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '14px' }}>
           {step.description}
         </div>
 
         {/* Balance bars */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'margin-bottom': '8px' }}>
           {/* Alice */}
-          <div style={{ flex: 1 }}>
+          <div style={{ 'flex': '1' }}>
             <DiagramTooltip content={`Alice владеет ${step.aliceBalance} из ${totalBalance} ETH в канале. При закрытии канала контракт выдаст Alice ровно ${step.aliceBalance} ETH.`}>
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', marginBottom: 4, display: 'inline-block' }}>
+              <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#6366f1', 'margin-bottom': '4px', 'display': 'inline-block' }}>
                 Alice: {step.aliceBalance} ETH
               </span>
             </DiagramTooltip>
             <div style={{
-              height: 20,
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 4,
-              overflow: 'hidden',
+              'height': '20px',
+              'background': 'rgba(255,255,255,0.05)',
+              'border-radius': '4px',
+              'overflow': 'hidden',
             }}>
               <div style={{
-                width: `${(step.aliceBalance / totalBalance) * 100}%`,
-                height: '100%',
-                background: '#6366f1',
-                opacity: 0.7,
-                borderRadius: 4,
-                transition: 'width 0.3s',
+                'width': `${(step.aliceBalance / totalBalance) * 100}%`,
+                'height': '100%',
+                'background': '#6366f1',
+                'opacity': '0.7',
+                'border-radius': '4px',
+                'transition': 'width 0.3s',
               }} />
             </div>
           </div>
           {/* Bob */}
-          <div style={{ flex: 1 }}>
+          <div style={{ 'flex': '1' }}>
             <DiagramTooltip content={`Bob владеет ${step.bobBalance} из ${totalBalance} ETH в канале. Сумма балансов всегда равна начальному депозиту (${totalBalance} ETH) -- невозможно создать или уничтожить средства.`}>
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', marginBottom: 4, display: 'inline-block' }}>
+              <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#10b981', 'margin-bottom': '4px', 'display': 'inline-block' }}>
                 Bob: {step.bobBalance} ETH
               </span>
             </DiagramTooltip>
             <div style={{
-              height: 20,
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 4,
-              overflow: 'hidden',
+              'height': '20px',
+              'background': 'rgba(255,255,255,0.05)',
+              'border-radius': '4px',
+              'overflow': 'hidden',
             }}>
               <div style={{
-                width: `${(step.bobBalance / totalBalance) * 100}%`,
-                height: '100%',
-                background: '#10b981',
-                opacity: 0.7,
-                borderRadius: 4,
-                transition: 'width 0.3s',
+                'width': `${(step.bobBalance / totalBalance) * 100}%`,
+                'height': '100%',
+                'background': '#10b981',
+                'opacity': '0.7',
+                'border-radius': '4px',
+                'transition': 'width 0.3s',
               }} />
             </div>
           </div>
         </div>
 
         {/* State version + on-chain indicator */}
-        <div style={{ display: 'flex', gap: 16, fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
+        <div style={{ 'display': 'flex', 'gap': '16px', 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted }}>
           {step.stateVersion !== null && (
             <DiagramTooltip content={`State version ${step.stateVersion} -- порядковый номер состояния. При dispute контракт принимает состояние с наивысшей версией. Это гарантирует, что мошенник не сможет откатить канал к старому состоянию.`}>
-              <span>State version: <span style={{ color: step.highlight }}>{step.stateVersion}</span></span>
+              <span>State version: <span style={{ 'color': step.highlight }}>{step.stateVersion}</span></span>
             </DiagramTooltip>
           )}
           <DiagramTooltip content={step.onChain ? 'Ончейн-транзакция записывается в блок Ethereum. Требует газ, но обеспечивает финальность. Используется только для открытия и закрытия канала.' : 'Оффчейн-операция происходит вне блокчейна. Только подписанные сообщения между участниками. Мгновенно и бесплатно.'}>
             <span>
               {step.onChain ? (
-                <span style={{ color: '#10b981' }}>ON-CHAIN TX</span>
+                <span style={{ 'color': '#10b981' }}>ON-CHAIN TX</span>
               ) : (
-                <span style={{ color: '#6366f1' }}>OFF-CHAIN</span>
+                <span style={{ 'color': '#6366f1' }}>OFF-CHAIN</span>
               )}
             </span>
           </DiagramTooltip>
@@ -248,19 +249,19 @@ export function ChannelLifecycleDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
-          <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+          <button onClick={reset} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
             Reset
           </button>
         </div>
         <div>
-          <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+          <button onClick={goBack} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
             Back
           </button>
         </div>
         <div>
-          <button onClick={goNext} disabled={stepIdx === CHANNEL_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === CHANNEL_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === CHANNEL_STEPS.length - 1 ? 0.5 : 1 }}>
+          <button onClick={goNext} disabled={stepIdx() === CHANNEL_STEPS.length - 1} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === CHANNEL_STEPS.length - 1 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, 'border': `1px solid ${stepIdx() === CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, 'border-radius': '6px', 'opacity': stepIdx() === CHANNEL_STEPS.length - 1 ? 0.5 : 1 }}>
             Step
           </button>
         </div>
@@ -280,14 +281,14 @@ export function ChannelLifecycleDiagram() {
  * Total always = 10 ETH. Each move increments state counter.
  */
 export function PaymentChannelDiagram() {
-  const [aliceBalance, setAliceBalance] = useState(5);
-  const [stateCount, setStateCount] = useState(0);
+  const [aliceBalance, setAliceBalance] = createSignal(5);
+  const [stateCount, setStateCount] = createSignal(0);
 
   const totalBalance = 10;
-  const bobBalance = totalBalance - aliceBalance;
+  const bobBalance = totalBalance - aliceBalance();
 
   const handleSliderChange = (val: number) => {
-    if (val !== aliceBalance) {
+    if (val !== aliceBalance()) {
       setAliceBalance(val);
       setStateCount((c) => c + 1);
     }
@@ -301,21 +302,21 @@ export function PaymentChannelDiagram() {
   return (
     <DiagramContainer title="Payment Channel: баланс между участниками" color="green">
       {/* State counter */}
-      <div style={{ textAlign: 'center', marginBottom: 14 }}>
-        <DiagramTooltip content={`Каждое перемещение слайдера = новое подписанное состояние канала (state #${stateCount}). В реальном канале каждое состояние подписывается обеими сторонами и хранит nonce для упорядочивания.`}>
-          <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>
-            State #{stateCount}:
+      <div style={{ 'text-align': 'center', 'margin-bottom': '14px' }}>
+        <DiagramTooltip content={`Каждое перемещение слайдера = новое подписанное состояние канала (state #${stateCount()}). В реальном канале каждое состояние подписывается обеими сторонами и хранит nonce для упорядочивания.`}>
+          <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+            State #{stateCount()}:
           </span>
         </DiagramTooltip>
         {' '}
-        <DiagramTooltip content={`Alice владеет ${aliceBalance} ETH. При кооперативном закрытии канала контракт отправит Alice ровно ${aliceBalance} ETH.`}>
-          <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#6366f1', fontWeight: 600 }}>
-            Alice = {aliceBalance} ETH
+        <DiagramTooltip content={`Alice владеет ${aliceBalance()} ETH. При кооперативном закрытии канала контракт отправит Alice ровно ${aliceBalance()} ETH.`}>
+          <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': '#6366f1', 'font-weight': '600' }}>
+            Alice = {aliceBalance()} ETH
           </span>
         </DiagramTooltip>
-        <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>, </span>
+        <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.textMuted }}>, </span>
         <DiagramTooltip content={`Bob владеет ${bobBalance} ETH. Сумма Alice + Bob всегда = ${totalBalance} ETH (начальный депозит). Средства не создаются и не уничтожаются.`}>
-          <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#10b981', fontWeight: 600 }}>
+          <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': '#10b981', 'font-weight': '600' }}>
             Bob = {bobBalance} ETH
           </span>
         </DiagramTooltip>
@@ -323,41 +324,41 @@ export function PaymentChannelDiagram() {
 
       {/* Balance bars */}
       <div style={{
-        display: 'flex',
-        height: 36,
-        borderRadius: 6,
-        overflow: 'hidden',
-        marginBottom: 12,
-        border: '1px solid rgba(255,255,255,0.1)',
+        'display': 'flex',
+        'height': '36px',
+        'border-radius': '6px',
+        'overflow': 'hidden',
+        'margin-bottom': '12px',
+        'border': '1px solid rgba(255,255,255,0.1)',
       }}>
         <div style={{
-          width: `${(aliceBalance / totalBalance) * 100}%`,
-          background: '#6366f1',
-          opacity: 0.7,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'width 0.2s',
-          minWidth: aliceBalance > 0 ? 30 : 0,
+          'width': `${(aliceBalance() / totalBalance) * 100}%`,
+          'background': '#6366f1',
+          'opacity': '0.7',
+          'display': 'flex',
+          'align-items': 'center',
+          'justify-content': 'center',
+          'transition': 'width 0.2s',
+          'min-width': aliceBalance() > 0 ? 30 : 0,
         }}>
-          {aliceBalance > 0 && (
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'white', fontWeight: 600 }}>
-              Alice {aliceBalance}
+          {aliceBalance() > 0 && (
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': 'white', 'font-weight': '600' }}>
+              Alice {aliceBalance()}
             </span>
           )}
         </div>
         <div style={{
-          width: `${(bobBalance / totalBalance) * 100}%`,
-          background: '#10b981',
-          opacity: 0.7,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'width 0.2s',
-          minWidth: bobBalance > 0 ? 30 : 0,
+          'width': `${(bobBalance / totalBalance) * 100}%`,
+          'background': '#10b981',
+          'opacity': '0.7',
+          'display': 'flex',
+          'align-items': 'center',
+          'justify-content': 'center',
+          'transition': 'width 0.2s',
+          'min-width': bobBalance > 0 ? 30 : 0,
         }}>
           {bobBalance > 0 && (
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'white', fontWeight: 600 }}>
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': 'white', 'font-weight': '600' }}>
               Bob {bobBalance}
             </span>
           )}
@@ -365,29 +366,29 @@ export function PaymentChannelDiagram() {
       </div>
 
       {/* Slider */}
-      <div style={{ marginBottom: 14, padding: '0 4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+      <div style={{ 'margin-bottom': '14px', 'padding': '0 4px' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '4px' }}>
           <DiagramTooltip content="Перемещение слайдера влево увеличивает долю Alice. В реальном канале Alice создает подписанное сообщение с новым распределением и отправляет Bob.">
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#6366f1' }}>Alice gets more</span>
+            <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': '#6366f1' }}>Alice gets more</span>
           </DiagramTooltip>
           <DiagramTooltip content="Перемещение слайдера вправо увеличивает долю Bob. Bob подписывает новое состояние, подтверждая согласие с распределением.">
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#10b981' }}>Bob gets more</span>
+            <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': '#10b981' }}>Bob gets more</span>
           </DiagramTooltip>
         </div>
         <input
           type="range"
           min={0}
           max={totalBalance}
-          value={aliceBalance}
+          value={aliceBalance()}
           onChange={(e) => handleSliderChange(Number(e.target.value))}
-          style={{ width: '100%', accentColor: '#6366f1' }}
+          style={{ 'width': '100%', 'accent-color': '#6366f1' }}
         />
       </div>
 
       {/* Reset */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '14px' }}>
         <div>
-          <button onClick={resetChannel} style={{ ...glassStyle, padding: '5px 12px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}>
+          <button onClick={resetChannel} style={{ ...glassStyle, 'padding': '5px 12px', 'cursor': 'pointer', 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px' }}>
             Reset channel
           </button>
         </div>

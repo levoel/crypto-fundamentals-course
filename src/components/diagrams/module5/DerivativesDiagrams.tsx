@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Derivatives Diagrams (DEFI-11)
  *
@@ -6,7 +7,7 @@
  * - LeverageLiquidationDiagram: Leverage and margin liquidation scenario (DiagramTooltip on steps)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -62,9 +63,9 @@ const TIMELINE_HOURS = [0, 8, 16, 24, 32, 40, 48];
  * SVG circle hover removed, HTML data legend with DiagramTooltip.
  */
 export function FundingRateDiagram() {
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [selectedIdx, setSelectedIdx] = createSignal(0);
 
-  const scenario = FUNDING_SCENARIOS[selectedIdx];
+  const scenario = FUNDING_SCENARIOS[selectedIdx()];
   const fr = ((scenario.perpPrice - scenario.spotPrice) / scenario.spotPrice) * 100;
 
   // Simulate price convergence over time
@@ -96,22 +97,21 @@ export function FundingRateDiagram() {
   return (
     <DiagramContainer title="Funding Rate: \u043f\u0440\u0438\u0432\u044f\u0437\u043a\u0430 \u043a \u0441\u043f\u043e\u0442-\u0446\u0435\u043d\u0435" color="blue">
       {/* Scenario selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {FUNDING_SCENARIOS.map((s, i) => (
           <button
-            key={i}
             onClick={() => setSelectedIdx(i)}
             style={{
               ...glassStyle,
-              padding: '8px 14px',
-              cursor: 'pointer',
-              background: selectedIdx === i ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${selectedIdx === i ? colors.primary : 'rgba(255,255,255,0.08)'}`,
-              color: selectedIdx === i ? colors.primary : colors.textMuted,
-              fontSize: 12,
-              fontFamily: 'monospace',
-              fontWeight: selectedIdx === i ? 600 : 400,
-              borderRadius: 6,
+              'padding': '8px 14px',
+              'cursor': 'pointer',
+              'background': selectedIdx() === i ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+              'border': `1px solid ${selectedIdx() === i ? colors.primary : 'rgba(255,255,255,0.08)'}`,
+              'color': selectedIdx() === i ? colors.primary : colors.textMuted,
+              'font-size': '12px',
+              'font-family': 'monospace',
+              'font-weight': selectedIdx() === i ? 600 : 400,
+              'border-radius': '6px',
             }}
           >
             {s.label}
@@ -121,48 +121,48 @@ export function FundingRateDiagram() {
 
       {/* Current scenario info */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(140px, 1fr))',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         <DiagramTooltip content="Spot Price: текущая рыночная цена актива на спотовых биржах. Это реальная цена для немедленной покупки/продажи.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Spot Price</div>
-            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: colors.success }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Spot Price</div>
+            <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace', 'color': colors.success }}>
               ${scenario.spotPrice}
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Perp Price: цена perpetual futures контракта. Может отклоняться от спота из-за дисбаланса лонгов/шортов. Funding rate корректирует отклонение.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Perp Price</div>
-            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#a78bfa' }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Perp Price</div>
+            <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace', 'color': '#a78bfa' }}>
               ${scenario.perpPrice}
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Funding Rate: механизм привязки perpetual futures к spot price. Выплаты каждые 8 часов (Binance) или continuous (dYdX). Rate = clamp((perp_price - spot_price) / spot_price, max).">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Funding Rate (8h)</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Funding Rate (8h)</div>
             <div style={{
-              fontSize: 16,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: fr > 0 ? '#ef4444' : fr < 0 ? colors.success : colors.textMuted,
+              'font-size': '16px',
+              'font-weight': '700',
+              'font-family': 'monospace',
+              'color': fr > 0 ? '#ef4444' : fr < 0 ? colors.success : colors.textMuted,
             }}>
               {fr > 0 ? '+' : ''}{fr.toFixed(3)}%
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content={fr > 0 ? 'Positive funding rate: longs платят shorts. Рынок bullish (больше лонгов чем шортов). Perpetual цена > spot цена. Арбитраж: short perp + long spot.' : fr < 0 ? 'Negative funding rate: shorts платят longs. Рынок bearish. Perpetual цена < spot цена. Арбитраж: long perp + short spot.' : 'Funding rate ~ 0: система в равновесии. Perp цена = spot цена. Никто никому не платит.'}>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Направление</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Направление</div>
             <div style={{
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: 'monospace',
-              color: scenario.direction === 'longs_pay' ? '#ef4444' : colors.success,
+              'font-size': '13px',
+              'font-weight': '600',
+              'font-family': 'monospace',
+              'color': scenario.direction === 'longs_pay' ? '#ef4444' : colors.success,
             }}>
               {scenario.description}
             </div>
@@ -173,18 +173,17 @@ export function FundingRateDiagram() {
       {/* Price convergence chart */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        marginBottom: 16,
-        background: 'rgba(255,255,255,0.02)',
+        'padding': '12px',
+        'margin-bottom': '16px',
+        'background': 'rgba(255,255,255,0.02)',
       }}>
-        <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: 600 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-weight': '600' }}>
           Сближение цен благодаря funding rate:
         </div>
-        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: 'block' }}>
+        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ 'display': 'block' }}>
           {/* Grid lines */}
           {[0.25, 0.5, 0.75].map((f) => (
             <line
-              key={f}
               x1={padL}
               x2={svgW - padR}
               y1={padT + chartH * f}
@@ -202,7 +201,7 @@ export function FundingRateDiagram() {
 
           {/* Data points (no hover handlers) */}
           {convergencePoints.map((p, i) => (
-            <g key={i}>
+            <g>
               <circle
                 cx={toX(i)}
                 cy={toY(p.perp)}
@@ -216,7 +215,6 @@ export function FundingRateDiagram() {
           {/* X-axis labels */}
           {convergencePoints.map((p, i) => (
             <text
-              key={i}
               x={toX(i)}
               y={svgH - 5}
               textAnchor="middle"
@@ -231,7 +229,6 @@ export function FundingRateDiagram() {
           {/* Y-axis labels */}
           {[minP, (minP + maxP) / 2, maxP].map((price, i) => (
             <text
-              key={i}
               x={padL - 5}
               y={toY(price) + 4}
               textAnchor="end"
@@ -254,12 +251,12 @@ export function FundingRateDiagram() {
       {/* Detail */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        background: `${colors.primary}05`,
-        border: `1px solid ${colors.primary}20`,
-        marginBottom: 12,
+        'padding': '12px',
+        'background': `${colors.primary}05`,
+        'border': `1px solid ${colors.primary}20`,
+        'margin-bottom': '12px',
       }}>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
           {scenario.detail}
         </div>
       </div>
@@ -370,10 +367,10 @@ export function LeverageLiquidationDiagram() {
     <DiagramContainer title="Leverage: \u043c\u0430\u0440\u0436\u0430 \u0438 \u043b\u0438\u043a\u0432\u0438\u0434\u0430\u0446\u0438\u044f" color="purple">
       {/* Position overview */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(130px, 1fr))',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {[
           { label: 'Leverage', value: '10x', color: '#a78bfa', tooltipRu: 'Leverage (плечо): множитель позиции. 10x = позиция в 10 раз больше margin. Увеличивает как прибыль, так и убытки пропорционально.' },
@@ -383,10 +380,10 @@ export function LeverageLiquidationDiagram() {
           { label: 'ETH Amount', value: '5 ETH', color: colors.primary, tooltipRu: 'Количество ETH: $10,000 / $2,000 = 5 ETH. Это сколько ETH контролирует позиция.' },
           { label: 'Maintenance', value: '$500 (5%)', color: '#eab308', tooltipRu: 'Maintenance margin: минимальный margin для удержания позиции. 5% от position size = $500. Если margin падает ниже -- ликвидация.' },
         ].map((item, i) => (
-          <DiagramTooltip key={i} content={item.tooltipRu}>
-            <div style={{ ...glassStyle, padding: 10 }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>{item.label}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: item.color }}>
+          <DiagramTooltip content={item.tooltipRu}>
+            <div style={{ ...glassStyle, 'padding': '10px' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>{item.label}</div>
+              <div style={{ 'font-size': '14px', 'font-weight': '700', 'font-family': 'monospace', 'color': item.color }}>
                 {item.value}
               </div>
             </div>
@@ -397,81 +394,81 @@ export function LeverageLiquidationDiagram() {
       {/* Margin bars */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        marginBottom: 16,
-        background: 'rgba(255,255,255,0.02)',
+        'padding': '12px',
+        'margin-bottom': '16px',
+        'background': 'rgba(255,255,255,0.02)',
       }}>
-        <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 12, fontWeight: 600 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '12px', 'font-weight': '600' }}>
           Margin level при падении ETH:
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {LEVERAGE_STEPS.map((step, i) => {
             const barWidth = Math.max(0, (step.marginRemaining / maxMargin) * 100);
             const statusColor = STATUS_COLORS[step.status];
             const maintenanceLine = (MAINTENANCE_MARGIN / maxMargin) * 100;
 
             return (
-              <DiagramTooltip key={i} content={step.tooltipRu}>
+              <DiagramTooltip content={step.tooltipRu}>
                 <div
                   style={{
-                    transition: 'all 0.2s',
+                    'transition': 'all 0.2s',
                   }}
                 >
                   <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    marginBottom: 4,
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'gap': '10px',
+                    'margin-bottom': '4px',
                   }}>
                     {/* Price change label */}
                     <div style={{
-                      width: 70,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      fontWeight: 600,
-                      color: colors.textMuted,
-                      textAlign: 'right',
+                      'width': '70px',
+                      'font-size': '12px',
+                      'font-family': 'monospace',
+                      'font-weight': '600',
+                      'color': colors.textMuted,
+                      'text-align': 'right',
                     }}>
                       {step.priceChange === 0 ? 'Entry' : `${step.priceChange}%`}
                     </div>
 
                     {/* Bar container */}
                     <div style={{
-                      flex: 1,
-                      height: 20,
-                      borderRadius: 4,
-                      background: 'rgba(255,255,255,0.05)',
-                      position: 'relative',
-                      overflow: 'hidden',
+                      'flex': '1',
+                      'height': '20px',
+                      'border-radius': '4px',
+                      'background': 'rgba(255,255,255,0.05)',
+                      'position': 'relative',
+                      'overflow': 'hidden',
                     }}>
                       {/* Margin bar */}
                       <div style={{
-                        width: `${barWidth}%`,
-                        height: '100%',
-                        borderRadius: 4,
-                        background: `${statusColor}80`,
-                        transition: 'all 0.3s',
+                        'width': `${barWidth}%`,
+                        'height': '100%',
+                        'border-radius': '4px',
+                        'background': `${statusColor}80`,
+                        'transition': 'all 0.3s',
                       }} />
                       {/* Maintenance margin line */}
                       <div style={{
-                        position: 'absolute',
-                        left: `${maintenanceLine}%`,
-                        top: 0,
-                        bottom: 0,
-                        width: 2,
-                        background: '#eab308',
-                        opacity: 0.6,
+                        'position': 'absolute',
+                        'left': `${maintenanceLine}%`,
+                        'top': '0',
+                        'bottom': '0',
+                        'width': '2px',
+                        'background': '#eab308',
+                        'opacity': '0.6',
                       }} />
                     </div>
 
                     {/* Margin value */}
                     <div style={{
-                      width: 60,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      fontWeight: 600,
-                      color: statusColor,
-                      textAlign: 'right',
+                      'width': '60px',
+                      'font-size': '12px',
+                      'font-family': 'monospace',
+                      'font-weight': '600',
+                      'color': statusColor,
+                      'text-align': 'right',
                     }}>
                       ${step.marginRemaining}
                     </div>
@@ -479,10 +476,10 @@ export function LeverageLiquidationDiagram() {
 
                   {/* Always-visible description */}
                   <div style={{
-                    fontSize: 11,
-                    color: colors.textMuted,
-                    marginLeft: 80,
-                    lineHeight: 1.4,
+                    'font-size': '11px',
+                    'color': colors.textMuted,
+                    'margin-left': '80px',
+                    'line-height': '1.4',
                   }}>
                     {step.description}
                   </div>
@@ -491,9 +488,9 @@ export function LeverageLiquidationDiagram() {
             );
           })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-          <div style={{ width: 12, height: 2, background: '#eab308' }} />
-          <span style={{ fontSize: 10, color: colors.textMuted }}>Maintenance margin ($500)</span>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-top': '10px' }}>
+          <div style={{ 'width': '12px', 'height': '2px', 'background': '#eab308' }} />
+          <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>Maintenance margin ($500)</span>
         </div>
       </div>
 

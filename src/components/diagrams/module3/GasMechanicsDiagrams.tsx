@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Gas Mechanics Diagrams (ETH-05)
  *
@@ -6,7 +7,7 @@
  * - GasCostTableDiagram: Gas cost comparison table with warm/cold distinction
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -25,7 +26,7 @@ import { colors, glassStyle } from '@primitives/shared';
  * Fixed example: maxFeePerGas=30 gwei, maxPriorityFeePerGas=2 gwei, target=15M gas.
  */
 export function EIP1559Diagram() {
-  const [utilization, setUtilization] = useState(60);
+  const [utilization, setUtilization] = createSignal(60);
 
   const TARGET_GAS = 15_000_000;
   const MAX_GAS = 30_000_000;
@@ -37,7 +38,7 @@ export function EIP1559Diagram() {
   const prevUsed = Math.round(TARGET_GAS * 0.5); // 7.5M
 
   // Block N: user-controlled utilization
-  const currentUsed = Math.round(MAX_GAS * utilization / 100);
+  const currentUsed = Math.round(MAX_GAS * utilization() / 100);
   // Base fee adjustment: new_base = old_base * (1 + (gas_used - target) / target / 8)
   const delta = (currentUsed - TARGET_GAS) / TARGET_GAS / 8;
   const currentBaseFee = Math.max(0, Math.round(prevBaseFee * (1 + delta) * 100) / 100);
@@ -47,9 +48,9 @@ export function EIP1559Diagram() {
   const nextBaseFee = Math.max(0, Math.round(currentBaseFee * (1 + nextDelta) * 100) / 100);
 
   // Effective gas price calculation for block N
-  const effectiveGasPrice = useMemo(() => {
+  const effectiveGasPrice = createMemo(() => {
     return Math.min(MAX_FEE, currentBaseFee + MAX_PRIORITY);
-  }, [currentBaseFee]);
+  });
 
   const burned = currentBaseFee;
   const validatorTip = Math.round((effectiveGasPrice - currentBaseFee) * 100) / 100;
@@ -72,7 +73,7 @@ export function EIP1559Diagram() {
       label: 'Block N',
       baseFee: currentBaseFee,
       used: currentUsed,
-      pct: utilization,
+      pct: utilization(),
       isCurrent: true,
     },
     {
@@ -93,10 +94,10 @@ export function EIP1559Diagram() {
 
   return (
     <DiagramContainer title="EIP-1559: динамическая комиссия" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Block utilization slider */}
         <InteractiveValue
-          value={utilization}
+          value={utilization()}
           onChange={setUtilization}
           min={0}
           max={100}
@@ -105,9 +106,9 @@ export function EIP1559Diagram() {
         />
 
         {/* Three-block sequence */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'gap': '8px' }}>
           {blocks.map((block, i) => (
-            <DiagramTooltip key={i} content={
+            <DiagramTooltip content={
               i === 0
                 ? 'Block N-1: предыдущий блок с 50% заполненностью (baseline). Base fee определяется заполненностью предыдущих блоков.'
                 : i === 1
@@ -116,45 +117,45 @@ export function EIP1559Diagram() {
             }>
               <div
                 style={{
-                  flex: 1,
+                  'flex': '1',
                   ...glassStyle,
-                  padding: 12,
-                  border: `1px solid ${block.isCurrent ? colors.primary + '80' : colors.border}`,
-                  background: block.isCurrent ? `${colors.primary}10` : 'rgba(255,255,255,0.03)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
+                  'padding': '12px',
+                  'border': `1px solid ${block.isCurrent ? colors.primary + '80' : colors.border}`,
+                  'background': block.isCurrent ? `${colors.primary}10` : 'rgba(255,255,255,0.03)',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '8px',
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 700, color: block.isCurrent ? colors.primary : colors.text, textAlign: 'center' }}>
+                <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': block.isCurrent ? colors.primary : colors.text, 'text-align': 'center' }}>
                   {block.label}
                 </div>
 
                 {/* Utilization bar */}
-                <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ 'height': '8px', 'background': 'rgba(255,255,255,0.1)', 'border-radius': '4px', 'overflow': 'hidden' }}>
                   {block.pct !== null && (
                     <div
                       style={{
-                        width: `${block.pct}%`,
-                        height: '100%',
-                        background: getBarColor(block.pct),
-                        borderRadius: 4,
-                        transition: 'width 200ms ease, background 200ms ease',
+                        'width': `${block.pct}%`,
+                        'height': '100%',
+                        'background': getBarColor(block.pct),
+                        'border-radius': '4px',
+                        'transition': 'width 200ms ease, background 200ms ease',
                       }}
                     />
                   )}
                 </div>
 
-                <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
                   {block.pct !== null ? `${block.pct}% full` : 'predicted'}
                 </div>
 
-                <div style={{ fontSize: 13, fontFamily: 'monospace', color: colors.warning, textAlign: 'center', fontWeight: 600 }}>
+                <div style={{ 'font-size': '13px', 'font-family': 'monospace', 'color': colors.warning, 'text-align': 'center', 'font-weight': '600' }}>
                   baseFee: {block.baseFee.toFixed(2)} gwei
                 </div>
 
                 {block.used !== null && (
-                  <div style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'text-align': 'center' }}>
                     {(block.used / 1_000_000).toFixed(1)}M / {MAX_GAS / 1_000_000}M gas
                   </div>
                 )}
@@ -164,29 +165,29 @@ export function EIP1559Diagram() {
         </div>
 
         {/* Arrow showing base fee direction */}
-        <div style={{ textAlign: 'center', fontSize: 12, fontFamily: 'monospace' }}>
-          {utilization > 50 ? (
-            <span style={{ color: colors.danger }}>baseFee УВЕЛИЧИВАЕТСЯ ({delta > 0 ? '+' : ''}{(delta * 100).toFixed(1)}% за блок)</span>
-          ) : utilization < 50 ? (
-            <span style={{ color: colors.success }}>baseFee УМЕНЬШАЕТСЯ ({(delta * 100).toFixed(1)}% за блок)</span>
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'font-family': 'monospace' }}>
+          {utilization() > 50 ? (
+            <span style={{ 'color': colors.danger }}>baseFee УВЕЛИЧИВАЕТСЯ ({delta > 0 ? '+' : ''}{(delta * 100).toFixed(1)}% за блок)</span>
+          ) : utilization() < 50 ? (
+            <span style={{ 'color': colors.success }}>baseFee УМЕНЬШАЕТСЯ ({(delta * 100).toFixed(1)}% за блок)</span>
           ) : (
-            <span style={{ color: colors.accent }}>baseFee СТАБИЛЕН (блок заполнен на 50% = target)</span>
+            <span style={{ 'color': colors.accent }}>baseFee СТАБИЛЕН (блок заполнен на 50% = target)</span>
           )}
         </div>
 
         {/* Transaction cost breakdown */}
-        <div style={{ ...glassStyle, padding: 14 }}>
-          <div style={{ fontSize: 11, color: colors.accent, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+        <div style={{ ...glassStyle, 'padding': '14px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.accent, 'margin-bottom': '10px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em', 'font-weight': '600' }}>
             Расчет стоимости транзакции (Block N, transfer 21000 gas)
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 2, color: colors.text }}>
-            <div>maxFeePerGas = <span style={{ color: colors.primary }}>{MAX_FEE}</span> gwei</div>
-            <div>maxPriorityFeePerGas = <span style={{ color: colors.primary }}>{MAX_PRIORITY}</span> gwei</div>
-            <div>baseFeePerGas = <span style={{ color: colors.warning }}>{currentBaseFee.toFixed(2)}</span> gwei</div>
-            <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 4, marginTop: 4 }}>
-              effectiveGasPrice = min({MAX_FEE}, {currentBaseFee.toFixed(2)} + {MAX_PRIORITY}) = <span style={{ color: colors.accent }}>{effectiveGasPrice.toFixed(2)}</span> gwei
+          <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'line-height': '2', 'color': colors.text }}>
+            <div>maxFeePerGas = <span style={{ 'color': colors.primary }}>{MAX_FEE}</span> gwei</div>
+            <div>maxPriorityFeePerGas = <span style={{ 'color': colors.primary }}>{MAX_PRIORITY}</span> gwei</div>
+            <div>baseFeePerGas = <span style={{ 'color': colors.warning }}>{currentBaseFee.toFixed(2)}</span> gwei</div>
+            <div style={{ 'border-top': `1px solid ${colors.border}`, 'padding-top': '4px', 'margin-top': '4px' }}>
+              effectiveGasPrice = min({MAX_FEE}, {currentBaseFee.toFixed(2)} + {MAX_PRIORITY}) = <span style={{ 'color': colors.accent }}>{effectiveGasPrice.toFixed(2)}</span> gwei
             </div>
-            <div>totalCost = {exampleGasUsed.toLocaleString()} * {effectiveGasPrice.toFixed(2)} = <span style={{ color: colors.text, fontWeight: 600 }}>{totalCostWei.toLocaleString()}</span> gwei</div>
+            <div>totalCost = {exampleGasUsed.toLocaleString()} * {effectiveGasPrice.toFixed(2)} = <span style={{ 'color': colors.text, 'font-weight': '600' }}>{totalCostWei.toLocaleString()}</span> gwei</div>
           </div>
         </div>
 
@@ -197,7 +198,7 @@ export function EIP1559Diagram() {
               label="Сожжено (burned)"
               value={`${burnedTotal.toLocaleString()} gwei`}
               variant="default"
-              style={{ borderColor: `${colors.danger}30` }}
+              style={{ 'border-color': `${colors.danger}30` }}
             />
           </DiagramTooltip>
           <DiagramTooltip content="Priority fee (tip): надбавка, идущая напрямую валидатору. Стимул для включения транзакции в блок. Типично 1-2 Gwei.">
@@ -205,7 +206,7 @@ export function EIP1559Diagram() {
               label="Валидатору (tip)"
               value={`${tipTotal.toLocaleString()} gwei`}
               variant="default"
-              style={{ borderColor: `${colors.success}30` }}
+              style={{ 'border-color': `${colors.success}30` }}
             />
           </DiagramTooltip>
           <DiagramTooltip content="Итого = burned + tip. Max fee per gas -- максимум, который пользователь готов заплатить. Разница (max - actual) возвращается.">
@@ -219,35 +220,35 @@ export function EIP1559Diagram() {
 
         {/* Visual burn / tip split bar */}
         <DiagramTooltip content="Распределение комиссии: красная часть (burned) -- base fee, сжигается протоколом. Зелёная часть (tip) -- priority fee, идёт валидатору.">
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4, textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '10px' }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px', 'text-align': 'center' }}>
             Распределение комиссии
           </div>
-          <div style={{ display: 'flex', height: 16, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ 'display': 'flex', 'height': '16px', 'border-radius': '8px', 'overflow': 'hidden' }}>
             <div
               style={{
-                width: effectiveGasPrice > 0 ? `${(burned / effectiveGasPrice) * 100}%` : '0%',
-                background: colors.danger,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 9,
-                color: '#fff',
-                transition: 'width 200ms ease',
+                'width': effectiveGasPrice > 0 ? `${(burned / effectiveGasPrice) * 100}%` : '0%',
+                'background': colors.danger,
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '9px',
+                'color': '#fff',
+                'transition': 'width 200ms ease',
               }}
             >
               {burned > 0 ? 'burned' : ''}
             </div>
             <div
               style={{
-                width: effectiveGasPrice > 0 ? `${(validatorTip / effectiveGasPrice) * 100}%` : '0%',
-                background: colors.success,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 9,
-                color: '#fff',
-                transition: 'width 200ms ease',
+                'width': effectiveGasPrice > 0 ? `${(validatorTip / effectiveGasPrice) * 100}%` : '0%',
+                'background': colors.success,
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '9px',
+                'color': '#fff',
+                'transition': 'width 200ms ease',
               }}
             >
               {validatorTip > 0 ? 'tip' : ''}
@@ -256,7 +257,7 @@ export function EIP1559Diagram() {
         </div>
         </DiagramTooltip>
 
-        <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'line-height': '1.5' }}>
           Target = {TARGET_GAS / 1_000_000}M gas (50% от max {MAX_GAS / 1_000_000}M).
           Если блок заполнен больше target -- baseFee растет (до +12.5% за блок).
         </div>
@@ -304,36 +305,35 @@ function getGasColor(gas: number): string {
  * GasCostTableDiagram -- Gas cost comparison table with warm/cold distinction (EIP-2929).
  */
 export function GasCostTableDiagram() {
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
-  const [filter, setFilter] = useState<string>('all');
+  const [selectedRow, setSelectedRow] = createSignal<number | null>(null);
+  const [filter, setFilter] = createSignal<string>('all');
 
-  const categories = useMemo(() => {
+  const categories = createMemo(() => {
     const cats = new Set(OPCODES.map(o => o.category));
     return ['all', ...Array.from(cats)];
-  }, []);
+  });
 
-  const filteredOpcodes = useMemo(() => {
-    if (filter === 'all') return OPCODES;
-    return OPCODES.filter(o => o.category === filter);
-  }, [filter]);
+  const filteredOpcodes = createMemo(() => {
+    if (filter() === 'all') return OPCODES;
+    return OPCODES.filter(o => o.category === filter());
+  });
 
   return (
     <DiagramContainer title="Стоимость опкодов EVM (gas)" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Category filter */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '6px', 'flex-wrap': 'wrap' }}>
           {categories.map(cat => (
             <button
-              key={cat}
               onClick={() => { setFilter(cat); setSelectedRow(null); }}
               style={{
                 ...glassStyle,
-                padding: '4px 12px',
-                cursor: 'pointer',
-                fontSize: 11,
-                color: filter === cat ? colors.primary : colors.textMuted,
-                border: `1px solid ${filter === cat ? colors.primary + '60' : colors.border}`,
-                background: filter === cat ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+                'padding': '4px 12px',
+                'cursor': 'pointer',
+                'font-size': '11px',
+                'color': filter() === cat ? colors.primary : colors.textMuted,
+                'border': `1px solid ${filter() === cat ? colors.primary + '60' : colors.border}`,
+                'background': filter() === cat ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
               }}
             >
               {cat === 'all' ? 'Все' : cat}
@@ -343,61 +343,60 @@ export function GasCostTableDiagram() {
 
         {/* Table header */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr',
-          gap: 4,
-          padding: '8px 12px',
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 8,
-          fontSize: 11,
-          color: colors.textMuted,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
+          'display': 'grid',
+          'grid-template-columns': '2fr 1fr 1fr',
+          'gap': '4px',
+          'padding': '8px 12px',
+          'background': 'rgba(255,255,255,0.05)',
+          'border-radius': '8px',
+          'font-size': '11px',
+          'color': colors.textMuted,
+          'font-weight': '600',
+          'text-transform': 'uppercase',
+          'letter-spacing': '0.05em',
         }}>
           <span>Opcode</span>
-          <span style={{ textAlign: 'right' }}>Cold Gas</span>
-          <span style={{ textAlign: 'right' }}>Warm Gas</span>
+          <span style={{ 'text-align': 'right' }}>Cold Gas</span>
+          <span style={{ 'text-align': 'right' }}>Warm Gas</span>
         </div>
 
         {/* Table rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '3px' }}>
           {filteredOpcodes.map((op, i) => (
             <div
-              key={op.name}
-              onClick={() => setSelectedRow(selectedRow === i ? null : i)}
+              onClick={() => setSelectedRow(selectedRow() === i ? null : i)}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1fr 1fr',
-                gap: 4,
-                padding: '8px 12px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                background: selectedRow === i ? `${getGasColor(op.gasCold)}10` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${selectedRow === i ? getGasColor(op.gasCold) + '40' : 'transparent'}`,
-                transition: 'all 150ms ease',
+                'display': 'grid',
+                'grid-template-columns': '2fr 1fr 1fr',
+                'gap': '4px',
+                'padding': '8px 12px',
+                'border-radius': '6px',
+                'cursor': 'pointer',
+                'background': selectedRow() === i ? `${getGasColor(op.gasCold)}10` : 'rgba(255,255,255,0.02)',
+                'border': `1px solid ${selectedRow() === i ? getGasColor(op.gasCold) + '40' : 'transparent'}`,
+                'transition': 'all 150ms ease',
               }}
             >
               <DiagramTooltip content={op.tooltip}>
-                <span style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+                <span style={{ 'font-family': 'monospace', 'font-size': '12px', 'color': colors.text }}>
                   {op.name}
                 </span>
               </DiagramTooltip>
               <span style={{
-                textAlign: 'right',
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: getGasColor(op.gasCold),
-                fontWeight: 600,
+                'text-align': 'right',
+                'font-family': 'monospace',
+                'font-size': '12px',
+                'color': getGasColor(op.gasCold),
+                'font-weight': '600',
               }}>
                 {op.gasCold.toLocaleString()}
               </span>
               <span style={{
-                textAlign: 'right',
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: op.gasWarm !== null ? getGasColor(op.gasWarm) : colors.textMuted,
-                fontWeight: op.gasWarm !== null ? 600 : 400,
+                'text-align': 'right',
+                'font-family': 'monospace',
+                'font-size': '12px',
+                'color': op.gasWarm !== null ? getGasColor(op.gasWarm) : colors.textMuted,
+                'font-weight': op.gasWarm !== null ? 600 : 400,
               }}>
                 {op.gasWarm !== null ? op.gasWarm.toLocaleString() : '--'}
               </span>
@@ -406,22 +405,22 @@ export function GasCostTableDiagram() {
         </div>
 
         {/* Selected row detail */}
-        {selectedRow !== null && filteredOpcodes[selectedRow] && (
+        {selectedRow() !== null && filteredOpcodes[selectedRow()] && (
           <div style={{
             ...glassStyle,
-            padding: 12,
-            border: `1px solid ${getGasColor(filteredOpcodes[selectedRow].gasCold)}30`,
+            'padding': '12px',
+            'border': `1px solid ${getGasColor(filteredOpcodes[selectedRow()].gasCold)}30`,
           }}>
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
-              <span style={{ fontWeight: 600, color: getGasColor(filteredOpcodes[selectedRow].gasCold) }}>
-                {filteredOpcodes[selectedRow].name}
+            <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
+              <span style={{ 'font-weight': '600', 'color': getGasColor(filteredOpcodes[selectedRow()].gasCold) }}>
+                {filteredOpcodes[selectedRow()].name}
               </span>
-              : {filteredOpcodes[selectedRow].note}
-              {filteredOpcodes[selectedRow].gasWarm !== null && (
-                <div style={{ marginTop: 6, fontSize: 11, color: colors.textMuted }}>
-                  EIP-2929: первый доступ к адресу/слоту в транзакции = cold ({filteredOpcodes[selectedRow].gasCold} gas).
-                  Повторный доступ = warm ({filteredOpcodes[selectedRow].gasWarm} gas).
-                  Разница: {filteredOpcodes[selectedRow].gasCold - (filteredOpcodes[selectedRow].gasWarm || 0)} gas.
+              : {filteredOpcodes[selectedRow()].note}
+              {filteredOpcodes[selectedRow()].gasWarm !== null && (
+                <div style={{ 'margin-top': '6px', 'font-size': '11px', 'color': colors.textMuted }}>
+                  EIP-2929: первый доступ к адресу/слоту в транзакции = cold ({filteredOpcodes[selectedRow()].gasCold} gas).
+                  Повторный доступ = warm ({filteredOpcodes[selectedRow()].gasWarm} gas).
+                  Разница: {filteredOpcodes[selectedRow()].gasCold - (filteredOpcodes[selectedRow()].gasWarm || 0)} gas.
                 </div>
               )}
             </div>
@@ -429,19 +428,19 @@ export function GasCostTableDiagram() {
         )}
 
         {/* Legend */}
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 11 }}>
+        <div style={{ 'display': 'flex', 'gap': '16px', 'justify-content': 'center', 'font-size': '11px' }}>
           <DiagramTooltip content="Дешёвые операции (<10 gas): арифметика, memory read/write. Не влияют существенно на стоимость транзакции.">
-            <span><span style={{ color: colors.success }}>&#9632;</span> &lt;10 gas (дешево)</span>
+            <span><span style={{ 'color': colors.success }}>&#9632;</span> &lt;10 gas (дешево)</span>
           </DiagramTooltip>
           <DiagramTooltip content="Средние операции (10-1000 gas): хеширование, логирование. Заметны при частом использовании в циклах.">
-            <span><span style={{ color: colors.warning }}>&#9632;</span> 10-1000 gas (средне)</span>
+            <span><span style={{ 'color': colors.warning }}>&#9632;</span> 10-1000 gas (средне)</span>
           </DiagramTooltip>
           <DiagramTooltip content="Дорогие операции (>1000 gas): storage, external calls, contract creation. Основной драйвер стоимости транзакций.">
-            <span><span style={{ color: colors.danger }}>&#9632;</span> &gt;1000 gas (дорого)</span>
+            <span><span style={{ 'color': colors.danger }}>&#9632;</span> &gt;1000 gas (дорого)</span>
           </DiagramTooltip>
         </div>
 
-        <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', lineHeight: 1.5 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'line-height': '1.5' }}>
           Нажмите на строку для подробностей. Cold/Warm (EIP-2929): первый доступ к адресу или слоту стоит дороже.
         </div>
       </div>

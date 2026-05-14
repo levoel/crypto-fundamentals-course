@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * EVM Execution Diagrams (ETH-04)
  *
@@ -8,7 +9,7 @@
  * - MemoryExpansionDiagram: Memory expansion with quadratic gas cost (interactive, history array)
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -92,37 +93,37 @@ const ARCH_COMPONENTS: ArchComponent[] = [
  * EVMArchitectureDiagram -- EVM architecture overview with hover details.
  */
 export function EVMArchitectureDiagram() {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = createSignal<number | null>(null);
 
   return (
     <DiagramContainer title="Архитектура EVM" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         <Grid columns={3} gap={8}>
           {ARCH_COMPONENTS.map((comp, i) => (
-            <DiagramTooltip key={comp.name} content={comp.details}>
+            <DiagramTooltip content={comp.details}>
               <div
-                onClick={() => setSelected(selected === i ? null : i)}
+                onClick={() => setSelected(selected() === i ? null : i)}
                 style={{
                   ...glassStyle,
-                  padding: '14px 12px',
-                  cursor: 'pointer',
-                  border: `1px solid ${selected === i ? comp.color + '80' : comp.color + '30'}`,
-                  background: selected === i ? `${comp.color}15` : 'rgba(255,255,255,0.03)',
-                  transition: 'all 200ms ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
+                  'padding': '14px 12px',
+                  'cursor': 'pointer',
+                  'border': `1px solid ${selected() === i ? comp.color + '80' : comp.color + '30'}`,
+                  'background': selected() === i ? `${comp.color}15` : 'rgba(255,255,255,0.03)',
+                  'transition': 'all 200ms ease',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '6px',
                 }}
               >
                 <span style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: comp.color,
-                  fontFamily: 'monospace',
+                  'font-size': '13px',
+                  'font-weight': '700',
+                  'color': comp.color,
+                  'font-family': 'monospace',
                 }}>
                   {comp.name}
                 </span>
-                <span style={{ fontSize: 11, color: colors.textMuted }}>
+                <span style={{ 'font-size': '11px', 'color': colors.textMuted }}>
                   {comp.desc}
                 </span>
               </div>
@@ -130,28 +131,28 @@ export function EVMArchitectureDiagram() {
           ))}
         </Grid>
 
-        {selected !== null && (
+        {selected() !== null && (
           <div style={{
             ...glassStyle,
-            padding: 14,
-            border: `1px solid ${ARCH_COMPONENTS[selected].color}40`,
-            background: `${ARCH_COMPONENTS[selected].color}08`,
-            transition: 'all 200ms ease',
+            'padding': '14px',
+            'border': `1px solid ${ARCH_COMPONENTS[selected()].color}40`,
+            'background': `${ARCH_COMPONENTS[selected()].color}08`,
+            'transition': 'all 200ms ease',
           }}>
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
-              {ARCH_COMPONENTS[selected].details}
+            <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
+              {ARCH_COMPONENTS[selected()].details}
             </div>
           </div>
         )}
 
         {/* Data flow arrows */}
         <DiagramTooltip content="Цикл выполнения EVM: Program Counter указывает на текущий байт в bytecode, извлекается opcode, операция работает со Stack/Memory/Storage, Gas Counter уменьшается.">
-          <div style={{ ...glassStyle, padding: 12, fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
+          <div style={{ ...glassStyle, 'padding': '12px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'font-family': 'monospace' }}>
             Bytecode → PC → Opcode → Stack/Memory/Storage → Gas Counter
           </div>
         </DiagramTooltip>
 
-        <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
           Нажмите на компонент для подробностей
         </div>
       </div>
@@ -237,26 +238,26 @@ type SequenceKey = keyof typeof SEQUENCES;
  * OpcodeExecutionDiagram -- Multi-panel EVM step-through with history array.
  */
 export function OpcodeExecutionDiagram() {
-  const [seqKey, setSeqKey] = useState<SequenceKey>('sstore');
-  const [step, setStep] = useState(0);
+  const [seqKey, setSeqKey] = createSignal<SequenceKey>('sstore');
+  const [step, setStep] = createSignal(0);
 
-  const seq = SEQUENCES[seqKey];
-  const state = seq.steps[step];
+  const seq = SEQUENCES[seqKey()];
+  const state = seq.steps[step()];
   const maxStep = seq.steps.length - 1;
 
-  const switchSequence = useCallback((key: SequenceKey) => {
+  const switchSequence = (key: SequenceKey) => {
     setSeqKey(key);
     setStep(0);
-  }, []);
+  };
 
   // Build bytecode display with PC highlighting
   const bytecodeBytes = seq.bytecode.split(' ');
 
   // Map PC to byte index for highlighting
-  const pcToByteMap = useMemo(() => {
-    if (seqKey === 'sstore') return { 0: [0, 1], 2: [2, 3], 4: [4] };
+  const pcToByteMap = createMemo(() => {
+    if (seqKey() === 'sstore') return { 0: [0, 1], 2: [2, 3], 4: [4] };
     return { 0: [0, 1], 2: [2, 3], 4: [4] };
-  }, [seqKey]);
+  });
 
   const highlightedBytes = state.pc >= 0
     ? (pcToByteMap as Record<number, number[]>)[state.pc] || []
@@ -264,22 +265,21 @@ export function OpcodeExecutionDiagram() {
 
   return (
     <DiagramContainer title="Выполнение опкодов EVM" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '10px' }}>
         {/* Sequence selector */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'gap': '8px' }}>
           {(Object.keys(SEQUENCES) as SequenceKey[]).map(key => (
             <button
-              key={key}
               onClick={() => switchSequence(key)}
               style={{
                 ...glassStyle,
-                padding: '6px 14px',
-                cursor: 'pointer',
-                fontSize: 12,
-                fontFamily: 'monospace',
-                color: seqKey === key ? colors.primary : colors.textMuted,
-                border: `1px solid ${seqKey === key ? colors.primary + '60' : colors.border}`,
-                background: seqKey === key ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+                'padding': '6px 14px',
+                'cursor': 'pointer',
+                'font-size': '12px',
+                'font-family': 'monospace',
+                'color': seqKey() === key ? colors.primary : colors.textMuted,
+                'border': `1px solid ${seqKey() === key ? colors.primary + '60' : colors.border}`,
+                'background': seqKey() === key ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
               }}
             >
               {SEQUENCES[key].label}
@@ -288,22 +288,21 @@ export function OpcodeExecutionDiagram() {
         </div>
 
         {/* Bytecode panel */}
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
             Bytecode (PC: {state.pc >= 0 ? state.pc : '--'})
           </div>
-          <div style={{ display: 'flex', gap: 6, fontFamily: 'monospace', fontSize: 14, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '6px', 'font-family': 'monospace', 'font-size': '14px', 'flex-wrap': 'wrap' }}>
             {bytecodeBytes.map((b, i) => (
               <span
-                key={i}
                 style={{
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: highlightedBytes.includes(i) ? `${colors.primary}30` : 'transparent',
-                  color: highlightedBytes.includes(i) ? colors.primary : colors.text,
-                  border: highlightedBytes.includes(i) ? `1px solid ${colors.primary}50` : '1px solid transparent',
-                  transition: 'all 200ms ease',
-                  fontWeight: highlightedBytes.includes(i) ? 700 : 400,
+                  'padding': '2px 6px',
+                  'border-radius': '4px',
+                  'background': highlightedBytes.includes(i) ? `${colors.primary}30` : 'transparent',
+                  'color': highlightedBytes.includes(i) ? colors.primary : colors.text,
+                  'border': highlightedBytes.includes(i) ? `1px solid ${colors.primary}50` : '1px solid transparent',
+                  'transition': 'all 200ms ease',
+                  'font-weight': highlightedBytes.includes(i) ? 700 : 400,
                 }}
               >
                 {b}
@@ -315,28 +314,27 @@ export function OpcodeExecutionDiagram() {
         {/* Multi-panel: Stack, Memory, Storage, Gas */}
         <Grid columns={2} gap={8}>
           {/* Stack */}
-          <div style={{ ...glassStyle, padding: 12, minHeight: 100 }}>
-            <div style={{ fontSize: 11, color: colors.primary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+          <div style={{ ...glassStyle, 'padding': '12px', 'min-height': '100px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.primary, 'margin-bottom': '8px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em', 'font-weight': '600' }}>
               Stack ({state.stack.length}/1024)
             </div>
             {state.stack.length === 0 ? (
-              <div style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>пусто</div>
+              <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-style': 'italic' }}>пусто</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: 4 }}>
+              <div style={{ 'display': 'flex', 'flex-direction': 'column-reverse', 'gap': '4px' }}>
                 {state.stack.map((val, i) => (
                   <div
-                    key={i}
                     style={{
-                      padding: '4px 10px',
-                      borderRadius: 4,
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      background: state.stackHighlight.pushed.includes(i)
+                      'padding': '4px 10px',
+                      'border-radius': '4px',
+                      'font-family': 'monospace',
+                      'font-size': '13px',
+                      'background': state.stackHighlight.pushed.includes(i)
                         ? `${colors.success}20`
                         : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${state.stackHighlight.pushed.includes(i) ? colors.success + '50' : colors.border}`,
-                      color: state.stackHighlight.pushed.includes(i) ? colors.success : colors.text,
-                      transition: 'all 200ms ease',
+                      'border': `1px solid ${state.stackHighlight.pushed.includes(i) ? colors.success + '50' : colors.border}`,
+                      'color': state.stackHighlight.pushed.includes(i) ? colors.success : colors.text,
+                      'transition': 'all 200ms ease',
                     }}
                   >
                     [{i}] {val}
@@ -347,26 +345,25 @@ export function OpcodeExecutionDiagram() {
           </div>
 
           {/* Storage */}
-          <div style={{ ...glassStyle, padding: 12, minHeight: 100 }}>
-            <div style={{ fontSize: 11, color: colors.success, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+          <div style={{ ...glassStyle, 'padding': '12px', 'min-height': '100px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.success, 'margin-bottom': '8px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em', 'font-weight': '600' }}>
               Storage (persistent)
             </div>
             {Object.keys(state.storage).length === 0 ? (
-              <div style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>пусто</div>
+              <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-style': 'italic' }}>пусто</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
                 {Object.entries(state.storage).map(([slot, val]) => (
                   <div
-                    key={slot}
                     style={{
-                      padding: '4px 10px',
-                      borderRadius: 4,
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      background: state.storageChanged.includes(slot) ? `${colors.warning}20` : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${state.storageChanged.includes(slot) ? colors.warning + '50' : colors.border}`,
-                      color: state.storageChanged.includes(slot) ? colors.warning : colors.text,
-                      transition: 'all 200ms ease',
+                      'padding': '4px 10px',
+                      'border-radius': '4px',
+                      'font-family': 'monospace',
+                      'font-size': '13px',
+                      'background': state.storageChanged.includes(slot) ? `${colors.warning}20` : 'rgba(255,255,255,0.05)',
+                      'border': `1px solid ${state.storageChanged.includes(slot) ? colors.warning + '50' : colors.border}`,
+                      'color': state.storageChanged.includes(slot) ? colors.warning : colors.text,
+                      'transition': 'all 200ms ease',
                     }}
                   >
                     slot {slot} = {val}
@@ -378,13 +375,13 @@ export function OpcodeExecutionDiagram() {
         </Grid>
 
         {/* Gas and opcode info */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content={state.desc}>
             <DataBox
               label="Opcode"
               value={state.opcode === '--' ? 'Начало' : `${state.opcode}${state.operand ? ' ' + state.operand : ''}`}
               variant="highlight"
-              style={{ flex: 1, minWidth: 140 }}
+              style={{ 'flex': '1', 'min-width': '140px' }}
             />
           </DiagramTooltip>
           <DiagramTooltip content="Gas Remaining: оставшийся газ. Каждая операция уменьшает счётчик. Если газ = 0 -- выполнение откатывается (out of gas revert).">
@@ -392,7 +389,7 @@ export function OpcodeExecutionDiagram() {
               label="Gas Remaining"
               value={state.gas.toLocaleString()}
               variant="default"
-              style={{ flex: 1, minWidth: 100 }}
+              style={{ 'flex': '1', 'min-width': '100px' }}
             />
           </DiagramTooltip>
           <DiagramTooltip content="Gas Used: стоимость текущего шага. PUSH = 3 gas, ADD = 3 gas, SSTORE cold = 22100 gas. Разница в стоимости показывает, почему оптимизация storage критична.">
@@ -400,54 +397,54 @@ export function OpcodeExecutionDiagram() {
               label="Gas Used (step)"
               value={state.gasUsed > 0 ? state.gasUsed.toLocaleString() : '--'}
               variant="default"
-              style={{ flex: 1, minWidth: 100 }}
+              style={{ 'flex': '1', 'min-width': '100px' }}
             />
           </DiagramTooltip>
         </div>
 
         {/* Description */}
-        <div style={{ ...glassStyle, padding: 12, fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
           {state.desc}
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <button
             onClick={() => setStep(0)}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+            style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
           >
             Сброс
           </button>
           <button
             onClick={() => setStep(s => Math.max(0, s - 1))}
-            disabled={step === 0}
+            disabled={step() === 0}
             style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step === 0 ? 'not-allowed' : 'pointer',
-              color: step === 0 ? colors.textMuted : colors.text,
-              fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+              ...glassStyle, 'padding': '8px 16px',
+              'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+              'color': step() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px', 'opacity': step() === 0 ? 0.5 : 1,
             }}
           >
             Назад
           </button>
           <button
             onClick={() => setStep(s => Math.min(maxStep, s + 1))}
-            disabled={step >= maxStep}
+            disabled={step() >= maxStep}
             style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step >= maxStep ? 'not-allowed' : 'pointer',
-              color: step >= maxStep ? colors.textMuted : colors.primary,
-              fontSize: 13, opacity: step >= maxStep ? 0.5 : 1,
+              ...glassStyle, 'padding': '8px 16px',
+              'cursor': step() >= maxStep ? 'not-allowed' : 'pointer',
+              'color': step() >= maxStep ? colors.textMuted : colors.primary,
+              'font-size': '13px', 'opacity': step() >= maxStep ? 0.5 : 1,
             }}
           >
             Далее
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Шаг {step} из {maxStep} |{' '}
-          <span style={{ color: colors.success }}>зеленый</span> = push,{' '}
-          <span style={{ color: colors.warning }}>желтый</span> = storage modified
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Шаг {step()} из {maxStep} |{' '}
+          <span style={{ 'color': colors.success }}>зеленый</span> = push,{' '}
+          <span style={{ 'color': colors.warning }}>желтый</span> = storage modified
         </div>
       </div>
     </DiagramContainer>
@@ -477,14 +474,14 @@ const STORAGE_LAYOUT: StorageSlot[] = [
  * StorageLayoutDiagram -- Shows how Solidity maps variables to 32-byte storage slots.
  */
 export function StorageLayoutDiagram() {
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const [mappingKey, setMappingKey] = useState('0xAbCd...1234');
+  const [selectedSlot, setSelectedSlot] = createSignal<number | null>(null);
+  const [mappingKey, setMappingKey] = createSignal('0xAbCd...1234');
 
   // Simulated keccak256(key . slot) using FNV
-  const mappingSlot = useMemo(() => {
-    const input = mappingKey + '.2';
+  const mappingSlot = createMemo(() => {
+    const input = mappingKey() + '.2';
     return '0x' + fnvHash(input);
-  }, [mappingKey]);
+  });
 
   const EXAMPLE_KEYS = [
     '0xAbCd...1234',
@@ -494,18 +491,18 @@ export function StorageLayoutDiagram() {
 
   return (
     <DiagramContainer title="Storage Layout: переменные и слоты" color="green">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Contract source preview */}
-        <div style={{ ...glassStyle, padding: 12, fontFamily: 'monospace', fontSize: 12, lineHeight: 1.8 }}>
-          <div style={{ color: colors.textMuted }}>{'// Contract storage layout'}</div>
-          <div><span style={{ color: colors.secondary }}>uint256</span> <span style={{ color: colors.text }}>a;</span> <span style={{ color: colors.textMuted }}>{'// slot 0'}</span></div>
-          <div><span style={{ color: colors.secondary }}>uint128</span> <span style={{ color: colors.text }}>b;</span> <span style={{ color: colors.textMuted }}>{'// slot 1 (lower 16 bytes)'}</span></div>
-          <div><span style={{ color: colors.secondary }}>uint128</span> <span style={{ color: colors.text }}>c;</span> <span style={{ color: colors.textMuted }}>{'// slot 1 (upper 16 bytes)'}</span></div>
-          <div><span style={{ color: colors.secondary }}>{'mapping(address => uint256)'}</span> <span style={{ color: colors.text }}>d;</span> <span style={{ color: colors.textMuted }}>{'// slot 2 (base)'}</span></div>
+        <div style={{ ...glassStyle, 'padding': '12px', 'font-family': 'monospace', 'font-size': '12px', 'line-height': '1.8' }}>
+          <div style={{ 'color': colors.textMuted }}>{'// Contract storage layout'}</div>
+          <div><span style={{ 'color': colors.secondary }}>uint256</span> <span style={{ 'color': colors.text }}>a;</span> <span style={{ 'color': colors.textMuted }}>{'// slot 0'}</span></div>
+          <div><span style={{ 'color': colors.secondary }}>uint128</span> <span style={{ 'color': colors.text }}>b;</span> <span style={{ 'color': colors.textMuted }}>{'// slot 1 (lower 16 bytes)'}</span></div>
+          <div><span style={{ 'color': colors.secondary }}>uint128</span> <span style={{ 'color': colors.text }}>c;</span> <span style={{ 'color': colors.textMuted }}>{'// slot 1 (upper 16 bytes)'}</span></div>
+          <div><span style={{ 'color': colors.secondary }}>{'mapping(address => uint256)'}</span> <span style={{ 'color': colors.text }}>d;</span> <span style={{ 'color': colors.textMuted }}>{'// slot 2 (base)'}</span></div>
         </div>
 
         {/* Storage slots visualization */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {STORAGE_LAYOUT.map((slot, i) => {
             const slotTooltips = [
               'Slot 0: uint256 занимает ровно 1 slot (32 байта). Переменные располагаются последовательно начиная с slot 0.',
@@ -513,33 +510,33 @@ export function StorageLayoutDiagram() {
               'Slot 2: mapping -- base slot пуст, элементы хранятся по keccak256(key . slot). Данные разбросаны по всему storage.',
             ];
             return (
-              <DiagramTooltip key={i} content={slotTooltips[i]}>
+              <DiagramTooltip content={slotTooltips[i]}>
                 <div
-                  onClick={() => setSelectedSlot(selectedSlot === i ? null : i)}
+                  onClick={() => setSelectedSlot(selectedSlot() === i ? null : i)}
                   style={{
                     ...glassStyle,
-                    padding: '10px 14px',
-                    cursor: 'pointer',
-                    border: `1px solid ${selectedSlot === i ? slot.color + '80' : slot.color + '30'}`,
-                    background: selectedSlot === i ? `${slot.color}12` : 'rgba(255,255,255,0.03)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    transition: 'all 200ms ease',
+                    'padding': '10px 14px',
+                    'cursor': 'pointer',
+                    'border': `1px solid ${selectedSlot() === i ? slot.color + '80' : slot.color + '30'}`,
+                    'background': selectedSlot() === i ? `${slot.color}12` : 'rgba(255,255,255,0.03)',
+                    'display': 'flex',
+                    'justify-content': 'space-between',
+                    'align-items': 'center',
+                    'transition': 'all 200ms ease',
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 13, color: slot.color, fontWeight: 600 }}>
+                  <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '2px' }}>
+                    <span style={{ 'font-family': 'monospace', 'font-size': '13px', 'color': slot.color, 'font-weight': '600' }}>
                       Slot {slot.slot}
                     </span>
-                    <span style={{ fontSize: 11, color: colors.textMuted }}>
+                    <span style={{ 'font-size': '11px', 'color': colors.textMuted }}>
                       {slot.variable}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                    <span style={{ fontSize: 11, color: colors.text }}>{slot.size}</span>
+                  <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'flex-end', 'gap': '2px' }}>
+                    <span style={{ 'font-size': '11px', 'color': colors.text }}>{slot.size}</span>
                     {slot.packed && (
-                      <span style={{ fontSize: 10, color: colors.warning, padding: '1px 6px', background: `${colors.warning}15`, borderRadius: 4 }}>
+                      <span style={{ 'font-size': '10px', 'color': colors.warning, 'padding': '1px 6px', 'background': `${colors.warning}15`, 'border-radius': '4px' }}>
                         packed
                       </span>
                     )}
@@ -551,22 +548,22 @@ export function StorageLayoutDiagram() {
         </div>
 
         {/* Packed slot detail */}
-        {selectedSlot === 1 && (
-          <div style={{ ...glassStyle, padding: 14 }}>
-            <div style={{ fontSize: 11, color: colors.accent, marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {selectedSlot() === 1 && (
+          <div style={{ ...glassStyle, 'padding': '14px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.accent, 'margin-bottom': '8px', 'font-weight': '600', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
               Slot 1: Packing (2 переменные в 1 слоте)
             </div>
-            <div style={{ display: 'flex', fontFamily: 'monospace', fontSize: 12 }}>
-              <div style={{ flex: 1, padding: 8, background: `${colors.accent}15`, border: `1px solid ${colors.accent}30`, borderRadius: '8px 0 0 8px', textAlign: 'center' }}>
-                <div style={{ color: colors.accent }}>b (uint128)</div>
-                <div style={{ color: colors.textMuted, fontSize: 10 }}>bytes 0-15</div>
+            <div style={{ 'display': 'flex', 'font-family': 'monospace', 'font-size': '12px' }}>
+              <div style={{ 'flex': '1', 'padding': '8px', 'background': `${colors.accent}15`, 'border': `1px solid ${colors.accent}30`, 'border-radius': '8px 0 0 8px', 'text-align': 'center' }}>
+                <div style={{ 'color': colors.accent }}>b (uint128)</div>
+                <div style={{ 'color': colors.textMuted, 'font-size': '10px' }}>bytes 0-15</div>
               </div>
-              <div style={{ flex: 1, padding: 8, background: `${colors.warning}15`, border: `1px solid ${colors.warning}30`, borderRadius: '0 8px 8px 0', textAlign: 'center' }}>
-                <div style={{ color: colors.warning }}>c (uint128)</div>
-                <div style={{ color: colors.textMuted, fontSize: 10 }}>bytes 16-31</div>
+              <div style={{ 'flex': '1', 'padding': '8px', 'background': `${colors.warning}15`, 'border': `1px solid ${colors.warning}30`, 'border-radius': '0 8px 8px 0', 'text-align': 'center' }}>
+                <div style={{ 'color': colors.warning }}>c (uint128)</div>
+                <div style={{ 'color': colors.textMuted, 'font-size': '10px' }}>bytes 16-31</div>
               </div>
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 8, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-top': '8px', 'line-height': '1.5' }}>
               Solidity упаковывает переменные меньше 32 байт в один слот, если они объявлены подряд.
               uint128 (16 байт) + uint128 (16 байт) = 32 байта = 1 слот.
             </div>
@@ -574,30 +571,29 @@ export function StorageLayoutDiagram() {
         )}
 
         {/* Mapping slot computation */}
-        {selectedSlot === 2 && (
-          <div style={{ ...glassStyle, padding: 14 }}>
-            <div style={{ fontSize: 11, color: colors.success, marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {selectedSlot() === 2 && (
+          <div style={{ ...glassStyle, 'padding': '14px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.success, 'margin-bottom': '8px', 'font-weight': '600', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
               Mapping: вычисление слота значения
             </div>
-            <div style={{ fontSize: 12, color: colors.text, marginBottom: 10, lineHeight: 1.6 }}>
-              Для <code style={{ color: colors.accent }}>mapping(address =&gt; uint256) d</code> значение
-              хранится в слоте <code style={{ color: colors.warning }}>keccak256(key . slot)</code>,
-              где <code style={{ color: colors.textMuted }}>.</code> -- конкатенация 32-байтных значений.
+            <div style={{ 'font-size': '12px', 'color': colors.text, 'margin-bottom': '10px', 'line-height': '1.6' }}>
+              Для <code style={{ 'color': colors.accent }}>mapping(address =&gt; uint256) d</code> значение
+              хранится в слоте <code style={{ 'color': colors.warning }}>keccak256(key . slot)</code>,
+              где <code style={{ 'color': colors.textMuted }}>.</code> -- конкатенация 32-байтных значений.
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            <div style={{ 'display': 'flex', 'gap': '6px', 'margin-bottom': '10px', 'flex-wrap': 'wrap' }}>
               {EXAMPLE_KEYS.map(key => (
                 <button
-                  key={key}
                   onClick={() => setMappingKey(key)}
                   style={{
                     ...glassStyle,
-                    padding: '4px 10px',
-                    cursor: 'pointer',
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: mappingKey === key ? colors.success : colors.textMuted,
-                    border: `1px solid ${mappingKey === key ? colors.success + '60' : colors.border}`,
+                    'padding': '4px 10px',
+                    'cursor': 'pointer',
+                    'font-size': '11px',
+                    'font-family': 'monospace',
+                    'color': mappingKey() === key ? colors.success : colors.textMuted,
+                    'border': `1px solid ${mappingKey() === key ? colors.success + '60' : colors.border}`,
                   }}
                 >
                   {key}
@@ -605,16 +601,16 @@ export function StorageLayoutDiagram() {
               ))}
             </div>
 
-            <div style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 2, color: colors.text }}>
-              <div>key = <span style={{ color: colors.accent }}>{mappingKey}</span></div>
-              <div>slot = <span style={{ color: colors.success }}>2</span></div>
-              <div>keccak256({mappingKey} . 2) = <span style={{ color: colors.warning }}>{mappingSlot}</span></div>
-              <div style={{ color: colors.textMuted }}>Значение d[{truncHex(mappingKey, 8)}] хранится в слоте {truncHex(mappingSlot, 12)}</div>
+            <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'line-height': '2', 'color': colors.text }}>
+              <div>key = <span style={{ 'color': colors.accent }}>{mappingKey()}</span></div>
+              <div>slot = <span style={{ 'color': colors.success }}>2</span></div>
+              <div>keccak256({mappingKey()} . 2) = <span style={{ 'color': colors.warning }}>{mappingSlot}</span></div>
+              <div style={{ 'color': colors.textMuted }}>Значение d[{truncHex(mappingKey(), 8)}] хранится в слоте {truncHex(mappingSlot, 12)}</div>
             </div>
           </div>
         )}
 
-        <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
           Нажмите на слот для подробностей. Mapping использует FNV-хеш для демонстрации (вместо keccak256).
         </div>
       </div>
@@ -678,50 +674,49 @@ const MEMORY_STEPS: MemoryStep[] = [
  * MemoryExpansionDiagram -- Memory expansion with quadratic gas cost visualization.
  */
 export function MemoryExpansionDiagram() {
-  const [step, setStep] = useState(0);
-  const state = MEMORY_STEPS[step];
+  const [step, setStep] = createSignal(0);
+  const state = MEMORY_STEPS[step()];
   const maxStep = MEMORY_STEPS.length - 1;
 
   // Memory cost formula: memory_cost = (a * 3) + (a^2 / 512), where a = number of 32-byte words
-  const memoryCostData = useMemo(() => {
+  const memoryCostData = createMemo(() => {
     const points: { words: number; cost: number }[] = [];
     for (let w = 0; w <= 20; w++) {
       const cost = w * 3 + Math.floor(w * w / 512);
       points.push({ words: w, cost });
     }
     return points;
-  }, []);
+  });
 
   const currentWords = Math.ceil(state.memorySize / 32);
 
   return (
     <DiagramContainer title="Расширение памяти EVM" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Step info */}
         <DataBox label={state.title} value={state.desc} variant="highlight" />
 
         {/* Memory layout */}
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.accent, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.accent, 'margin-bottom': '8px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em', 'font-weight': '600' }}>
             Memory ({state.memorySize} bytes = {currentWords} words)
           </div>
           {state.memoryMap.length === 0 ? (
-            <div style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>пусто</div>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-style': 'italic' }}>пусто</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '3px' }}>
               {state.memoryMap.map((m, i) => (
                 <div
-                  key={i}
                   style={{
-                    padding: '5px 10px',
-                    borderRadius: 4,
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    background: `${m.color}15`,
-                    border: `1px solid ${m.color}30`,
-                    color: m.color,
-                    display: 'flex',
-                    justifyContent: 'space-between',
+                    'padding': '5px 10px',
+                    'border-radius': '4px',
+                    'font-family': 'monospace',
+                    'font-size': '12px',
+                    'background': `${m.color}15`,
+                    'border': `1px solid ${m.color}30`,
+                    'color': m.color,
+                    'display': 'flex',
+                    'justify-content': 'space-between',
                   }}
                 >
                   <span>0x{m.offset.toString(16).padStart(2, '0')}</span>
@@ -734,37 +729,36 @@ export function MemoryExpansionDiagram() {
 
         {/* Gas cost bar chart */}
         <DiagramTooltip content="Memory expansion: стоимость растёт квадратично. Первые 724 байта линейны (3 gas/word). После -- квадратичная компонента: memory_cost = (words^2 / 512) + 3 * words.">
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.warning, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.warning, 'margin-bottom': '8px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em', 'font-weight': '600' }}>
             Gas Cost: memory_cost = words * 3 + words^2 / 512
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 60 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'flex-end', 'gap': '2px', 'height': '60px' }}>
             {memoryCostData.slice(0, 15).map((p, i) => {
               const maxCost = memoryCostData[14].cost || 1;
               const height = Math.max(2, (p.cost / maxCost) * 50);
               const isCurrent = p.words === currentWords;
               return (
                 <div
-                  key={i}
                   style={{
-                    flex: 1,
+                    'flex': '1',
                     height,
-                    background: isCurrent ? colors.warning : `${colors.primary}40`,
-                    borderRadius: '2px 2px 0 0',
-                    transition: 'all 200ms ease',
-                    position: 'relative',
+                    'background': isCurrent ? colors.warning : `${colors.primary}40`,
+                    'border-radius': '2px 2px 0 0',
+                    'transition': 'all 200ms ease',
+                    'position': 'relative',
                   }}
                   title={`${p.words} words: ${p.cost} gas`}
                 >
                   {isCurrent && (
                     <div style={{
-                      position: 'absolute',
-                      top: -16,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      fontSize: 9,
-                      color: colors.warning,
-                      whiteSpace: 'nowrap',
+                      'position': 'absolute',
+                      'top': '-16px',
+                      'left': '50%',
+                      'transform': 'translateX(-50%)',
+                      'font-size': '9px',
+                      'color': colors.warning,
+                      'white-space': 'nowrap',
                     }}>
                       {p.cost}g
                     </div>
@@ -773,7 +767,7 @@ export function MemoryExpansionDiagram() {
               );
             })}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px' }}>
             <span>0 words</span>
             <span>14 words</span>
           </div>
@@ -781,54 +775,54 @@ export function MemoryExpansionDiagram() {
         </DiagramTooltip>
 
         {/* Gas stats */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Memory Size: текущий размер выделенной памяти. Расширяется порциями по 32 байта (1 word). Нельзя уменьшить -- только растёт.">
-            <DataBox label="Memory Size" value={`${state.memorySize} bytes`} variant="default" style={{ flex: 1, minWidth: 100 }} />
+            <DataBox label="Memory Size" value={`${state.memorySize} bytes`} variant="default" style={{ 'flex': '1', 'min-width': '100px' }} />
           </DiagramTooltip>
           <DiagramTooltip content="Expansion Cost: стоимость расширения памяти на текущем шаге. Первые ~724 байта линейны (3 gas/word), затем квадратичная компонента.">
-            <DataBox label="Expansion Cost" value={state.gasCost > 0 ? `${state.gasCost} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
+            <DataBox label="Expansion Cost" value={state.gasCost > 0 ? `${state.gasCost} gas` : '--'} variant="default" style={{ 'flex': '1', 'min-width': '100px' }} />
           </DiagramTooltip>
           <DiagramTooltip content="Total Memory Gas: суммарная стоимость всех расширений памяти. Формула: memory_cost = words * 3 + words^2 / 512.">
-            <DataBox label="Total Memory Gas" value={state.totalGas > 0 ? `${state.totalGas} gas` : '--'} variant="default" style={{ flex: 1, minWidth: 100 }} />
+            <DataBox label="Total Memory Gas" value={state.totalGas > 0 ? `${state.totalGas} gas` : '--'} variant="default" style={{ 'flex': '1', 'min-width': '100px' }} />
           </DiagramTooltip>
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <button
             onClick={() => setStep(0)}
-            style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+            style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
           >
             Сброс
           </button>
           <button
             onClick={() => setStep(s => Math.max(0, s - 1))}
-            disabled={step === 0}
+            disabled={step() === 0}
             style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step === 0 ? 'not-allowed' : 'pointer',
-              color: step === 0 ? colors.textMuted : colors.text,
-              fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+              ...glassStyle, 'padding': '8px 16px',
+              'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+              'color': step() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px', 'opacity': step() === 0 ? 0.5 : 1,
             }}
           >
             Назад
           </button>
           <button
             onClick={() => setStep(s => Math.min(maxStep, s + 1))}
-            disabled={step >= maxStep}
+            disabled={step() >= maxStep}
             style={{
-              ...glassStyle, padding: '8px 16px',
-              cursor: step >= maxStep ? 'not-allowed' : 'pointer',
-              color: step >= maxStep ? colors.textMuted : colors.primary,
-              fontSize: 13, opacity: step >= maxStep ? 0.5 : 1,
+              ...glassStyle, 'padding': '8px 16px',
+              'cursor': step() >= maxStep ? 'not-allowed' : 'pointer',
+              'color': step() >= maxStep ? colors.textMuted : colors.primary,
+              'font-size': '13px', 'opacity': step() >= maxStep ? 0.5 : 1,
             }}
           >
             Далее
           </button>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Шаг {step} из {maxStep} | Стоимость растет квадратично с размером памяти
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Шаг {step()} из {maxStep} | Стоимость растет квадратично с размером памяти
         </div>
       </div>
     </DiagramContainer>

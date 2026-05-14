@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * ERC-20 Token Diagrams (ETH-08)
  *
@@ -7,7 +8,7 @@
  * - TokenSupplyDiagram: Token supply visualization (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -34,43 +35,43 @@ export function ERC20TransferDiagram() {
     <DiagramContainer title="ERC-20: прямой перевод (transfer)" color="green">
       {/* Call label */}
       <div style={{
-        textAlign: 'center',
-        marginBottom: 16,
-        fontFamily: 'monospace',
-        fontSize: 13,
-        color: colors.primary,
+        'text-align': 'center',
+        'margin-bottom': '16px',
+        'font-family': 'monospace',
+        'font-size': '13px',
+        'color': colors.primary,
       }}>
         token.transfer(Bob, {amount})
       </div>
 
       {/* Two account boxes */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '16px', 'justify-content': 'center', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
         {/* Alice */}
         <DiagramTooltip content="Отправитель вызывает transfer(to, amount). EVM проверяет balance >= amount, вычитает из sender, добавляет к receiver. Атомарная операция.">
           <div
             style={{
               ...glassStyle,
-              padding: 16,
-              minWidth: 160,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              transition: 'all 0.2s',
+              'padding': '16px',
+              'min-width': '160px',
+              'background': 'rgba(255,255,255,0.03)',
+              'border': '1px solid rgba(255,255,255,0.08)',
+              'transition': 'all 0.2s',
             }}
           >
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-family': 'monospace' }}>
               Alice (msg.sender)
             </div>
-            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
-              До: <span style={{ color: colors.textMuted }}>{aliceBefore} CRST</span>
+            <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'color': colors.text }}>
+              До: <span style={{ 'color': colors.textMuted }}>{aliceBefore} CRST</span>
             </div>
-            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text, fontWeight: 600 }}>
+            <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'color': colors.text, 'font-weight': '600' }}>
               После: {aliceAfter} CRST
             </div>
           </div>
         </DiagramTooltip>
 
         {/* Arrow */}
-        <div style={{ fontSize: 24, color: colors.success }}>
+        <div style={{ 'font-size': '24px', 'color': colors.success }}>
           →
         </div>
 
@@ -79,20 +80,20 @@ export function ERC20TransferDiagram() {
           <div
             style={{
               ...glassStyle,
-              padding: 16,
-              minWidth: 160,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              transition: 'all 0.2s',
+              'padding': '16px',
+              'min-width': '160px',
+              'background': 'rgba(255,255,255,0.03)',
+              'border': '1px solid rgba(255,255,255,0.08)',
+              'transition': 'all 0.2s',
             }}
           >
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-family': 'monospace' }}>
               Bob (to)
             </div>
-            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text }}>
-              До: <span style={{ color: colors.textMuted }}>{bobBefore} CRST</span>
+            <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'color': colors.text }}>
+              До: <span style={{ 'color': colors.textMuted }}>{bobBefore} CRST</span>
             </div>
-            <div style={{ fontSize: 14, fontFamily: 'monospace', color: colors.text, fontWeight: 600 }}>
+            <div style={{ 'font-size': '14px', 'font-family': 'monospace', 'color': colors.text, 'font-weight': '600' }}>
               После: {bobAfter} CRST
             </div>
           </div>
@@ -104,17 +105,17 @@ export function ERC20TransferDiagram() {
         <div
           style={{
             ...glassStyle,
-            marginTop: 16,
-            padding: 12,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            transition: 'all 0.2s',
+            'margin-top': '16px',
+            'padding': '12px',
+            'background': 'rgba(255,255,255,0.02)',
+            'border': '1px solid rgba(255,255,255,0.06)',
+            'transition': 'all 0.2s',
           }}
         >
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, fontFamily: 'monospace' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '4px', 'font-family': 'monospace' }}>
             Event:
           </div>
-          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
+          <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.text }}>
             Transfer(Alice, Bob, {amount})
           </div>
         </div>
@@ -192,8 +193,8 @@ const ATF_HISTORY: ATFState[] = [
  * Step-through with history array pattern showing the two-step approve/transferFrom flow.
  */
 export function ApproveTransferFromDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const state = ATF_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const state = ATF_HISTORY[stepIndex()];
 
   const actorBox = (
     label: string,
@@ -204,21 +205,21 @@ export function ApproveTransferFromDiagram() {
   ) => (
     <div style={{
       ...glassStyle,
-      padding: 14,
-      minWidth: 130,
-      textAlign: 'center',
-      background: isHighlighted ? `${color}20` : 'rgba(255,255,255,0.03)',
-      border: `1px solid ${isHighlighted ? color : 'rgba(255,255,255,0.08)'}`,
-      transition: 'all 0.3s',
+      'padding': '14px',
+      'min-width': '130px',
+      'text-align': 'center',
+      'background': isHighlighted ? `${color}20` : 'rgba(255,255,255,0.03)',
+      'border': `1px solid ${isHighlighted ? color : 'rgba(255,255,255,0.08)'}`,
+      'transition': 'all 0.3s',
     }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color, fontFamily: 'monospace', marginBottom: 6 }}>
+      <div style={{ 'font-size': '13px', 'font-weight': '600', color, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
         {label}
       </div>
       {balanceLabel !== null && balance !== null && (
-        <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
+        <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.text }}>
           {balanceLabel}: <span style={{
-            color: isHighlighted ? color : colors.textMuted,
-            fontWeight: isHighlighted ? 600 : 400,
+            'color': isHighlighted ? color : colors.textMuted,
+            'font-weight': isHighlighted ? 600 : 400,
           }}>{balance}</span>
         </div>
       )}
@@ -228,18 +229,17 @@ export function ApproveTransferFromDiagram() {
   return (
     <DiagramContainer title="ERC-20: approve + transferFrom" color="purple">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {ATF_HISTORY.map((s, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? colors.primary : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? colors.primary : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -248,18 +248,18 @@ export function ApproveTransferFromDiagram() {
       {/* Step title */}
       <DiagramTooltip content={state.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 12,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '12px',
+          'font-family': 'monospace',
         }}>
           {state.title}
         </div>
       </DiagramTooltip>
 
       {/* Actors row */}
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'justify-content': 'center', 'align-items': 'center', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
         {actorBox('Alice', colors.success, 'Баланс', state.aliceBalance, state.highlight === 'alice')}
         {actorBox('DEX', colors.primary, null, null, state.highlight === 'dex')}
         {actorBox('Bob', colors.accent, 'Баланс', state.bobBalance, state.highlight === 'bob')}
@@ -268,21 +268,21 @@ export function ApproveTransferFromDiagram() {
       {/* Allowance indicator */}
       <div style={{
         ...glassStyle,
-        padding: 10,
-        textAlign: 'center',
-        marginBottom: 12,
-        background: state.highlight === 'allowance' ? '#eab30820' : 'rgba(255,255,255,0.02)',
-        border: `1px solid ${state.highlight === 'allowance' ? '#eab308' : 'rgba(255,255,255,0.06)'}`,
-        transition: 'all 0.3s',
+        'padding': '10px',
+        'text-align': 'center',
+        'margin-bottom': '12px',
+        'background': state.highlight === 'allowance' ? '#eab30820' : 'rgba(255,255,255,0.02)',
+        'border': `1px solid ${state.highlight === 'allowance' ? '#eab308' : 'rgba(255,255,255,0.06)'}`,
+        'transition': 'all 0.3s',
       }}>
-        <span style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted }}>
+        <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.textMuted }}>
           allowance[Alice][DEX] ={' '}
         </span>
         <span style={{
-          fontSize: 14,
-          fontFamily: 'monospace',
-          fontWeight: 600,
-          color: state.highlight === 'allowance' ? '#eab308' : colors.text,
+          'font-size': '14px',
+          'font-family': 'monospace',
+          'font-weight': '600',
+          'color': state.highlight === 'allowance' ? '#eab308' : colors.text,
         }}>
           {state.allowance}
         </span>
@@ -291,18 +291,18 @@ export function ApproveTransferFromDiagram() {
       {/* Code block */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        marginBottom: 12,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        'padding': '12px',
+        'margin-bottom': '12px',
+        'background': 'rgba(255,255,255,0.02)',
+        'border': '1px solid rgba(255,255,255,0.06)',
       }}>
         <pre style={{
-          margin: 0,
-          fontSize: 12,
-          fontFamily: 'monospace',
-          color: colors.primary,
-          whiteSpace: 'pre-wrap',
-          lineHeight: 1.6,
+          'margin': '0',
+          'font-size': '12px',
+          'font-family': 'monospace',
+          'color': colors.primary,
+          'white-space': 'pre-wrap',
+          'line-height': '1.6',
         }}>
           {state.code}
         </pre>
@@ -310,60 +310,60 @@ export function ApproveTransferFromDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 16,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '16px',
       }}>
         {state.description}
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={() => setStepIndex(0)}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'color': colors.text,
+            'font-size': '13px',
           }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
+          disabled={stepIndex() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': stepIndex() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.min(ATF_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= ATF_HISTORY.length - 1}
+          disabled={stepIndex() >= ATF_HISTORY.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= ATF_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= ATF_HISTORY.length - 1 ? colors.textMuted : colors.primary,
-            fontSize: 13,
-            opacity: stepIndex >= ATF_HISTORY.length - 1 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() >= ATF_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() >= ATF_HISTORY.length - 1 ? colors.textMuted : colors.primary,
+            'font-size': '13px',
+            'opacity': stepIndex() >= ATF_HISTORY.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {stepIndex >= ATF_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= ATF_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DataBox
             label="Ключевой паттерн"
             value="approve() дает разрешение, transferFrom() использует его. permit() -- modern gasless альтернатива."
@@ -419,39 +419,39 @@ export function TokenSupplyDiagram() {
   return (
     <DiagramContainer title="Эмиссия токена ERC-20" color="blue">
       {/* Total supply label */}
-      <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+      <div style={{ 'text-align': 'center', 'margin-bottom': '16px' }}>
+        <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
           totalSupply() ={' '}
         </span>
-        <span style={{ fontSize: 16, fontWeight: 600, color: colors.text, fontFamily: 'monospace' }}>
+        <span style={{ 'font-size': '16px', 'font-weight': '600', 'color': colors.text, 'font-family': 'monospace' }}>
           {TOTAL_SUPPLY.toLocaleString()} CRST
         </span>
       </div>
 
       {/* Stacked bar */}
-      <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 32, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'border-radius': '8px', 'overflow': 'hidden', 'height': '32px', 'margin-bottom': '16px' }}>
         {SUPPLY_SEGMENTS.map((seg, i) => {
           const widthPercent = (seg.amount / TOTAL_SUPPLY) * 100;
 
           return (
-            <DiagramTooltip key={i} content={seg.description}>
+            <DiagramTooltip content={seg.description}>
               <div
                 style={{
-                  width: `${widthPercent}%`,
-                  background: `${seg.color}80`,
-                  transition: 'all 0.2s',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  'width': `${widthPercent}%`,
+                  'background': `${seg.color}80`,
+                  'transition': 'all 0.2s',
+                  'cursor': 'pointer',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
                 }}
               >
                 <span style={{
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  color: '#fff',
-                  fontWeight: 600,
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  'font-size': '10px',
+                  'font-family': 'monospace',
+                  'color': '#fff',
+                  'font-weight': '600',
+                  'text-shadow': '0 1px 2px rgba(0,0,0,0.5)',
                 }}>
                   {widthPercent.toFixed(0)}%
                 </span>
@@ -462,35 +462,35 @@ export function TokenSupplyDiagram() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
         {SUPPLY_SEGMENTS.map((seg, i) => (
-          <DiagramTooltip key={i} content={seg.description}>
+          <DiagramTooltip content={seg.description}>
             <div
               style={{
                 ...glassStyle,
-                padding: '10px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                'padding': '10px 14px',
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '12px',
+                'background': 'rgba(255,255,255,0.02)',
+                'border': '1px solid rgba(255,255,255,0.06)',
+                'cursor': 'pointer',
+                'transition': 'all 0.2s',
               }}
             >
               <div style={{
-                width: 12,
-                height: 12,
-                borderRadius: 3,
-                background: seg.color,
-                flexShrink: 0,
+                'width': '12px',
+                'height': '12px',
+                'border-radius': '3px',
+                'background': seg.color,
+                'flex-shrink': '0',
               }} />
-              <div style={{ flex: 1 }}>
+              <div style={{ 'flex': '1' }}>
                 <div style={{
-                  fontSize: 13,
-                  fontFamily: 'monospace',
-                  color: colors.text,
-                  fontWeight: 600,
+                  'font-size': '13px',
+                  'font-family': 'monospace',
+                  'color': colors.text,
+                  'font-weight': '600',
                 }}>
                   {seg.label}: {seg.amount.toLocaleString()}
                 </div>
@@ -503,15 +503,15 @@ export function TokenSupplyDiagram() {
       {/* Mint/Burn/Transfer explanation */}
       <div style={{
         ...glassStyle,
-        marginTop: 16,
-        padding: 12,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
+        'margin-top': '16px',
+        'padding': '12px',
+        'font-size': '12px',
+        'color': colors.textMuted,
+        'line-height': '1.6',
       }}>
-        <div><span style={{ color: colors.success, fontFamily: 'monospace' }}>_mint()</span> -- увеличивает totalSupply и баланс получателя</div>
-        <div><span style={{ color: '#f43f5e', fontFamily: 'monospace' }}>_burn()</span> -- уменьшает totalSupply и баланс владельца</div>
-        <div><span style={{ color: colors.primary, fontFamily: 'monospace' }}>transfer()</span> -- НЕ меняет totalSupply (перемещение между аккаунтами)</div>
+        <div><span style={{ 'color': colors.success, 'font-family': 'monospace' }}>_mint()</span> -- увеличивает totalSupply и баланс получателя</div>
+        <div><span style={{ 'color': '#f43f5e', 'font-family': 'monospace' }}>_burn()</span> -- уменьшает totalSupply и баланс владельца</div>
+        <div><span style={{ 'color': colors.primary, 'font-family': 'monospace' }}>transfer()</span> -- НЕ меняет totalSupply (перемещение между аккаунтами)</div>
       </div>
     </DiagramContainer>
   );

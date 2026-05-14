@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Voting Mechanism Diagrams (GOV-03)
  *
@@ -6,7 +7,7 @@
  * - GovernanceAttacksDiagram: Governance attack vectors (static with hover)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -56,21 +57,21 @@ const TRANSITIONS: StateTransition[] = [
  * 7 states as clickable nodes. Click to highlight transitions and show conditions.
  */
 export function ProposalStateMachineDiagram() {
-  const [selectedState, setSelectedState] = useState<number | null>(null);
+  const [selectedState, setSelectedState] = createSignal<number | null>(null);
 
-  const activeTransitions = selectedState !== null
-    ? TRANSITIONS.filter(t => t.from === selectedState || t.to === selectedState)
+  const activeTransitions = selectedState() !== null
+    ? TRANSITIONS.filter(t => t.from === selectedState() || t.to === selectedState())
     : [];
 
   const isActive = (idx: number) =>
-    selectedState === idx ||
+    selectedState() === idx ||
     activeTransitions.some(t => t.from === idx || t.to === idx);
 
   return (
     <DiagramContainer title="Жизненный цикл предложения (Proposal State Machine)" color="green">
       {/* SVG state machine */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, overflowX: 'auto' }}>
-        <svg width={740} height={160} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px', 'overflow-x': 'auto' }}>
+        <svg width={740} height={160} style={{ 'overflow': 'visible' }}>
           <defs>
             <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5"
               markerWidth={5} markerHeight={5} orient="auto-start-auto">
@@ -84,7 +85,7 @@ export function ProposalStateMachineDiagram() {
             const to = STATES[t.to];
             const isHighlighted = activeTransitions.includes(t);
             return (
-              <g key={i}>
+              <g>
                 <line
                   x1={from.x + 50}
                   y1={from.y + 12}
@@ -114,10 +115,9 @@ export function ProposalStateMachineDiagram() {
           {[0, 1, 2, 4].map(idx => {
             const from = STATES[idx];
             const to = STATES[6];
-            const isHighlighted = selectedState === 6 || selectedState === idx;
+            const isHighlighted = selectedState() === 6 || selectedState() === idx;
             return (
               <line
-                key={`cancel-${idx}`}
                 x1={from.x + 25}
                 y1={from.y + 25}
                 x2={to.x + 25}
@@ -133,12 +133,11 @@ export function ProposalStateMachineDiagram() {
           {/* State nodes */}
           {STATES.map((st, i) => {
             const active = isActive(i);
-            const isSelected = selectedState === i;
+            const isSelected = selectedState() === i;
             return (
               <g
-                key={i}
                 onClick={() => setSelectedState(isSelected ? null : i)}
-                style={{ cursor: 'pointer' }}
+                style={{ 'cursor': 'pointer' }}
               >
                 <rect
                   x={st.x - 8}
@@ -181,42 +180,42 @@ export function ProposalStateMachineDiagram() {
       </div>
 
       {/* Selected state detail */}
-      {selectedState !== null && (
+      {selectedState() !== null && (
         <DiagramTooltip content={
-          selectedState === 0 ? 'Pending -- предложение создано, но голосование ещё не началось. votingDelay дает сообществу время изучить предложение перед голосованием. Типичная задержка: 1-2 дня.'
-          : selectedState === 1 ? 'Active -- голосование открыто. Участники могут голосовать For, Against или Abstain. Период голосования (votingPeriod) обычно длится 1 неделю. Голоса взвешены по checkpoint на момент создания proposal.'
-          : selectedState === 2 ? 'Succeeded -- предложение принято. Quorum достигнут (обычно 4% от total supply) и For > Against. Теперь предложение можно поместить в очередь Timelock для исполнения.'
-          : selectedState === 3 ? 'Defeated -- предложение отклонено. Либо quorum не достигнут (недостаточная явка), либо голосов Against >= For. Предложение можно создать заново с изменениями.'
-          : selectedState === 4 ? 'Queued -- предложение в очереди TimelockController. Задержка перед исполнением дает сообществу время отреагировать на потенциально вредоносные предложения (вывести средства, отменить proposal).'
-          : selectedState === 5 ? 'Executed -- предложение исполнено on-chain. Смарт-контракт выполнил все запланированные действия (transfer, parameter change, upgrade). Это финальное и необратимое состояние.'
-          : selectedState === 6 ? 'Canceled -- предложение отменено proposer-ом или guardian-ом. Возможно из любого незавершенного состояния (Pending, Active, Succeeded, Queued). Guardian -- защитный механизм для экстренных случаев.'
+          selectedState() === 0 ? 'Pending -- предложение создано, но голосование ещё не началось. votingDelay дает сообществу время изучить предложение перед голосованием. Типичная задержка: 1-2 дня.'
+          : selectedState() === 1 ? 'Active -- голосование открыто. Участники могут голосовать For, Against или Abstain. Период голосования (votingPeriod) обычно длится 1 неделю. Голоса взвешены по checkpoint на момент создания proposal.'
+          : selectedState() === 2 ? 'Succeeded -- предложение принято. Quorum достигнут (обычно 4% от total supply) и For > Against. Теперь предложение можно поместить в очередь Timelock для исполнения.'
+          : selectedState() === 3 ? 'Defeated -- предложение отклонено. Либо quorum не достигнут (недостаточная явка), либо голосов Against >= For. Предложение можно создать заново с изменениями.'
+          : selectedState() === 4 ? 'Queued -- предложение в очереди TimelockController. Задержка перед исполнением дает сообществу время отреагировать на потенциально вредоносные предложения (вывести средства, отменить proposal).'
+          : selectedState() === 5 ? 'Executed -- предложение исполнено on-chain. Смарт-контракт выполнил все запланированные действия (transfer, parameter change, upgrade). Это финальное и необратимое состояние.'
+          : selectedState() === 6 ? 'Canceled -- предложение отменено proposer-ом или guardian-ом. Возможно из любого незавершенного состояния (Pending, Active, Succeeded, Queued). Guardian -- защитный механизм для экстренных случаев.'
           : 'Expired -- предложение не было исполнено в течение grace period после timelock delay. Обычно grace period составляет 1-7 дней. Необходимо создать новый proposal.'
         }>
           <div style={{
             ...glassStyle,
-            padding: 12,
-            marginBottom: 12,
-            border: `1px solid ${STATES[selectedState].color}30`,
+            'padding': '12px',
+            'margin-bottom': '12px',
+            'border': `1px solid ${STATES[selectedState()].color}30`,
           }}>
             <div style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: STATES[selectedState].color,
-              fontFamily: 'monospace',
-              marginBottom: 4,
+              'font-size': '13px',
+              'font-weight': '600',
+              'color': STATES[selectedState()].color,
+              'font-family': 'monospace',
+              'margin-bottom': '4px',
             }}>
-              {STATES[selectedState].name}
+              {STATES[selectedState()].name}
             </div>
-            <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
-              {STATES[selectedState].description}
+            <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.5' }}>
+              {STATES[selectedState()].description}
             </div>
             {activeTransitions.length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'margin-top': '8px' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                   Transitions:
                 </div>
                 {activeTransitions.map((t, i) => (
-                  <div key={i} style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
+                  <div style={{ 'font-size': '10px', 'color': '#22c55e', 'font-family': 'monospace' }}>
                     {STATES[t.from].name} {'->'} {STATES[t.to].name}: {t.condition}
                   </div>
                 ))}
@@ -291,43 +290,42 @@ export function GovernanceAttacksDiagram() {
   return (
     <DiagramContainer title="Атаки на governance: угрозы и защита" color="red">
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-        gap: 12,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(220px, 1fr))',
+        'gap': '12px',
+        'margin-bottom': '12px',
       }}>
         {ATTACK_VECTORS.map((atk, i) => (
           <DiagramTooltip
-            key={i}
             content={`${atk.nameRu} (${atk.example}, потери: ${atk.loss}). Механизм: ${atk.mechanism} Защита: ${atk.defense}`}
           >
             <div style={{
               ...glassStyle,
-              padding: 16,
-              cursor: 'default',
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.03)',
-              transition: 'all 0.2s',
+              'padding': '16px',
+              'cursor': 'default',
+              'border': '1px solid rgba(255,255,255,0.08)',
+              'background': 'rgba(255,255,255,0.03)',
+              'transition': 'all 0.2s',
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: atk.color, fontFamily: 'monospace' }}>
+              <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+                <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': atk.color, 'font-family': 'monospace' }}>
                   {atk.name}
                 </div>
                 <span style={{
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: `${atk.color}15`,
-                  color: atk.color,
-                  border: `1px solid ${atk.color}30`,
+                  'font-size': '9px',
+                  'font-family': 'monospace',
+                  'padding': '2px 6px',
+                  'border-radius': '4px',
+                  'background': `${atk.color}15`,
+                  'color': atk.color,
+                  'border': `1px solid ${atk.color}30`,
                 }}>
                   {atk.loss}
                 </span>
               </div>
 
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                 {atk.example}
               </div>
             </div>

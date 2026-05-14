@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * ZK Concept Diagrams (ZK-01)
  *
@@ -7,7 +8,7 @@
  * - ZKApplicationsDiagram: ZK applications landscape (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -113,8 +114,8 @@ const PROBABILITY_TABLE = [
 ];
 
 export function AliBabaCaveDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = CAVE_STEPS[step];
 
   const handleNext = () => {
@@ -123,8 +124,8 @@ export function AliBabaCaveDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -132,17 +133,17 @@ export function AliBabaCaveDiagram() {
   return (
     <DiagramContainer title="Пещера Али-Бабы: интуиция zero-knowledge" color="purple">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {CAVE_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -150,7 +151,7 @@ export function AliBabaCaveDiagram() {
       </div>
 
       {/* Cave visualization */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         <svg width={340} height={220} viewBox="0 0 340 220">
           {/* Cave outline -- circular cave with entrance at bottom */}
           <ellipse cx={170} cy={110} rx={130} ry={90} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2} />
@@ -236,27 +237,27 @@ export function AliBabaCaveDiagram() {
       <DiagramTooltip content={current.tooltip}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${current.color}30`,
+          'padding': '14px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${current.color}30`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': current.color, 'font-family': 'monospace' }}>
               {step + 1}. {current.title}: {current.subtitle}
             </div>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${current.color}15`,
-              color: current.color,
-              border: `1px solid ${current.color}30`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${current.color}15`,
+              'color': current.color,
+              'border': `1px solid ${current.color}30`,
             }}>
               Шаг {step + 1}/{CAVE_STEPS.length}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
             {current.description}
           </div>
         </div>
@@ -265,21 +266,21 @@ export function AliBabaCaveDiagram() {
       {/* Probability table (shown at step 4) */}
       {step === 4 && (
         <DiagramTooltip content="Таблица вероятностей обмана: с каждым раундом вероятность успешного мошенничества падает экспоненциально. После 20 раундов вероятность обмана составляет менее 0.0001% — это обеспечивает soundness ZK-доказательства.">
-          <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(59,130,246,0.2)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '8px' }}>
               Вероятность обмана при повторении:
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(4, 1fr)', 'gap': '6px' }}>
               {PROBABILITY_TABLE.map((row) => (
-                <div key={row.rounds} style={{
+                <div style={{
                   ...glassStyle,
-                  padding: 8,
-                  textAlign: 'center',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  'padding': '8px',
+                  'text-align': 'center',
+                  'border': '1px solid rgba(255,255,255,0.06)',
                 }}>
-                  <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>{row.rounds} раунд{row.rounds > 1 ? (row.rounds < 5 ? 'а' : 'ов') : ''}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>{row.prob}</div>
-                  <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>1/2^{row.rounds}</div>
+                  <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{row.rounds} раунд{row.rounds > 1 ? (row.rounds < 5 ? 'а' : 'ов') : ''}</div>
+                  <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': '#3b82f6', 'font-family': 'monospace' }}>{row.prob}</div>
+                  <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>1/2^{row.rounds}</div>
                 </div>
               ))}
             </div>
@@ -289,62 +290,62 @@ export function AliBabaCaveDiagram() {
 
       {/* ZK Properties summary (shown at step 5) */}
       {step === 5 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
           {[
             { label: 'Completeness', desc: 'Знает -> Примет', color: '#22c55e' },
             { label: 'Soundness', desc: 'Не знает -> Обман ~0%', color: '#3b82f6' },
             { label: 'Zero-Knowledge', desc: 'Узнал ЧТО, не КАК', color: '#f59e0b' },
           ].map((prop) => (
-            <div key={prop.label} style={{
+            <div style={{
               ...glassStyle,
-              padding: 10,
-              textAlign: 'center',
-              border: `1px solid ${prop.color}30`,
+              'padding': '10px',
+              'text-align': 'center',
+              'border': `1px solid ${prop.color}30`,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: prop.color, fontFamily: 'monospace' }}>{prop.label}</div>
-              <div style={{ fontSize: 9, color: colors.text, fontFamily: 'monospace', marginTop: 4 }}>{prop.desc}</div>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': prop.color, 'font-family': 'monospace' }}>{prop.label}</div>
+              <div style={{ 'font-size': '9px', 'color': colors.text, 'font-family': 'monospace', 'margin-top': '4px' }}>{prop.desc}</div>
             </div>
           ))}
         </div>
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
         <DiagramTooltip content="Навигация по шагам пещеры Али-Бабы: используйте кнопки для перехода между этапами ZK-доказательства — от setup до финальных свойств.">
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleBack} disabled={history.length <= 1} style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.05)',
-              color: history.length > 1 ? colors.text : colors.textMuted,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+          <div style={{ 'display': 'flex', 'gap': '8px' }}>
+            <button onClick={handleBack} disabled={history().length <= 1} style={{
+              'padding': '6px 16px',
+              'border-radius': '6px',
+              'border': '1px solid rgba(255,255,255,0.15)',
+              'background': 'rgba(255,255,255,0.05)',
+              'color': history().length > 1 ? colors.text : colors.textMuted,
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
             }}>
               Back
             </button>
             <button onClick={handleNext} disabled={step >= CAVE_STEPS.length - 1} style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              border: `1px solid ${step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
-              background: step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-              color: step < CAVE_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              cursor: step < CAVE_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+              'padding': '6px 16px',
+              'border-radius': '6px',
+              'border': `1px solid ${step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              'background': step < CAVE_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+              'color': step < CAVE_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'cursor': step < CAVE_STEPS.length - 1 ? 'pointer' : 'not-allowed',
             }}>
               Step
             </button>
             <button onClick={handleReset} style={{
-              padding: '6px 16px',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.15)',
-              background: 'rgba(255,255,255,0.05)',
-              color: colors.textMuted,
-              fontSize: 11,
-              fontFamily: 'monospace',
-              cursor: 'pointer',
+              'padding': '6px 16px',
+              'border-radius': '6px',
+              'border': '1px solid rgba(255,255,255,0.15)',
+              'background': 'rgba(255,255,255,0.05)',
+              'color': colors.textMuted,
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'cursor': 'pointer',
             }}>
               Reset
             </button>
@@ -408,7 +409,7 @@ export function ZKPropertiesDiagram() {
   return (
     <DiagramContainer title="Три свойства ZK-доказательства" color="blue">
       {/* Triangle layout */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         <svg width={360} height={200} viewBox="0 0 360 200">
           {/* Connecting lines */}
           <line x1={180} y1={30} x2={60} y2={160} stroke="rgba(255,255,255,0.1)" strokeWidth={1} strokeDasharray="4,4" />
@@ -438,24 +439,24 @@ export function ZKPropertiesDiagram() {
       </div>
 
       {/* Property cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr', 'gap': '8px', 'margin-bottom': '16px' }}>
         {ZK_PROPERTIES.map((prop) => (
-          <DiagramTooltip key={prop.label} content={prop.tooltip}>
+          <DiagramTooltip content={prop.tooltip}>
             <div style={{
               ...glassStyle,
-              padding: 12,
-              border: `1px solid ${prop.color}25`,
+              'padding': '12px',
+              'border': `1px solid ${prop.color}25`,
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: prop.color, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': prop.color, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 {prop.label}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
                 ({prop.labelRu})
               </div>
-              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5, marginBottom: 8 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.5', 'margin-bottom': '8px' }}>
                 {prop.definition}
               </div>
-              <div style={{ fontSize: 9, fontStyle: 'italic', color: prop.color, lineHeight: 1.4, opacity: 0.8 }}>
+              <div style={{ 'font-size': '9px', 'font-style': 'italic', 'color': prop.color, 'line-height': '1.4', 'opacity': '0.8' }}>
                 {prop.example}
               </div>
             </div>
@@ -465,22 +466,22 @@ export function ZKPropertiesDiagram() {
 
       {/* Formal definitions */}
       <DiagramTooltip content="Формальные определения ZK-свойств используют парадигму симулятора: если существует полиномиальный алгоритм (симулятор), создающий транскрипты, неотличимые от реальных — протокол обеспечивает нулевое разглашение. Различают computational ZK (неотличимость для PPT-алгоритмов) и statistical ZK (неотличимость для любых алгоритмов).">
-        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Формальные определения:
           </div>
           {ZK_PROPERTIES.map((prop) => (
-            <div key={prop.label} style={{
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: colors.text,
-              marginBottom: 4,
-              padding: '4px 8px',
-              background: `${prop.color}08`,
-              borderRadius: 4,
-              borderLeft: `2px solid ${prop.color}40`,
+            <div style={{
+              'font-size': '10px',
+              'font-family': 'monospace',
+              'color': colors.text,
+              'margin-bottom': '4px',
+              'padding': '4px 8px',
+              'background': `${prop.color}08`,
+              'border-radius': '4px',
+              'border-left': `2px solid ${prop.color}40`,
             }}>
-              <span style={{ color: prop.color, fontWeight: 600 }}>{prop.label}:</span>{' '}
+              <span style={{ 'color': prop.color, 'font-weight': '600' }}>{prop.label}:</span>{' '}
               {prop.formal}
             </div>
           ))}
@@ -548,52 +549,52 @@ const ZK_APPLICATIONS: ZKApplication[] = [
 export function ZKApplicationsDiagram() {
   return (
     <DiagramContainer title="Применения Zero-Knowledge: от блокчейна до реального мира" color="green">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(3, 1fr)', 'gap': '8px', 'margin-bottom': '8px' }}>
         {ZK_APPLICATIONS.slice(0, 3).map((app) => (
-          <DiagramTooltip key={app.title} content={app.tooltip}>
+          <DiagramTooltip content={app.tooltip}>
             <div
               style={{
                 ...glassStyle,
-                padding: 12,
-                cursor: 'pointer',
-                border: `1px solid rgba(255,255,255,0.06)`,
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.2s',
+                'padding': '12px',
+                'cursor': 'pointer',
+                'border': `1px solid rgba(255,255,255,0.06)`,
+                'background': 'rgba(255,255,255,0.02)',
+                'transition': 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': app.color, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 {app.title}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                 ({app.titleRu})
               </div>
-              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.5' }}>
                 {app.summary}
               </div>
             </div>
           </DiagramTooltip>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(2, 1fr)', 'gap': '8px', 'margin-bottom': '12px' }}>
         {ZK_APPLICATIONS.slice(3).map((app) => (
-          <DiagramTooltip key={app.title} content={app.tooltip}>
+          <DiagramTooltip content={app.tooltip}>
             <div
               style={{
                 ...glassStyle,
-                padding: 12,
-                cursor: 'pointer',
-                border: `1px solid rgba(255,255,255,0.06)`,
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.2s',
+                'padding': '12px',
+                'cursor': 'pointer',
+                'border': `1px solid rgba(255,255,255,0.06)`,
+                'background': 'rgba(255,255,255,0.02)',
+                'transition': 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 700, color: app.color, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': app.color, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 {app.title}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                 ({app.titleRu})
               </div>
-              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.5' }}>
                 {app.summary}
               </div>
             </div>

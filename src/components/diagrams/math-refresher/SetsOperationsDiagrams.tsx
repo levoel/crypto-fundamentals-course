@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Sets & Operations Diagrams (MATH-03)
  *
@@ -6,7 +7,7 @@
  * - BinaryOperationTableDiagram: Operation table with algebraic property checking
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -56,9 +57,9 @@ const opButtons: { key: SetOp; label: string; symbol: string; tooltip: string }[
  * Two sets A and B with selectable operations.
  */
 export function SetOperationsDiagram() {
-  const [op, setOp] = useState<SetOp>('union');
+  const [op, setOp] = createSignal<SetOp>('union');
 
-  const { result, notation, python } = computeSetOp(op);
+  const { result, notation, python } = computeSetOp(op());
   const resultSet = new Set(result);
 
   // Venn diagram geometry
@@ -79,23 +80,23 @@ export function SetOperationsDiagram() {
   return (
     <DiagramContainer title="Операции над множествами" color="blue">
       {/* Operation buttons */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
         {opButtons.map((b) => (
-          <DiagramTooltip key={b.key} content={b.tooltip}>
+          <DiagramTooltip content={b.tooltip}>
             <div>
               <button
                 onClick={() => setOp(b.key)}
                 style={{
                   ...glassStyle,
-                  padding: '6px 14px',
-                  cursor: 'pointer',
-                  background: op === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${op === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-                  color: op === b.key ? colors.primary : colors.text,
-                  fontSize: 13,
+                  'padding': '6px 14px',
+                  'cursor': 'pointer',
+                  'background': op() === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${op() === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  'color': op() === b.key ? colors.primary : colors.text,
+                  'font-size': '13px',
                 }}
               >
-                <span style={{ marginRight: 4 }}>{b.symbol}</span> {b.label}
+                <span style={{ 'margin-right': '4px' }}>{b.symbol}</span> {b.label}
               </button>
             </div>
           </DiagramTooltip>
@@ -103,7 +104,7 @@ export function SetOperationsDiagram() {
       </div>
 
       {/* Venn diagram */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
         <svg width={360} height={200} viewBox="0 0 360 200">
           {/* Circle A */}
           <circle
@@ -149,7 +150,6 @@ export function SetOperationsDiagram() {
           {/* Only A elements */}
           {onlyA.map((n, i) => (
             <text
-              key={`a-${n}`}
               x={cx1 - 30 + (i % 2) * 20}
               y={cy - 10 + Math.floor(i / 2) * 22}
               textAnchor="middle"
@@ -164,7 +164,6 @@ export function SetOperationsDiagram() {
           {/* Intersection elements */}
           {both.map((n, i) => (
             <text
-              key={`both-${n}`}
               x={(cx1 + cx2) / 2}
               y={cy - 15 + i * 18}
               textAnchor="middle"
@@ -179,7 +178,6 @@ export function SetOperationsDiagram() {
           {/* Only B elements */}
           {onlyB.map((n, i) => (
             <text
-              key={`b-${n}`}
               x={cx2 + 30 + (i % 2) * 20 - 10}
               y={cy - 10 + Math.floor(i / 2) * 22}
               textAnchor="middle"
@@ -195,12 +193,12 @@ export function SetOperationsDiagram() {
       </div>
 
       {/* Results */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-top': '8px' }}>
         <DiagramTooltip content="Результат операции над множествами в математической нотации. Теория множеств -- фундамент определения алгебраических структур (группы, кольца, поля), на которых строится вся криптография эллиптических кривых.">
           <DataBox label="Результат" value={notation} variant="highlight" />
         </DiagramTooltip>
         <DiagramTooltip content="Python имеет встроенный тип set с поддержкой всех операций: | (объединение), & (пересечение), - (разность), ^ (симм. разность). Операторы совпадают с побитовыми, но работают на уровне множеств.">
-          <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 12, fontFamily: 'monospace', color: colors.accent }}>
+          <div style={{ ...glassStyle, 'padding': '8px 12px', 'font-size': '12px', 'font-family': 'monospace', 'color': colors.accent }}>
             Python: A = {'{'}1, 2, 3, 4, 5{'}'}; B = {'{'}3, 4, 5, 6, 7{'}'}; {python} = {'{' + result.join(', ') + '}'}
           </div>
         </DiagramTooltip>
@@ -310,12 +308,12 @@ const STRUCTURES: AlgebraicStructure[] = [
  * Select a set+operation, view the Cayley table, check algebraic properties.
  */
 export function BinaryOperationTableDiagram() {
-  const [structIdx, setStructIdx] = useState(0);
-  const [highlightInverses, setHighlightInverses] = useState(false);
+  const [structIdx, setStructIdx] = createSignal(0);
+  const [highlightInverses, setHighlightInverses] = createSignal(false);
 
-  const struct = STRUCTURES[structIdx];
+  const struct = STRUCTURES[structIdx()];
 
-  const inversePairs = useMemo(() => {
+  const inversePairs = createMemo(() => {
     const pairs = new Set<string>();
     if (struct.identity !== null) {
       struct.inverses.forEach((inv, el) => {
@@ -326,7 +324,7 @@ export function BinaryOperationTableDiagram() {
       });
     }
     return pairs;
-  }, [struct]);
+  });
 
   const isInversePair = (a: number, b: number): boolean => {
     const key = [Math.min(a, b), Math.max(a, b)].join(',');
@@ -351,10 +349,9 @@ export function BinaryOperationTableDiagram() {
   return (
     <DiagramContainer title="Таблица операций и свойства" color="green">
       {/* Structure selector */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
         {STRUCTURES.map((s, i) => (
           <DiagramTooltip
-            key={i}
             content={
               i === 0
                 ? 'Z_5 с сложением по модулю 5. Элементы {0,1,2,3,4} образуют циклическую группу порядка 5. Аддитивные группы используются в криптографии эллиптических кривых (сложение точек).'
@@ -368,13 +365,13 @@ export function BinaryOperationTableDiagram() {
                 onClick={() => { setStructIdx(i); setHighlightInverses(false); }}
                 style={{
                   ...glassStyle,
-                  padding: '6px 14px',
-                  cursor: 'pointer',
-                  background: structIdx === i ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${structIdx === i ? colors.success : 'rgba(255,255,255,0.1)'}`,
-                  color: structIdx === i ? colors.success : colors.text,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
+                  'padding': '6px 14px',
+                  'cursor': 'pointer',
+                  'background': structIdx() === i ? `${colors.success}25` : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${structIdx() === i ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                  'color': structIdx() === i ? colors.success : colors.text,
+                  'font-size': '13px',
+                  'font-family': 'monospace',
                 }}
               >
                 {s.name}
@@ -385,15 +382,15 @@ export function BinaryOperationTableDiagram() {
       </div>
 
       {/* Operation table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', fontFamily: 'monospace', fontSize: 13 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'border-collapse': 'collapse', 'font-family': 'monospace', 'font-size': '13px' }}>
           <thead>
             <tr>
               <th style={{
-                padding: '6px 10px',
-                color: colors.textMuted,
-                borderBottom: `1px solid ${colors.border}`,
-                borderRight: `1px solid ${colors.border}`,
+                'padding': '6px 10px',
+                'color': colors.textMuted,
+                'border-bottom': `1px solid ${colors.border}`,
+                'border-right': `1px solid ${colors.border}`,
               }}>
                 <DiagramTooltip content="Таблица Кэли (Cayley table) -- полное описание бинарной операции на множестве. Строка * столбец = результат. Если таблица симметрична относительно диагонали, операция коммутативна.">
                   <span>{struct.opSymbol}</span>
@@ -401,12 +398,11 @@ export function BinaryOperationTableDiagram() {
               </th>
               {struct.elements.map((col) => (
                 <th
-                  key={col}
                   style={{
-                    padding: '6px 10px',
-                    color: col === struct.identity ? colors.success : colors.textMuted,
-                    borderBottom: `1px solid ${colors.border}`,
-                    fontWeight: col === struct.identity ? 700 : 400,
+                    'padding': '6px 10px',
+                    'color': col === struct.identity ? colors.success : colors.textMuted,
+                    'border-bottom': `1px solid ${colors.border}`,
+                    'font-weight': col === struct.identity ? 700 : 400,
                   }}
                 >
                   {col}
@@ -416,34 +412,33 @@ export function BinaryOperationTableDiagram() {
           </thead>
           <tbody>
             {struct.elements.map((row) => (
-              <tr key={row}>
+              <tr>
                 <td style={{
-                  padding: '6px 10px',
-                  color: row === struct.identity ? colors.success : colors.textMuted,
-                  fontWeight: row === struct.identity ? 700 : 600,
-                  borderRight: `1px solid ${colors.border}`,
+                  'padding': '6px 10px',
+                  'color': row === struct.identity ? colors.success : colors.textMuted,
+                  'font-weight': row === struct.identity ? 700 : 600,
+                  'border-right': `1px solid ${colors.border}`,
                 }}>
                   {row}
                 </td>
                 {struct.elements.map((col) => {
                   const result = struct.operation(row, col);
                   const isIdentityResult = result === struct.identity;
-                  const isInvHighlight = highlightInverses && isIdentityResult && row !== struct.identity && col !== struct.identity;
+                  const isInvHighlight = highlightInverses() && isIdentityResult && row !== struct.identity && col !== struct.identity;
 
                   return (
                     <td
-                      key={col}
                       style={{
-                        padding: '6px 10px',
-                        textAlign: 'center',
-                        background: isInvHighlight
+                        'padding': '6px 10px',
+                        'text-align': 'center',
+                        'background': isInvHighlight
                           ? `${colors.warning}25`
                           : isIdentityResult
                             ? `${colors.success}10`
                             : 'transparent',
-                        border: `1px solid ${isInvHighlight ? colors.warning + '50' : 'rgba(255,255,255,0.05)'}`,
-                        color: isInvHighlight ? colors.warning : isIdentityResult ? colors.success : colors.text,
-                        fontWeight: isInvHighlight ? 700 : 400,
+                        'border': `1px solid ${isInvHighlight ? colors.warning + '50' : 'rgba(255,255,255,0.05)'}`,
+                        'color': isInvHighlight ? colors.warning : isIdentityResult ? colors.success : colors.text,
+                        'font-weight': isInvHighlight ? 700 : 400,
                       }}
                     >
                       {result}
@@ -459,47 +454,47 @@ export function BinaryOperationTableDiagram() {
       {/* Toggle inverse highlight */}
       {struct.identity !== null && (
         <button
-          onClick={() => setHighlightInverses(!highlightInverses)}
+          onClick={() => setHighlightInverses(!highlightInverses())}
           style={{
             ...glassStyle,
-            padding: '6px 14px',
-            cursor: 'pointer',
-            marginTop: 8,
-            color: highlightInverses ? colors.warning : colors.textMuted,
-            fontSize: 12,
-            background: highlightInverses ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${highlightInverses ? colors.warning + '40' : 'rgba(255,255,255,0.08)'}`,
+            'padding': '6px 14px',
+            'cursor': 'pointer',
+            'margin-top': '8px',
+            'color': highlightInverses() ? colors.warning : colors.textMuted,
+            'font-size': '12px',
+            'background': highlightInverses() ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
+            'border': `1px solid ${highlightInverses() ? colors.warning + '40' : 'rgba(255,255,255,0.08)'}`,
           }}
         >
-          {highlightInverses ? 'Скрыть обратные пары' : 'Показать обратные пары'}
+          {highlightInverses() ? 'Скрыть обратные пары' : 'Показать обратные пары'}
         </button>
       )}
 
       {/* Properties checklist */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px', 'margin-top': '12px' }}>
         {properties.map((prop) => (
-          <DiagramTooltip key={prop.name} content={prop.tooltip}>
+          <DiagramTooltip content={prop.tooltip}>
             <div
               style={{
                 ...glassStyle,
-                padding: '8px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                background: prop.value ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${prop.value ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
+                'padding': '8px 12px',
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '10px',
+                'background': prop.value ? `${colors.success}08` : 'rgba(255,255,255,0.02)',
+                'border': `1px solid ${prop.value ? colors.success + '25' : 'rgba(255,255,255,0.06)'}`,
               }}
             >
               <span style={{
-                fontSize: 16,
-                color: prop.value ? colors.success : colors.danger,
-                flexShrink: 0,
+                'font-size': '16px',
+                'color': prop.value ? colors.success : colors.danger,
+                'flex-shrink': '0',
               }}>
                 {prop.value ? '\u2713' : '\u2717'}
               </span>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>{prop.name}</span>
-                <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{prop.desc}</span>
+              <div style={{ 'flex': '1' }}>
+                <span style={{ 'font-size': '13px', 'color': colors.text, 'font-weight': '600' }}>{prop.name}</span>
+                <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-left': '8px' }}>{prop.desc}</span>
               </div>
             </div>
           </DiagramTooltip>

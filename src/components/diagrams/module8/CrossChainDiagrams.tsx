@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Cross-Chain Diagrams (SCALE-09)
  *
@@ -7,7 +8,7 @@
  * - TrustSpectrumDiagram: Horizontal trust model spectrum with security/cost arrows
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -88,8 +89,8 @@ const CHAIN_COLORS: Record<string, string> = {
  * 5 steps, history array, step/back/reset controls.
  */
 export function CrossChainMessagingDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < CC_STEPS.length - 1) {
@@ -97,8 +98,8 @@ export function CrossChainMessagingDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -109,35 +110,35 @@ export function CrossChainMessagingDiagram() {
     <DiagramContainer title="Cross-chain: передача сообщений" color="blue">
       {/* Chain lanes */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'grid',
+        'grid-template-columns': '1fr auto 1fr',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         {/* Source chain */}
         <div style={{
           ...glassStyle,
-          padding: 10,
-          borderRadius: 6,
-          border: `1px solid ${s.chain === 'source' ? '#3b82f640' : 'rgba(255,255,255,0.06)'}`,
-          background: s.chain === 'source' ? 'rgba(59,130,246,0.06)' : 'transparent',
-          transition: 'all 0.3s',
+          'padding': '10px',
+          'border-radius': '6px',
+          'border': `1px solid ${s.chain === 'source' ? '#3b82f640' : 'rgba(255,255,255,0.06)'}`,
+          'background': s.chain === 'source' ? 'rgba(59,130,246,0.06)' : 'transparent',
+          'transition': 'all 0.3s',
         }}>
           <DiagramTooltip content="Source Chain -- блокчейн-отправитель. Здесь пользователь инициирует cross-chain операцию. Bridge контракт записывает message в event log и (опционально) блокирует активы.">
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6, display: 'inline-block' }}>
+            <span style={{ 'font-size': '10px', 'font-weight': '700', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '6px', 'display': 'inline-block' }}>
               Source Chain
             </span>
           </DiagramTooltip>
           {CC_STEPS.filter((_, i) => i <= current).map((st, i) => (
             st.chain === 'source' && (
-              <div key={i} style={{
-                fontSize: 9,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                padding: '3px 6px',
-                marginBottom: 3,
-                borderRadius: 3,
-                background: `${st.color}10`,
+              <div style={{
+                'font-size': '9px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'padding': '3px 6px',
+                'margin-bottom': '3px',
+                'border-radius': '3px',
+                'background': `${st.color}10`,
               }}>
                 {st.icon}: {st.title}
               </div>
@@ -147,32 +148,32 @@ export function CrossChainMessagingDiagram() {
 
         {/* Relay arrow */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
+          'display': 'flex',
+          'flex-direction': 'column',
+          'align-items': 'center',
+          'justify-content': 'center',
+          'gap': '4px',
         }}>
           <DiagramTooltip content="Relayer -- off-chain сервис, передающий сообщения между чейнами. Может быть централизованным (один оператор), децентрализованным (сеть нод), или permissionless (любой может стать relayer).">
             <span style={{
-              fontSize: 9,
-              color: '#f59e0b',
-              fontFamily: 'monospace',
-              fontWeight: 600,
+              'font-size': '9px',
+              'color': '#f59e0b',
+              'font-family': 'monospace',
+              'font-weight': '600',
             }}>
               Relayer
             </span>
           </DiagramTooltip>
           <div style={{
-            width: 2,
-            height: 40,
-            background: current >= 1 ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)',
-            transition: 'background 0.3s',
+            'width': '2px',
+            'height': '40px',
+            'background': current >= 1 ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)',
+            'transition': 'background 0.3s',
           }} />
           <div style={{
-            fontSize: 14,
-            color: current >= 1 ? '#f59e0b' : 'rgba(255,255,255,0.15)',
-            transition: 'color 0.3s',
+            'font-size': '14px',
+            'color': current >= 1 ? '#f59e0b' : 'rgba(255,255,255,0.15)',
+            'transition': 'color 0.3s',
           }}>
             {current >= 2 ? '\u2194' : current >= 1 ? '\u2192' : '\u2192'}
           </div>
@@ -181,27 +182,27 @@ export function CrossChainMessagingDiagram() {
         {/* Destination chain */}
         <div style={{
           ...glassStyle,
-          padding: 10,
-          borderRadius: 6,
-          border: `1px solid ${s.chain === 'destination' ? '#8b5cf640' : 'rgba(255,255,255,0.06)'}`,
-          background: s.chain === 'destination' ? 'rgba(139,92,246,0.06)' : 'transparent',
-          transition: 'all 0.3s',
+          'padding': '10px',
+          'border-radius': '6px',
+          'border': `1px solid ${s.chain === 'destination' ? '#8b5cf640' : 'rgba(255,255,255,0.06)'}`,
+          'background': s.chain === 'destination' ? 'rgba(139,92,246,0.06)' : 'transparent',
+          'transition': 'all 0.3s',
         }}>
           <DiagramTooltip content="Destination Chain -- блокчейн-получатель. Здесь выполняется payload сообщения после верификации proof. Receiving контракт проверяет доказательство и выполняет целевое действие.">
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', fontFamily: 'monospace', marginBottom: 6, display: 'inline-block' }}>
+            <span style={{ 'font-size': '10px', 'font-weight': '700', 'color': '#8b5cf6', 'font-family': 'monospace', 'margin-bottom': '6px', 'display': 'inline-block' }}>
               Destination Chain
             </span>
           </DiagramTooltip>
           {CC_STEPS.filter((_, i) => i <= current).map((st, i) => (
             st.chain === 'destination' && (
-              <div key={i} style={{
-                fontSize: 9,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                padding: '3px 6px',
-                marginBottom: 3,
-                borderRadius: 3,
-                background: `${st.color}10`,
+              <div style={{
+                'font-size': '9px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'padding': '3px 6px',
+                'margin-bottom': '3px',
+                'border-radius': '3px',
+                'background': `${st.color}10`,
               }}>
                 {st.icon}: {st.title}
               </div>
@@ -213,66 +214,66 @@ export function CrossChainMessagingDiagram() {
       {/* Current step detail */}
       <div style={{
         ...glassStyle,
-        padding: 14,
-        marginBottom: 12,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
+        'padding': '14px',
+        'margin-bottom': '12px',
+        'border': `1px solid ${s.color}30`,
+        'background': `${s.color}08`,
+        'border-radius': '8px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '6px' }}>
           <DiagramTooltip content={s.tooltipRu}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: s.color,
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${s.color}15`,
-              border: `1px solid ${s.color}30`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'color': s.color,
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${s.color}15`,
+              'border': `1px solid ${s.color}30`,
             }}>
               {s.label}
             </span>
           </DiagramTooltip>
           <DiagramTooltip content={`Текущий шаг выполняется на ${s.chain === 'source' ? 'source chain (отправитель)' : s.chain === 'relay' ? 'relay layer (передача)' : 'destination chain (получатель)'}. ${s.chain === 'relay' ? 'Relayer работает off-chain.' : 'Транзакция записывается в блокчейн.'}`}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: CHAIN_COLORS[s.chain],
-              fontWeight: 600,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'color': CHAIN_COLORS[s.chain],
+              'font-weight': '600',
             }}>
               [{s.chain}]
             </span>
           </DiagramTooltip>
-          <span style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>
+          <span style={{ 'font-size': '12px', 'font-weight': '700', 'color': colors.text }}>
             {s.title}
           </span>
         </div>
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
           {s.description}
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px' }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1 },
+          { label: 'Back', action: back, disabled: history().length <= 1 },
           { label: `Step ${current + 1}/${CC_STEPS.length}`, action: step, disabled: current >= CC_STEPS.length - 1 },
-          { label: 'Reset', action: reset, disabled: history.length <= 1 },
+          { label: 'Reset', action: reset, disabled: history().length <= 1 },
         ].map((btn) => (
-          <div key={btn.label}>
+          <div>
             <button
               onClick={btn.action}
               disabled={btn.disabled}
               style={{
                 ...glassStyle,
-                padding: '6px 14px',
-                cursor: btn.disabled ? 'default' : 'pointer',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 6,
-                opacity: btn.disabled ? 0.5 : 1,
+                'padding': '6px 14px',
+                'cursor': btn.disabled ? 'default' : 'pointer',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'border-radius': '6px',
+                'opacity': btn.disabled ? 0.5 : 1,
               }}
             >
               {btn.label}
@@ -344,64 +345,64 @@ export function AssetTransferModelsDiagram() {
   return (
     <DiagramContainer title="Модели передачи активов" color="orange">
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(3, 1fr)',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         {TRANSFER_MODELS.map((model) => (
-          <DiagramTooltip key={model.name} content={model.tooltipRu}>
+          <DiagramTooltip content={model.tooltipRu}>
             <div
               style={{
                 ...glassStyle,
-                padding: 14,
-                borderRadius: 6,
-                cursor: 'pointer',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                transition: 'all 0.2s',
+                'padding': '14px',
+                'border-radius': '6px',
+                'cursor': 'pointer',
+                'background': 'rgba(255,255,255,0.02)',
+                'border': '1px solid rgba(255,255,255,0.08)',
+                'transition': 'all 0.2s',
               }}
             >
               <div style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: model.color,
-                fontFamily: 'monospace',
-                marginBottom: 8,
+                'font-size': '12px',
+                'font-weight': '700',
+                'color': model.color,
+                'font-family': 'monospace',
+                'margin-bottom': '8px',
               }}>
                 {model.name}
               </div>
               <div style={{
-                fontSize: 11,
-                color: colors.text,
-                lineHeight: 1.5,
-                marginBottom: 8,
+                'font-size': '11px',
+                'color': colors.text,
+                'line-height': '1.5',
+                'margin-bottom': '8px',
               }}>
                 {model.mechanism}
               </div>
               <div style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                marginBottom: 4,
+                'font-size': '10px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'margin-bottom': '4px',
               }}>
                 Examples: {model.examples}
               </div>
 
               {/* Always-visible risk/advantage (replaces hover) */}
-              <div style={{ marginTop: 8 }}>
+              <div style={{ 'margin-top': '8px' }}>
                 <div style={{
-                  fontSize: 10,
-                  color: '#f43f5e',
-                  fontFamily: 'monospace',
-                  marginBottom: 4,
+                  'font-size': '10px',
+                  'color': '#f43f5e',
+                  'font-family': 'monospace',
+                  'margin-bottom': '4px',
                 }}>
                   Risk: {model.risk}
                 </div>
                 <div style={{
-                  fontSize: 10,
-                  color: colors.success,
-                  fontFamily: 'monospace',
+                  'font-size': '10px',
+                  'color': colors.success,
+                  'font-family': 'monospace',
                 }}>
                   Advantage: {model.advantage}
                 </div>
@@ -413,26 +414,26 @@ export function AssetTransferModelsDiagram() {
 
       {/* Risk profile arrow */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'flex',
+        'align-items': 'center',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         <DiagramTooltip content="Шкала риска отражает объем locked assets. Lock-and-Mint -- максимальный риск (bridge контракт = honeypot). Burn-and-Mint -- минимальный (нет locked assets).">
-          <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 50 }}>
+          <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'min-width': '50px' }}>
             Risk:
           </span>
         </DiagramTooltip>
-        <span style={{ fontSize: 10, color: '#f43f5e', fontWeight: 600 }}>High</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-          <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(244,63,94,0.4)' }} />
-          <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(59,130,246,0.4)' }} />
-          <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(16,185,129,0.4)' }} />
+        <span style={{ 'font-size': '10px', 'color': '#f43f5e', 'font-weight': '600' }}>High</span>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '2px', 'flex': '1' }}>
+          <div style={{ 'flex': '1', 'height': '3px', 'border-radius': '2px', 'background': 'rgba(244,63,94,0.4)' }} />
+          <div style={{ 'flex': '1', 'height': '3px', 'border-radius': '2px', 'background': 'rgba(59,130,246,0.4)' }} />
+          <div style={{ 'flex': '1', 'height': '3px', 'border-radius': '2px', 'background': 'rgba(16,185,129,0.4)' }} />
         </div>
-        <span style={{ fontSize: 10, color: '#10b981', fontWeight: 600 }}>Low</span>
+        <span style={{ 'font-size': '10px', 'color': '#10b981', 'font-weight': '600' }}>Low</span>
       </div>
 
-      <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center', marginBottom: 4 }}>
+      <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center', 'margin-bottom': '4px' }}>
         Lock-and-Mint (highest risk) {'  \u2192  '} Liquidity Pool (moderate) {'  \u2192  '} Burn-and-Mint (lowest risk)
       </div>
     </DiagramContainer>
@@ -491,58 +492,58 @@ export function TrustSpectrumDiagram() {
     <DiagramContainer title="Модели доверия мостов" color="red">
       {/* Spectrum cards */}
       <div style={{
-        display: 'flex',
-        gap: 4,
-        marginBottom: 14,
+        'display': 'flex',
+        'gap': '4px',
+        'margin-bottom': '14px',
       }}>
         {TRUST_MODELS.map((model) => (
-          <DiagramTooltip key={model.name} content={model.tooltipRu}>
+          <DiagramTooltip content={model.tooltipRu}>
             <div
               style={{
-                flex: 1,
+                'flex': '1',
                 ...glassStyle,
-                padding: 14,
-                borderRadius: 6,
-                cursor: 'pointer',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                transition: 'all 0.2s',
+                'padding': '14px',
+                'border-radius': '6px',
+                'cursor': 'pointer',
+                'background': 'rgba(255,255,255,0.02)',
+                'border': '1px solid rgba(255,255,255,0.08)',
+                'transition': 'all 0.2s',
               }}
             >
               <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: model.color,
-                fontFamily: 'monospace',
-                marginBottom: 6,
+                'font-size': '11px',
+                'font-weight': '700',
+                'color': model.color,
+                'font-family': 'monospace',
+                'margin-bottom': '6px',
               }}>
                 {model.name}
               </div>
               <div style={{
-                fontSize: 11,
-                color: colors.text,
-                lineHeight: 1.5,
-                marginBottom: 6,
+                'font-size': '11px',
+                'color': colors.text,
+                'line-height': '1.5',
+                'margin-bottom': '6px',
               }}>
                 {model.description}
               </div>
               <div style={{
-                fontSize: 9,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
+                'font-size': '9px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
               }}>
                 Example: {model.example}
               </div>
 
               {/* Always-visible security (replaces hover) */}
               <div style={{
-                marginTop: 8,
-                padding: 6,
-                borderRadius: 4,
-                background: `${model.color}08`,
-                border: `1px solid ${model.color}20`,
+                'margin-top': '8px',
+                'padding': '6px',
+                'border-radius': '4px',
+                'background': `${model.color}08`,
+                'border': `1px solid ${model.color}20`,
               }}>
-                <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
+                <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.4' }}>
                   Security: {model.security}
                 </div>
               </div>
@@ -556,29 +557,29 @@ export function TrustSpectrumDiagram() {
         { label: 'Security', left: 'High', right: 'Low', color: '#10b981', tooltipRu: 'Уровень безопасности снижается слева направо. Natively Verified обеспечивает криптографическую безопасность на уровне L1. Optimistic полагается на наличие хотя бы одного честного watcher.' },
         { label: 'Cost', left: 'High', right: 'Low', color: '#f43f5e', tooltipRu: 'Стоимость верификации снижается слева направо. Native verification требует запуск light client (дорогой gas). Optimistic -- минимальный gas (proof только при dispute).' },
       ].map((arrow) => (
-        <div key={arrow.label} style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 6,
+        <div style={{
+          'display': 'flex',
+          'align-items': 'center',
+          'gap': '8px',
+          'margin-bottom': '6px',
         }}>
           <DiagramTooltip content={arrow.tooltipRu}>
-            <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', minWidth: 60 }}>
+            <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'min-width': '60px' }}>
               {arrow.label}:
             </span>
           </DiagramTooltip>
-          <span style={{ fontSize: 10, color: arrow.color, fontWeight: 600 }}>{arrow.left}</span>
+          <span style={{ 'font-size': '10px', 'color': arrow.color, 'font-weight': '600' }}>{arrow.left}</span>
           <div style={{
-            flex: 1,
-            height: 2,
-            background: `linear-gradient(to right, ${arrow.color}60, ${arrow.color}10)`,
-            borderRadius: 1,
+            'flex': '1',
+            'height': '2px',
+            'background': `linear-gradient(to right, ${arrow.color}60, ${arrow.color}10)`,
+            'border-radius': '1px',
           }} />
-          <span style={{ fontSize: 10, color: arrow.color, fontWeight: 600 }}>{arrow.right}</span>
+          <span style={{ 'font-size': '10px', 'color': arrow.color, 'font-weight': '600' }}>{arrow.right}</span>
         </div>
       ))}
 
-      <div style={{ marginTop: 10 }}>
+      <div style={{ 'margin-top': '10px' }}>
         <DataBox
           label="Статистика"
           value="Нативно верифицированные мосты -- самые безопасные, но самые дорогие. Большинство взломов -- у внешне верифицированных мостов."

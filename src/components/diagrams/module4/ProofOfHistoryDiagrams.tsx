@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Proof of History Diagrams (SOL-02)
  *
@@ -6,7 +7,7 @@
  * - PoHVerificationDiagram: Sequential generation vs parallel verification (static with DiagramTooltip)
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -46,7 +47,7 @@ function fnvHash(input: string): string {
 /*  Shared button style                                                */
 /* ================================================================== */
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -161,45 +162,45 @@ function hashBoxTooltip(entry: PoHEntry): string {
 }
 
 export function PoHHashChainDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   const steps = buildPoHSteps();
-  const currentStep = steps[step];
+  const currentStep = steps[step()];
 
-  const canBack = step > 0;
-  const canForward = step < steps.length - 1;
+  const canBack = step() > 0;
+  const canForward = step() < steps.length - 1;
 
   return (
     <DiagramContainer title="Proof of History: цепочка хешей" color="green">
       {/* Hash chain visualization */}
-      <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 'max-content', padding: '8px 0' }}>
+      <div style={{ 'overflow-x': 'auto', 'padding-bottom': '8px' }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'min-width': 'max-content', 'padding': '8px 0' }}>
           {currentStep.entries.map((entry, i) => {
             const isEvent = !!entry.event;
             const isHighlighted = currentStep.highlightEvent === entry.index;
             const boxColor = isEvent ? '#f59e0b' : '#22c55e';
 
             return (
-              <div key={entry.index} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
+                <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '4px' }}>
                   {/* Event label above */}
                   {isEvent && (
                     <div style={{
                       ...glassStyle,
-                      padding: '4px 8px',
-                      borderRadius: 6,
-                      background: isHighlighted ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.1)',
-                      border: `1px solid rgba(245,158,11,${isHighlighted ? 0.6 : 0.3})`,
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                      color: '#f59e0b',
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
+                      'padding': '4px 8px',
+                      'border-radius': '6px',
+                      'background': isHighlighted ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.1)',
+                      'border': `1px solid rgba(245,158,11,${isHighlighted ? 0.6 : 0.3})`,
+                      'font-size': '10px',
+                      'font-family': 'monospace',
+                      'color': '#f59e0b',
+                      'text-align': 'center',
+                      'white-space': 'nowrap',
                     }}>
                       {entry.event}
                     </div>
                   )}
                   {isEvent && (
-                    <div style={{ fontSize: 10, color: '#f59e0b', lineHeight: 1 }}>
+                    <div style={{ 'font-size': '10px', 'color': '#f59e0b', 'line-height': '1' }}>
                       |
                     </div>
                   )}
@@ -208,22 +209,22 @@ export function PoHHashChainDiagram() {
                   <DiagramTooltip content={hashBoxTooltip(entry)}>
                     <div style={{
                       ...glassStyle,
-                      padding: '8px 10px',
-                      borderRadius: 8,
-                      background: isHighlighted ? `${boxColor}15` : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${isHighlighted ? boxColor + '60' : 'rgba(255,255,255,0.1)'}`,
-                      textAlign: 'center',
-                      minWidth: 100,
+                      'padding': '8px 10px',
+                      'border-radius': '8px',
+                      'background': isHighlighted ? `${boxColor}15` : 'rgba(255,255,255,0.05)',
+                      'border': `1px solid ${isHighlighted ? boxColor + '60' : 'rgba(255,255,255,0.1)'}`,
+                      'text-align': 'center',
+                      'min-width': '100px',
                     }}>
                       <div style={{
-                        fontSize: 10, fontFamily: 'monospace', fontWeight: 600,
-                        color: boxColor, marginBottom: 4,
+                        'font-size': '10px', 'font-family': 'monospace', 'font-weight': '600',
+                        'color': boxColor, 'margin-bottom': '4px',
                       }}>
                         H({entry.index})
                       </div>
                       <div style={{
-                        fontSize: 11, fontFamily: 'monospace',
-                        color: colors.text, letterSpacing: 0.5,
+                        'font-size': '11px', 'font-family': 'monospace',
+                        'color': colors.text, 'letter-spacing': '0.5px',
                       }}>
                         {entry.hash}
                       </div>
@@ -234,8 +235,8 @@ export function PoHHashChainDiagram() {
                 {/* Arrow to next */}
                 {i < currentStep.entries.length - 1 && (
                   <div style={{
-                    fontSize: 16, color: colors.textMuted, fontFamily: 'monospace',
-                    padding: '0 2px',
+                    'font-size': '16px', 'color': colors.textMuted, 'font-family': 'monospace',
+                    'padding': '0 2px',
                   }}>
                     {'\u2192'}
                   </div>
@@ -249,20 +250,20 @@ export function PoHHashChainDiagram() {
       {/* Message */}
       <DiagramTooltip content="Пошаговое описание процесса построения цепочки PoH. Каждый шаг демонстрирует, как последовательное хеширование создаёт криптографические часы — Verifiable Delay Function.">
         <DataBox
-          label={`Шаг ${step + 1} из ${steps.length}`}
+          label={`Шаг ${step() + 1} из ${steps.length}`}
           value={currentStep.message}
           variant="highlight"
         />
       </DiagramTooltip>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <DiagramTooltip content="Сброс к первому шагу — начальному seed-хешу цепочки PoH.">
           <div>
             <button
               onClick={() => setStep(0)}
-              style={btnStyle(step > 0, colors.text)}
-              disabled={step === 0}
+              style={btnStyle(step() > 0, colors.text)}
+              disabled={step() === 0}
             >
               Сброс
             </button>
@@ -310,61 +311,61 @@ export function PoHVerificationDiagram() {
         <div
           style={{
             ...glassStyle,
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 12,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.15s',
-            cursor: 'default',
+            'padding': '16px',
+            'border-radius': '10px',
+            'margin-bottom': '12px',
+            'background': 'rgba(255,255,255,0.05)',
+            'border': '1px solid rgba(255,255,255,0.08)',
+            'transition': 'all 0.15s',
+            'cursor': 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px', 'margin-bottom': '12px' }}>
             <div style={{
-              fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-              color: '#f59e0b',
-              background: 'rgba(245,158,11,0.15)',
-              padding: '3px 8px', borderRadius: 4,
+              'font-size': '11px', 'font-family': 'monospace', 'font-weight': '700',
+              'color': '#f59e0b',
+              'background': 'rgba(245,158,11,0.15)',
+              'padding': '3px 8px', 'border-radius': '4px',
             }}>
               Генерация (последовательная)
             </div>
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               1 ядро, N операций, O(N)
             </span>
           </div>
 
           {/* Single CPU generating chain */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto' }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'overflow-x': 'auto' }}>
             {/* CPU icon */}
             <div style={{
               ...glassStyle,
-              padding: '6px 10px', borderRadius: 6, textAlign: 'center',
-              background: 'rgba(245,158,11,0.1)',
-              border: '1px solid rgba(245,158,11,0.3)',
-              minWidth: 48, flexShrink: 0,
+              'padding': '6px 10px', 'border-radius': '6px', 'text-align': 'center',
+              'background': 'rgba(245,158,11,0.1)',
+              'border': '1px solid rgba(245,158,11,0.3)',
+              'min-width': '48px', 'flex-shrink': '0',
             }}>
-              <div style={{ fontSize: 14 }}>CPU</div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>Core 1</div>
+              <div style={{ 'font-size': '14px' }}>CPU</div>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Core 1</div>
             </div>
 
-            <span style={{ color: colors.textMuted, fontFamily: 'monospace', fontSize: 12, flexShrink: 0 }}>{'\u2192'}</span>
+            <span style={{ 'color': colors.textMuted, 'font-family': 'monospace', 'font-size': '12px', 'flex-shrink': '0' }}>{'\u2192'}</span>
 
             {/* Hash chain */}
             {Array.from({ length: chainLen }, (_, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'flex-shrink': '0' }}>
                 <div style={{
                   ...glassStyle,
-                  padding: '4px 8px', borderRadius: 4, textAlign: 'center',
-                  background: 'rgba(245,158,11,0.05)',
-                  border: '1px solid rgba(245,158,11,0.15)',
-                  minWidth: 36,
+                  'padding': '4px 8px', 'border-radius': '4px', 'text-align': 'center',
+                  'background': 'rgba(245,158,11,0.05)',
+                  'border': '1px solid rgba(245,158,11,0.15)',
+                  'min-width': '36px',
                 }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b' }}>
+                  <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#f59e0b' }}>
                     H({i})
                   </span>
                 </div>
                 {i < chainLen - 1 && (
-                  <span style={{ color: colors.textMuted, fontSize: 10, fontFamily: 'monospace' }}>{'\u2192'}</span>
+                  <span style={{ 'color': colors.textMuted, 'font-size': '10px', 'font-family': 'monospace' }}>{'\u2192'}</span>
                 )}
               </div>
             ))}
@@ -377,69 +378,69 @@ export function PoHVerificationDiagram() {
         <div
           style={{
             ...glassStyle,
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 12,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            transition: 'all 0.15s',
-            cursor: 'default',
+            'padding': '16px',
+            'border-radius': '10px',
+            'margin-bottom': '12px',
+            'background': 'rgba(255,255,255,0.05)',
+            'border': '1px solid rgba(255,255,255,0.08)',
+            'transition': 'all 0.15s',
+            'cursor': 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px', 'margin-bottom': '12px' }}>
             <div style={{
-              fontSize: 11, fontFamily: 'monospace', fontWeight: 700,
-              color: '#22c55e',
-              background: 'rgba(34,197,94,0.15)',
-              padding: '3px 8px', borderRadius: 4,
+              'font-size': '11px', 'font-family': 'monospace', 'font-weight': '700',
+              'color': '#22c55e',
+              'background': 'rgba(34,197,94,0.15)',
+              'padding': '3px 8px', 'border-radius': '4px',
             }}>
               Верификация (параллельная)
             </div>
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               4 ядра, N/4 операций каждое, O(N/cores)
             </span>
           </div>
 
           {/* 4 cores each verifying a chunk */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
             {[0, 1, 2, 3].map((coreIdx) => {
               const startH = coreIdx * 2;
               const endH = startH + 2;
               return (
-                <div key={coreIdx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
                   <div style={{
                     ...glassStyle,
-                    padding: '4px 8px', borderRadius: 4, textAlign: 'center',
-                    background: `${coreColors[coreIdx]}10`,
-                    border: `1px solid ${coreColors[coreIdx]}30`,
-                    minWidth: 48, flexShrink: 0,
+                    'padding': '4px 8px', 'border-radius': '4px', 'text-align': 'center',
+                    'background': `${coreColors[coreIdx]}10`,
+                    'border': `1px solid ${coreColors[coreIdx]}30`,
+                    'min-width': '48px', 'flex-shrink': '0',
                   }}>
-                    <div style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx], fontWeight: 600 }}>
+                    <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': coreColors[coreIdx], 'font-weight': '600' }}>
                       Core {coreIdx + 1}
                     </div>
                   </div>
-                  <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                     проверяет
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '3px' }}>
                     <div style={{
                       ...glassStyle,
-                      padding: '3px 6px', borderRadius: 3,
-                      background: `${coreColors[coreIdx]}08`,
-                      border: `1px solid ${coreColors[coreIdx]}20`,
+                      'padding': '3px 6px', 'border-radius': '3px',
+                      'background': `${coreColors[coreIdx]}08`,
+                      'border': `1px solid ${coreColors[coreIdx]}20`,
                     }}>
-                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
+                      <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': coreColors[coreIdx] }}>
                         H({startH})
                       </span>
                     </div>
-                    <span style={{ fontSize: 10, color: colors.textMuted }}>{'\u2192'}</span>
+                    <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>{'\u2192'}</span>
                     <div style={{
                       ...glassStyle,
-                      padding: '3px 6px', borderRadius: 3,
-                      background: `${coreColors[coreIdx]}08`,
-                      border: `1px solid ${coreColors[coreIdx]}20`,
+                      'padding': '3px 6px', 'border-radius': '3px',
+                      'background': `${coreColors[coreIdx]}08`,
+                      'border': `1px solid ${coreColors[coreIdx]}20`,
                     }}>
-                      <span style={{ fontSize: 10, fontFamily: 'monospace', color: coreColors[coreIdx] }}>
+                      <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': coreColors[coreIdx] }}>
                         H({endH})
                       </span>
                     </div>

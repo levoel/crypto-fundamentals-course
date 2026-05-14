@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * UTXO Diagrams (BTC-02)
  *
@@ -7,7 +8,7 @@
  * - ChangeAddressDiagram: Step-through change address creation
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -124,9 +125,9 @@ const statusColors: Record<string, string> = {
 };
 
 export function UTXOFlowDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = FLOW_STEPS[step];
+  const current = FLOW_STEPS[step()];
 
   const inputs = current.utxos.filter((u) =>
     u.status === 'selected' || u.status === 'spent' || u.status === 'unspent' && u.utxo.owner === 'Alice'
@@ -139,21 +140,21 @@ export function UTXOFlowDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginBottom: 12,
-          borderLeft: `3px solid ${colors.success}`,
+          'padding': '10px 14px',
+          'margin-bottom': '12px',
+          'border-left': `3px solid ${colors.success}`,
         }}>
-          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+          <div style={{ 'font-weight': '600', 'color': colors.text, 'font-size': '14px', 'margin-bottom': '4px' }}>
             {current.title}
           </div>
-          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+          <div style={{ 'color': colors.textMuted, 'font-size': '12px' }}>
             {current.description}
           </div>
         </div>
       </DiagramTooltip>
 
       {/* UTXO display */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-wrap': 'wrap', 'gap': '8px', 'margin-bottom': '12px' }}>
         {current.utxos.map((item, i) => {
           const sc = statusColors[item.status];
           const utxoTooltips: Record<string, string> = {
@@ -163,28 +164,28 @@ export function UTXOFlowDiagram() {
             new: `Новый UTXO: ${item.utxo.amount} BTC для ${item.utxo.owner}. Создан текущей транзакцией и добавлен в UTXO set.`,
           };
           return (
-            <DiagramTooltip key={`${item.utxo.txid}-${item.utxo.vout}-${i}`} content={utxoTooltips[item.status]}>
+            <DiagramTooltip content={utxoTooltips[item.status]}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  flex: '1 1 auto',
-                  minWidth: 180,
-                  borderLeft: `3px solid ${sc}`,
-                  opacity: item.status === 'spent' ? 0.4 : 1,
-                  textDecoration: item.status === 'spent' ? 'line-through' : 'none',
+                  'padding': '8px 12px',
+                  'flex': '1 1 auto',
+                  'min-width': '180px',
+                  'border-left': `3px solid ${sc}`,
+                  'opacity': item.status === 'spent' ? 0.4 : 1,
+                  'text-decoration': item.status === 'spent' ? 'line-through' : 'none',
                 }}
               >
-                <div style={{ fontSize: 11, color: sc, fontWeight: 600, marginBottom: 2 }}>
+                <div style={{ 'font-size': '11px', 'color': sc, 'font-weight': '600', 'margin-bottom': '2px' }}>
                   {item.utxo.owner}
                   {item.status === 'spent' && ' (потрачен)'}
                   {item.status === 'selected' && ' (выбран)'}
                   {item.status === 'new' && ' (новый)'}
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+                <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'color': colors.text }}>
                   {item.utxo.amount} BTC
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 10, color: colors.textMuted }}>
+                <div style={{ 'font-family': 'monospace', 'font-size': '10px', 'color': colors.textMuted }}>
                   txid:{truncHex(item.utxo.txid)}:{item.utxo.vout}
                 </div>
               </div>
@@ -204,29 +205,29 @@ export function UTXOFlowDiagram() {
       <DiagramTooltip content="Комиссия (fee) в Bitcoin вычисляется неявно: это разница между суммой всех входов и суммой всех выходов. Нет отдельного поля 'fee' в транзакции -- майнер забирает разницу.">
         <div style={{
           ...glassStyle,
-          padding: '8px 14px',
-          marginTop: 8,
-          textAlign: 'center',
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: '#f1c40f',
+          'padding': '8px 14px',
+          'margin-top': '8px',
+          'text-align': 'center',
+          'font-family': 'monospace',
+          'font-size': '13px',
+          'color': '#f1c40f',
         }}>
           fee = sum(inputs) - sum(outputs)
         </div>
       </DiagramTooltip>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <DiagramTooltip content="Вернуться к первому шагу демонстрации UTXO потока.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep(0)}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                color: colors.text,
-                fontSize: 13,
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'color': colors.text,
+                'font-size': '13px',
               }}
             >
               Сброс
@@ -234,17 +235,17 @@ export function UTXOFlowDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу потока UTXO.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
+              disabled={step() === 0}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step === 0 ? 'not-allowed' : 'pointer',
-                color: step === 0 ? colors.textMuted : colors.text,
-                fontSize: 13,
-                opacity: step === 0 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+                'color': step() === 0 ? colors.textMuted : colors.text,
+                'font-size': '13px',
+                'opacity': step() === 0 ? 0.5 : 1,
               }}
             >
               Назад
@@ -252,17 +253,17 @@ export function UTXOFlowDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу потока UTXO.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep((s) => Math.min(FLOW_STEPS.length - 1, s + 1))}
-              disabled={step >= FLOW_STEPS.length - 1}
+              disabled={step() >= FLOW_STEPS.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step >= FLOW_STEPS.length - 1 ? 'not-allowed' : 'pointer',
-                color: step >= FLOW_STEPS.length - 1 ? colors.textMuted : colors.success,
-                fontSize: 13,
-                opacity: step >= FLOW_STEPS.length - 1 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() >= FLOW_STEPS.length - 1 ? 'not-allowed' : 'pointer',
+                'color': step() >= FLOW_STEPS.length - 1 ? colors.textMuted : colors.success,
+                'font-size': '13px',
+                'opacity': step() >= FLOW_STEPS.length - 1 ? 0.5 : 1,
               }}
             >
               Далее
@@ -272,18 +273,17 @@ export function UTXOFlowDiagram() {
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-top': '8px' }}>
         {FLOW_STEPS.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStep(i)}
             style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: i === step ? colors.success : 'rgba(255,255,255,0.15)',
-              border: `1px solid ${i === step ? colors.success : colors.border}`,
-              cursor: 'pointer',
+              'width': '10px',
+              'height': '10px',
+              'border-radius': '50%',
+              'background': i === step() ? colors.success : 'rgba(255,255,255,0.15)',
+              'border': `1px solid ${i === step() ? colors.success : colors.border}`,
+              'cursor': 'pointer',
             }}
           />
         ))}
@@ -320,14 +320,14 @@ const UTXO_DATA: UTXORecord[] = [
 ];
 
 export function UTXOSetVisualization() {
-  const [blockHeight, setBlockHeight] = useState(6);
+  const [blockHeight, setBlockHeight] = createSignal(6);
 
-  const activeUtxos = useMemo(() => {
+  const activeUtxos = createMemo(() => {
     return UTXO_DATA.filter((u) =>
-      u.createdAtBlock <= blockHeight &&
-      (u.spentAtBlock === null || u.spentAtBlock > blockHeight)
+      u.createdAtBlock <= blockHeight() &&
+      (u.spentAtBlock === null || u.spentAtBlock > blockHeight())
     );
-  }, [blockHeight]);
+  });
 
   const aliceBalance = activeUtxos.filter((u) => u.owner === 'Alice').reduce((s, u) => s + u.amount, 0);
   const bobBalance = activeUtxos.filter((u) => u.owner === 'Bob').reduce((s, u) => s + u.amount, 0);
@@ -336,7 +336,7 @@ export function UTXOSetVisualization() {
     <DiagramContainer title="Множество UTXO" color="blue">
       <DiagramTooltip content="Высота блока определяет, какие UTXO существуют в данный момент. При каждом новом блоке одни UTXO создаются (выходы транзакций), другие -- тратятся (входы). Перемещайте слайдер, чтобы наблюдать эволюцию UTXO set.">
         <InteractiveValue
-          value={blockHeight}
+          value={blockHeight()}
           onChange={setBlockHeight}
           min={1}
           max={6}
@@ -345,15 +345,15 @@ export function UTXOSetVisualization() {
       </DiagramTooltip>
 
       {/* UTXO list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px', 'margin-top': '12px' }}>
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '90px 40px 80px 1fr 60px',
-          gap: 4,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          color: colors.textMuted,
-          padding: '0 8px',
+          'display': 'grid',
+          'grid-template-columns': '90px 40px 80px 1fr 60px',
+          'gap': '4px',
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'color': colors.textMuted,
+          'padding': '0 8px',
         }}>
           <span>txid</span>
           <span>vout</span>
@@ -364,25 +364,24 @@ export function UTXOSetVisualization() {
 
         {activeUtxos.map((u, i) => (
           <div
-            key={`${u.txid}-${u.vout}`}
             style={{
               ...glassStyle,
-              display: 'grid',
-              gridTemplateColumns: '90px 40px 80px 1fr 60px',
-              gap: 4,
-              padding: '6px 8px',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: colors.text,
-              background: u.owner === 'Alice' ? `${colors.primary}10` : `${colors.success}10`,
-              borderLeft: `2px solid ${u.owner === 'Alice' ? colors.primary : colors.success}`,
+              'display': 'grid',
+              'grid-template-columns': '90px 40px 80px 1fr 60px',
+              'gap': '4px',
+              'padding': '6px 8px',
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'color': colors.text,
+              'background': u.owner === 'Alice' ? `${colors.primary}10` : `${colors.success}10`,
+              'border-left': `2px solid ${u.owner === 'Alice' ? colors.primary : colors.success}`,
             }}
           >
             <span>{truncHex(u.txid)}</span>
             <span>{u.vout}</span>
             <span>{u.amount.toFixed(3)}</span>
             <span>{truncHex(u.address, 16)}</span>
-            <span style={{ color: u.owner === 'Alice' ? colors.primary : colors.success }}>
+            <span style={{ 'color': u.owner === 'Alice' ? colors.primary : colors.success }}>
               {u.owner}
             </span>
           </div>
@@ -390,7 +389,7 @@ export function UTXOSetVisualization() {
       </div>
 
       {/* Balances */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'margin-top': '12px' }}>
         <DiagramTooltip content="Баланс Alice -- сумма всех неизрасходованных выходов (UTXO), принадлежащих Alice на данной высоте блока. Каждый UTXO привязан к конкретному адресу и может быть потрачен только владельцем приватного ключа.">
           <DataBox
             label="Alice (сумма UTXO)"
@@ -411,15 +410,15 @@ export function UTXOSetVisualization() {
       <DiagramTooltip content="В модели UTXO нет понятия 'аккаунт' или 'баланс'. Каждая монета -- это конкретный неизрасходованный выход конкретной транзакции. Кошелёк просто суммирует все UTXO, которые пользователь может потратить.">
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginTop: 8,
-          textAlign: 'center',
-          borderLeft: `3px solid #f1c40f`,
+          'padding': '10px 14px',
+          'margin-top': '8px',
+          'text-align': 'center',
+          'border-left': `3px solid #f1c40f`,
         }}>
-          <span style={{ color: '#f1c40f', fontWeight: 600, fontSize: 13 }}>
+          <span style={{ 'color': '#f1c40f', 'font-weight': '600', 'font-size': '13px' }}>
             В Bitcoin нет поля "баланс"
           </span>
-          <span style={{ color: colors.textMuted, fontSize: 12 }}>
+          <span style={{ 'color': colors.textMuted, 'font-size': '12px' }}>
             {' '} -- баланс = сумма всех UTXO, которые вы можете потратить
           </span>
         </div>
@@ -461,9 +460,9 @@ const BOB_ADDR = 'bc1q' + pseudoTxid('bob-recv').slice(0, 10);
 const CHANGE_ADDR = 'bc1q' + pseudoTxid('alice-change').slice(0, 10);
 
 export function ChangeAddressDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = CHANGE_STEPS[step];
+  const current = CHANGE_STEPS[step()];
 
   return (
     <DiagramContainer title="Сдача и адреса сдачи" color="purple">
@@ -471,14 +470,14 @@ export function ChangeAddressDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginBottom: 12,
-          borderLeft: `3px solid ${colors.accent}`,
+          'padding': '10px 14px',
+          'margin-bottom': '12px',
+          'border-left': `3px solid ${colors.accent}`,
         }}>
-          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+          <div style={{ 'font-weight': '600', 'color': colors.text, 'font-size': '14px', 'margin-bottom': '4px' }}>
             {current.title}
           </div>
-          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+          <div style={{ 'color': colors.textMuted, 'font-size': '12px' }}>
             {current.description}
           </div>
         </div>
@@ -489,10 +488,10 @@ export function ChangeAddressDiagram() {
         {/* Input UTXO */}
         <rect
           x={10} y={60} width={130} height={60} rx={8}
-          fill={step === 0 ? `${colors.success}20` : step >= 4 ? 'rgba(255,255,255,0.02)' : `${statusColors.selected}15`}
-          stroke={step === 0 ? colors.success : step >= 4 ? '#e74c3c' : '#f1c40f'}
+          fill={step() === 0 ? `${colors.success}20` : step() >= 4 ? 'rgba(255,255,255,0.02)' : `${statusColors.selected}15`}
+          stroke={step() === 0 ? colors.success : step() >= 4 ? '#e74c3c' : '#f1c40f'}
           strokeWidth={1.5}
-          opacity={step >= 4 ? 0.3 : 1}
+          opacity={step() >= 4 ? 0.3 : 1}
         />
         <text x={75} y={82} textAnchor="middle" fill={colors.text} fontSize={12} fontFamily="monospace">
           1.0 BTC
@@ -504,7 +503,7 @@ export function ChangeAddressDiagram() {
           Alice (вход)
         </text>
 
-        {step >= 1 && (
+        {step() >= 1 && (
           <>
             {/* Arrow to TX */}
             <line x1={140} y1={90} x2={200} y2={90} stroke={colors.border} strokeWidth={1.5} strokeDasharray="4,2" markerEnd="url(#arr-change)" />
@@ -538,20 +537,20 @@ export function ChangeAddressDiagram() {
 
             {/* Change output */}
             <rect x={330} y={115} width={150} height={55} rx={8}
-              fill={step >= 2 ? `${colors.accent}15` : `${colors.primary}15`}
-              stroke={step >= 2 ? colors.accent : colors.primary}
+              fill={step() >= 2 ? `${colors.accent}15` : `${colors.primary}15`}
+              stroke={step() >= 2 ? colors.accent : colors.primary}
               strokeWidth={1.5}
             />
-            <text x={405} y={135} textAnchor="middle" fill={step >= 2 ? colors.accent : colors.primary} fontSize={12} fontFamily="monospace" fontWeight={600}>
+            <text x={405} y={135} textAnchor="middle" fill={step() >= 2 ? colors.accent : colors.primary} fontSize={12} fontFamily="monospace" fontWeight={600}>
               0.6999 BTC (сдача)
             </text>
             <text x={405} y={153} textAnchor="middle" fill={colors.textMuted} fontSize={9} fontFamily="monospace">
-              {step >= 2 ? truncHex(CHANGE_ADDR, 14) + ' (НОВЫЙ!)' : truncHex(ALICE_ADDR, 14)}
+              {step() >= 2 ? truncHex(CHANGE_ADDR, 14) + ' (НОВЫЙ!)' : truncHex(ALICE_ADDR, 14)}
             </text>
           </>
         )}
 
-        {step >= 3 && (
+        {step() >= 3 && (
           <>
             {/* Privacy note */}
             <text x={405} y={90} textAnchor="middle" fill="#f1c40f" fontSize={10} fontFamily="monospace">
@@ -568,17 +567,17 @@ export function ChangeAddressDiagram() {
       </svg>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <DiagramTooltip content="Вернуться к первому шагу демонстрации адреса сдачи.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep(0)}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                color: colors.text,
-                fontSize: 13,
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'color': colors.text,
+                'font-size': '13px',
               }}
             >
               Сброс
@@ -586,17 +585,17 @@ export function ChangeAddressDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
+              disabled={step() === 0}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step === 0 ? 'not-allowed' : 'pointer',
-                color: step === 0 ? colors.textMuted : colors.text,
-                fontSize: 13,
-                opacity: step === 0 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+                'color': step() === 0 ? colors.textMuted : colors.text,
+                'font-size': '13px',
+                'opacity': step() === 0 ? 0.5 : 1,
               }}
             >
               Назад
@@ -604,17 +603,17 @@ export function ChangeAddressDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу демонстрации адреса сдачи.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStep((s) => Math.min(CHANGE_STEPS.length - 1, s + 1))}
-              disabled={step >= CHANGE_STEPS.length - 1}
+              disabled={step() >= CHANGE_STEPS.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step >= CHANGE_STEPS.length - 1 ? 'not-allowed' : 'pointer',
-                color: step >= CHANGE_STEPS.length - 1 ? colors.textMuted : colors.accent,
-                fontSize: 13,
-                opacity: step >= CHANGE_STEPS.length - 1 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() >= CHANGE_STEPS.length - 1 ? 'not-allowed' : 'pointer',
+                'color': step() >= CHANGE_STEPS.length - 1 ? colors.textMuted : colors.accent,
+                'font-size': '13px',
+                'opacity': step() >= CHANGE_STEPS.length - 1 ? 0.5 : 1,
               }}
             >
               Далее
@@ -624,18 +623,17 @@ export function ChangeAddressDiagram() {
       </div>
 
       {/* Step dots */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-top': '8px' }}>
         {CHANGE_STEPS.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStep(i)}
             style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: i === step ? colors.accent : 'rgba(255,255,255,0.15)',
-              border: `1px solid ${i === step ? colors.accent : colors.border}`,
-              cursor: 'pointer',
+              'width': '10px',
+              'height': '10px',
+              'border-radius': '50%',
+              'background': i === step() ? colors.accent : 'rgba(255,255,255,0.15)',
+              'border': `1px solid ${i === step() ? colors.accent : colors.border}`,
+              'cursor': 'pointer',
             }}
           />
         ))}

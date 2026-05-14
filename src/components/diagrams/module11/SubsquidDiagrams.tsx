@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Subsquid Diagrams (INDEX-03, INDEX-04, INDEX-05, INDEX-06)
  *
@@ -8,7 +9,7 @@
  * - SubsquidMultiEventDiagram: Multi-event indexing pattern with Uniswap example (static)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -43,27 +44,27 @@ export function SubsquidArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура Subsquid SDK" color="blue">
       {/* Architecture components */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 16, overflowX: 'auto', paddingBottom: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'align-items': 'center', 'margin-bottom': '16px', 'overflow-x': 'auto', 'padding-bottom': '8px' }}>
         {ARCH_COMPONENTS.map((comp, i) => (
-          <div key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'flex-shrink': '0' }}>
             <DiagramTooltip content={comp.tooltip}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 12px',
-                  border: `1px solid ${comp.color}20`,
-                  background: 'rgba(255,255,255,0.02)',
-                  textAlign: 'center',
-                  minWidth: 90,
+                  'padding': '10px 12px',
+                  'border': `1px solid ${comp.color}20`,
+                  'background': 'rgba(255,255,255,0.02)',
+                  'text-align': 'center',
+                  'min-width': '90px',
                 }}
               >
-                <div style={{ fontSize: 9, fontWeight: 600, color: comp.color, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': comp.color, 'font-family': 'monospace' }}>
                   {comp.label}
                 </div>
               </div>
             </DiagramTooltip>
             {i < ARCH_COMPONENTS.length - 1 && (
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>&rarr;</div>
+              <div style={{ 'font-size': '14px', 'color': 'rgba(255,255,255,0.25)' }}>&rarr;</div>
             )}
           </div>
         ))}
@@ -71,23 +72,23 @@ export function SubsquidArchitectureDiagram() {
 
       {/* Codegen pipeline */}
       <DiagramTooltip content="Кодогенерация Subsquid: schema.graphql генерирует TypeORM entities, а ABI JSON генерирует типизированные декодеры. Вы никогда не пишете boilerplate вручную.">
-        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Кодогенерация:
           </div>
           {CODEGEN_STEPS.map((step) => (
-            <div key={step.command} style={{
-              display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap',
+            <div style={{
+              'display': 'flex', 'gap': '8px', 'align-items': 'center', 'margin-bottom': '6px', 'flex-wrap': 'wrap',
             }}>
-              <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
+              <div style={{ ...glassStyle, 'padding': '4px 8px', 'border': `1px solid ${step.color}20`, 'font-size': '8px', 'font-family': 'monospace', 'color': step.color }}>
                 {step.input}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-              <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
+              <div style={{ 'font-size': '10px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+              <div style={{ 'font-size': '8px', 'font-family': 'monospace', 'color': colors.textMuted, 'font-style': 'italic' }}>
                 {step.command}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-              <div style={{ ...glassStyle, padding: '4px 8px', border: `1px solid ${step.color}20`, fontSize: 8, fontFamily: 'monospace', color: step.color }}>
+              <div style={{ 'font-size': '10px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+              <div style={{ ...glassStyle, 'padding': '4px 8px', 'border': `1px solid ${step.color}20`, 'font-size': '8px', 'font-family': 'monospace', 'color': step.color }}>
                 {step.output}
               </div>
             </div>
@@ -164,8 +165,8 @@ const PROCESSOR_STEPS: ProcessorStep[] = [
 ];
 
 export function SubsquidProcessorFlowDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = PROCESSOR_STEPS[step];
 
   const handleNext = () => {
@@ -174,8 +175,8 @@ export function SubsquidProcessorFlowDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -183,17 +184,17 @@ export function SubsquidProcessorFlowDiagram() {
   return (
     <DiagramContainer title="Цикл обработки Subsquid: от блока до базы данных" color="green">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {PROCESSOR_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -204,37 +205,37 @@ export function SubsquidProcessorFlowDiagram() {
       <DiagramTooltip content="Batch processing -- ключевое отличие Subsquid от The Graph. Вместо обработки по одному событию, процессор получает БАТЧ блоков и обрабатывает все события за один проход. Это даёт 100-300x ускорение.">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${current.color}30`,
+          'padding': '14px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${current.color}30`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': current.color, 'font-family': 'monospace' }}>
               {step + 1}. {current.title}: {current.subtitle}
             </div>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${current.color}15`,
-              color: current.color,
-              border: `1px solid ${current.color}30`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${current.color}15`,
+              'color': current.color,
+              'border': `1px solid ${current.color}30`,
             }}>
               Шаг {step + 1}/{PROCESSOR_STEPS.length}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '8px' }}>
             {current.description}
           </div>
           <div style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: current.color,
-            padding: '6px 10px',
-            background: `${current.color}08`,
-            borderRadius: 4,
-            borderLeft: `2px solid ${current.color}40`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': current.color,
+            'padding': '6px 10px',
+            'background': `${current.color}08`,
+            'border-radius': '4px',
+            'border-left': `2px solid ${current.color}40`,
           }}>
             {current.codeHint}
           </div>
@@ -246,12 +247,12 @@ export function SubsquidProcessorFlowDiagram() {
         <DiagramTooltip content="Процессор работает бесконечно: после обработки батча он запрашивает следующий. При отключении -- запоминает последний блок и продолжает с него при перезапуске.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            marginBottom: 12,
-            border: '1px solid rgba(6,182,212,0.2)',
-            textAlign: 'center',
+            'padding': '10px',
+            'margin-bottom': '12px',
+            'border': '1px solid rgba(6,182,212,0.2)',
+            'text-align': 'center',
           }}>
-            <div style={{ fontSize: 10, color: '#06b6d4', fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '10px', 'color': '#06b6d4', 'font-family': 'monospace' }}>
               &#x21bb; Непрерывный цикл: POLL &rarr; FILTER &rarr; DECODE &rarr; TRANSFORM &rarr; PERSIST &rarr; POLL
             </div>
           </div>
@@ -259,40 +260,40 @@ export function SubsquidProcessorFlowDiagram() {
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
+        <button onClick={handleBack} disabled={history().length <= 1} style={{
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': history().length > 1 ? colors.text : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
         }}>
           Back
         </button>
         <button onClick={handleNext} disabled={step >= PROCESSOR_STEPS.length - 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: `1px solid ${step < PROCESSOR_STEPS.length - 1 ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
-          background: step < PROCESSOR_STEPS.length - 1 ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < PROCESSOR_STEPS.length - 1 ? '#22c55e' : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: step < PROCESSOR_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': `1px solid ${step < PROCESSOR_STEPS.length - 1 ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
+          'background': step < PROCESSOR_STEPS.length - 1 ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+          'color': step < PROCESSOR_STEPS.length - 1 ? '#22c55e' : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': step < PROCESSOR_STEPS.length - 1 ? 'pointer' : 'not-allowed',
         }}>
           Step
         </button>
         <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': 'pointer',
         }}>
           Reset
         </button>
@@ -365,47 +366,47 @@ const CODEGEN_PIPELINE: (CodegenStep & { tooltip: string })[] = [
 export function SubsquidCodegenPipelineDiagram() {
   return (
     <DiagramContainer title="Конвейер кодогенерации Subsquid: от схемы до базы" color="orange">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-bottom': '16px' }}>
         {CODEGEN_PIPELINE.map((cg) => (
-          <DiagramTooltip key={cg.step} content={cg.tooltip}>
+          <DiagramTooltip content={cg.tooltip}>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              border: `1px solid ${cg.color}20`,
+              'padding': '10px',
+              'border': `1px solid ${cg.color}20`,
             }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+              <div style={{ 'display': 'flex', 'gap': '8px', 'align-items': 'center', 'margin-bottom': '6px', 'flex-wrap': 'wrap' }}>
                 <span style={{
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: cg.color,
-                  fontFamily: 'monospace',
-                  padding: '2px 6px',
-                  background: `${cg.color}15`,
-                  borderRadius: 4,
-                  border: `1px solid ${cg.color}30`,
+                  'font-size': '9px',
+                  'font-weight': '700',
+                  'color': cg.color,
+                  'font-family': 'monospace',
+                  'padding': '2px 6px',
+                  'background': `${cg.color}15`,
+                  'border-radius': '4px',
+                  'border': `1px solid ${cg.color}30`,
                 }}>
                   Шаг {cg.step}
                 </span>
-                <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
+                <div style={{ ...glassStyle, 'padding': '3px 8px', 'border': `1px solid ${cg.color}15`, 'font-size': '8px', 'font-family': 'monospace', 'color': cg.color }}>
                   {cg.input}
                 </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-                <div style={{ fontSize: 8, fontFamily: 'monospace', color: colors.textMuted, fontStyle: 'italic' }}>
+                <div style={{ 'font-size': '10px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+                <div style={{ 'font-size': '8px', 'font-family': 'monospace', 'color': colors.textMuted, 'font-style': 'italic' }}>
                   {cg.command}
                 </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-                <div style={{ ...glassStyle, padding: '3px 8px', border: `1px solid ${cg.color}15`, fontSize: 8, fontFamily: 'monospace', color: cg.color }}>
+                <div style={{ 'font-size': '10px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+                <div style={{ ...glassStyle, 'padding': '3px 8px', 'border': `1px solid ${cg.color}15`, 'font-size': '8px', 'font-family': 'monospace', 'color': cg.color }}>
                   {cg.output}
                 </div>
               </div>
               <div style={{
-                fontSize: 8,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                padding: '4px 8px',
-                background: `${cg.color}06`,
-                borderRadius: 4,
-                borderLeft: `2px solid ${cg.color}30`,
+                'font-size': '8px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'padding': '4px 8px',
+                'background': `${cg.color}06`,
+                'border-radius': '4px',
+                'border-left': `2px solid ${cg.color}30`,
               }}>
                 {cg.example}
               </div>
@@ -447,20 +448,20 @@ export function SubsquidMultiEventDiagram() {
   return (
     <DiagramContainer title="Мульти-событийная индексация: Uniswap и Governance" color="purple">
       {/* Event types -> processor -> entities */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr', gap: 8, alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr auto 1fr auto 1fr', 'gap': '8px', 'align-items': 'center', 'margin-bottom': '16px' }}>
         {/* Events column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {EVENT_TYPES.map((evt) => (
-            <DiagramTooltip key={evt.name} content={evt.tooltip}>
+            <DiagramTooltip content={evt.tooltip}>
               <div style={{
                 ...glassStyle,
-                padding: '8px 10px',
-                border: `1px solid ${evt.color}25`,
+                'padding': '8px 10px',
+                'border': `1px solid ${evt.color}25`,
               }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': evt.color, 'font-family': 'monospace' }}>
                   {evt.name}
                 </div>
-                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                <div style={{ 'font-size': '7px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
                   topic0: {evt.topic0}
                 </div>
               </div>
@@ -469,9 +470,9 @@ export function SubsquidMultiEventDiagram() {
         </div>
 
         {/* Arrows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '20px', 'align-items': 'center' }}>
           {EVENT_TYPES.map((evt) => (
-            <div key={evt.name} style={{ fontSize: 14, color: `${evt.color}60` }}>&rarr;</div>
+            <div style={{ 'font-size': '14px', 'color': `${evt.color}60` }}>&rarr;</div>
           ))}
         </div>
 
@@ -479,22 +480,22 @@ export function SubsquidMultiEventDiagram() {
         <DiagramTooltip content="EvmBatchProcessor принимает несколько addLog() вызовов для подписки на разные типы событий. Все события обрабатываются в одном батче -- один проход по блокам вместо трёх отдельных.">
           <div style={{
             ...glassStyle,
-            padding: 14,
-            border: '1px solid rgba(167,139,250,0.3)',
-            textAlign: 'center',
+            'padding': '14px',
+            'border': '1px solid rgba(167,139,250,0.3)',
+            'text-align': 'center',
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 8 }}>
+            <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': '#a78bfa', 'font-family': 'monospace', 'margin-bottom': '8px' }}>
               EvmBatchProcessor
             </div>
             <div style={{
-              fontSize: 7,
-              fontFamily: 'monospace',
-              color: colors.textMuted,
-              textAlign: 'left',
-              padding: '6px 8px',
-              background: 'rgba(167,139,250,0.06)',
-              borderRadius: 4,
-              lineHeight: 1.6,
+              'font-size': '7px',
+              'font-family': 'monospace',
+              'color': colors.textMuted,
+              'text-align': 'left',
+              'padding': '6px 8px',
+              'background': 'rgba(167,139,250,0.06)',
+              'border-radius': '4px',
+              'line-height': '1.6',
             }}>
               .addLog({'{'} topic0: [TRANSFER] {'}'})<br />
               .addLog({'{'} topic0: [SWAP] {'}'})<br />
@@ -504,25 +505,25 @@ export function SubsquidMultiEventDiagram() {
         </DiagramTooltip>
 
         {/* Arrows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '20px', 'align-items': 'center' }}>
           {EVENT_TYPES.map((evt) => (
-            <div key={evt.name} style={{ fontSize: 14, color: `${evt.color}60` }}>&rarr;</div>
+            <div style={{ 'font-size': '14px', 'color': `${evt.color}60` }}>&rarr;</div>
           ))}
         </div>
 
         {/* Entity tables */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
           {EVENT_TYPES.map((evt) => (
-            <DiagramTooltip key={evt.name} content={evt.entityTooltip}>
+            <DiagramTooltip content={evt.entityTooltip}>
               <div style={{
                 ...glassStyle,
-                padding: '8px 10px',
-                border: `1px solid ${evt.color}25`,
+                'padding': '8px 10px',
+                'border': `1px solid ${evt.color}25`,
               }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: evt.color, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': evt.color, 'font-family': 'monospace' }}>
                   {evt.entity} entity
                 </div>
-                <div style={{ fontSize: 7, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+                <div style={{ 'font-size': '7px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
                   {evt.fields}
                 </div>
               </div>
@@ -539,7 +540,7 @@ export function SubsquidMultiEventDiagram() {
         />
       </DiagramTooltip>
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ 'margin-top': '8px' }}>
         <DiagramTooltip content="Governance -- ещё один типичный мульти-событийный паттерн. ProposalCreated, VoteCast и ProposalExecuted отслеживаются одним процессором и обновляют единую Proposal entity.">
           <DataBox
             label="Governance паттерн"

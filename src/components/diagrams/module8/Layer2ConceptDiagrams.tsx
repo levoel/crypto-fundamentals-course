@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Layer 2 Concept Diagrams (SCALE-02)
  *
@@ -7,7 +8,7 @@
  * - L2TVLDiagram: Static horizontal bar chart of L2 TVL distribution (2025)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -114,89 +115,89 @@ const TREE_TOOLTIPS: Record<string, string> = {
   sidechains: 'Сайдчейны -- НЕ Layer 2. Они имеют собственных валидаторов и не наследуют безопасность Ethereum.',
 };
 
-function TreeNodeComponent({ node, depth, expanded, onToggle }: {
+function TreeNodeComponent(props: {
   node: TreeNode;
   depth: number;
   expanded: Set<string>;
   onToggle: (id: string) => void;
 }) {
-  const hasChildren = node.children && node.children.length > 0;
-  const isExpanded = expanded.has(node.id);
-  const isLeaf = !hasChildren;
-  const isSidechain = node.id === 'sidechains' || node.id === 'polygon-pos';
+  const hasChildren = () => props.node.children && props.node.children.length > 0;
+  const isExpanded = () => props.expanded.has(props.node.id);
+  const isLeaf = () => !hasChildren();
+  const isSidechain = () => props.node.id === 'sidechains' || props.node.id === 'polygon-pos';
 
   const depthColors = ['#6366f1', '#10b981', '#f59e0b', '#a78bfa', '#f43f5e', '#2563eb'];
-  const nodeColor = isSidechain ? '#f43f5e' : depthColors[depth % depthColors.length];
+  const nodeColor = () => isSidechain() ? '#f43f5e' : depthColors[props.depth % depthColors.length];
 
-  const tooltipContent = TREE_TOOLTIPS[node.id];
+  const tooltipContent = () => TREE_TOOLTIPS[props.node.id];
 
   const nodeElement = (
     <div
-      onClick={() => hasChildren ? onToggle(node.id) : undefined}
+      onClick={() => hasChildren() ? props.onToggle(props.node.id) : undefined}
       style={{
         ...glassStyle,
-        padding: '6px 10px',
-        marginBottom: 4,
-        cursor: hasChildren ? 'pointer' : 'default',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        border: `1px solid ${isExpanded ? nodeColor + '40' : 'rgba(255,255,255,0.06)'}`,
-        background: isExpanded ? `${nodeColor}08` : 'rgba(255,255,255,0.02)',
-        transition: 'all 0.2s',
+        'padding': '6px 10px',
+        'margin-bottom': '4px',
+        'cursor': hasChildren() ? 'pointer' : 'default',
+        'display': 'flex',
+        'align-items': 'center',
+        'gap': '8px',
+        'border': `1px solid ${isExpanded() ? nodeColor() + '40' : 'rgba(255,255,255,0.06)'}`,
+        'background': isExpanded() ? `${nodeColor()}08` : 'rgba(255,255,255,0.02)',
+        'transition': 'all 0.2s',
       }}
     >
-      {hasChildren && (
-        <span style={{ fontSize: 10, color: nodeColor, fontFamily: 'monospace', width: 12, textAlign: 'center' }}>
-          {isExpanded ? '-' : '+'}
+      {hasChildren() && (
+        <span style={{ 'font-size': '10px', 'color': nodeColor(), 'font-family': 'monospace', 'width': '12px', 'text-align': 'center' }}>
+          {isExpanded() ? '-' : '+'}
         </span>
       )}
-      {isLeaf && <span style={{ width: 12 }} />}
+      {isLeaf() && <span style={{ 'width': '12px' }} />}
       <span style={{
-        fontSize: 11,
-        fontWeight: hasChildren ? 600 : 400,
-        color: hasChildren ? nodeColor : colors.text,
-        fontFamily: 'monospace',
+        'font-size': '11px',
+        'font-weight': hasChildren() ? 600 : 400,
+        'color': hasChildren() ? nodeColor() : colors.text,
+        'font-family': 'monospace',
       }}>
-        {node.label}
+        {props.node.label}
       </span>
-      {node.detail && isLeaf && (
-        <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginLeft: 'auto' }}>
-          {node.detail}
+      {props.node.detail && isLeaf() && (
+        <span style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-left': 'auto' }}>
+          {props.node.detail}
         </span>
       )}
     </div>
   );
 
   return (
-    <div style={{ marginLeft: depth * 16 }}>
-      {tooltipContent ? (
-        <DiagramTooltip content={tooltipContent}>
+    <div style={{ 'margin-left': props.depth * 16 }}>
+      {tooltipContent() ? (
+        <DiagramTooltip content={tooltipContent()}>
           {nodeElement}
         </DiagramTooltip>
       ) : nodeElement}
 
       {/* Leaf detail row */}
-      {isLeaf && isExpanded && node.da && (
+      {isLeaf() && isExpanded() && props.node.da && (
         <div style={{
-          marginLeft: 20,
-          marginBottom: 6,
-          padding: '4px 10px',
-          fontSize: 10,
-          fontFamily: 'monospace',
-          color: colors.textMuted,
-          display: 'flex',
-          gap: 16,
-          flexWrap: 'wrap',
+          'margin-left': '20px',
+          'margin-bottom': '6px',
+          'padding': '4px 10px',
+          'font-size': '10px',
+          'font-family': 'monospace',
+          'color': colors.textMuted,
+          'display': 'flex',
+          'gap': '16px',
+          'flex-wrap': 'wrap',
         }}>
-          <span><span style={{ color: nodeColor }}>DA:</span> {node.da}</span>
-          <span><span style={{ color: nodeColor }}>Security:</span> {node.security}</span>
+          <span><span style={{ 'color': nodeColor() }}>DA:</span> {props.node.da}</span>
+          <span><span style={{ 'color': nodeColor() }}>Security:</span> {props.node.security}</span>
         </div>
       )}
 
       {/* Children */}
-      {hasChildren && isExpanded && node.children!.map((child) => (
-        <TreeNodeComponent key={child.id} node={child} depth={depth + 1} expanded={expanded} onToggle={onToggle} />
+      {hasChildren() && isExpanded() && props.node.children!.map((child) => (
+        <TreeNodeComponent node={child} depth={props.depth + 1} expanded={props.expanded} onToggle={props.onToggle} />
       ))}
     </div>
   );
@@ -209,7 +210,7 @@ function TreeNodeComponent({ node, depth, expanded, onToggle }: {
  * Root: Ethereum Scaling -> On-chain / Off-chain -> subcategories.
  */
 export function L2ClassificationDiagram() {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['root', 'offchain', 'rollups']));
+  const [expanded, setExpanded] = createSignal<Set<string>>(new Set(['root', 'offchain', 'rollups']));
 
   const onToggle = (id: string) => {
     setExpanded((prev) => {
@@ -240,26 +241,26 @@ export function L2ClassificationDiagram() {
   return (
     <DiagramContainer title="Классификация решений масштабирования" color="blue">
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '12px' }}>
         <DiagramTooltip content="Развернуть все узлы дерева для полного обзора классификации решений масштабирования.">
-          <div style={{ display: 'inline-block' }}>
-            <button onClick={expandAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
+          <div style={{ 'display': 'inline-block' }}>
+            <button onClick={expandAll} style={{ ...glassStyle, 'padding': '4px 10px', 'cursor': 'pointer', 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '4px' }}>
               Развернуть все
             </button>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Свернуть дерево до корневого узла.">
-          <div style={{ display: 'inline-block' }}>
-            <button onClick={collapseAll} style={{ ...glassStyle, padding: '4px 10px', cursor: 'pointer', fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4 }}>
+          <div style={{ 'display': 'inline-block' }}>
+            <button onClick={collapseAll} style={{ ...glassStyle, 'padding': '4px 10px', 'cursor': 'pointer', 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '4px' }}>
               Свернуть все
             </button>
           </div>
         </DiagramTooltip>
       </div>
 
-      <TreeNodeComponent node={CLASSIFICATION_TREE} depth={0} expanded={expanded} onToggle={onToggle} />
+      <TreeNodeComponent node={CLASSIFICATION_TREE} depth={0} expanded={expanded()} onToggle={onToggle} />
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DataBox
           label="Важно"
           value="Polygon PoS -- сайдчейн, НЕ L2 rollup. У него собственные валидаторы и собственная безопасность. Настоящие L2 (rollups) наследуют безопасность Ethereum через публикацию данных на L1."
@@ -324,34 +325,33 @@ export function DASpectrumDiagram() {
   return (
     <DiagramContainer title="Спектр доступности данных (Data Availability)" color="orange">
       {/* Spectrum bar */}
-      <div style={{ display: 'flex', marginBottom: 8, borderRadius: 6, overflow: 'hidden' }}>
+      <div style={{ 'display': 'flex', 'margin-bottom': '8px', 'border-radius': '6px', 'overflow': 'hidden' }}>
         {DA_ZONES.map((zone, i) => (
           <DiagramTooltip
-            key={i}
             content={
               <>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{zone.label}</div>
-                <div style={{ marginBottom: 6 }}>{zone.description}</div>
-                <div style={{ fontSize: 12 }}>
-                  <div><span style={{ opacity: 0.7 }}>Examples:</span> {zone.examples}</div>
-                  <div><span style={{ opacity: 0.7 }}>Security:</span> {zone.security}</div>
-                  <div><span style={{ opacity: 0.7 }}>Cost:</span> {zone.cost}</div>
+                <div style={{ 'font-weight': '700', 'margin-bottom': '4px' }}>{zone.label}</div>
+                <div style={{ 'margin-bottom': '6px' }}>{zone.description}</div>
+                <div style={{ 'font-size': '12px' }}>
+                  <div><span style={{ 'opacity': '0.7' }}>Examples:</span> {zone.examples}</div>
+                  <div><span style={{ 'opacity': '0.7' }}>Security:</span> {zone.security}</div>
+                  <div><span style={{ 'opacity': '0.7' }}>Cost:</span> {zone.cost}</div>
                 </div>
               </>
             }
           >
             <div
               style={{
-                width: `${zone.width}%`,
-                padding: '12px 8px',
-                background: `${zone.color}12`,
-                borderRight: i < DA_ZONES.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                cursor: 'pointer',
-                textAlign: 'center',
-                transition: 'all 0.2s',
+                'width': `${zone.width}%`,
+                'padding': '12px 8px',
+                'background': `${zone.color}12`,
+                'border-right': i < DA_ZONES.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                'cursor': 'pointer',
+                'text-align': 'center',
+                'transition': 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 600, color: zone.color, fontFamily: 'monospace', lineHeight: 1.4 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': zone.color, 'font-family': 'monospace', 'line-height': '1.4' }}>
                 {zone.label}
               </div>
             </div>
@@ -360,16 +360,16 @@ export function DASpectrumDiagram() {
       </div>
 
       {/* Gradient arrows */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '0 4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 10, color: '#10b981', fontFamily: 'monospace' }}>Security: HIGH</span>
-          <span style={{ fontSize: 10, color: colors.textMuted }}>---{'>'}</span>
-          <span style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace' }}>LOW</span>
+      <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '12px', 'padding': '0 4px' }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
+          <span style={{ 'font-size': '10px', 'color': '#10b981', 'font-family': 'monospace' }}>Security: HIGH</span>
+          <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>---{'>'}</span>
+          <span style={{ 'font-size': '10px', 'color': '#f43f5e', 'font-family': 'monospace' }}>LOW</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: 10, color: '#10b981', fontFamily: 'monospace' }}>Cost: HIGH</span>
-          <span style={{ fontSize: 10, color: colors.textMuted }}>---{'>'}</span>
-          <span style={{ fontSize: 10, color: '#f43f5e', fontFamily: 'monospace' }}>LOW</span>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
+          <span style={{ 'font-size': '10px', 'color': '#10b981', 'font-family': 'monospace' }}>Cost: HIGH</span>
+          <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>---{'>'}</span>
+          <span style={{ 'font-size': '10px', 'color': '#f43f5e', 'font-family': 'monospace' }}>LOW</span>
         </div>
       </div>
 
@@ -424,14 +424,14 @@ export function L2TVLDiagram() {
 
   return (
     <DiagramContainer title="TVL Layer 2 экосистемы (2025)" color="green">
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '12px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {TVL_DATA.map((entry, i) => {
             const y = i * (barH + gap) + 4;
             const w = (entry.tvl / maxTVL) * chartW;
 
             return (
-              <g key={i}>
+              <g>
                 <text
                   x={padL - 8}
                   y={y + barH / 2 + 4}
@@ -479,35 +479,35 @@ export function L2TVLDiagram() {
       </div>
 
       {/* HTML tooltip legend */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'flex-wrap': 'wrap', 'gap': '6px', 'margin-bottom': '12px', 'justify-content': 'center' }}>
         {TVL_DATA.map((entry) => (
-          <DiagramTooltip key={entry.name} content={entry.tooltipRu}>
+          <DiagramTooltip content={entry.tooltipRu}>
             <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderRadius: 4,
-              border: `1px solid ${entry.color}30`,
-              background: `${entry.color}08`,
-              cursor: 'pointer',
+              'display': 'inline-flex',
+              'align-items': 'center',
+              'gap': '4px',
+              'padding': '4px 8px',
+              'border-radius': '4px',
+              'border': `1px solid ${entry.color}30`,
+              'background': `${entry.color}08`,
+              'cursor': 'pointer',
             }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: entry.color }} />
-              <span style={{ fontSize: 10, color: entry.color, fontFamily: 'monospace' }}>{entry.name}</span>
-              <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>{entry.tvlLabel}</span>
+              <div style={{ 'width': '8px', 'height': '8px', 'border-radius': '2px', 'background': entry.color }} />
+              <span style={{ 'font-size': '10px', 'color': entry.color, 'font-family': 'monospace' }}>{entry.name}</span>
+              <span style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{entry.tvlLabel}</span>
             </div>
           </DiagramTooltip>
         ))}
       </div>
 
       <div style={{
-        fontSize: 11,
-        fontFamily: 'monospace',
-        color: colors.textMuted,
-        textAlign: 'center',
-        marginBottom: 12,
+        'font-size': '11px',
+        'font-family': 'monospace',
+        'color': colors.textMuted,
+        'text-align': 'center',
+        'margin-bottom': '12px',
       }}>
-        Total L2 TVL: <span style={{ color: '#10b981', fontWeight: 600 }}>~$26B</span> (2025)
+        Total L2 TVL: <span style={{ 'color': '#10b981', 'font-weight': '600' }}>~$26B</span> (2025)
       </div>
 
       <DataBox

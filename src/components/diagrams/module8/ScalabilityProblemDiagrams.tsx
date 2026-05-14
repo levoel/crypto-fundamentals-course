@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Scalability Problem Diagrams (SCALE-01)
  *
@@ -7,7 +8,7 @@
  * - ScalingTimelineDiagram: Static horizontal timeline of Ethereum scaling (2015-2026)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -42,10 +43,10 @@ const TRILEMMA_PRESETS: TrilemmaPreset[] = [
  * 3 sliders adjust the inner point. Preset buttons show where projects optimize.
  */
 export function BlockchainTrilemmaDiagram() {
-  const [scalability, setScalability] = useState(50);
-  const [security, setSecurity] = useState(50);
-  const [decentralization, setDecentralization] = useState(50);
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [scalability, setScalability] = createSignal(50);
+  const [security, setSecurity] = createSignal(50);
+  const [decentralization, setDecentralization] = createSignal(50);
+  const [activePreset, setActivePreset] = createSignal<string | null>(null);
 
   const svgW = 340;
   const svgH = 300;
@@ -54,18 +55,18 @@ export function BlockchainTrilemmaDiagram() {
   const r = 110;
 
   // Triangle vertices: top = Scalability, bottom-left = Security, bottom-right = Decentralization
-  const vertices = useMemo(() => ({
+  const vertices = createMemo(() => ({
     scalability: { x: cx, y: cy - r, label: 'Scalability' },
     security: { x: cx - r * Math.cos(Math.PI / 6), y: cy + r * Math.sin(Math.PI / 6), label: 'Security' },
     decentralization: { x: cx + r * Math.cos(Math.PI / 6), y: cy + r * Math.sin(Math.PI / 6), label: 'Decentralization' },
-  }), []);
+  }));
 
   const trianglePoints = `${vertices.scalability.x},${vertices.scalability.y} ${vertices.security.x},${vertices.security.y} ${vertices.decentralization.x},${vertices.decentralization.y}`;
 
   // Compute inner point based on sliders (barycentric coordinates)
-  const total = scalability + security + decentralization || 1;
-  const innerX = (scalability * vertices.scalability.x + security * vertices.security.x + decentralization * vertices.decentralization.x) / total;
-  const innerY = (scalability * vertices.scalability.y + security * vertices.security.y + decentralization * vertices.decentralization.y) / total;
+  const total = scalability() + security() + decentralization() || 1;
+  const innerX = (scalability() * vertices.scalability.x + security() * vertices.security.x + decentralization() * vertices.decentralization.x) / total;
+  const innerY = (scalability() * vertices.scalability.y + security() * vertices.security.y + decentralization() * vertices.decentralization.y) / total;
 
   const applyPreset = (preset: TrilemmaPreset) => {
     setScalability(preset.scalability);
@@ -74,28 +75,28 @@ export function BlockchainTrilemmaDiagram() {
     setActivePreset(preset.name);
   };
 
-  const currentPreset = TRILEMMA_PRESETS.find((p) => p.name === activePreset);
+  const currentPreset = TRILEMMA_PRESETS.find((p) => p.name === activePreset());
 
   return (
     <DiagramContainer title="Трилемма блокчейна" color="blue">
       {/* Preset buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {TRILEMMA_PRESETS.map((preset) => (
-          <DiagramTooltip key={preset.name} content={preset.tooltipRu}>
+          <DiagramTooltip content={preset.tooltipRu}>
             <div>
               <button
                 onClick={() => applyPreset(preset)}
                 style={{
                   ...glassStyle,
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: activePreset === preset.name ? preset.color : colors.textMuted,
-                  border: `1px solid ${activePreset === preset.name ? preset.color : 'rgba(255,255,255,0.1)'}`,
-                  background: activePreset === preset.name ? `${preset.color}15` : 'rgba(255,255,255,0.03)',
-                  borderRadius: 6,
-                  transition: 'all 0.2s',
+                  'padding': '6px 12px',
+                  'cursor': 'pointer',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'color': activePreset() === preset.name ? preset.color : colors.textMuted,
+                  'border': `1px solid ${activePreset() === preset.name ? preset.color : 'rgba(255,255,255,0.1)'}`,
+                  'background': activePreset() === preset.name ? `${preset.color}15` : 'rgba(255,255,255,0.03)',
+                  'border-radius': '6px',
+                  'transition': 'all 0.2s',
                 }}
               >
                 {preset.name}
@@ -106,8 +107,8 @@ export function BlockchainTrilemmaDiagram() {
       </div>
 
       {/* SVG Triangle */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Triangle outline */}
           <polygon
             points={trianglePoints}
@@ -122,7 +123,7 @@ export function BlockchainTrilemmaDiagram() {
             const p1y = vertices.scalability.y + (vertices.security.y - vertices.scalability.y) * t;
             const p2x = vertices.scalability.x + (vertices.decentralization.x - vertices.scalability.x) * t;
             const p2y = vertices.scalability.y + (vertices.decentralization.y - vertices.scalability.y) * t;
-            return <line key={t} x1={p1x} y1={p1y} x2={p2x} y2={p2y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />;
+            return <line x1={p1x} y1={p1y} x2={p2x} y2={p2y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />;
           })}
 
           {/* Lines from center to vertices */}
@@ -139,51 +140,51 @@ export function BlockchainTrilemmaDiagram() {
             Scalability
           </text>
           <text x={vertices.scalability.x} y={vertices.scalability.y - 3} fill={colors.textMuted} fontSize={9} textAnchor="middle" fontFamily="monospace">
-            {scalability}%
+            {scalability()}%
           </text>
           <text x={vertices.security.x - 8} y={vertices.security.y + 18} fill={colors.text} fontSize={11} textAnchor="middle" fontFamily="monospace" fontWeight={600}>
             Security
           </text>
           <text x={vertices.security.x - 8} y={vertices.security.y + 29} fill={colors.textMuted} fontSize={9} textAnchor="middle" fontFamily="monospace">
-            {security}%
+            {security()}%
           </text>
           <text x={vertices.decentralization.x + 8} y={vertices.decentralization.y + 18} fill={colors.text} fontSize={11} textAnchor="middle" fontFamily="monospace" fontWeight={600}>
             Decentralization
           </text>
           <text x={vertices.decentralization.x + 8} y={vertices.decentralization.y + 29} fill={colors.textMuted} fontSize={9} textAnchor="middle" fontFamily="monospace">
-            {decentralization}%
+            {decentralization()}%
           </text>
         </svg>
       </div>
 
       {/* Vertex tooltips below SVG */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '10px', 'margin-bottom': '14px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
         <DiagramTooltip content="Масштабируемость -- способность обрабатывать больше транзакций. Измеряется в TPS (transactions per second). Ethereum L1 ~15-30 TPS, Visa ~65,000 TPS. Разница в 1000x -- проблема, которую решают L2.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', padding: '3px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            Scalability: {scalability}%
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#6366f1', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(99,102,241,0.1)', 'border': '1px solid rgba(99,102,241,0.2)' }}>
+            Scalability: {scalability()}%
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Безопасность -- устойчивость к атакам (51% attack, double spend, censorship). Зависит от количества и diversity валидаторов, стоимости атаки, и криптографических гарантий.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', padding: '3px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-            Security: {security}%
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#10b981', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(16,185,129,0.1)', 'border': '1px solid rgba(16,185,129,0.2)' }}>
+            Security: {security()}%
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Децентрализация -- распределение контроля между участниками. Больше независимых валидаторов = больше устойчивости к цензуре и единым точкам отказа. Ethereum: ~800k валидаторов, BSC: 21.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b', padding: '3px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-            Decentralization: {decentralization}%
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#f59e0b', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(245,158,11,0.1)', 'border': '1px solid rgba(245,158,11,0.2)' }}>
+            Decentralization: {decentralization()}%
           </span>
         </DiagramTooltip>
       </div>
 
       {/* Sliders */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(3, 1fr)', 'gap': '12px', 'margin-bottom': '16px' }}>
         {[
-          { label: 'Scalability', value: scalability, setter: setScalability, color: '#6366f1' },
-          { label: 'Security', value: security, setter: setSecurity, color: '#10b981' },
-          { label: 'Decentralization', value: decentralization, setter: setDecentralization, color: '#f59e0b' },
+          { label: 'Scalability', value: scalability(), setter: setScalability, color: '#6366f1' },
+          { label: 'Security', value: security(), setter: setSecurity, color: '#10b981' },
+          { label: 'Decentralization', value: decentralization(), setter: setDecentralization, color: '#f59e0b' },
         ].map(({ label, value, setter, color }) => (
-          <div key={label}>
-            <div style={{ fontSize: 10, color, fontFamily: 'monospace', marginBottom: 4, textAlign: 'center' }}>
+          <div>
+            <div style={{ 'font-size': '10px', color, 'font-family': 'monospace', 'margin-bottom': '4px', 'text-align': 'center' }}>
               {label}: {value}
             </div>
             <input
@@ -192,7 +193,7 @@ export function BlockchainTrilemmaDiagram() {
               max={100}
               value={value}
               onChange={(e) => { setter(Number(e.target.value)); setActivePreset(null); }}
-              style={{ width: '100%', accentColor: color }}
+              style={{ 'width': '100%', 'accent-color': color }}
             />
           </div>
         ))}
@@ -202,23 +203,23 @@ export function BlockchainTrilemmaDiagram() {
       {currentPreset && (
         <div style={{
           ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: `1px solid ${currentPreset.color}30`,
+          'padding': '12px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${currentPreset.color}30`,
         }}>
           <DiagramTooltip content={currentPreset.tooltipRu}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: currentPreset.color, fontFamily: 'monospace', marginBottom: 6, display: 'inline-block' }}>
+            <span style={{ 'font-size': '13px', 'font-weight': '600', 'color': currentPreset.color, 'font-family': 'monospace', 'margin-bottom': '6px', 'display': 'inline-block' }}>
               {currentPreset.name}
             </span>
           </DiagramTooltip>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 11, fontFamily: 'monospace' }}>
-              <span style={{ color: colors.textMuted }}>TPS: </span>
-              <span style={{ color: colors.text }}>{currentPreset.tps}</span>
+          <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap' }}>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace' }}>
+              <span style={{ 'color': colors.textMuted }}>TPS: </span>
+              <span style={{ 'color': colors.text }}>{currentPreset.tps}</span>
             </div>
-            <div style={{ fontSize: 11, fontFamily: 'monospace' }}>
-              <span style={{ color: colors.textMuted }}>Nodes: </span>
-              <span style={{ color: colors.text }}>{currentPreset.nodes}</span>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace' }}>
+              <span style={{ 'color': colors.textMuted }}>Nodes: </span>
+              <span style={{ 'color': colors.text }}>{currentPreset.nodes}</span>
             </div>
           </div>
         </div>
@@ -276,14 +277,14 @@ export function TPSComparisonDiagram() {
 
   return (
     <DiagramContainer title="Сравнение пропускной способности (TPS)" color="green">
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '12px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {TPS_DATA.map((entry, i) => {
             const y = i * (barH + gap) + 6;
             const w = (Math.log10(Math.max(entry.tps, 1)) / maxLog) * chartW;
 
             return (
-              <g key={i}>
+              <g>
                 {/* Name label */}
                 <text
                   x={padL - 8}
@@ -323,18 +324,18 @@ export function TPSComparisonDiagram() {
       </div>
 
       {/* Chain details legend (replaces SVG hover) */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'flex-wrap': 'wrap', 'margin-bottom': '12px', 'justify-content': 'center' }}>
         {TPS_DATA.map((entry) => (
-          <DiagramTooltip key={entry.name} content={entry.tooltipRu}>
+          <DiagramTooltip content={entry.tooltipRu}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: entry.color,
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${entry.color}10`,
-              border: `1px solid ${entry.color}25`,
-              cursor: 'pointer',
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'color': entry.color,
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${entry.color}10`,
+              'border': `1px solid ${entry.color}25`,
+              'cursor': 'pointer',
             }}>
               {entry.name}: {entry.finality}
             </span>
@@ -410,17 +411,17 @@ const CATEGORY_TOOLTIPS: Record<string, string> = {
  * Color-coded by category. Click to expand description.
  */
 export function ScalingTimelineDiagram() {
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = createSignal<number | null>(null);
 
   return (
     <DiagramContainer title="Хронология масштабирования Ethereum" color="purple">
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'margin-bottom': '14px', 'flex-wrap': 'wrap' }}>
         {Object.entries(categoryLabels).map(([key, label]) => (
-          <DiagramTooltip key={key} content={CATEGORY_TOOLTIPS[key]}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: categoryColors[key] }} />
-              <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>{label}</span>
+          <DiagramTooltip content={CATEGORY_TOOLTIPS[key]}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
+              <div style={{ 'width': '8px', 'height': '8px', 'border-radius': '2px', 'background': categoryColors[key] }} />
+              <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{label}</span>
             </div>
           </DiagramTooltip>
         ))}
@@ -428,41 +429,41 @@ export function ScalingTimelineDiagram() {
 
       {/* Timeline cards */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(150px, 1fr))',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {TIMELINE_EVENTS.map((evt, i) => {
-          const isSelected = selectedIdx === i;
+          const isSelected = selectedIdx() === i;
           const evtColor = categoryColors[evt.category];
 
           return (
-            <DiagramTooltip key={i} content={evt.tooltipRu}>
+            <DiagramTooltip content={evt.tooltipRu}>
               <div
                 onClick={() => setSelectedIdx(isSelected ? null : i)}
                 style={{
                   ...glassStyle,
-                  padding: 10,
-                  cursor: 'pointer',
-                  borderLeft: `3px solid ${evtColor}`,
-                  background: isSelected ? `${evtColor}10` : 'rgba(255,255,255,0.02)',
-                  transition: 'all 0.2s',
+                  'padding': '10px',
+                  'cursor': 'pointer',
+                  'border-left': `3px solid ${evtColor}`,
+                  'background': isSelected ? `${evtColor}10` : 'rgba(255,255,255,0.02)',
+                  'transition': 'all 0.2s',
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 700, color: evtColor, fontFamily: 'monospace', marginBottom: 2 }}>
+                <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': evtColor, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                   {Math.floor(evt.year)}
                 </div>
                 <div style={{
-                  fontSize: 10,
-                  color: isSelected ? colors.text : colors.textMuted,
-                  fontFamily: 'monospace',
-                  lineHeight: 1.4,
+                  'font-size': '10px',
+                  'color': isSelected ? colors.text : colors.textMuted,
+                  'font-family': 'monospace',
+                  'line-height': '1.4',
                 }}>
                   {evt.label}
                 </div>
                 {isSelected && (
-                  <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '6px', 'line-height': '1.4', 'font-style': 'italic' }}>
                     {evt.description}
                   </div>
                 )}

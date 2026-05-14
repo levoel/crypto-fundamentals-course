@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Groth16 Diagrams (ZK-05)
  *
@@ -6,7 +7,7 @@
  * - Groth16LifecycleDiagram: Static Groth16 proof lifecycle (Prover -> Proof -> Verifier)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -83,8 +84,8 @@ const SETUP_STEPS: SetupStep[] = [
  * History array for forward/backward navigation.
  */
 export function TrustedSetupDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < SETUP_STEPS.length - 1) {
@@ -92,8 +93,8 @@ export function TrustedSetupDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -103,50 +104,49 @@ export function TrustedSetupDiagram() {
   return (
     <DiagramContainer title="Trusted Setup: ceremony, toxic waste, и MPC" color="red">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {SETUP_STEPS.map((st, i) => (
           <div
-            key={i}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background: i <= current ? st.color : 'rgba(255,255,255,0.08)',
-              transition: 'background 0.3s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'background': i <= current ? st.color : 'rgba(255,255,255,0.08)',
+              'transition': 'background 0.3s',
             }}
           />
         ))}
       </div>
 
       {/* Phase indicator */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'margin-bottom': '16px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         {SETUP_STEPS.map((st, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
             <DiagramTooltip content={st.detail}>
               <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: i <= current ? '#fff' : colors.textMuted,
-                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.3s',
+                'width': '36px',
+                'height': '36px',
+                'border-radius': '8px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-weight': '700',
+                'font-family': 'monospace',
+                'color': i <= current ? '#fff' : colors.textMuted,
+                'background': i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                'border': `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                'transition': 'all 0.3s',
               }}>
                 {st.icon}
               </div>
             </DiagramTooltip>
             {i < SETUP_STEPS.length - 1 && (
               <div style={{
-                width: 16,
-                height: 2,
-                background: i < current ? `${SETUP_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
-                transition: 'background 0.3s',
+                'width': '16px',
+                'height': '2px',
+                'background': i < current ? `${SETUP_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
+                'transition': 'background 0.3s',
               }} />
             )}
           </div>
@@ -156,60 +156,60 @@ export function TrustedSetupDiagram() {
       {/* Step detail */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 12,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
+        'padding': '16px',
+        'margin-bottom': '12px',
+        'border': `1px solid ${s.color}30`,
+        'background': `${s.color}08`,
+        'border-radius': '8px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': s.color,
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${s.color}15`,
+            'border': `1px solid ${s.color}30`,
           }}>
             {s.label}
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+          <span style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text }}>
             {s.title}
           </span>
         </div>
         <DiagramTooltip content={s.description}>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '8px' }}>
             {s.description}
           </div>
         </DiagramTooltip>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', fontStyle: 'italic', lineHeight: 1.5 }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'font-style': 'italic', 'line-height': '1.5' }}>
           {s.detail}
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px' }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу trusted setup ceremony.' },
+          { label: 'Back', action: back, disabled: history().length <= 1, tooltip: 'Вернуться к предыдущему шагу trusted setup ceremony.' },
           { label: `Step ${current + 1}/${SETUP_STEPS.length}`, action: step, disabled: current >= SETUP_STEPS.length - 1, tooltip: 'Перейти к следующему шагу. Ceremony проходит от Powers of Tau до генерации ключей.' },
-          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать просмотр trusted setup ceremony с начала.' },
+          { label: 'Reset', action: reset, disabled: history().length <= 1, tooltip: 'Начать просмотр trusted setup ceremony с начала.' },
         ].map((btn) => (
-          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+          <DiagramTooltip content={btn.tooltip}>
             <div>
               <button
                 onClick={btn.action}
                 disabled={btn.disabled}
                 style={{
                   ...glassStyle,
-                  padding: '6px 14px',
-                  cursor: btn.disabled ? 'default' : 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6,
-                  opacity: btn.disabled ? 0.5 : 1,
+                  'padding': '6px 14px',
+                  'cursor': btn.disabled ? 'default' : 'pointer',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  'border': '1px solid rgba(255,255,255,0.1)',
+                  'border-radius': '6px',
+                  'opacity': btn.disabled ? 0.5 : 1,
                 }}
               >
                 {btn.label}
@@ -299,61 +299,61 @@ export function Groth16LifecycleDiagram() {
     <DiagramContainer title="Groth16: lifecycle от witness до verification" color="purple">
       {/* Main flow */}
       <div style={{
-        display: 'flex',
-        alignItems: 'stretch',
-        gap: 4,
-        marginBottom: 16,
-        overflowX: 'auto',
+        'display': 'flex',
+        'align-items': 'stretch',
+        'gap': '4px',
+        'margin-bottom': '16px',
+        'overflow-x': 'auto',
       }}>
         {LIFECYCLE_PHASES.map((phase, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
             <DiagramTooltip content={LIFECYCLE_TOOLTIPS[i]}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: 14,
-                  borderRadius: 8,
-                  border: `1px solid ${phase.color}25`,
-                  background: `${phase.color}06`,
-                  minWidth: 140,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  'padding': '14px',
+                  'border-radius': '8px',
+                  'border': `1px solid ${phase.color}25`,
+                  'background': `${phase.color}06`,
+                  'min-width': '140px',
+                  'cursor': 'pointer',
+                  'transition': 'all 0.2s',
                 }}
               >
                 {/* Icon + name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'margin-bottom': '6px' }}>
                   <span style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: phase.color,
-                    fontFamily: 'monospace',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    background: `${phase.color}15`,
-                    border: `1px solid ${phase.color}30`,
+                    'font-size': '10px',
+                    'font-weight': '700',
+                    'color': phase.color,
+                    'font-family': 'monospace',
+                    'padding': '2px 6px',
+                    'border-radius': '4px',
+                    'background': `${phase.color}15`,
+                    'border': `1px solid ${phase.color}30`,
                   }}>
                     {phase.icon}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>
+                  <span style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.text }}>
                     {phase.nameRu}
                   </span>
                 </div>
                 {/* Where */}
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                   {phase.where}
                 </div>
                 {/* Description */}
-                <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.5' }}>
                   {phase.description}
                 </div>
                 {/* Details */}
-                <div style={{ marginTop: 8 }}>
+                <div style={{ 'margin-top': '8px' }}>
                   {phase.details.map((d, di) => (
-                    <div key={di} style={{
-                      fontSize: 9,
-                      color: colors.textMuted,
-                      fontFamily: 'monospace',
-                      lineHeight: 1.6,
+                    <div style={{
+                      'font-size': '9px',
+                      'color': colors.textMuted,
+                      'font-family': 'monospace',
+                      'line-height': '1.6',
                     }}>
                       {'\u2022'} {d}
                     </div>
@@ -364,15 +364,15 @@ export function Groth16LifecycleDiagram() {
             {/* Arrow */}
             {i < LIFECYCLE_PHASES.length - 1 && (
               <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 2,
+                'display': 'flex',
+                'flex-direction': 'column',
+                'align-items': 'center',
+                'gap': '2px',
               }}>
-                <div style={{ fontSize: 14, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '14px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   {'\u2192'}
                 </div>
-                <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   {i === 0 ? 'pk,vk' : '\u03C0=[A,B,C]'}
                 </div>
               </div>
@@ -385,28 +385,28 @@ export function Groth16LifecycleDiagram() {
       <DiagramTooltip content="Bilinear pairing -- математическая операция e: G1 x G2 -> GT, которая позволяет проверить произведение двух секретных значений без их раскрытия. Это фундамент succinct verification: вместо пересчета всего вычисления, verifier проверяет одно уравнение спаривания.">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          borderRadius: 8,
-          marginBottom: 12,
-          border: '1px solid #6366f130',
-          background: '#6366f108',
+          'padding': '14px',
+          'border-radius': '8px',
+          'margin-bottom': '12px',
+          'border': '1px solid #6366f130',
+          'background': '#6366f108',
         }}>
           <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#6366f1',
-            fontFamily: 'monospace',
-            marginBottom: 6,
+            'font-size': '11px',
+            'font-weight': '700',
+            'color': '#6366f1',
+            'font-family': 'monospace',
+            'margin-bottom': '6px',
           }}>
             Bilinear Pairing (magic function)
           </div>
-          <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '8px' }}>
             e(aG, bH) = e(G, H)^(ab). Input: две точки на кривых G1, G2. Output: элемент GT.
             Позволяет проверить "произведение" без знания множителей.
             Verifier проверяет e(A, B) = e(alpha, beta) * e(L, gamma) * e(C, delta) --
             одно уравнение вместо пересчета всей computation.
           </div>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
             Groth16 verification: 3 pairing operations, ~200-300K gas on Ethereum
           </div>
         </div>
@@ -415,48 +415,48 @@ export function Groth16LifecycleDiagram() {
       {/* Proof size comparison */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 12,
-        border: '1px solid rgba(255,255,255,0.1)',
+        'padding': '12px',
+        'border-radius': '8px',
+        'margin-bottom': '12px',
+        'border': '1px solid rgba(255,255,255,0.1)',
       }}>
         <div style={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: colors.textMuted,
-          fontFamily: 'monospace',
-          marginBottom: 8,
+          'font-size': '10px',
+          'font-weight': '700',
+          'color': colors.textMuted,
+          'font-family': 'monospace',
+          'margin-bottom': '8px',
         }}>
           Proof Size Comparison
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           {[
             { name: 'Groth16', size: '~128 B', color: '#10b981', width: '10%' },
             { name: 'PLONK', size: '~400 B', color: '#3b82f6', width: '18%' },
             { name: 'Bulletproofs', size: '~1.3 KB', color: '#f59e0b', width: '35%' },
             { name: 'STARK', size: '~45-200 KB', color: '#ef4444', width: '100%' },
           ].map((p) => (
-            <DiagramTooltip key={p.name} content={PROOF_SIZE_TOOLTIPS[p.name]}>
-              <div style={{ flex: 1, minWidth: 100 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontSize: 9, color: p.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <DiagramTooltip content={PROOF_SIZE_TOOLTIPS[p.name]}>
+              <div style={{ 'flex': '1', 'min-width': '100px' }}>
+                <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '3px' }}>
+                  <span style={{ 'font-size': '9px', 'color': p.color, 'font-family': 'monospace', 'font-weight': '600' }}>
                     {p.name}
                   </span>
-                  <span style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  <span style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                     {p.size}
                   </span>
                 </div>
                 <div style={{
-                  height: 4,
-                  borderRadius: 2,
-                  background: 'rgba(255,255,255,0.06)',
-                  overflow: 'hidden',
+                  'height': '4px',
+                  'border-radius': '2px',
+                  'background': 'rgba(255,255,255,0.06)',
+                  'overflow': 'hidden',
                 }}>
                   <div style={{
-                    height: '100%',
-                    width: p.width,
-                    background: `${p.color}60`,
-                    borderRadius: 2,
+                    'height': '100%',
+                    'width': p.width,
+                    'background': `${p.color}60`,
+                    'border-radius': '2px',
                   }} />
                 </div>
               </div>

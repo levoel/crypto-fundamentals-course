@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Frontrunning & Sandwich Attack Diagrams (SEC-06)
  *
@@ -6,7 +7,7 @@
  * - MempoolVisualizationDiagram: Interactive toggle between Public Mempool (sandwich visible) and Flashbots Protect (private)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -99,24 +100,23 @@ const SANDWICH_HISTORY: SandwichStep[] = [
  * Forward/backward/reset navigation.
  */
 export function SandwichAttackDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = SANDWICH_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = SANDWICH_HISTORY[stepIndex()];
 
   return (
     <DiagramContainer title="Sandwich Attack: пошаговая анатомия" color="red">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {SANDWICH_HISTORY.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? '#f43f5e' : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? '#f43f5e' : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -124,42 +124,42 @@ export function SandwichAttackDiagram() {
 
       {/* Step title */}
       <div style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: colors.text,
-        marginBottom: 8,
-        fontFamily: 'monospace',
+        'font-size': '14px',
+        'font-weight': '600',
+        'color': colors.text,
+        'margin-bottom': '8px',
+        'font-family': 'monospace',
       }}>
         {step.title}
       </div>
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <DiagramTooltip key={i} content={`${v.label}: ${v.value}. Параметр текущего шага sandwich-атаки -- отслеживайте как меняются суммы и gas price на каждом этапе.`}>
+          <DiagramTooltip content={`${v.label}: ${v.value}. Параметр текущего шага sandwich-атаки -- отслеживайте как меняются суммы и gas price на каждом этапе.`}>
             <div style={{
               ...glassStyle,
-              padding: 10,
+              'padding': '10px',
             }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 {v.label}
               </div>
-              <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+              <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
                 {v.value}
               </div>
             </div>
@@ -168,17 +168,17 @@ export function SandwichAttackDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <DiagramTooltip content="Сбросить демонстрацию к началу -- моменту отправки транзакции жертвой.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStepIndex(0)}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                color: colors.text,
-                fontSize: 13,
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'color': colors.text,
+                'font-size': '13px',
               }}
             >
               Сброс
@@ -186,17 +186,17 @@ export function SandwichAttackDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу анатомии sandwich-атаки.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-              disabled={stepIndex === 0}
+              disabled={stepIndex() === 0}
               style={{
                 ...glassStyle,
-                padding: '8px 20px',
-                cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-                color: stepIndex === 0 ? colors.textMuted : colors.text,
-                fontSize: 13,
-                opacity: stepIndex === 0 ? 0.5 : 1,
+                'padding': '8px 20px',
+                'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+                'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+                'font-size': '13px',
+                'opacity': stepIndex() === 0 ? 0.5 : 1,
               }}
             >
               Назад
@@ -204,17 +204,17 @@ export function SandwichAttackDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу: от frontrun через victim tx до backrun и защиты.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={() => setStepIndex((s) => Math.min(SANDWICH_HISTORY.length - 1, s + 1))}
-              disabled={stepIndex >= SANDWICH_HISTORY.length - 1}
+              disabled={stepIndex() >= SANDWICH_HISTORY.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 20px',
-                cursor: stepIndex >= SANDWICH_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-                color: stepIndex >= SANDWICH_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
-                fontSize: 13,
-                opacity: stepIndex >= SANDWICH_HISTORY.length - 1 ? 0.5 : 1,
+                'padding': '8px 20px',
+                'cursor': stepIndex() >= SANDWICH_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+                'color': stepIndex() >= SANDWICH_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
+                'font-size': '13px',
+                'opacity': stepIndex() >= SANDWICH_HISTORY.length - 1 ? 0.5 : 1,
               }}
             >
               Далее
@@ -223,8 +223,8 @@ export function SandwichAttackDiagram() {
         </DiagramTooltip>
       </div>
 
-      {stepIndex >= SANDWICH_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= SANDWICH_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Sandwich-атака эксплуатирует отсутствие slippage protection. Всегда устанавливайте amountOutMin > 0 и используйте Flashbots Protect или MEV-aware DEX.">
             <DataBox
               label="Ключевой вывод"
@@ -270,9 +270,9 @@ const FLASHBOTS_MEMPOOL: MempoolTx[] = [
  * Flashbots shows only normal txs -- victim's tx is hidden in private pool.
  */
 export function MempoolVisualizationDiagram() {
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [isPrivate, setIsPrivate] = createSignal(false);
 
-  const mempool = isPrivate ? FLASHBOTS_MEMPOOL : PUBLIC_MEMPOOL;
+  const mempool = isPrivate() ? FLASHBOTS_MEMPOOL : PUBLIC_MEMPOOL;
 
   const typeColor = (t: string) => {
     switch (t) {
@@ -298,28 +298,28 @@ export function MempoolVisualizationDiagram() {
     <DiagramContainer title="Mempool: публичный vs приватный" color="green">
       {/* Toggle */}
       <div style={{
-        display: 'flex',
-        gap: 0,
-        marginBottom: 16,
-        borderRadius: 8,
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.1)',
+        'display': 'flex',
+        'gap': '0',
+        'margin-bottom': '16px',
+        'border-radius': '8px',
+        'overflow': 'hidden',
+        'border': '1px solid rgba(255,255,255,0.1)',
       }}>
         <DiagramTooltip content="Публичный mempool -- все транзакции видны всем. Searcher-боты мониторят его в реальном времени и строят sandwich-атаки вокруг крупных свопов.">
-          <div style={{ flex: 1 }}>
+          <div style={{ 'flex': '1' }}>
             <button
               onClick={() => setIsPrivate(false)}
               style={{
-                width: '100%',
-                padding: '10px 16px',
-                background: !isPrivate ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.03)',
-                border: 'none',
-                color: !isPrivate ? '#f43f5e' : colors.textMuted,
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                fontSize: 12,
-                fontWeight: !isPrivate ? 600 : 400,
-                transition: 'all 0.2s',
+                'width': '100%',
+                'padding': '10px 16px',
+                'background': !isPrivate() ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.03)',
+                'border': 'none',
+                'color': !isPrivate() ? '#f43f5e' : colors.textMuted,
+                'cursor': 'pointer',
+                'font-family': 'monospace',
+                'font-size': '12px',
+                'font-weight': !isPrivate() ? 600 : 400,
+                'transition': 'all 0.2s',
               }}
             >
               Public Mempool
@@ -327,20 +327,20 @@ export function MempoolVisualizationDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Flashbots Protect -- приватный канал. Транзакция идет напрямую к block builder, минуя публичный mempool. Searcher-боты не видят её.">
-          <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ 'flex': '1', 'border-left': '1px solid rgba(255,255,255,0.1)' }}>
             <button
               onClick={() => setIsPrivate(true)}
               style={{
-                width: '100%',
-                padding: '10px 16px',
-                background: isPrivate ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
-                border: 'none',
-                color: isPrivate ? colors.success : colors.textMuted,
-                cursor: 'pointer',
-                fontFamily: 'monospace',
-                fontSize: 12,
-                fontWeight: isPrivate ? 600 : 400,
-                transition: 'all 0.2s',
+                'width': '100%',
+                'padding': '10px 16px',
+                'background': isPrivate() ? `${colors.success}15` : 'rgba(255,255,255,0.03)',
+                'border': 'none',
+                'color': isPrivate() ? colors.success : colors.textMuted,
+                'cursor': 'pointer',
+                'font-family': 'monospace',
+                'font-size': '12px',
+                'font-weight': isPrivate() ? 600 : 400,
+                'transition': 'all 0.2s',
               }}
             >
               Flashbots Protect
@@ -350,7 +350,7 @@ export function MempoolVisualizationDiagram() {
       </div>
 
       {/* Mempool transactions */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
         {mempool.map((tx, i) => {
           const txTooltips: Record<string, string> = {
             frontrun: 'Frontrun-транзакция searcher-бота с более высоким gas price. Выполняется ДО транзакции жертвы, сдвигая цену вверх.',
@@ -359,34 +359,34 @@ export function MempoolVisualizationDiagram() {
             normal: 'Обычная транзакция -- не связана с MEV. Сортируется по gas price в стандартном порядке.',
           };
           return (
-          <DiagramTooltip key={i} content={txTooltips[tx.type]}>
+          <DiagramTooltip content={txTooltips[tx.type]}>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              marginBottom: 6,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: tx.type !== 'normal' ? `${typeColor(tx.type)}08` : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${tx.type !== 'normal' ? `${typeColor(tx.type)}20` : 'rgba(255,255,255,0.06)'}`,
+              'padding': '10px',
+              'margin-bottom': '6px',
+              'display': 'flex',
+              'justify-content': 'space-between',
+              'align-items': 'center',
+              'background': tx.type !== 'normal' ? `${typeColor(tx.type)}08` : 'rgba(255,255,255,0.03)',
+              'border': `1px solid ${tx.type !== 'normal' ? `${typeColor(tx.type)}20` : 'rgba(255,255,255,0.06)'}`,
             }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text }}>
-                  <span style={{ color: colors.accent }}>{tx.from}</span>: {tx.action}
+              <div style={{ 'flex': '1' }}>
+                <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.text }}>
+                  <span style={{ 'color': colors.accent }}>{tx.from}</span>: {tx.action}
                 </div>
-                <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginTop: 2 }}>
+                <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-top': '2px' }}>
                   Gas: {tx.gasPrice}
                 </div>
               </div>
               {typeLabel(tx.type) && (
                 <span style={{
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  background: `${typeColor(tx.type)}15`,
-                  color: typeColor(tx.type),
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
+                  'padding': '2px 6px',
+                  'border-radius': '4px',
+                  'background': `${typeColor(tx.type)}15`,
+                  'color': typeColor(tx.type),
+                  'font-size': '9px',
+                  'font-family': 'monospace',
+                  'font-weight': '600',
                 }}>
                   {typeLabel(tx.type)}
                 </span>
@@ -396,19 +396,19 @@ export function MempoolVisualizationDiagram() {
           );
         })}
 
-        {isPrivate && (
+        {isPrivate() && (
           <div style={{
             ...glassStyle,
-            padding: 10,
-            marginBottom: 6,
-            background: `${colors.success}08`,
-            border: `1px solid ${colors.success}20`,
-            textAlign: 'center',
+            'padding': '10px',
+            'margin-bottom': '6px',
+            'background': `${colors.success}08`,
+            'border': `1px solid ${colors.success}20`,
+            'text-align': 'center',
           }}>
-            <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.success }}>
+            <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.success }}>
               Alice: swap 10 ETH -{'>'} DAI
             </div>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.success, marginTop: 2 }}>
+            <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.success, 'margin-top': '2px' }}>
               Приватный пул Flashbots (searchers НЕ видят)
             </div>
           </div>
@@ -416,17 +416,17 @@ export function MempoolVisualizationDiagram() {
       </div>
 
       {/* Status */}
-      <DiagramTooltip content={isPrivate
+      <DiagramTooltip content={isPrivate()
         ? 'Flashbots Protect направляет транзакцию напрямую к block builder через приватный канал, полностью исключая видимость для MEV-ботов.'
         : 'В публичном mempool все транзакции видны. Searcher-боты анализируют pending tx и строят sandwich-атаки за миллисекунды.'
       }>
         <DataBox
-          label={isPrivate ? 'Flashbots Protect: транзакция защищена' : 'Public Mempool: уязвимость!'}
-          value={isPrivate
+          label={isPrivate() ? 'Flashbots Protect: транзакция защищена' : 'Public Mempool: уязвимость!'}
+          value={isPrivate()
             ? 'Tx Alice идет напрямую к block builder через приватный канал. Searchers не видят ее в mempool и не могут построить sandwich.'
             : 'Searcher видит tx Alice в публичном mempool. Он размещает frontrun (выше gas) и backrun (ниже gas) вокруг нее. Alice теряет $401.'
           }
-          variant={isPrivate ? 'highlight' : 'info'}
+          variant={isPrivate() ? 'highlight' : 'info'}
         />
       </DiagramTooltip>
     </DiagramContainer>

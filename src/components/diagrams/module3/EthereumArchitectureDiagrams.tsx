@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Ethereum Architecture Diagrams (ETH-01)
  *
@@ -6,6 +7,7 @@
  * - NodeArchitectureDiagram: Ethereum node two-layer architecture (EL + CL)
  */
 
+import { type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
@@ -66,7 +68,7 @@ const COMPARISON_DATA: ComparisonRow[] = [
   },
 ];
 
-const headerCell: React.CSSProperties = {
+const headerCell: JSX.CSSProperties = {
   padding: '8px 12px',
   textAlign: 'left',
   fontSize: 12,
@@ -74,7 +76,7 @@ const headerCell: React.CSSProperties = {
   borderBottom: `1px solid ${colors.border}`,
 };
 
-const cellStyle: React.CSSProperties = {
+const cellStyle: JSX.CSSProperties = {
   padding: '8px 12px',
   fontFamily: 'monospace',
   fontSize: 12,
@@ -85,23 +87,23 @@ const cellStyle: React.CSSProperties = {
 export function EthVsBitcoinDiagram() {
   return (
     <DiagramContainer title="Bitcoin vs Ethereum: модели данных" color="purple">
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', fontSize: 13 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'separate', 'border-spacing': '0 4px', 'font-size': '13px' }}>
           <thead>
             <tr>
-              <th style={{ ...headerCell, width: '22%' }}>Аспект</th>
-              <th style={{ ...headerCell, width: '39%', color: '#f39c12' }}>Bitcoin</th>
-              <th style={{ ...headerCell, width: '39%', color: '#8b5cf6' }}>Ethereum</th>
+              <th style={{ ...headerCell, 'width': '22%' }}>Аспект</th>
+              <th style={{ ...headerCell, 'width': '39%', 'color': '#f39c12' }}>Bitcoin</th>
+              <th style={{ ...headerCell, 'width': '39%', 'color': '#8b5cf6' }}>Ethereum</th>
             </tr>
           </thead>
           <tbody>
             {COMPARISON_DATA.map((row, i) => (
-              <tr key={i} style={{ cursor: 'default' }}>
+              <tr style={{ 'cursor': 'default' }}>
                 <td style={{
                   ...cellStyle,
-                  fontWeight: 600,
-                  color: colors.text,
-                  background: 'rgba(255,255,255,0.03)',
+                  'font-weight': '600',
+                  'color': colors.text,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   <DiagramTooltip content={row.tooltip}>
                     <span>{row.aspect}</span>
@@ -109,15 +111,15 @@ export function EthVsBitcoinDiagram() {
                 </td>
                 <td style={{
                   ...cellStyle,
-                  color: colors.textMuted,
-                  background: 'rgba(255,255,255,0.03)',
+                  'color': colors.textMuted,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   {row.bitcoin}
                 </td>
                 <td style={{
                   ...cellStyle,
-                  color: colors.text,
-                  background: 'rgba(255,255,255,0.03)',
+                  'color': colors.text,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   {row.ethereum}
                 </td>
@@ -234,7 +236,7 @@ function getCompCenter(comp: NodeComponent): { cx: number; cy: number } {
 export function NodeArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура узла Ethereum (EL + CL)" color="blue">
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
         <svg width={520} height={420} viewBox="0 0 520 420">
           <defs>
             <marker
@@ -282,7 +284,6 @@ export function NodeArchitectureDiagram() {
             const t = getCompCenter(tComp);
             return (
               <line
-                key={i}
                 x1={f.cx}
                 y1={f.cy}
                 x2={t.cx}
@@ -298,7 +299,7 @@ export function NodeArchitectureDiagram() {
 
           {/* Components (no hover handlers) */}
           {ETH_NODE_COMPONENTS.map((comp) => (
-            <g key={comp.id}>
+            <g>
               <rect
                 x={comp.x}
                 y={comp.y}
@@ -328,33 +329,33 @@ export function NodeArchitectureDiagram() {
 
       {/* HTML component cards below SVG with DiagramTooltip */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: 8,
-        marginTop: 8,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(200px, 1fr))',
+        'gap': '8px',
+        'margin-top': '8px',
       }}>
         {ETH_NODE_COMPONENTS.map((comp) => (
-          <DiagramTooltip key={comp.id} content={comp.description}>
+          <DiagramTooltip content={comp.description}>
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              cursor: 'pointer',
+              'padding': '8px 12px',
+              'display': 'flex',
+              'align-items': 'center',
+              'gap': '8px',
+              'cursor': 'pointer',
             }}>
               <div style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: comp.color,
-                flexShrink: 0,
+                'width': '8px',
+                'height': '8px',
+                'border-radius': '50%',
+                'background': comp.color,
+                'flex-shrink': '0',
               }} />
               <span style={{
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: comp.color,
-                fontWeight: 600,
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'color': comp.color,
+                'font-weight': '600',
               }}>
                 {comp.label}
               </span>

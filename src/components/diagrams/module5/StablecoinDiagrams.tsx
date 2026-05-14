@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Stablecoin Diagrams (DEFI-10)
  *
@@ -7,7 +8,7 @@
  * - USTDeathSpiralDiagram: UST/LUNA collapse visualization (DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -83,19 +84,19 @@ export function StablecoinComparisonDiagram() {
     <DiagramContainer title="Классификация стейблкоинов" color="blue">
       {/* Table header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '120px 130px 1fr 1fr 120px',
-        gap: 1,
-        marginBottom: 1,
+        'display': 'grid',
+        'grid-template-columns': '120px 130px 1fr 1fr 120px',
+        'gap': '1px',
+        'margin-bottom': '1px',
       }}>
         {COLUMN_HEADERS.map((h) => (
-          <div key={h} style={{
+          <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 11,
-            fontWeight: 600,
-            color: colors.textMuted,
-            textAlign: 'center',
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'font-weight': '600',
+            'color': colors.textMuted,
+            'text-align': 'center',
           }}>
             {h}
           </div>
@@ -108,26 +109,25 @@ export function StablecoinComparisonDiagram() {
 
         return (
           <div
-            key={i}
             style={{
-              display: 'grid',
-              gridTemplateColumns: '120px 130px 1fr 1fr 120px',
-              gap: 1,
-              marginBottom: 1,
-              opacity: isCollapsed ? 0.7 : 1,
-              transition: 'all 0.2s',
+              'display': 'grid',
+              'grid-template-columns': '120px 130px 1fr 1fr 120px',
+              'gap': '1px',
+              'margin-bottom': '1px',
+              'opacity': isCollapsed ? 0.7 : 1,
+              'transition': 'all 0.2s',
             }}
           >
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: 'monospace',
-              color: colors.text,
-              background: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-              textDecoration: isCollapsed ? 'line-through' : 'none',
+              'padding': '8px 10px',
+              'font-size': '12px',
+              'font-weight': '600',
+              'font-family': 'monospace',
+              'color': colors.text,
+              'background': 'rgba(255,255,255,0.02)',
+              'transition': 'all 0.2s',
+              'text-decoration': isCollapsed ? 'line-through' : 'none',
             }}>
               <DiagramTooltip content={row.tooltip}>
                 <span>{row.type}</span>
@@ -135,47 +135,47 @@ export function StablecoinComparisonDiagram() {
             </div>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: colors.textMuted,
-              background: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-              lineHeight: 1.4,
-              textDecoration: isCollapsed ? 'line-through' : 'none',
+              'padding': '8px 10px',
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'color': colors.textMuted,
+              'background': 'rgba(255,255,255,0.02)',
+              'transition': 'all 0.2s',
+              'line-height': '1.4',
+              'text-decoration': isCollapsed ? 'line-through' : 'none',
             }}>
               {row.examples}
             </div>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 11,
-              color: colors.textMuted,
-              background: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-              lineHeight: 1.4,
+              'padding': '8px 10px',
+              'font-size': '11px',
+              'color': colors.textMuted,
+              'background': 'rgba(255,255,255,0.02)',
+              'transition': 'all 0.2s',
+              'line-height': '1.4',
             }}>
               {row.mechanism}
             </div>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 11,
-              color: colors.textMuted,
-              background: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-              lineHeight: 1.4,
+              'padding': '8px 10px',
+              'font-size': '11px',
+              'color': colors.textMuted,
+              'background': 'rgba(255,255,255,0.02)',
+              'transition': 'all 0.2s',
+              'line-height': '1.4',
             }}>
               {row.risk}
             </div>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 11,
-              color: colors.textMuted,
-              background: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.2s',
-              textAlign: 'center',
+              'padding': '8px 10px',
+              'font-size': '11px',
+              'color': colors.textMuted,
+              'background': 'rgba(255,255,255,0.02)',
+              'transition': 'all 0.2s',
+              'text-align': 'center',
             }}>
               {row.decentralization}
             </div>
@@ -273,8 +273,8 @@ const CDP_HISTORY: CDPStep[] = [
  * Forward/backward/reset navigation. DiagramTooltip on step descriptions.
  */
 export function MakerDAOCDPDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = CDP_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = CDP_HISTORY[stepIndex()];
 
   // Color based on step status
   const statusColor = step.highlight === 'liquidation' ? '#ef4444'
@@ -285,18 +285,17 @@ export function MakerDAOCDPDiagram() {
   return (
     <DiagramContainer title="MakerDAO/Sky: механизм CDP" color="green">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {CDP_HISTORY.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? statusColor : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? statusColor : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -305,11 +304,11 @@ export function MakerDAOCDPDiagram() {
       {/* Step title */}
       <DiagramTooltip content={step.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -317,30 +316,30 @@ export function MakerDAOCDPDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
+          <div style={{
             ...glassStyle,
-            padding: 10,
+            'padding': '10px',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -348,51 +347,51 @@ export function MakerDAOCDPDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={() => setStepIndex(0)}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'color': colors.text,
+            'font-size': '13px',
           }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
+          disabled={stepIndex() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': stepIndex() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.min(CDP_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= CDP_HISTORY.length - 1}
+          disabled={stepIndex() >= CDP_HISTORY.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= CDP_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= CDP_HISTORY.length - 1 ? colors.textMuted : statusColor,
-            fontSize: 13,
-            opacity: stepIndex >= CDP_HISTORY.length - 1 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() >= CDP_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() >= CDP_HISTORY.length - 1 ? colors.textMuted : statusColor,
+            'font-size': '13px',
+            'opacity': stepIndex() >= CDP_HISTORY.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {stepIndex >= CDP_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= CDP_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DataBox
             label="Итог"
             value="Ликвидация защищает систему: долг погашается, DAI остается обеспеченным. Но пользователь теряет залог со штрафом. Over-collateralization -- цена стабильности."
@@ -471,10 +470,10 @@ export function USTDeathSpiralDiagram() {
     <DiagramContainer title="UST/LUNA: death spiral (май 2022)" color="red">
       {/* Spiral steps */}
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        marginBottom: 16,
+        'display': 'flex',
+        'flex-direction': 'column',
+        'gap': '4px',
+        'margin-bottom': '16px',
       }}>
         {SPIRAL_STEPS.map((step, i) => {
           // Increasing indent to visualize downward spiral
@@ -482,46 +481,45 @@ export function USTDeathSpiralDiagram() {
 
           return (
             <div
-              key={i}
               style={{
-                marginLeft: indent,
-                transition: 'all 0.2s',
+                'margin-left': indent,
+                'transition': 'all 0.2s',
               }}
             >
               <DiagramTooltip content={step.description}>
                 <div style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  background: `${step.color}05`,
-                  border: `1px solid ${step.color}20`,
-                  transition: 'all 0.2s',
+                  'padding': '10px 14px',
+                  'background': `${step.color}05`,
+                  'border': `1px solid ${step.color}20`,
+                  'transition': 'all 0.2s',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px' }}>
                     {/* Step number */}
                     <div style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      background: `${step.color}20`,
-                      border: `1px solid ${step.color}60`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      fontFamily: 'monospace',
-                      color: step.color,
-                      flexShrink: 0,
+                      'width': '24px',
+                      'height': '24px',
+                      'border-radius': '50%',
+                      'background': `${step.color}20`,
+                      'border': `1px solid ${step.color}60`,
+                      'display': 'flex',
+                      'align-items': 'center',
+                      'justify-content': 'center',
+                      'font-size': '11px',
+                      'font-weight': '700',
+                      'font-family': 'monospace',
+                      'color': step.color,
+                      'flex-shrink': '0',
                     }}>
                       {step.number}
                     </div>
 
                     {/* Title */}
                     <div style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: colors.text,
-                      fontFamily: 'monospace',
+                      'font-size': '12px',
+                      'font-weight': '600',
+                      'color': colors.text,
+                      'font-family': 'monospace',
                     }}>
                       {step.title}
                     </div>
@@ -529,10 +527,10 @@ export function USTDeathSpiralDiagram() {
                     {/* Downward arrow indicator */}
                     {i < SPIRAL_STEPS.length - 1 && (
                       <div style={{
-                        marginLeft: 'auto',
-                        fontSize: 14,
-                        color: step.color,
-                        opacity: 0.5,
+                        'margin-left': 'auto',
+                        'font-size': '14px',
+                        'color': step.color,
+                        'opacity': '0.5',
                       }}>
                         v
                       </div>
@@ -547,27 +545,27 @@ export function USTDeathSpiralDiagram() {
 
       {/* Impact summary */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         <DiagramTooltip content="UST depeg: $1 -> $0.01. Алгоритмический стейблкоин без внешнего залога полностью потерял привязку к доллару.">
-          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>UST</div>
-            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$1 → $0.01</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'text-align': 'center' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>UST</div>
+            <div style={{ 'font-size': '13px', 'color': '#ef4444', 'font-family': 'monospace', 'font-weight': '600' }}>$1 → $0.01</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="LUNA гиперинфляция: цена $80 -> $0.0001. Massive supply increase с 350M до 6.5T токенов за несколько дней.">
-          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LUNA</div>
-            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$80 → $0.0001</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'text-align': 'center' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>LUNA</div>
+            <div style={{ 'font-size': '13px', 'color': '#ef4444', 'font-family': 'monospace', 'font-weight': '600' }}>$80 → $0.0001</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="$40B+ рыночной капитализации уничтожено за 3 дня. Крупнейший крах в истории DeFi.">
-          <div style={{ ...glassStyle, padding: 10, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Потери</div>
-            <div style={{ fontSize: 13, color: '#ef4444', fontFamily: 'monospace', fontWeight: 600 }}>$40B+</div>
+          <div style={{ ...glassStyle, 'padding': '10px', 'text-align': 'center' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Потери</div>
+            <div style={{ 'font-size': '13px', 'color': '#ef4444', 'font-family': 'monospace', 'font-weight': '600' }}>$40B+</div>
           </div>
         </DiagramTooltip>
       </div>

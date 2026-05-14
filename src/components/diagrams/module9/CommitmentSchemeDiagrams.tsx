@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Commitment Scheme Diagrams (ZK-02)
  *
@@ -7,7 +8,7 @@
  * - HomomorphicCommitmentDiagram: Homomorphic commitment demo (interactive, two InteractiveValue sliders)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -91,8 +92,8 @@ const COMMIT_STEPS: CommitStep[] = [
  * 5-step step-through showing commit-reveal scheme.
  */
 export function CommitmentLifecycleDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = COMMIT_STEPS[step];
 
   const handleNext = () => {
@@ -101,8 +102,8 @@ export function CommitmentLifecycleDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -110,17 +111,17 @@ export function CommitmentLifecycleDiagram() {
   return (
     <DiagramContainer title="Lifecycle commitment scheme: запечатать и раскрыть" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {COMMIT_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -128,7 +129,7 @@ export function CommitmentLifecycleDiagram() {
       </div>
 
       {/* Alice and Bob visualization */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         <svg width={400} height={120} viewBox="0 0 400 120">
           {/* Alice */}
           <circle cx={60} cy={40} r={20} fill="rgba(167,139,250,0.2)" stroke="#a78bfa" strokeWidth={1.5} />
@@ -184,27 +185,27 @@ export function CommitmentLifecycleDiagram() {
       <DiagramTooltip content={current.tooltip}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${current.color}30`,
+          'padding': '14px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${current.color}30`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': current.color, 'font-family': 'monospace' }}>
               {step + 1}. {current.title}: {current.subtitle}
             </div>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${current.color}15`,
-              color: current.color,
-              border: `1px solid ${current.color}30`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${current.color}15`,
+              'color': current.color,
+              'border': `1px solid ${current.color}30`,
             }}>
               {step + 1}/{COMMIT_STEPS.length}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6' }}>
             {current.description}
           </div>
         </div>
@@ -212,19 +213,19 @@ export function CommitmentLifecycleDiagram() {
 
       {/* Properties highlight at final step */}
       {step === 4 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
           <DiagramTooltip content="Binding (привязка): после фазы commit Алиса не может найти другое значение m', которое давало бы тот же commitment C. Это свойство основано на collision-resistance хеш-функции или hardness дискретного логарифма.">
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 4 }}>Binding</div>
-              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '4px' }}>Binding</div>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.5' }}>
                 Алиса не могла изменить m между commit и reveal. H(m||r) однозначно привязан к m.
               </div>
             </div>
           </DiagramTooltip>
           <DiagramTooltip content="Hiding (скрытие): до фазы reveal Боб не может извлечь никакой информации о m из commitment C. Случайный blinding factor r делает C вычислительно неотличимым от случайного значения.">
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(245,158,11,0.2)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 4 }}>Hiding</div>
-              <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(245,158,11,0.2)' }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': '#f59e0b', 'font-family': 'monospace', 'margin-bottom': '4px' }}>Hiding</div>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.5' }}>
                 Боб не мог узнать m из C. Случайный r делает C неотличимым от случайного числа.
               </div>
             </div>
@@ -234,23 +235,23 @@ export function CommitmentLifecycleDiagram() {
 
       {/* Navigation */}
       <DiagramTooltip content="Навигация по lifecycle commitment scheme: от выбора значения (choose) через commit и lock до reveal и verify. Полный цикл обязательства.">
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleBack} disabled={history.length <= 1} style={{
-            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)', color: history.length > 1 ? colors.text : colors.textMuted,
-            fontSize: 11, fontFamily: 'monospace', cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+        <div style={{ 'display': 'flex', 'gap': '8px' }}>
+          <button onClick={handleBack} disabled={history().length <= 1} style={{
+            'padding': '6px 16px', 'border-radius': '6px', 'border': '1px solid rgba(255,255,255,0.15)',
+            'background': 'rgba(255,255,255,0.05)', 'color': history().length > 1 ? colors.text : colors.textMuted,
+            'font-size': '11px', 'font-family': 'monospace', 'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
           }}>Back</button>
           <button onClick={handleNext} disabled={step >= COMMIT_STEPS.length - 1} style={{
-            padding: '6px 16px', borderRadius: 6,
-            border: `1px solid ${step < COMMIT_STEPS.length - 1 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`,
-            background: step < COMMIT_STEPS.length - 1 ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
-            color: step < COMMIT_STEPS.length - 1 ? '#3b82f6' : colors.textMuted,
-            fontSize: 11, fontFamily: 'monospace', cursor: step < COMMIT_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+            'padding': '6px 16px', 'border-radius': '6px',
+            'border': `1px solid ${step < COMMIT_STEPS.length - 1 ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            'background': step < COMMIT_STEPS.length - 1 ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
+            'color': step < COMMIT_STEPS.length - 1 ? '#3b82f6' : colors.textMuted,
+            'font-size': '11px', 'font-family': 'monospace', 'cursor': step < COMMIT_STEPS.length - 1 ? 'pointer' : 'not-allowed',
           }}>Step</button>
           <button onClick={handleReset} style={{
-            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)', color: colors.textMuted, fontSize: 11,
-            fontFamily: 'monospace', cursor: 'pointer',
+            'padding': '6px 16px', 'border-radius': '6px', 'border': '1px solid rgba(255,255,255,0.15)',
+            'background': 'rgba(255,255,255,0.05)', 'color': colors.textMuted, 'font-size': '11px',
+            'font-family': 'monospace', 'cursor': 'pointer',
           }}>Reset</button>
         </div>
       </DiagramTooltip>
@@ -341,49 +342,49 @@ export function HashVsPedersenDiagram() {
     <DiagramContainer title="Hash-based vs Pedersen: сравнение commitment schemes" color="orange">
       {/* Table header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '120px 1fr 1fr',
-        gap: 1,
-        marginBottom: 1,
+        'display': 'grid',
+        'grid-template-columns': '120px 1fr 1fr',
+        'gap': '1px',
+        'margin-bottom': '1px',
       }}>
-        <div style={{ ...glassStyle, padding: '8px 10px', fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace' }}>
+        <div style={{ ...glassStyle, 'padding': '8px 10px', 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace' }}>
           Свойство
         </div>
-        <div style={{ ...glassStyle, padding: '8px 10px', fontSize: 10, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace', textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '8px 10px', 'font-size': '10px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace', 'text-align': 'center' }}>
           Hash-based
         </div>
-        <div style={{ ...glassStyle, padding: '8px 10px', fontSize: 10, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '8px 10px', 'font-size': '10px', 'font-weight': '600', 'color': '#a78bfa', 'font-family': 'monospace', 'text-align': 'center' }}>
           Pedersen
         </div>
       </div>
 
       {/* Table rows */}
       {COMPARISON_ROWS.map((row) => (
-        <div key={row.property} style={{
-          display: 'grid',
-          gridTemplateColumns: '120px 1fr 1fr',
-          gap: 1,
-          marginBottom: 1,
+        <div style={{
+          'display': 'grid',
+          'grid-template-columns': '120px 1fr 1fr',
+          'gap': '1px',
+          'margin-bottom': '1px',
         }}>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 10,
-            fontWeight: 500,
-            color: colors.text,
-            fontFamily: 'monospace',
+            'padding': '8px 10px',
+            'font-size': '10px',
+            'font-weight': '500',
+            'color': colors.text,
+            'font-family': 'monospace',
           }}>
             {row.property}
           </div>
           <DiagramTooltip content={row.hashTooltip}>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 10,
-              color: row.hashColor,
-              fontFamily: 'monospace',
-              textAlign: 'center',
-              background: row.highlight ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.02)',
+              'padding': '8px 10px',
+              'font-size': '10px',
+              'color': row.hashColor,
+              'font-family': 'monospace',
+              'text-align': 'center',
+              'background': row.highlight ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.02)',
             }}>
               {row.hash}
             </div>
@@ -391,13 +392,13 @@ export function HashVsPedersenDiagram() {
           <DiagramTooltip content={row.pedersenTooltip}>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              fontSize: 10,
-              color: row.pedersenColor,
-              fontFamily: 'monospace',
-              textAlign: 'center',
-              background: row.highlight ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.02)',
-              fontWeight: row.highlight ? 700 : 400,
+              'padding': '8px 10px',
+              'font-size': '10px',
+              'color': row.pedersenColor,
+              'font-family': 'monospace',
+              'text-align': 'center',
+              'background': row.highlight ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.02)',
+              'font-weight': row.highlight ? 700 : 400,
             }}>
               {row.pedersen}
             </div>
@@ -405,7 +406,7 @@ export function HashVsPedersenDiagram() {
         </div>
       ))}
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="Гомоморфность Pedersen commitment — ключевое отличие: позволяет выполнять арифметические операции на зашифрованных данных. Это основа для range proofs, confidential transactions и многих ZK-протоколов.">
           <DataBox
             label="Ключевое различие"
@@ -443,108 +444,108 @@ function simCommitHash(val: number, r: number): string {
  * Uses simulated values (FNV hash) for browser display; real EC math in Python notebook.
  */
 export function HomomorphicCommitmentDiagram() {
-  const [a, setA] = useState(7);
-  const [b, setB] = useState(13);
+  const [a, setA] = createSignal(7);
+  const [b, setB] = createSignal(13);
 
   const r1 = 0xCAFE01;
   const r2 = 0xBEEF02;
 
-  const ca = useMemo(() => simCommitHash(a, r1), [a]);
-  const cb = useMemo(() => simCommitHash(b, r2), [b]);
-  const cab = useMemo(() => simCommitHash(a + b, r1 + r2), [a, b]);
+  const ca = createMemo(() => simCommitHash(a(), r1));
+  const cb = createMemo(() => simCommitHash(b(), r2));
+  const cab = createMemo(() => simCommitHash(a() + b(), r1 + r2));
 
   return (
     <DiagramContainer title="Гомоморфное свойство Pedersen: вычисления на commitments" color="green">
       {/* Sliders */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px', 'margin-bottom': '16px' }}>
         <DiagramTooltip content="Значение a: первое коммитируемое число. Commitment C(a) = a*G + r_a*H вычисляется с использованием случайного blinding factor r_a.">
           <div>
-            <InteractiveValue value={a} onChange={setA} min={1} max={100} label="Значение a" />
+            <InteractiveValue value={a()} onChange={setA} min={1} max={100} label="Значение a" />
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Значение b: второе коммитируемое число. Гомоморфное свойство позволяет вычислить C(a+b) = C(a) * C(b) без раскрытия a и b.">
           <div>
-            <InteractiveValue value={b} onChange={setB} min={1} max={100} label="Значение b" />
+            <InteractiveValue value={b()} onChange={setB} min={1} max={100} label="Значение b" />
           </div>
         </DiagramTooltip>
       </div>
 
       {/* Commitment rows */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px', 'margin-bottom': '16px' }}>
         {/* C(a) */}
-        <DiagramTooltip content={`Commitment C(a) для значения a = ${a}: вычисляется как a*G + r1*H. Blinding factor r1 скрывает значение a, но позволяет верифицировать его при раскрытии.`}>
+        <DiagramTooltip content={`Commitment C(a) для значения a = ${a()}: вычисляется как a*G + r1*H. Blinding factor r1 скрывает значение a, но позволяет верифицировать его при раскрытии.`}>
           <div style={{
             ...glassStyle,
-            padding: 12,
-            border: '1px solid rgba(167,139,250,0.2)',
-            display: 'grid',
-            gridTemplateColumns: '200px 1fr',
-            alignItems: 'center',
-            gap: 12,
+            'padding': '12px',
+            'border': '1px solid rgba(167,139,250,0.2)',
+            'display': 'grid',
+            'grid-template-columns': '200px 1fr',
+            'align-items': 'center',
+            'gap': '12px',
           }}>
             <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 C(a) = a*G + r1*H
               </div>
-              <div style={{ fontSize: 9, color: '#a78bfa', fontFamily: 'monospace' }}>
-                Commitment для a = {a}
+              <div style={{ 'font-size': '9px', 'color': '#a78bfa', 'font-family': 'monospace' }}>
+                Commitment для a = {a()}
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace', textAlign: 'right' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': '#a78bfa', 'font-family': 'monospace', 'text-align': 'right' }}>
               {ca}
             </div>
           </div>
         </DiagramTooltip>
 
         {/* C(b) */}
-        <DiagramTooltip content={`Commitment C(b) для значения b = ${b}: вычисляется как b*G + r2*H. Независимый blinding factor r2 обеспечивает hiding для каждого commitment отдельно.`}>
+        <DiagramTooltip content={`Commitment C(b) для значения b = ${b()}: вычисляется как b*G + r2*H. Независимый blinding factor r2 обеспечивает hiding для каждого commitment отдельно.`}>
           <div style={{
             ...glassStyle,
-            padding: 12,
-            border: '1px solid rgba(59,130,246,0.2)',
-            display: 'grid',
-            gridTemplateColumns: '200px 1fr',
-            alignItems: 'center',
-            gap: 12,
+            'padding': '12px',
+            'border': '1px solid rgba(59,130,246,0.2)',
+            'display': 'grid',
+            'grid-template-columns': '200px 1fr',
+            'align-items': 'center',
+            'gap': '12px',
           }}>
             <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 C(b) = b*G + r2*H
               </div>
-              <div style={{ fontSize: 9, color: '#3b82f6', fontFamily: 'monospace' }}>
-                Commitment для b = {b}
+              <div style={{ 'font-size': '9px', 'color': '#3b82f6', 'font-family': 'monospace' }}>
+                Commitment для b = {b()}
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', textAlign: 'right' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'text-align': 'right' }}>
               {cb}
             </div>
           </div>
         </DiagramTooltip>
 
         {/* Sum: C(a) + C(b) = C(a+b) */}
-        <DiagramTooltip content={`Гомоморфная сумма: C(a) + C(b) = C(${a}+${b}) = C(${a + b}). Верификатор видит только commitments и может проверить, что сумма корректна, не зная значений a и b.`}>
+        <DiagramTooltip content={`Гомоморфная сумма: C(a) + C(b) = C(${a()}+${b()}) = C(${a() + b()}). Верификатор видит только commitments и может проверить, что сумма корректна, не зная значений a и b.`}>
           <div style={{
             ...glassStyle,
-            padding: 12,
-            border: '1px solid rgba(34,197,94,0.3)',
-            background: 'rgba(34,197,94,0.05)',
-            display: 'grid',
-            gridTemplateColumns: '200px 1fr',
-            alignItems: 'center',
-            gap: 12,
+            'padding': '12px',
+            'border': '1px solid rgba(34,197,94,0.3)',
+            'background': 'rgba(34,197,94,0.05)',
+            'display': 'grid',
+            'grid-template-columns': '200px 1fr',
+            'align-items': 'center',
+            'gap': '12px',
           }}>
             <div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 C(a) + C(b) = C(a+b)
               </div>
-              <div style={{ fontSize: 9, color: '#22c55e', fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '9px', 'color': '#22c55e', 'font-family': 'monospace' }}>
                 Сумма commitments = commitment суммы
               </div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace', marginTop: 4 }}>
-                a + b = {a + b}
+              <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': '#22c55e', 'font-family': 'monospace', 'margin-top': '4px' }}>
+                a + b = {a() + b()}
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', textAlign: 'right' }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'text-align': 'right' }}>
               {cab}
             </div>
           </div>
@@ -553,11 +554,11 @@ export function HomomorphicCommitmentDiagram() {
 
       {/* Explanation */}
       <DiagramTooltip content="Гомоморфные commitments позволяют реализовать confidential transactions: суммы переводов скрыты, но верификатор может проверить, что сумма входов равна сумме выходов. Используется в Mimblewimble (Grin, Beam), Confidential Transactions в Monero и Liquid Network.">
-        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(34,197,94,0.15)', marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 6 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(34,197,94,0.15)', 'margin-bottom': '12px' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Почему это работает:
           </div>
-          <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.6' }}>
             C(a) + C(b) = (a*G + r1*H) + (b*G + r2*H) = (a+b)*G + (r1+r2)*H = C(a+b, r1+r2)
           </div>
         </div>

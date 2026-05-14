@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * zkSync / StarkNet Diagrams (SCALE-08)
  *
@@ -42,34 +43,34 @@ export function ZkSyncVsStarknetDiagram() {
   return (
     <DiagramContainer title="zkSync Era vs StarkNet" color="purple">
       {/* Header columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: 0, marginBottom: 4 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '100px 1fr 1fr', 'gap': '0', 'margin-bottom': '4px' }}>
         <div />
         <DiagramTooltip content="zkSync Era -- ZK rollup от Matter Labs. Ключевой принцип: совместимость с Solidity для легкой миграции существующих dApps. PLONK-based SNARKs, native account abstraction, Hyperchains (L3).">
           <span style={{
-            padding: '8px 10px',
-            textAlign: 'center',
-            fontSize: 12,
-            fontWeight: 700,
-            color: '#6366f1',
-            fontFamily: 'monospace',
-            borderBottom: '2px solid rgba(99,102,241,0.3)',
-            display: 'inline-block',
-            width: '100%',
+            'padding': '8px 10px',
+            'text-align': 'center',
+            'font-size': '12px',
+            'font-weight': '700',
+            'color': '#6366f1',
+            'font-family': 'monospace',
+            'border-bottom': '2px solid rgba(99,102,241,0.3)',
+            'display': 'inline-block',
+            'width': '100%',
           }}>
             zkSync Era
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="StarkNet -- ZK rollup от StarkWare. Ключевой принцип: максимальная мощность ZK через собственный язык Cairo и STARK proofs. Quantum resistant, без trusted setup, SHARP для shared proving.">
           <span style={{
-            padding: '8px 10px',
-            textAlign: 'center',
-            fontSize: 12,
-            fontWeight: 700,
-            color: '#f59e0b',
-            fontFamily: 'monospace',
-            borderBottom: '2px solid rgba(245,158,11,0.3)',
-            display: 'inline-block',
-            width: '100%',
+            'padding': '8px 10px',
+            'text-align': 'center',
+            'font-size': '12px',
+            'font-weight': '700',
+            'color': '#f59e0b',
+            'font-family': 'monospace',
+            'border-bottom': '2px solid rgba(245,158,11,0.3)',
+            'display': 'inline-block',
+            'width': '100%',
           }}>
             StarkNet
           </span>
@@ -79,39 +80,38 @@ export function ZkSyncVsStarknetDiagram() {
       {/* Feature rows */}
       {FEATURES.map((row, i) => (
         <div
-          key={i}
           style={{
-            display: 'grid',
-            gridTemplateColumns: '100px 1fr 1fr',
-            gap: 0,
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            'display': 'grid',
+            'grid-template-columns': '100px 1fr 1fr',
+            'gap': '0',
+            'border-bottom': '1px solid rgba(255,255,255,0.05)',
           }}
         >
-          <div style={{ padding: '8px 10px' }}>
+          <div style={{ 'padding': '8px 10px' }}>
             <DiagramTooltip content={row.tooltipRu}>
               <span style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
+                'font-size': '10px',
+                'font-weight': '600',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
               }}>
                 {row.label}
               </span>
             </DiagramTooltip>
           </div>
           <div style={{
-            padding: '8px 10px',
-            fontSize: 11,
-            color: colors.text,
-            lineHeight: 1.4,
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'color': colors.text,
+            'line-height': '1.4',
           }}>
             {row.zksync}
           </div>
           <div style={{
-            padding: '8px 10px',
-            fontSize: 11,
-            color: colors.text,
-            lineHeight: 1.4,
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'color': colors.text,
+            'line-height': '1.4',
           }}>
             {row.starknet}
           </div>
@@ -120,24 +120,24 @@ export function ZkSyncVsStarknetDiagram() {
 
       {/* Shared goal */}
       <div style={{
-        marginTop: 14,
-        padding: 10,
-        borderRadius: 6,
-        background: 'rgba(139,92,246,0.08)',
-        border: '1px solid rgba(139,92,246,0.2)',
-        textAlign: 'center',
+        'margin-top': '14px',
+        'padding': '10px',
+        'border-radius': '6px',
+        'background': 'rgba(139,92,246,0.08)',
+        'border': '1px solid rgba(139,92,246,0.2)',
+        'text-align': 'center',
       }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
           Общая цель
         </div>
         <DiagramTooltip content="Обе сети стремятся масштабировать Ethereum через validity proofs (ZK proofs). Подход отличается: zkSync -- EVM-совместимость для простоты миграции, StarkNet -- новый язык для максимальной мощности ZK.">
-          <span style={{ fontSize: 12, color: colors.text, fontWeight: 600 }}>
+          <span style={{ 'font-size': '12px', 'color': colors.text, 'font-weight': '600' }}>
             Масштабирование Ethereum через validity proofs
           </span>
         </DiagramTooltip>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DataBox
           label="Выбор подхода"
           value="zkSync: привычный Solidity, быстрое развертывание. StarkNet: Cairo = мощнее для ZK, но новый язык."
@@ -250,68 +250,68 @@ export function ZKEcosystemMapDiagram() {
   return (
     <DiagramContainer title="Экосистема ZK Rollups (2025)" color="green">
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(160px, 1fr))',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         {ZK_PROJECTS.map((project) => (
-          <DiagramTooltip key={project.name} content={project.tooltipRu}>
+          <DiagramTooltip content={project.tooltipRu}>
             <div
               style={{
                 ...glassStyle,
-                padding: 12,
-                borderRadius: 6,
-                cursor: 'pointer',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                transition: 'all 0.2s',
+                'padding': '12px',
+                'border-radius': '6px',
+                'cursor': 'pointer',
+                'background': 'rgba(255,255,255,0.02)',
+                'border': '1px solid rgba(255,255,255,0.08)',
+                'transition': 'all 0.2s',
               }}
             >
               {/* Name + Type badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: colors.text }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'margin-bottom': '6px' }}>
+                <span style={{ 'font-size': '12px', 'font-weight': '700', 'color': colors.text }}>
                   {project.name}
                 </span>
               </div>
               <span style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                color: project.typeColor,
-                padding: '1px 6px',
-                borderRadius: 3,
-                background: `${project.typeColor}15`,
-                border: `1px solid ${project.typeColor}30`,
-                fontWeight: 600,
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'color': project.typeColor,
+                'padding': '1px 6px',
+                'border-radius': '3px',
+                'background': `${project.typeColor}15`,
+                'border': `1px solid ${project.typeColor}30`,
+                'font-weight': '600',
               }}>
                 {project.type}
               </span>
 
               {/* Basic info */}
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+              <div style={{ 'margin-top': '8px' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   Proof: {project.proofSystem}
                 </div>
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   Status: {project.status}
                 </div>
-                <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   TVL: {project.tvl}
                 </div>
               </div>
 
               {/* Always-visible detail (replaces hover) */}
               <div style={{
-                marginTop: 8,
-                padding: 6,
-                borderRadius: 4,
-                background: `${project.typeColor}08`,
-                border: `1px solid ${project.typeColor}20`,
+                'margin-top': '8px',
+                'padding': '6px',
+                'border-radius': '4px',
+                'background': `${project.typeColor}08`,
+                'border': `1px solid ${project.typeColor}20`,
               }}>
-                <div style={{ fontSize: 10, color: colors.text, lineHeight: 1.4 }}>
+                <div style={{ 'font-size': '10px', 'color': colors.text, 'line-height': '1.4' }}>
                   {project.differentiator}
                 </div>
-                <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>
                   Team: {project.team} | Launch: {project.launch}
                 </div>
               </div>

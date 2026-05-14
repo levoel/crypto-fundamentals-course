@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Payment Channel Diagrams
  *
@@ -6,7 +7,7 @@
  * - HTLCMultiHopDiagram: 6-step animated HTLC multi-hop payment (Alice -> Carol -> Bob)
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -96,10 +97,10 @@ const COMMITMENT_STEPS: CommitmentStep[] = [
  * Shows asymmetric outputs, revocation mechanism, and penalty scenario.
  */
 export function CommitmentTransactionDiagram() {
-  const [step, setStep] = useState(0);
-  const [history, setHistory] = useState<number[]>([0]);
+  const [step, setStep] = createSignal(0);
+  const [history, setHistory] = createSignal<number[]>([0]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setStep((s) => {
       const next = Math.min(s + 1, COMMITMENT_STEPS.length - 1);
       setHistory((h) => {
@@ -108,19 +109,19 @@ export function CommitmentTransactionDiagram() {
       });
       return next;
     });
-  }, []);
+  };
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
     setStep((s) => Math.max(s - 1, 0));
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
     setHistory([0]);
-  }, []);
+  };
 
-  const current = COMMITMENT_STEPS[step];
-  const isPenalty = step === 3;
+  const current = COMMITMENT_STEPS[step()];
+  const isPenalty = step() === 3;
 
   /** Render a single commitment TX box */
   const renderTxBox = (
@@ -131,16 +132,16 @@ export function CommitmentTransactionDiagram() {
   ) => (
     <div style={{
       ...glassStyle,
-      padding: 12,
-      borderColor: isRevoked ? `${colors.danger}40` : `${ownerColor}30`,
-      background: isRevoked ? `${colors.danger}08` : undefined,
+      'padding': '12px',
+      'border-color': isRevoked ? `${colors.danger}40` : `${ownerColor}30`,
+      'background': isRevoked ? `${colors.danger}08` : undefined,
     }}>
       <div style={{
-        fontSize: 12,
-        fontWeight: 700,
-        color: isRevoked ? colors.danger : ownerColor,
-        marginBottom: 8,
-        textDecoration: isRevoked && step >= 2 ? 'line-through' : 'none',
+        'font-size': '12px',
+        'font-weight': '700',
+        'color': isRevoked ? colors.danger : ownerColor,
+        'margin-bottom': '8px',
+        'text-decoration': isRevoked && step() >= 2 ? 'line-through' : 'none',
       }}>
         {label}
       </div>
@@ -148,17 +149,17 @@ export function CommitmentTransactionDiagram() {
       {/* to_local output */}
       <DiagramTooltip content="to_local -- ваши средства в commitment TX. Защищены таймлоком (OP_CHECKSEQUENCEVERIFY): вы не можете забрать их мгновенно при закрытии канала. Это окно даёт партнёру время обнаружить мошенничество и применить ключ отзыва.">
         <div style={{
-          padding: 8,
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
-          marginBottom: 6,
-          border: `1px solid ${isPenalty ? colors.danger + '30' : colors.warning + '20'}`,
+          'padding': '8px',
+          'background': 'rgba(255,255,255,0.03)',
+          'border-radius': '6px',
+          'margin-bottom': '6px',
+          'border': `1px solid ${isPenalty ? colors.danger + '30' : colors.warning + '20'}`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-            <span style={{ fontSize: 10, color: colors.warning, fontWeight: 600 }}>to_local</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toLocal}</span>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '2px' }}>
+            <span style={{ 'font-size': '10px', 'color': colors.warning, 'font-weight': '600' }}>to_local</span>
+            <span style={{ 'font-size': '11px', 'font-weight': '700', 'color': colors.text }}>{tx.toLocal}</span>
           </div>
-          <div style={{ fontSize: 9, color: colors.textMuted }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>
             {tx.localNote}
           </div>
         </div>
@@ -167,16 +168,16 @@ export function CommitmentTransactionDiagram() {
       {/* to_remote output */}
       <DiagramTooltip content="to_remote -- средства партнёра в commitment TX. Доступны мгновенно (без таймлока), потому что партнёр не может мошенничать со своей СОБСТВЕННОЙ commitment TX -- только вы можете её опубликовать.">
         <div style={{
-          padding: 8,
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
-          border: `1px solid ${colors.success}20`,
+          'padding': '8px',
+          'background': 'rgba(255,255,255,0.03)',
+          'border-radius': '6px',
+          'border': `1px solid ${colors.success}20`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-            <span style={{ fontSize: 10, color: colors.success, fontWeight: 600 }}>to_remote</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: colors.text }}>{tx.toRemote}</span>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '2px' }}>
+            <span style={{ 'font-size': '10px', 'color': colors.success, 'font-weight': '600' }}>to_remote</span>
+            <span style={{ 'font-size': '11px', 'font-weight': '700', 'color': colors.text }}>{tx.toRemote}</span>
           </div>
-          <div style={{ fontSize: 9, color: colors.textMuted }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>
             {tx.remoteNote}
           </div>
         </div>
@@ -187,27 +188,26 @@ export function CommitmentTransactionDiagram() {
   return (
     <DiagramContainer title="Структура Commitment TX и отзыв" color="purple">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {COMMITMENT_STEPS.map((_s, i) => {
-          const isActive = i <= step;
+          const isActive = i <= step();
           const clr = i === 3 ? colors.danger : colors.secondary;
           return (
             <div
-              key={i}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                background: isActive ? `${clr}30` : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${isActive ? clr : 'rgba(255,255,255,0.1)'}`,
-                color: isActive ? clr : colors.textMuted,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '50%',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '12px',
+                'font-weight': '600',
+                'background': isActive ? `${clr}30` : 'rgba(255,255,255,0.05)',
+                'border': `2px solid ${isActive ? clr : 'rgba(255,255,255,0.1)'}`,
+                'color': isActive ? clr : colors.textMuted,
+                'cursor': 'pointer',
+                'transition': 'all 0.3s',
               }}
               onClick={() => setStep(i)}
             >
@@ -221,19 +221,19 @@ export function CommitmentTransactionDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          borderColor: isPenalty ? `${colors.danger}40` : `${colors.secondary}40`,
-          marginBottom: 16,
+          'padding': '14px',
+          'border-color': isPenalty ? `${colors.danger}40` : `${colors.secondary}40`,
+          'margin-bottom': '16px',
         }}>
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: isPenalty ? colors.danger : colors.secondary,
-            marginBottom: 6,
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': isPenalty ? colors.danger : colors.secondary,
+            'margin-bottom': '6px',
           }}>
             {current.title}
           </div>
-          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
             {current.description}
           </div>
         </div>
@@ -243,15 +243,15 @@ export function CommitmentTransactionDiagram() {
       {current.warning && (
         <DiagramTooltip content="Публикация отозванного (revoked) состояния канала -- это мошенничество. Протокол LN-penalty позволяет честному партнёру забрать ВСЕ средства канала, делая мошенничество экономически невыгодным.">
           <div style={{
-            padding: '10px 14px',
-            background: `${colors.danger}15`,
-            border: `2px solid ${colors.danger}50`,
-            borderRadius: 8,
-            marginBottom: 16,
-            textAlign: 'center',
-            fontSize: 14,
-            fontWeight: 700,
-            color: colors.danger,
+            'padding': '10px 14px',
+            'background': `${colors.danger}15`,
+            'border': `2px solid ${colors.danger}50`,
+            'border-radius': '8px',
+            'margin-bottom': '16px',
+            'text-align': 'center',
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': colors.danger,
           }}>
             {current.warning}
           </div>
@@ -261,11 +261,11 @@ export function CommitmentTransactionDiagram() {
       {/* TX visualizations */}
       {current.aliceTx && current.bobTx ? (
         <Grid columns={2} gap={10}>
-          {renderTxBox('Версия Alice', current.aliceTx, colors.primary, step >= 2)}
-          {renderTxBox('Версия Bob', current.bobTx, colors.success, step >= 2)}
+          {renderTxBox('Версия Alice', current.aliceTx, colors.primary, step() >= 2)}
+          {renderTxBox('Версия Bob', current.bobTx, colors.success, step() >= 2)}
         </Grid>
       ) : current.aliceTx ? (
-        <div style={{ maxWidth: 340, margin: '0 auto' }}>
+        <div style={{ 'max-width': '340px', 'margin': '0 auto' }}>
           {renderTxBox(
             isPenalty ? 'Alice публикует СТАРУЮ TX' : 'Commitment TX (версия Alice)',
             current.aliceTx,
@@ -279,16 +279,16 @@ export function CommitmentTransactionDiagram() {
       {isPenalty && (
         <DiagramTooltip content="Механизм наказания (LN-penalty) -- ключевой элемент безопасности Lightning Network. Асимметрия commitment TX + ключи отзыва + таймлоки создают экономический стимул для честного поведения без доверия к партнёру.">
           <div style={{
-            marginTop: 12,
+            'margin-top': '12px',
             ...glassStyle,
-            padding: 12,
-            borderColor: `${colors.danger}30`,
-            background: `${colors.danger}08`,
+            'padding': '12px',
+            'border-color': `${colors.danger}30`,
+            'background': `${colors.danger}08`,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger, marginBottom: 4 }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': colors.danger, 'margin-bottom': '4px' }}>
               Результат: Bob забирает ВСЕ 10 BTC
             </div>
-            <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.5' }}>
               Bob использует ключ отзыва до истечения таймлока Alice. Ончейн-транзакция переводит все средства канала Bob. Alice теряет всё. Это -- экономическая гарантия честности.
             </div>
           </div>
@@ -298,32 +298,32 @@ export function CommitmentTransactionDiagram() {
       {/* Detail note */}
       <DiagramTooltip content={current.detail}>
         <div style={{
-          marginTop: 12,
-          padding: 10,
+          'margin-top': '12px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: 'rgba(255,255,255,0.08)',
-          fontSize: 11,
-          color: colors.textMuted,
-          lineHeight: 1.5,
+          'border-color': 'rgba(255,255,255,0.08)',
+          'font-size': '11px',
+          'color': colors.textMuted,
+          'line-height': '1.5',
         }}>
           {current.detail}
         </div>
       </DiagramTooltip>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
         <DiagramTooltip content="Вернуться к первому шагу демонстрации commitment TX.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handleReset}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: colors.textMuted,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'font-size': '12px',
+                'color': colors.textMuted,
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
               }}
             >
               Сброс
@@ -331,19 +331,19 @@ export function CommitmentTransactionDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handlePrev}
-              disabled={step <= 0}
+              disabled={step() <= 0}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step <= 0 ? 'default' : 'pointer',
-                fontSize: 12,
-                color: step <= 0 ? colors.textMuted : colors.accent,
-                border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-                background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-                opacity: step <= 0 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() <= 0 ? 'default' : 'pointer',
+                'font-size': '12px',
+                'color': step() <= 0 ? colors.textMuted : colors.accent,
+                'border': `1px solid ${step() <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                'background': step() <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                'opacity': step() <= 0 ? 0.5 : 1,
               }}
             >
               Назад
@@ -351,19 +351,19 @@ export function CommitmentTransactionDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу демонстрации commitment TX.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handleNext}
-              disabled={step >= COMMITMENT_STEPS.length - 1}
+              disabled={step() >= COMMITMENT_STEPS.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step >= COMMITMENT_STEPS.length - 1 ? 'default' : 'pointer',
-                fontSize: 12,
-                color: step >= COMMITMENT_STEPS.length - 1 ? colors.textMuted : colors.secondary,
-                border: `1px solid ${step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.secondary}`,
-                background: step >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.secondary}15`,
-                opacity: step >= COMMITMENT_STEPS.length - 1 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() >= COMMITMENT_STEPS.length - 1 ? 'default' : 'pointer',
+                'font-size': '12px',
+                'color': step() >= COMMITMENT_STEPS.length - 1 ? colors.textMuted : colors.secondary,
+                'border': `1px solid ${step() >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.secondary}`,
+                'background': step() >= COMMITMENT_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.secondary}15`,
+                'opacity': step() >= COMMITMENT_STEPS.length - 1 ? 0.5 : 1,
               }}
             >
               Далее
@@ -467,12 +467,12 @@ const TIMEOUT_STEP: HTLCStep = {
  * History array pattern. Includes timeout alternative.
  */
 export function HTLCMultiHopDiagram() {
-  const [step, setStep] = useState(0);
-  const [showTimeout, setShowTimeout] = useState(false);
-  const [history, setHistory] = useState<number[]>([0]);
+  const [step, setStep] = createSignal(0);
+  const [showTimeout, setShowTimeout] = createSignal(false);
+  const [history, setHistory] = createSignal<number[]>([0]);
 
-  const handleNext = useCallback(() => {
-    if (showTimeout) return;
+  const handleNext = () => {
+    if (showTimeout()) return;
     setStep((s) => {
       const next = Math.min(s + 1, HTLC_STEPS.length - 1);
       setHistory((h) => {
@@ -481,24 +481,24 @@ export function HTLCMultiHopDiagram() {
       });
       return next;
     });
-  }, [showTimeout]);
+  };
 
-  const handlePrev = useCallback(() => {
-    if (showTimeout) {
+  const handlePrev = () => {
+    if (showTimeout()) {
       setShowTimeout(false);
       return;
     }
     setStep((s) => Math.max(s - 1, 0));
-  }, [showTimeout]);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
     setShowTimeout(false);
     setHistory([0]);
-  }, []);
+  };
 
-  const current = showTimeout ? TIMEOUT_STEP : HTLC_STEPS[step];
-  const isTimeout = showTimeout;
+  const current = showTimeout() ? TIMEOUT_STEP : HTLC_STEPS[step()];
+  const isTimeout = showTimeout();
 
   /** Render a channel HTLC box */
   const renderChannel = (
@@ -510,33 +510,33 @@ export function HTLCMultiHopDiagram() {
   ) => (
     <div style={{
       ...glassStyle,
-      padding: 12,
-      borderColor: `${data.color}30`,
-      transition: 'border-color 0.3s',
+      'padding': '12px',
+      'border-color': `${data.color}30`,
+      'transition': 'border-color 0.3s',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: fromColor }}>{from}</span>
-        <span style={{ fontSize: 11, color: data.color }}>{'-->'}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: toColor }}>{to}</span>
+      <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
+        <span style={{ 'font-size': '12px', 'font-weight': '700', 'color': fromColor }}>{from}</span>
+        <span style={{ 'font-size': '11px', 'color': data.color }}>{'-->'}</span>
+        <span style={{ 'font-size': '12px', 'font-weight': '700', 'color': toColor }}>{to}</span>
       </div>
       <div style={{
-        padding: 6,
-        background: `${data.color}10`,
-        borderRadius: 6,
-        border: `1px solid ${data.color}25`,
-        marginBottom: 4,
+        'padding': '6px',
+        'background': `${data.color}10`,
+        'border-radius': '6px',
+        'border': `1px solid ${data.color}25`,
+        'margin-bottom': '4px',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: data.color, marginBottom: 2 }}>
+        <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': data.color, 'margin-bottom': '2px' }}>
           {data.status}
         </div>
-        <div style={{ fontSize: 10, color: colors.textMuted }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>
           Сумма: {data.amount}
         </div>
         {data.timelock !== '-' && (
           <div style={{
-            fontSize: 10,
-            color: isTimeout ? colors.danger : colors.warning,
-            fontWeight: 600,
+            'font-size': '10px',
+            'color': isTimeout ? colors.danger : colors.warning,
+            'font-weight': '600',
           }}>
             Таймлок: {data.timelock}
           </div>
@@ -548,26 +548,25 @@ export function HTLCMultiHopDiagram() {
   return (
     <DiagramContainer title="HTLC: атомарный мультихоп-платёж" color="green">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {HTLC_STEPS.map((_s, i) => {
-          const isActive = !showTimeout && i <= step;
+          const isActive = !showTimeout() && i <= step();
           return (
             <div
-              key={i}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                background: isActive ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${isActive ? colors.success : 'rgba(255,255,255,0.1)'}`,
-                color: isActive ? colors.success : colors.textMuted,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '50%',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '12px',
+                'font-weight': '600',
+                'background': isActive ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
+                'border': `2px solid ${isActive ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                'color': isActive ? colors.success : colors.textMuted,
+                'cursor': 'pointer',
+                'transition': 'all 0.3s',
               }}
               onClick={() => {
                 setShowTimeout(false);
@@ -581,19 +580,19 @@ export function HTLCMultiHopDiagram() {
         {/* Timeout indicator */}
         <div
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontWeight: 600,
-            background: showTimeout ? `${colors.danger}30` : 'rgba(255,255,255,0.05)',
-            border: `2px solid ${showTimeout ? colors.danger : 'rgba(255,255,255,0.1)'}`,
-            color: showTimeout ? colors.danger : colors.textMuted,
-            cursor: 'pointer',
-            transition: 'all 0.3s',
+            'width': '28px',
+            'height': '28px',
+            'border-radius': '50%',
+            'display': 'flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+            'font-size': '10px',
+            'font-weight': '600',
+            'background': showTimeout() ? `${colors.danger}30` : 'rgba(255,255,255,0.05)',
+            'border': `2px solid ${showTimeout() ? colors.danger : 'rgba(255,255,255,0.1)'}`,
+            'color': showTimeout() ? colors.danger : colors.textMuted,
+            'cursor': 'pointer',
+            'transition': 'all 0.3s',
           }}
           onClick={() => setShowTimeout(true)}
           title="Сценарий таймаута"
@@ -606,19 +605,19 @@ export function HTLCMultiHopDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          borderColor: isTimeout ? `${colors.danger}40` : `${colors.success}40`,
-          marginBottom: 16,
+          'padding': '14px',
+          'border-color': isTimeout ? `${colors.danger}40` : `${colors.success}40`,
+          'margin-bottom': '16px',
         }}>
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: isTimeout ? colors.danger : colors.success,
-            marginBottom: 6,
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': isTimeout ? colors.danger : colors.success,
+            'margin-bottom': '6px',
           }}>
             {current.title}
           </div>
-          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
             {current.description}
           </div>
         </div>
@@ -643,20 +642,20 @@ export function HTLCMultiHopDiagram() {
       </Grid>
 
       {/* Preimage flow arrow (when revealed) */}
-      {(step >= 3 && !showTimeout) && (
+      {(step() >= 3 && !showTimeout()) && (
         <div style={{
-          textAlign: 'center',
-          margin: '8px 0',
-          fontSize: 11,
-          fontWeight: 600,
-          color: colors.success,
+          'text-align': 'center',
+          'margin': '8px 0',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': colors.success,
         }}>
           R течёт назад: Bob {'->'} Carol {'->'} Alice
         </div>
       )}
 
       {/* Channel HTLC states */}
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <Grid columns={2} gap={10}>
           {renderChannel('Alice', 'Carol', current.aliceCarol, colors.primary, colors.accent)}
           {renderChannel('Carol', 'Bob', current.carolBob, colors.accent, colors.success)}
@@ -664,18 +663,18 @@ export function HTLCMultiHopDiagram() {
       </div>
 
       {/* Timelock explanation for step 2 */}
-      {step === 2 && !showTimeout && (
+      {step() === 2 && !showTimeout() && (
         <DiagramTooltip content="Убывающие таймлоки -- критический элемент безопасности мультихоп-платежей. Каждый промежуточный узел имеет меньший таймлок, чем предыдущий. Это гарантирует, что посредник успеет получить R и передать его дальше до истечения своего HTLC.">
           <div style={{
-            marginTop: 12,
+            'margin-top': '12px',
             ...glassStyle,
-            padding: 10,
-            borderColor: `${colors.warning}30`,
-            fontSize: 11,
-            color: colors.textMuted,
-            lineHeight: 1.5,
+            'padding': '10px',
+            'border-color': `${colors.warning}30`,
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'line-height': '1.5',
           }}>
-            <strong style={{ color: colors.warning }}>Почему таймлоки убывают?</strong>{' '}
+            <strong style={{ 'color': colors.warning }}>Почему таймлоки убывают?</strong>{' '}
             Alice: 48ч, Carol: 24ч. Если Carol узнает R от Bob, у неё есть 24 часа чтобы передать R Alice (до истечения 48ч). Убывающие таймлоки гарантируют атомарность.
           </div>
         </DiagramTooltip>
@@ -684,32 +683,32 @@ export function HTLCMultiHopDiagram() {
       {/* Detail note */}
       <DiagramTooltip content={current.detail}>
         <div style={{
-          marginTop: 12,
-          padding: 10,
+          'margin-top': '12px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: 'rgba(255,255,255,0.08)',
-          fontSize: 11,
-          color: colors.textMuted,
-          lineHeight: 1.5,
+          'border-color': 'rgba(255,255,255,0.08)',
+          'font-size': '11px',
+          'color': colors.textMuted,
+          'line-height': '1.5',
         }}>
           {current.detail}
         </div>
       </DiagramTooltip>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
         <DiagramTooltip content="Вернуться к первому шагу HTLC демонстрации.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handleReset}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: colors.textMuted,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'font-size': '12px',
+                'color': colors.textMuted,
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
               }}
             >
               Сброс
@@ -717,19 +716,19 @@ export function HTLCMultiHopDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Вернуться к предыдущему шагу.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handlePrev}
-              disabled={step <= 0 && !showTimeout}
+              disabled={step() <= 0 && !showTimeout()}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: (step <= 0 && !showTimeout) ? 'default' : 'pointer',
-                fontSize: 12,
-                color: (step <= 0 && !showTimeout) ? colors.textMuted : colors.accent,
-                border: `1px solid ${(step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-                background: (step <= 0 && !showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-                opacity: (step <= 0 && !showTimeout) ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': (step() <= 0 && !showTimeout()) ? 'default' : 'pointer',
+                'font-size': '12px',
+                'color': (step() <= 0 && !showTimeout()) ? colors.textMuted : colors.accent,
+                'border': `1px solid ${(step() <= 0 && !showTimeout()) ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+                'background': (step() <= 0 && !showTimeout()) ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                'opacity': (step() <= 0 && !showTimeout()) ? 0.5 : 1,
               }}
             >
               Назад
@@ -737,40 +736,40 @@ export function HTLCMultiHopDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Перейти к следующему шагу HTLC мультихоп-платежа.">
-          <div style={{ display: 'inline-block' }}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
               onClick={handleNext}
-              disabled={step >= HTLC_STEPS.length - 1 || showTimeout}
+              disabled={step() >= HTLC_STEPS.length - 1 || showTimeout()}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'default' : 'pointer',
-                fontSize: 12,
-                color: (step >= HTLC_STEPS.length - 1 || showTimeout) ? colors.textMuted : colors.success,
-                border: `1px solid ${(step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.1)' : colors.success}`,
-                background: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
-                opacity: (step >= HTLC_STEPS.length - 1 || showTimeout) ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': (step() >= HTLC_STEPS.length - 1 || showTimeout()) ? 'default' : 'pointer',
+                'font-size': '12px',
+                'color': (step() >= HTLC_STEPS.length - 1 || showTimeout()) ? colors.textMuted : colors.success,
+                'border': `1px solid ${(step() >= HTLC_STEPS.length - 1 || showTimeout()) ? 'rgba(255,255,255,0.1)' : colors.success}`,
+                'background': (step() >= HTLC_STEPS.length - 1 || showTimeout()) ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
+                'opacity': (step() >= HTLC_STEPS.length - 1 || showTimeout()) ? 0.5 : 1,
               }}
             >
               Далее
             </button>
           </div>
         </DiagramTooltip>
-        <DiagramTooltip content={showTimeout ? "Вернуться к основному маршруту HTLC-платежа." : "Показать альтернативный сценарий: что происходит, если Bob не раскрывает прообраз R и все HTLC истекают по таймауту."}>
-          <div style={{ display: 'inline-block' }}>
+        <DiagramTooltip content={showTimeout() ? "Вернуться к основному маршруту HTLC-платежа." : "Показать альтернативный сценарий: что происходит, если Bob не раскрывает прообраз R и все HTLC истекают по таймауту."}>
+          <div style={{ 'display': 'inline-block' }}>
             <button
-              onClick={() => setShowTimeout(!showTimeout)}
+              onClick={() => setShowTimeout(!showTimeout())}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: showTimeout ? colors.success : colors.danger,
-                border: `1px solid ${showTimeout ? colors.success : colors.danger}`,
-                background: `${showTimeout ? colors.success : colors.danger}15`,
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'font-size': '12px',
+                'color': showTimeout() ? colors.success : colors.danger,
+                'border': `1px solid ${showTimeout() ? colors.success : colors.danger}`,
+                'background': `${showTimeout() ? colors.success : colors.danger}15`,
               }}
             >
-              {showTimeout ? 'Назад к маршруту' : 'Таймаут'}
+              {showTimeout() ? 'Назад к маршруту' : 'Таймаут'}
             </button>
           </div>
         </DiagramTooltip>

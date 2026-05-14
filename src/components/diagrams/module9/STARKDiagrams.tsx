@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * STARK Diagrams (ZK-06)
  *
@@ -6,7 +7,7 @@
  * - SNARKvsSTARKDeepDiagram: Deep SNARK vs STARK comparison table (8 rows, hover tooltips)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -83,8 +84,8 @@ const FRI_STEPS: FRIStep[] = [
  * history array for forward/backward navigation.
  */
 export function FRIProtocolDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < FRI_STEPS.length - 1) {
@@ -92,8 +93,8 @@ export function FRIProtocolDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -103,50 +104,49 @@ export function FRIProtocolDiagram() {
   return (
     <DiagramContainer title="FRI Protocol: доказательство low-degree polynomial" color="green">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {FRI_STEPS.map((st, i) => (
           <div
-            key={i}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background: i <= current ? st.color : 'rgba(255,255,255,0.08)',
-              transition: 'background 0.3s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'background': i <= current ? st.color : 'rgba(255,255,255,0.08)',
+              'transition': 'background 0.3s',
             }}
           />
         ))}
       </div>
 
       {/* Flow visualization */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'margin-bottom': '16px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         {FRI_STEPS.map((st, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
             <DiagramTooltip content={st.detail}>
               <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: i <= current ? '#fff' : colors.textMuted,
-                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.3s',
+                'width': '44px',
+                'height': '44px',
+                'border-radius': '8px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '10px',
+                'font-weight': '700',
+                'font-family': 'monospace',
+                'color': i <= current ? '#fff' : colors.textMuted,
+                'background': i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                'border': `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                'transition': 'all 0.3s',
               }}>
                 {st.icon}
               </div>
             </DiagramTooltip>
             {i < FRI_STEPS.length - 1 && (
               <div style={{
-                width: 20,
-                height: 2,
-                background: i < current ? `${FRI_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
-                transition: 'background 0.3s',
+                'width': '20px',
+                'height': '2px',
+                'background': i < current ? `${FRI_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
+                'transition': 'background 0.3s',
               }} />
             )}
           </div>
@@ -156,60 +156,60 @@ export function FRIProtocolDiagram() {
       {/* Current step detail */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 12,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
+        'padding': '16px',
+        'margin-bottom': '12px',
+        'border': `1px solid ${s.color}30`,
+        'background': `${s.color}08`,
+        'border-radius': '8px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': s.color,
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${s.color}15`,
+            'border': `1px solid ${s.color}30`,
           }}>
             {s.label}
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+          <span style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text }}>
             {s.title}
           </span>
         </div>
         <DiagramTooltip content={s.description}>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '8px' }}>
             {s.description}
           </div>
         </DiagramTooltip>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', fontStyle: 'italic' }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'font-style': 'italic' }}>
           {s.detail}
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px' }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу FRI-протокола.' },
+          { label: 'Back', action: back, disabled: history().length <= 1, tooltip: 'Вернуться к предыдущему шагу FRI-протокола.' },
           { label: `Step ${current + 1}/${FRI_STEPS.length}`, action: step, disabled: current >= FRI_STEPS.length - 1, tooltip: 'Перейти к следующему шагу FRI-протокола. Каждый шаг уменьшает степень полинома вдвое.' },
-          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать просмотр FRI-протокола с первого шага.' },
+          { label: 'Reset', action: reset, disabled: history().length <= 1, tooltip: 'Начать просмотр FRI-протокола с первого шага.' },
         ].map((btn) => (
-          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+          <DiagramTooltip content={btn.tooltip}>
             <div>
               <button
                 onClick={btn.action}
                 disabled={btn.disabled}
                 style={{
                   ...glassStyle,
-                  padding: '6px 14px',
-                  cursor: btn.disabled ? 'default' : 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6,
-                  opacity: btn.disabled ? 0.5 : 1,
+                  'padding': '6px 14px',
+                  'cursor': btn.disabled ? 'default' : 'pointer',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  'border': '1px solid rgba(255,255,255,0.1)',
+                  'border-radius': '6px',
+                  'opacity': btn.disabled ? 0.5 : 1,
                 }}
               >
                 {btn.label}
@@ -321,53 +321,53 @@ export function SNARKvsSTARKDeepDiagram() {
   return (
     <DiagramContainer title="SNARKs vs STARKs: глубокое сравнение" color="orange">
       <div style={{
-        fontSize: 10,
-        color: colors.textMuted,
-        fontFamily: 'monospace',
-        marginBottom: 12,
-        fontStyle: 'italic',
+        'font-size': '10px',
+        'color': colors.textMuted,
+        'font-family': 'monospace',
+        'margin-bottom': '12px',
+        'font-style': 'italic',
       }}>
         Module 8 рассказал ЧТО отличает SNARKs и STARKs. Теперь мы понимаем ПОЧЕМУ.
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 12,
-          fontFamily: 'monospace',
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-size': '12px',
+          'font-family': 'monospace',
         }}>
           <thead>
             <tr>
               <th style={{
-                padding: '8px 10px',
-                textAlign: 'left',
-                fontSize: 10,
-                color: colors.textMuted,
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                minWidth: 120,
+                'padding': '8px 10px',
+                'text-align': 'left',
+                'font-size': '10px',
+                'color': colors.textMuted,
+                'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                'min-width': '120px',
               }}>
                 Параметр
               </th>
               <th style={{
-                padding: '8px 10px',
-                textAlign: 'left',
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#6366f1',
-                borderBottom: '2px solid rgba(99,102,241,0.3)',
-                minWidth: 180,
+                'padding': '8px 10px',
+                'text-align': 'left',
+                'font-size': '11px',
+                'font-weight': '600',
+                'color': '#6366f1',
+                'border-bottom': '2px solid rgba(99,102,241,0.3)',
+                'min-width': '180px',
               }}>
                 SNARK (Groth16)
               </th>
               <th style={{
-                padding: '8px 10px',
-                textAlign: 'left',
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#f59e0b',
-                borderBottom: '2px solid rgba(245,158,11,0.3)',
-                minWidth: 180,
+                'padding': '8px 10px',
+                'text-align': 'left',
+                'font-size': '11px',
+                'font-weight': '600',
+                'color': '#f59e0b',
+                'border-bottom': '2px solid rgba(245,158,11,0.3)',
+                'min-width': '180px',
               }}>
                 STARK (FRI-based)
               </th>
@@ -376,39 +376,38 @@ export function SNARKvsSTARKDeepDiagram() {
           <tbody>
             {DEEP_COMPARISON_ROWS.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  cursor: 'help',
+                  'cursor': 'help',
                 }}
               >
                 <td style={{
-                  padding: '7px 10px',
-                  color: colors.textMuted,
-                  fontWeight: 600,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  'padding': '7px 10px',
+                  'color': colors.textMuted,
+                  'font-weight': '600',
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
                 }}>
                   <DiagramTooltip content={row.tooltip}>
                     <span>{row.category}</span>
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '7px 10px',
-                  color: row.snarkAdvantage ? colors.success : colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
-                  fontWeight: row.snarkAdvantage ? 600 : 400,
+                  'padding': '7px 10px',
+                  'color': row.snarkAdvantage ? colors.success : colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
+                  'font-weight': row.snarkAdvantage ? 600 : 400,
                 }}>
                   {row.snark}
                 </td>
                 <td style={{
-                  padding: '7px 10px',
-                  color: row.starkAdvantage ? colors.success : colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
-                  fontWeight: row.starkAdvantage ? 600 : 400,
+                  'padding': '7px 10px',
+                  'color': row.starkAdvantage ? colors.success : colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
+                  'font-weight': row.starkAdvantage ? 600 : 400,
                 }}>
                   {row.stark}
                 </td>
@@ -418,7 +417,7 @@ export function SNARKvsSTARKDeepDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="Фундаментальный trade-off: SNARKs используют EC pairings для сжатия proof до 3 group elements (~128 байт), но требуют trusted setup. STARKs используют hash-based commitments (Merkle paths), которые не сжимаются — но обеспечивают прозрачность и квантовую устойчивость.">
           <DataBox
             label="Ключевое различие (WHY)"

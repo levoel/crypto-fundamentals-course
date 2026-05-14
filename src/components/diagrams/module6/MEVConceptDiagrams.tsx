@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * MEV Concept Diagrams (SEC-05)
  *
@@ -6,7 +7,7 @@
  * - MEVTypesTableDiagram: HTML table classifying MEV types as harmful, beneficial, or neutral
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -97,8 +98,8 @@ const CHAIN_TOOLTIPS: Record<string, string> = {
  * Forward/backward/reset navigation.
  */
 export function MEVSupplyChainDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = SUPPLY_CHAIN_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = SUPPLY_CHAIN_HISTORY[stepIndex()];
 
   const actors = ['Users', 'Searchers', 'Builders', 'Relays', 'Validators'];
   const actorColors = [colors.textMuted, colors.accent, colors.primary, '#eab308', colors.success];
@@ -107,30 +108,30 @@ export function MEVSupplyChainDiagram() {
   return (
     <DiagramContainer title="MEV Supply Chain: 5 участников" color="purple">
       {/* Visual chain */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {actors.map((actor, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
             <DiagramTooltip content={CHAIN_TOOLTIPS[actorKeys[i]]}>
               <div
                 onClick={() => setStepIndex(i)}
                 style={{
-                  padding: '6px 10px',
-                  borderRadius: 6,
-                  background: i === stepIndex ? `${actorColors[i]}20` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${i === stepIndex ? actorColors[i] : 'rgba(255,255,255,0.08)'}`,
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: i <= stepIndex ? actorColors[i] : colors.textMuted,
-                  fontWeight: i === stepIndex ? 600 : 400,
-                  transition: 'all 0.2s',
+                  'padding': '6px 10px',
+                  'border-radius': '6px',
+                  'background': i === stepIndex() ? `${actorColors[i]}20` : 'rgba(255,255,255,0.03)',
+                  'border': `1px solid ${i === stepIndex() ? actorColors[i] : 'rgba(255,255,255,0.08)'}`,
+                  'cursor': 'pointer',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'color': i <= stepIndex() ? actorColors[i] : colors.textMuted,
+                  'font-weight': i === stepIndex() ? 600 : 400,
+                  'transition': 'all 0.2s',
                 }}
               >
                 {actor}
               </div>
             </DiagramTooltip>
             {i < actors.length - 1 && (
-              <span style={{ color: i < stepIndex ? colors.success : 'rgba(255,255,255,0.15)', fontSize: 14 }}>
+              <span style={{ 'color': i < stepIndex() ? colors.success : 'rgba(255,255,255,0.15)', 'font-size': '14px' }}>
                 {'\u2192'}
               </span>
             )}
@@ -139,18 +140,17 @@ export function MEVSupplyChainDiagram() {
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {SUPPLY_CHAIN_HISTORY.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? colors.accent : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? colors.accent : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -159,11 +159,11 @@ export function MEVSupplyChainDiagram() {
       {/* Step title */}
       <DiagramTooltip content={CHAIN_TOOLTIPS[step.highlight] || step.description.slice(0, 120)}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -171,30 +171,30 @@ export function MEVSupplyChainDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
+          <div style={{
             ...glassStyle,
-            padding: 10,
+            'padding': '10px',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -202,16 +202,16 @@ export function MEVSupplyChainDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
           <button
             onClick={() => setStepIndex(0)}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              color: colors.text,
-              fontSize: 13,
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'color': colors.text,
+              'font-size': '13px',
             }}
           >
             Сброс
@@ -220,14 +220,14 @@ export function MEVSupplyChainDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-            disabled={stepIndex === 0}
+            disabled={stepIndex() === 0}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-              color: stepIndex === 0 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: stepIndex === 0 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': stepIndex() === 0 ? 0.5 : 1,
             }}
           >
             Назад
@@ -236,14 +236,14 @@ export function MEVSupplyChainDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.min(SUPPLY_CHAIN_HISTORY.length - 1, s + 1))}
-            disabled={stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1}
+            disabled={stepIndex() >= SUPPLY_CHAIN_HISTORY.length - 1}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-              color: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? colors.textMuted : colors.success,
-              fontSize: 13,
-              opacity: stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() >= SUPPLY_CHAIN_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() >= SUPPLY_CHAIN_HISTORY.length - 1 ? colors.textMuted : colors.success,
+              'font-size': '13px',
+              'opacity': stepIndex() >= SUPPLY_CHAIN_HISTORY.length - 1 ? 0.5 : 1,
             }}
           >
             Далее
@@ -251,8 +251,8 @@ export function MEVSupplyChainDiagram() {
         </div>
       </div>
 
-      {stepIndex >= SUPPLY_CHAIN_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= SUPPLY_CHAIN_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="PBS (Proposer-Builder Separation) — архитектурное решение Ethereum для разделения ролей. Validators не строят блоки сами, а выбирают лучший блок из предложенных builders.">
             <DataBox
               label="Ключевой вывод"
@@ -361,25 +361,25 @@ export function MEVTypesTableDiagram() {
   return (
     <DiagramContainer title="Типы MEV: спектр от вредного до полезного" color="blue">
       {/* Table */}
-      <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-bottom': '16px' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontFamily: 'monospace',
-          fontSize: 12,
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-family': 'monospace',
+          'font-size': '12px',
         }}>
           <thead>
             <tr>
               {['Тип MEV', 'Категория', 'Воздействие', 'Прибыль searcher'].map((header) => (
-                <th key={header} style={{
-                  padding: '10px 8px',
-                  textAlign: 'left',
-                  borderBottom: '1px solid rgba(255,255,255,0.15)',
-                  color: colors.textMuted,
-                  fontWeight: 600,
-                  fontSize: 10,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                <th style={{
+                  'padding': '10px 8px',
+                  'text-align': 'left',
+                  'border-bottom': '1px solid rgba(255,255,255,0.15)',
+                  'color': colors.textMuted,
+                  'font-weight': '600',
+                  'font-size': '10px',
+                  'text-transform': 'uppercase',
+                  'letter-spacing': '0.05em',
                 }}>
                   {header}
                 </th>
@@ -392,50 +392,49 @@ export function MEVTypesTableDiagram() {
 
               return (
                 <tr
-                  key={i}
                   style={{
-                    transition: 'all 0.2s',
+                    'transition': 'all 0.2s',
                   }}
                 >
                   <td style={{
-                    padding: '10px 8px',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    color: colors.text,
-                    fontWeight: 600,
+                    'padding': '10px 8px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                    'color': colors.text,
+                    'font-weight': '600',
                   }}>
                     <DiagramTooltip content={MEV_TYPE_TOOLTIPS[mev.name] || `${mev.description} Пример: ${mev.example}`}>
                       {mev.name}
                     </DiagramTooltip>
                   </td>
                   <td style={{
-                    padding: '10px 8px',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                    'padding': '10px 8px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.06)',
                   }}>
                     <span style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      background: `${catColor}15`,
-                      color: catColor,
-                      fontSize: 11,
-                      fontWeight: 600,
+                      'padding': '2px 8px',
+                      'border-radius': '4px',
+                      'background': `${catColor}15`,
+                      'color': catColor,
+                      'font-size': '11px',
+                      'font-weight': '600',
                     }}>
                       {categoryLabel(mev.category)}
                     </span>
                   </td>
                   <td style={{
-                    padding: '10px 8px',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    color: colors.textMuted,
-                    fontSize: 11,
+                    'padding': '10px 8px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                    'color': colors.textMuted,
+                    'font-size': '11px',
                   }}>
                     {mev.impact}
                   </td>
                   <td style={{
-                    padding: '10px 8px',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    color: catColor,
-                    fontSize: 11,
-                    fontWeight: 600,
+                    'padding': '10px 8px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.06)',
+                    'color': catColor,
+                    'font-size': '11px',
+                    'font-weight': '600',
                   }}>
                     {mev.profit}
                   </td>

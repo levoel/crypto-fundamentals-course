@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Liquidation Diagrams (DEFI-07)
  *
@@ -8,7 +9,7 @@
  * - LiquidatorProfitDiagram: Static liquidator profit calculation breakdown
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -27,13 +28,13 @@ import { colors, glassStyle } from '@primitives/shared';
  * Slider: ETH price from $1000 to $3000.
  */
 export function HealthFactorGaugeDiagram() {
-  const [ethPrice, setEthPrice] = useState(2000);
+  const [ethPrice, setEthPrice] = createSignal(2000);
 
   const ethAmount = 10;
   const debtUSD = 12000;
   const liqThreshold = 0.825; // 82.5%
 
-  const collateralUSD = ethAmount * ethPrice;
+  const collateralUSD = ethAmount * ethPrice();
   const hf = (collateralUSD * liqThreshold) / debtUSD;
   const ltvUsed = debtUSD / collateralUSD;
 
@@ -65,8 +66,8 @@ export function HealthFactorGaugeDiagram() {
   return (
     <DiagramContainer title="Health Factor: интерактивный gauge" color="blue">
       {/* Gauge SVG */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={gaugeW} height={gaugeH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={gaugeW} height={gaugeH} style={{ 'overflow': 'visible' }}>
           {/* Background arc segments */}
           {/* Red zone: HF 0 - 1 (180deg to 120deg) */}
           <path
@@ -148,18 +149,18 @@ export function HealthFactorGaugeDiagram() {
       </div>
 
       {/* ETH Price Slider */}
-      <div style={{ marginBottom: 16, padding: '0 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+      <div style={{ 'margin-bottom': '16px', 'padding': '0 8px' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
+          <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
             ETH Price:
           </span>
           <span style={{
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: 'monospace',
-            color: statusColor,
+            'font-size': '13px',
+            'font-weight': '600',
+            'font-family': 'monospace',
+            'color': statusColor,
           }}>
-            ${ethPrice.toLocaleString()}
+            ${ethPrice().toLocaleString()}
           </span>
         </div>
         <input
@@ -167,11 +168,11 @@ export function HealthFactorGaugeDiagram() {
           min={1000}
           max={3000}
           step={10}
-          value={ethPrice}
+          value={ethPrice()}
           onChange={(e) => setEthPrice(Number(e.target.value))}
-          style={{ width: '100%', accentColor: colors.primary }}
+          style={{ 'width': '100%', 'accent-color': colors.primary }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
           <span>$1,000</span>
           <span>$2,000</span>
           <span>$3,000</span>
@@ -180,45 +181,45 @@ export function HealthFactorGaugeDiagram() {
 
       {/* Values */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '12px',
       }}>
         <DiagramTooltip content="Health Factor > 2: безопасная зона. Collateral значительно превышает долг. Можно добавить ещё borrowing.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Collateral</div>
-            <div style={{ fontSize: 13, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>${collateralUSD.toLocaleString()}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Collateral</div>
+            <div style={{ 'font-size': '13px', 'color': colors.primary, 'font-family': 'monospace', 'font-weight': '600' }}>${collateralUSD.toLocaleString()}</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Health Factor < 1: ЛИКВИДАЦИЯ. Liquidator может погасить до 50% долга и получить collateral с дисконтом (5-15% liquidation bonus).">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Debt</div>
-            <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${debtUSD.toLocaleString()}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Debt</div>
+            <div style={{ 'font-size': '13px', 'color': '#f43f5e', 'font-family': 'monospace', 'font-weight': '600' }}>${debtUSD.toLocaleString()}</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Health Factor 1-2: зона предупреждения. Волатильность может привести к ликвидации. Рекомендуется добавить collateral или погасить часть долга.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>LTV используемый</div>
-            <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{(ltvUsed * 100).toFixed(1)}%</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>LTV используемый</div>
+            <div style={{ 'font-size': '13px', 'color': colors.accent, 'font-family': 'monospace', 'font-weight': '600' }}>{(ltvUsed * 100).toFixed(1)}%</div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Цена ликвидации: при достижении этой цены ETH позиция будет ликвидирована (HF < 1). Формула: debt / (collateral_amount * liq_threshold).">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            background: isLiquidated ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${isLiquidated ? '#f43f5e30' : 'rgba(255,255,255,0.08)'}`,
+            'padding': '10px',
+            'background': isLiquidated ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
+            'border': `1px solid ${isLiquidated ? '#f43f5e30' : 'rgba(255,255,255,0.08)'}`,
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена ликвидации</div>
-            <div style={{ fontSize: 13, color: '#f43f5e', fontFamily: 'monospace', fontWeight: 600 }}>${liquidationPrice.toFixed(0)}</div>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Цена ликвидации</div>
+            <div style={{ 'font-size': '13px', 'color': '#f43f5e', 'font-family': 'monospace', 'font-weight': '600' }}>${liquidationPrice.toFixed(0)}</div>
           </div>
         </DiagramTooltip>
       </div>
 
       {/* Formula */}
-      <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
+      <div style={{ ...glassStyle, 'padding': '10px', 'margin-bottom': '8px' }}>
+        <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.primary, 'text-align': 'center' }}>
           HF = (collateral * liq_threshold) / debt = ({collateralUSD.toLocaleString()} * 0.825) / {debtUSD.toLocaleString()} = {hf.toFixed(3)}
         </div>
       </div>
@@ -331,26 +332,25 @@ const LIQUIDATION_HISTORY: LiqStep[] = [
  * DiagramTooltip on step titles using description data.
  */
 export function LiquidationStepThroughDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = LIQUIDATION_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = LIQUIDATION_HISTORY[stepIndex()];
 
   return (
     <DiagramContainer title="Ликвидация: пошаговый сценарий" color="purple">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {LIQUIDATION_HISTORY.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex()
                 ? (i >= 2 ? '#f43f5e' : colors.success)
                 : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -359,11 +359,11 @@ export function LiquidationStepThroughDiagram() {
       {/* Step title */}
       <DiagramTooltip content={step.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -371,30 +371,30 @@ export function LiquidationStepThroughDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
+          <div style={{
             ...glassStyle,
-            padding: 10,
+            'padding': '10px',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -402,51 +402,51 @@ export function LiquidationStepThroughDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={() => setStepIndex(0)}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'color': colors.text,
+            'font-size': '13px',
           }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
+          disabled={stepIndex() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': stepIndex() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.min(LIQUIDATION_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= LIQUIDATION_HISTORY.length - 1}
+          disabled={stepIndex() >= LIQUIDATION_HISTORY.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= LIQUIDATION_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= LIQUIDATION_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
-            fontSize: 13,
-            opacity: stepIndex >= LIQUIDATION_HISTORY.length - 1 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() >= LIQUIDATION_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() >= LIQUIDATION_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
+            'font-size': '13px',
+            'opacity': stepIndex() >= LIQUIDATION_HISTORY.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {stepIndex >= LIQUIDATION_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= LIQUIDATION_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DataBox
             label="Урок"
             value="Ликвидация -- штраф за недостаточный залог. Bob потерял ~30% залога (4.5 из 10 ETH). Безопасная практика: держать HF > 1.5 и мониторить цены."
@@ -527,72 +527,72 @@ export function LiquidationCascadeDiagram() {
   return (
     <DiagramContainer title="Каскадная ликвидация: positive feedback loop" color="purple">
       {/* Spiral visualization */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
         {CASCADE_EVENTS.map((event, i) => {
           const sColor = severityColors[event.severity];
 
           return (
-            <DiagramTooltip key={i} content={event.tooltip}>
+            <DiagramTooltip content={event.tooltip}>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  marginBottom: 8,
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'gap': '12px',
+                  'margin-bottom': '8px',
                 }}
               >
                 {/* Step number */}
                 <div style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: `${sColor}40`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  fontFamily: 'monospace',
-                  color: sColor,
-                  flexShrink: 0,
-                  transition: 'all 0.2s',
+                  'width': '28px',
+                  'height': '28px',
+                  'border-radius': '50%',
+                  'background': `${sColor}40`,
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  'font-size': '12px',
+                  'font-weight': '600',
+                  'font-family': 'monospace',
+                  'color': sColor,
+                  'flex-shrink': '0',
+                  'transition': 'all 0.2s',
                 }}>
                   {event.step}
                 </div>
 
                 {/* Bar */}
-                <div style={{ flex: 1 }}>
+                <div style={{ 'flex': '1' }}>
                   <div style={{
                     ...glassStyle,
-                    padding: '8px 12px',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    transition: 'all 0.2s',
+                    'padding': '8px 12px',
+                    'border': '1px solid rgba(255,255,255,0.06)',
+                    'transition': 'all 0.2s',
                   }}>
                     <div style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: sColor,
-                      fontFamily: 'monospace',
-                      marginBottom: 2,
+                      'font-size': '12px',
+                      'font-weight': '600',
+                      'color': sColor,
+                      'font-family': 'monospace',
+                      'margin-bottom': '2px',
                     }}>
                       {event.trigger}
                     </div>
                     <div style={{
-                      fontSize: 11,
-                      color: colors.text,
-                      lineHeight: 1.4,
+                      'font-size': '11px',
+                      'color': colors.text,
+                      'line-height': '1.4',
                     }}>
                       {event.effect}
                     </div>
                     <div style={{
-                      display: 'flex',
-                      gap: 16,
-                      marginTop: 6,
-                      fontSize: 10,
-                      fontFamily: 'monospace',
+                      'display': 'flex',
+                      'gap': '16px',
+                      'margin-top': '6px',
+                      'font-size': '10px',
+                      'font-family': 'monospace',
                     }}>
-                      <span style={{ color: colors.textMuted }}>ETH: <span style={{ color: sColor }}>{event.ethPrice}</span></span>
-                      <span style={{ color: colors.textMuted }}>Liquidated: <span style={{ color: sColor }}>{event.totalLiquidated}</span></span>
+                      <span style={{ 'color': colors.textMuted }}>ETH: <span style={{ 'color': sColor }}>{event.ethPrice}</span></span>
+                      <span style={{ 'color': colors.textMuted }}>Liquidated: <span style={{ 'color': sColor }}>{event.totalLiquidated}</span></span>
                     </div>
                   </div>
                 </div>
@@ -605,13 +605,13 @@ export function LiquidationCascadeDiagram() {
       {/* Feedback loop label */}
       <div style={{
         ...glassStyle,
-        padding: 10,
-        textAlign: 'center',
-        marginBottom: 8,
-        background: 'rgba(244,63,94,0.06)',
-        border: '1px solid rgba(244,63,94,0.2)',
+        'padding': '10px',
+        'text-align': 'center',
+        'margin-bottom': '8px',
+        'background': 'rgba(244,63,94,0.06)',
+        'border': '1px solid rgba(244,63,94,0.2)',
       }}>
-        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#f43f5e' }}>
+        <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': '#f43f5e' }}>
           Liquidation &rarr; Sell collateral &rarr; Price drop &rarr; More liquidations &rarr; ...
         </div>
       </div>
@@ -658,43 +658,43 @@ export function LiquidatorProfitDiagram() {
   return (
     <DiagramContainer title="Прибыль ликвидатора: разбор" color="green">
       {/* Profit breakdown */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
 
           return (
-            <div key={i}>
+            <div>
               {isLast && (
                 <div style={{
-                  height: 1,
-                  background: 'rgba(255,255,255,0.15)',
-                  margin: '8px 0',
+                  'height': '1px',
+                  'background': 'rgba(255,255,255,0.15)',
+                  'margin': '8px 0',
                 }} />
               )}
               <DiagramTooltip content={item.tooltip}>
                 <div style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  marginBottom: isLast ? 0 : 6,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  background: isLast ? `${colors.success}08` : 'transparent',
-                  border: isLast ? `1px solid ${colors.success}30` : '1px solid rgba(255,255,255,0.06)',
+                  'padding': '10px 14px',
+                  'margin-bottom': isLast ? 0 : 6,
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'background': isLast ? `${colors.success}08` : 'transparent',
+                  'border': isLast ? `1px solid ${colors.success}30` : '1px solid rgba(255,255,255,0.06)',
                 }}>
                   <span style={{
-                    fontSize: isLast ? 13 : 12,
-                    fontFamily: 'monospace',
-                    color: isLast ? colors.success : colors.text,
-                    fontWeight: isLast ? 700 : 400,
+                    'font-size': isLast ? 13 : 12,
+                    'font-family': 'monospace',
+                    'color': isLast ? colors.success : colors.text,
+                    'font-weight': isLast ? 700 : 400,
                   }}>
                     {item.label}
                   </span>
                   <span style={{
-                    fontSize: isLast ? 15 : 13,
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    color: item.color,
+                    'font-size': isLast ? 15 : 13,
+                    'font-family': 'monospace',
+                    'font-weight': '600',
+                    'color': item.color,
                   }}>
                     {item.value}
                   </span>
@@ -709,10 +709,10 @@ export function LiquidatorProfitDiagram() {
       <DiagramTooltip content="Flash loan + liquidation = atomic profit без начального капитала. Flash loan fee обычно 0.09% (Aave) или 0% (dYdX).">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          marginBottom: 8,
+          'padding': '10px',
+          'margin-bottom': '8px',
         }}>
-          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
+          <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.primary, 'text-align': 'center' }}>
             Flash loan liquidation: ликвидатор берет 6,000 USDC flash loan, погашает долг, получает 4.5 ETH, продает ETH, возвращает flash loan. Profit = $300 - gas - flash fee.
           </div>
         </div>

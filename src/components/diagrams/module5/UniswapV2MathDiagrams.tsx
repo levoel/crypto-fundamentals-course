@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Uniswap V2 Math Diagrams (DEFI-03)
  *
@@ -7,7 +8,7 @@
  * - V2vsV3EfficiencyDiagram: Capital efficiency comparison V2 vs V3 (DiagramTooltip)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -99,24 +100,23 @@ const V2_SWAP_STEPS: V2Step[] = [
  * 6 steps, history array, forward/backward/reset navigation.
  */
 export function V2SwapMathDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = V2_SWAP_STEPS[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = V2_SWAP_STEPS[stepIndex()];
 
   return (
     <DiagramContainer title="Uniswap V2: целочисленная математика свопа" color="blue">
       {/* Step progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {V2_SWAP_STEPS.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? colors.primary : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? colors.primary : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -126,11 +126,11 @@ export function V2SwapMathDiagram() {
       <DiagramTooltip content="Формула свопа V2: dy = y * dx / (x + dx). С учётом fee: dy = y * (dx * 997) / (x * 1000 + dx * 997). 0.3% fee остаётся в пуле.">
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: colors.text,
-            marginBottom: 8,
-            fontFamily: 'monospace',
+            'font-size': '14px',
+            'font-weight': '600',
+            'color': colors.text,
+            'margin-bottom': '8px',
+            'font-family': 'monospace',
           }}
         >
           {step.title}
@@ -140,10 +140,10 @@ export function V2SwapMathDiagram() {
       {/* Description */}
       <div
         style={{
-          fontSize: 13,
-          color: colors.text,
-          lineHeight: 1.6,
-          marginBottom: 14,
+          'font-size': '13px',
+          'color': colors.text,
+          'line-height': '1.6',
+          'margin-bottom': '14px',
         }}
       >
         {step.description}
@@ -152,31 +152,31 @@ export function V2SwapMathDiagram() {
       {/* Values grid */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 8,
-          marginBottom: 16,
+          'display': 'grid',
+          'grid-template-columns': '1fr 1fr',
+          'gap': '8px',
+          'margin-bottom': '16px',
         }}
       >
         {step.values.map((v, i) => (
-          <DiagramTooltip key={i} content="Reserve X: количество токена X в пуле. Reserve Y: количество токена Y. Цена X в Y: price = reserve_Y / reserve_X.">
-            <div style={{ ...glassStyle, padding: 10 }}>
+          <DiagramTooltip content="Reserve X: количество токена X в пуле. Reserve Y: количество токена Y. Цена X в Y: price = reserve_Y / reserve_X.">
+            <div style={{ ...glassStyle, 'padding': '10px' }}>
               <div
                 style={{
-                  fontSize: 10,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginBottom: 4,
+                  'font-size': '10px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-bottom': '4px',
                 }}
               >
                 {v.label}
               </div>
               <div
                 style={{
-                  fontSize: 13,
-                  color: v.color,
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
+                  'font-size': '13px',
+                  'color': v.color,
+                  'font-family': 'monospace',
+                  'font-weight': '600',
                 }}
               >
                 {v.value}
@@ -187,22 +187,22 @@ export function V2SwapMathDiagram() {
       </div>
 
       {/* Formula box */}
-      {stepIndex >= 1 && stepIndex <= 4 && (
+      {stepIndex() >= 1 && stepIndex() <= 4 && (
         <div
           style={{
             ...glassStyle,
-            padding: 10,
-            marginBottom: 16,
-            background: 'rgba(99,102,241,0.06)',
-            border: '1px solid rgba(99,102,241,0.2)',
+            'padding': '10px',
+            'margin-bottom': '16px',
+            'background': 'rgba(99,102,241,0.06)',
+            'border': '1px solid rgba(99,102,241,0.2)',
           }}
         >
           <div
             style={{
-              fontSize: 11,
-              fontFamily: 'monospace',
-              color: colors.primary,
-              textAlign: 'center',
+              'font-size': '11px',
+              'font-family': 'monospace',
+              'color': colors.primary,
+              'text-align': 'center',
             }}
           >
             amountOut = reserveOut * amountIn * 997 / (reserveIn * 1000 + amountIn * 997)
@@ -211,51 +211,51 @@ export function V2SwapMathDiagram() {
       )}
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={() => setStepIndex(0)}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'color': colors.text,
+            'font-size': '13px',
           }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
+          disabled={stepIndex() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': stepIndex() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.min(V2_SWAP_STEPS.length - 1, s + 1))}
-          disabled={stepIndex >= V2_SWAP_STEPS.length - 1}
+          disabled={stepIndex() >= V2_SWAP_STEPS.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= V2_SWAP_STEPS.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= V2_SWAP_STEPS.length - 1 ? colors.textMuted : colors.primary,
-            fontSize: 13,
-            opacity: stepIndex >= V2_SWAP_STEPS.length - 1 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() >= V2_SWAP_STEPS.length - 1 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() >= V2_SWAP_STEPS.length - 1 ? colors.textMuted : colors.primary,
+            'font-size': '13px',
+            'opacity': stepIndex() >= V2_SWAP_STEPS.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {stepIndex >= V2_SWAP_STEPS.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= V2_SWAP_STEPS.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DataBox
             label="Ключевой вывод"
             value="V2 использует ТОЛЬКО целочисленную арифметику: * 997 / 1000 вместо * 0.997. Нет float, нет погрешностей округления. k монотонно растет -- LP зарабатывают."
@@ -312,61 +312,61 @@ export function LPTokenMintingDiagram() {
   return (
     <DiagramContainer title="LP токены: расчет долей" color="green">
       {/* Scenario cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px', 'margin-bottom': '16px' }}>
         {MINT_SCENARIOS.map((s, i) => (
-          <DiagramTooltip key={i} content={s.tooltip}>
+          <DiagramTooltip content={s.tooltip}>
             <div
               style={{
                 ...glassStyle,
-                padding: 14,
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                transition: 'all 0.2s',
+                'padding': '14px',
+                'background': 'rgba(255,255,255,0.03)',
+                'border': '1px solid rgba(255,255,255,0.08)',
+                'transition': 'all 0.2s',
               }}
             >
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: s.color,
-                  marginBottom: 6,
-                  fontFamily: 'monospace',
+                  'font-size': '13px',
+                  'font-weight': '600',
+                  'color': s.color,
+                  'margin-bottom': '6px',
+                  'font-family': 'monospace',
                 }}
               >
                 {s.title}
               </div>
               <div
                 style={{
-                  fontSize: 12,
-                  color: colors.accent,
-                  fontFamily: 'monospace',
-                  marginBottom: 8,
-                  padding: 8,
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: 4,
+                  'font-size': '12px',
+                  'color': colors.accent,
+                  'font-family': 'monospace',
+                  'margin-bottom': '8px',
+                  'padding': '8px',
+                  'background': 'rgba(0,0,0,0.2)',
+                  'border-radius': '4px',
                 }}
               >
                 {s.formula}
               </div>
               <div
                 style={{
-                  fontSize: 12,
-                  color: colors.text,
-                  lineHeight: 1.5,
-                  marginBottom: 8,
+                  'font-size': '12px',
+                  'color': colors.text,
+                  'line-height': '1.5',
+                  'margin-bottom': '8px',
                 }}
               >
                 {s.explanation}
               </div>
               <div
                 style={{
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  whiteSpace: 'pre-line',
-                  padding: 8,
-                  background: 'rgba(0,0,0,0.15)',
-                  borderRadius: 4,
+                  'font-size': '11px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'white-space': 'pre-line',
+                  'padding': '8px',
+                  'background': 'rgba(0,0,0,0.15)',
+                  'border-radius': '4px',
                 }}
               >
                 {s.example}
@@ -381,18 +381,18 @@ export function LPTokenMintingDiagram() {
         <div
           style={{
             ...glassStyle,
-            padding: 10,
-            background: 'rgba(244,63,94,0.06)',
-            border: '1px solid rgba(244,63,94,0.2)',
-            marginBottom: 8,
+            'padding': '10px',
+            'background': 'rgba(244,63,94,0.06)',
+            'border': '1px solid rgba(244,63,94,0.2)',
+            'margin-bottom': '8px',
           }}
         >
           <div
             style={{
-              fontSize: 11,
-              color: '#f43f5e',
-              fontFamily: 'monospace',
-              textAlign: 'center',
+              'font-size': '11px',
+              'color': '#f43f5e',
+              'font-family': 'monospace',
+              'text-align': 'center',
             }}
           >
             MINIMUM_LIQUIDITY = 1000 -- навсегда заблокировано в address(0). Без этого первый LP мог
@@ -472,7 +472,7 @@ export function V2vsV3EfficiencyDiagram() {
   const midX = svgW / 2;
 
   // V2 curve (full range)
-  const v2Points = useMemo(() => {
+  const v2Points = createMemo(() => {
     const pts: string[] = [];
     for (let px = 30; px < svgW - 30; px += 3) {
       const x = 200 + (px / svgW) * 1800;
@@ -483,13 +483,13 @@ export function V2vsV3EfficiencyDiagram() {
       }
     }
     return pts.join(' ');
-  }, []);
+  });
 
   return (
     <DiagramContainer title="V2 vs V3: эффективность капитала" color="purple">
       {/* SVG comparison */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* V2 full curve (dim) */}
           <polyline points={v2Points} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2} />
           <text x={40} y={20} fill="rgba(255,255,255,0.3)" fontSize={10} fontFamily="monospace">
@@ -559,26 +559,25 @@ export function V2vsV3EfficiencyDiagram() {
       </div>
 
       {/* Comparison table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
         <table
           style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: 11,
-            fontFamily: 'monospace',
+            'width': '100%',
+            'border-collapse': 'collapse',
+            'font-size': '11px',
+            'font-family': 'monospace',
           }}
         >
           <thead>
             <tr>
               {['Метрика', 'V2', 'V3', 'Преимущество'].map((h) => (
                 <th
-                  key={h}
                   style={{
-                    padding: '8px 6px',
-                    borderBottom: '1px solid rgba(255,255,255,0.1)',
-                    textAlign: 'left',
-                    color: colors.textMuted,
-                    fontWeight: 400,
+                    'padding': '8px 6px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                    'text-align': 'left',
+                    'color': colors.textMuted,
+                    'font-weight': '400',
                   }}
                 >
                   {h}
@@ -589,17 +588,16 @@ export function V2vsV3EfficiencyDiagram() {
           <tbody>
             {EFFICIENCY_DATA.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  transition: 'all 0.15s',
+                  'transition': 'all 0.15s',
                 }}
               >
                 <td
                   style={{
-                    padding: '8px 6px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    color: colors.text,
-                    fontWeight: 600,
+                    'padding': '8px 6px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'color': colors.text,
+                    'font-weight': '600',
                   }}
                 >
                   <DiagramTooltip content={row.tooltip}>
@@ -608,27 +606,27 @@ export function V2vsV3EfficiencyDiagram() {
                 </td>
                 <td
                   style={{
-                    padding: '8px 6px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    color: colors.textMuted,
+                    'padding': '8px 6px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'color': colors.textMuted,
                   }}
                 >
                   {row.v2}
                 </td>
                 <td
                   style={{
-                    padding: '8px 6px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    color: colors.accent,
+                    'padding': '8px 6px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'color': colors.accent,
                   }}
                 >
                   {row.v3}
                 </td>
                 <td
                   style={{
-                    padding: '8px 6px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    color: colors.success,
+                    'padding': '8px 6px',
+                    'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                    'color': colors.success,
                   }}
                 >
                   {row.advantage}
@@ -639,7 +637,7 @@ export function V2vsV3EfficiencyDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DataBox
           label="Почему V3 эффективнее?"
           value="V2 размазывает ликвидность по [0, infinity). Для ETH/USDC > 99% ликвидности V2 никогда не используется. V3 LP выбирает узкий диапазон и получает пропорционально больше комиссий."

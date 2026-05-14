@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Difficulty Adjustment Diagrams (BTC-07)
  *
@@ -5,7 +6,7 @@
  * - DifficultyAdjustmentTimeline: Epoch visualization with adjustment factors and nBits encoding
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -84,7 +85,7 @@ function decodeNBits(nBits: number): { exponent: number; mantissa: number; targe
 /* ================================================================== */
 
 export function DifficultyAdjustmentTimeline() {
-  const [selectedEpoch, setSelectedEpoch] = useState<number | null>(null);
+  const [selectedEpoch, setSelectedEpoch] = createSignal<number | null>(null);
 
   const genesisNBits = 0x1d00ffff;
   const decoded = decodeNBits(genesisNBits);
@@ -98,23 +99,23 @@ export function DifficultyAdjustmentTimeline() {
 
   return (
     <DiagramContainer title="Корректировка сложности Bitcoin" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '16px' }}>
 
         {/* Formula display */}
         <DiagramTooltip content="Каждые 2016 блоков (~2 недели) Bitcoin пересчитывает target. Если блоки находились быстрее 10 мин -- target уменьшается (сложность растёт). Медленнее -- target увеличивается (сложность падает).">
-          <div style={{ ...glassStyle, padding: '10px 14px', fontSize: 12, fontFamily: 'monospace' }}>
-            <div style={{ color: colors.textMuted, marginBottom: 6 }}>Формула корректировки:</div>
-            <div style={{ color: colors.text }}>
+          <div style={{ ...glassStyle, 'padding': '10px 14px', 'font-size': '12px', 'font-family': 'monospace' }}>
+            <div style={{ 'color': colors.textMuted, 'margin-bottom': '6px' }}>Формула корректировки:</div>
+            <div style={{ 'color': colors.text }}>
               new_target = old_target * (actual_time / expected_time)
             </div>
-            <div style={{ color: colors.textMuted, marginTop: 4 }}>
+            <div style={{ 'color': colors.textMuted, 'margin-top': '4px' }}>
               expected_time = 2016 * 600с = 1 209 600с (14 дней) | factor: min 0.25x, max 4.0x
             </div>
           </div>
         </DiagramTooltip>
 
         {/* Bar chart */}
-        <div style={{ overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ 'overflow-x': 'auto', 'display': 'flex', 'justify-content': 'center' }}>
           <svg width={chartWidth + 60} height={barMaxHeight + 60} viewBox={`0 0 ${chartWidth + 60} ${barMaxHeight + 60}`}>
             {/* Expected time dashed line */}
             <line
@@ -141,7 +142,7 @@ export function DifficultyAdjustmentTimeline() {
               const x = 30 + barGap + i * (barWidth + barGap);
               const barH = (epoch.actualDays / maxDays) * barMaxHeight;
               const y = barMaxHeight - barH + 20;
-              const isSelected = selectedEpoch === i;
+              const isSelected = selectedEpoch() === i;
 
               const barColor =
                 epoch.direction === 'harder'
@@ -152,9 +153,8 @@ export function DifficultyAdjustmentTimeline() {
 
               return (
                 <g
-                  key={i}
                   onClick={() => setSelectedEpoch(isSelected ? null : i)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ 'cursor': 'pointer' }}
                 >
                   {/* Bar */}
                   <rect
@@ -217,37 +217,37 @@ export function DifficultyAdjustmentTimeline() {
         </div>
 
         {/* Selected epoch details */}
-        {selectedEpoch !== null && (
-          <DiagramTooltip content={EPOCHS[selectedEpoch].description}>
+        {selectedEpoch() !== null && (
+          <DiagramTooltip content={EPOCHS[selectedEpoch()].description}>
             <div
               style={{
                 ...glassStyle,
-                padding: '12px',
-                border: `1px solid ${colors.primary}30`,
-                background: `${colors.primary}08`,
+                'padding': '12px',
+                'border': `1px solid ${colors.primary}30`,
+                'background': `${colors.primary}08`,
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>
-                {EPOCHS[selectedEpoch].label}: {EPOCHS[selectedEpoch].actualDays} дней (ожидалось {EPOCHS[selectedEpoch].expectedDays})
+              <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.text, 'margin-bottom': '6px' }}>
+                {EPOCHS[selectedEpoch()].label}: {EPOCHS[selectedEpoch()].actualDays} дней (ожидалось {EPOCHS[selectedEpoch()].expectedDays})
               </div>
-              <div style={{ fontSize: 12, color: colors.textMuted }}>
-                {EPOCHS[selectedEpoch].description}
+              <div style={{ 'font-size': '12px', 'color': colors.textMuted }}>
+                {EPOCHS[selectedEpoch()].description}
               </div>
-              <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.text, marginTop: 6 }}>
-                factor = {EPOCHS[selectedEpoch].actualDays} / {EPOCHS[selectedEpoch].expectedDays} = {EPOCHS[selectedEpoch].factor.toFixed(3)}
-                {EPOCHS[selectedEpoch].factor < 0.25 && ' (capped at 0.25)'}
-                {EPOCHS[selectedEpoch].factor > 4.0 && ' (capped at 4.0)'}
+              <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.text, 'margin-top': '6px' }}>
+                factor = {EPOCHS[selectedEpoch()].actualDays} / {EPOCHS[selectedEpoch()].expectedDays} = {EPOCHS[selectedEpoch()].factor.toFixed(3)}
+                {EPOCHS[selectedEpoch()].factor < 0.25 && ' (capped at 0.25)'}
+                {EPOCHS[selectedEpoch()].factor > 4.0 && ' (capped at 4.0)'}
               </div>
             </div>
           </DiagramTooltip>
         )}
 
         {/* nBits encoding */}
-        <div style={{ ...glassStyle, padding: '12px' }}>
-          <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 8 }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-weight': '600', 'margin-bottom': '8px' }}>
             nBits компактный формат (Genesis block)
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
             <DiagramTooltip content="nBits -- компактное 4-байтовое представление target в заголовке блока. Первый байт -- экспонента, остальные 3 -- мантисса. Полный target = мантисса * 2^(8*(экспонента-3)).">
               <DataBox
                 label="nBits"
@@ -270,11 +270,11 @@ export function DifficultyAdjustmentTimeline() {
               />
             </DiagramTooltip>
           </div>
-          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, marginTop: 8 }}>
+          <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.text, 'margin-top': '8px' }}>
             target = 0x{decoded.mantissa.toString(16).padStart(6, '0')} * 2^(8 * ({decoded.exponent} - 3)) = 0x00000000FFFF00...0000
           </div>
           <DiagramTooltip content="Compact формат позволяет хранить 256-битный target в 4 байтах заголовка. Каждый узел сети декодирует nBits и проверяет: hash < target. Если хеш блока меньше target, блок валиден.">
-            <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-top': '4px' }}>
               Формат: первый байт = экспонента (количество байт в target), остальные 3 байта = мантисса (старшие значащие байты target).
             </div>
           </DiagramTooltip>

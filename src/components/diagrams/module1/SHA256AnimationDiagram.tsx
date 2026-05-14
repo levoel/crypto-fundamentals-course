@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * SHA-256 Animation Diagrams (DIAG-10)
  *
@@ -8,7 +9,7 @@
  * - SHA256CompressionOverview: Static flow diagram of entire compression function
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -129,13 +130,13 @@ const ABC_W = getMessageWords(ABC_PADDED, 0);
  * SHA256PaddingDiagram - Step-through showing message padding to 512-bit boundary.
  */
 export function SHA256PaddingDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   const msg = 'abc';
   const msgBytes = Array.from(new TextEncoder().encode(msg));
   const maxStep = 3;
 
   const getStepData = () => {
-    switch (step) {
+    switch (step()) {
       case 0:
         return {
           label: 'Шаг 1: Исходное сообщение',
@@ -179,22 +180,22 @@ export function SHA256PaddingDiagram() {
 
   return (
     <DiagramContainer title="SHA-256: дополнение сообщения (padding)" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         <DiagramTooltip content="SHA-256 padding: сообщение дополняется до кратного 512 бит. Добавляется бит '1', нули, и 64-бит длина исходного сообщения.">
           <DataBox label={data.label} value={data.desc} variant="highlight" />
         </DiagramTooltip>
 
         <DiagramTooltip content="Hex-представление текущего шага padding. Каждый байт отображается в шестнадцатеричной системе для наглядности побитовых операций.">
-          <div style={{ ...glassStyle, padding: 12 }}>
-            <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ ...glassStyle, 'padding': '12px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
               Hex
             </div>
             <div style={{
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: colors.text,
-              wordBreak: 'break-all',
-              lineHeight: 1.8,
+              'font-family': 'monospace',
+              'font-size': '12px',
+              'color': colors.text,
+              'word-break': 'break-all',
+              'line-height': '1.8',
             }}>
               {data.hex}
             </div>
@@ -202,23 +203,23 @@ export function SHA256PaddingDiagram() {
         </DiagramTooltip>
 
         <DiagramTooltip content="Примечание к текущему шагу. Padding гарантирует, что сообщение имеет длину, кратную 512 бит, и содержит метаданные о длине исходного сообщения.">
-          <div style={{ ...glassStyle, padding: 12 }}>
-            <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ ...glassStyle, 'padding': '12px' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
               Примечание
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 12, color: colors.accent, lineHeight: 1.5 }}>
+            <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'color': colors.accent, 'line-height': '1.5' }}>
               {data.binary}
             </div>
           </div>
         </DiagramTooltip>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <DiagramTooltip content="Вернуться к первому шагу padding.">
             <div>
               <button
                 onClick={() => setStep(0)}
-                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+                style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
               >
                 Сброс
               </button>
@@ -228,12 +229,12 @@ export function SHA256PaddingDiagram() {
             <div>
               <button
                 onClick={() => setStep(s => Math.max(0, s - 1))}
-                disabled={step === 0}
+                disabled={step() === 0}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: step === 0 ? 'not-allowed' : 'pointer',
-                  color: step === 0 ? colors.textMuted : colors.text,
-                  fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+                  'color': step() === 0 ? colors.textMuted : colors.text,
+                  'font-size': '13px', 'opacity': step() === 0 ? 0.5 : 1,
                 }}
               >
                 Назад
@@ -244,12 +245,12 @@ export function SHA256PaddingDiagram() {
             <div>
               <button
                 onClick={() => setStep(s => Math.min(maxStep, s + 1))}
-                disabled={step >= maxStep}
+                disabled={step() >= maxStep}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: step >= maxStep ? 'not-allowed' : 'pointer',
-                  color: step >= maxStep ? colors.textMuted : colors.primary,
-                  fontSize: 13, opacity: step >= maxStep ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': step() >= maxStep ? 'not-allowed' : 'pointer',
+                  'color': step() >= maxStep ? colors.textMuted : colors.primary,
+                  'font-size': '13px', 'opacity': step() >= maxStep ? 0.5 : 1,
                 }}
               >
                 Далее
@@ -258,8 +259,8 @@ export function SHA256PaddingDiagram() {
           </DiagramTooltip>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Шаг {step + 1} из {maxStep + 1}
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Шаг {step() + 1} из {maxStep + 1}
         </div>
       </div>
     </DiagramContainer>
@@ -274,7 +275,7 @@ export function SHA256PaddingDiagram() {
  * SHA256MessageSchedule - Show W0-W15 from block, W16-W63 expansion.
  */
 export function SHA256MessageSchedule() {
-  const [visibleCount, setVisibleCount] = useState(16);
+  const [visibleCount, setVisibleCount] = createSignal(16);
 
   const advance = () => setVisibleCount(v => Math.min(64, v + 1));
   const advanceAll = () => setVisibleCount(64);
@@ -282,7 +283,7 @@ export function SHA256MessageSchedule() {
 
   return (
     <DiagramContainer title='SHA-256: расписание сообщений (W0-W63)' color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         <DiagramTooltip content="Message schedule расширяет 512-битный блок до 2048 бит (64 слова по 32 бита). Первые 16 слов берутся напрямую, остальные вычисляются рекурсивно.">
           <DataBox
             label="Сообщение"
@@ -293,15 +294,14 @@ export function SHA256MessageSchedule() {
 
         {/* Word grid */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 6,
-          maxHeight: 400,
-          overflowY: 'auto',
+          'display': 'grid',
+          'grid-template-columns': 'repeat(4, 1fr)',
+          'gap': '6px',
+          'max-height': '400px',
+          'overflow-y': 'auto',
         }}>
-          {ABC_W.slice(0, visibleCount).map((w, i) => (
+          {ABC_W.slice(0, visibleCount()).map((w, i) => (
             <DiagramTooltip
-              key={i}
               content={i < 16
                 ? `W0-W15: первые 16 words (32 бита каждый) берутся напрямую из padded message block. Это исходные данные для раунда.`
                 : `W16-W63: вычисляются рекурсивно: Wt = sigma1(W[t-2]) + W[t-7] + sigma0(W[t-15]) + W[t-16]. Расширяет 512 бит до 2048 бит.`
@@ -310,20 +310,20 @@ export function SHA256MessageSchedule() {
               <div
                 style={{
                   ...glassStyle,
-                  padding: '6px 8px',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  background: i < 16 ? `${colors.primary}10` : `${colors.accent}10`,
-                  border: `1px solid ${i < 16 ? colors.primary + '30' : colors.accent + '30'}`,
+                  'padding': '6px 8px',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '2px',
+                  'background': i < 16 ? `${colors.primary}10` : `${colors.accent}10`,
+                  'border': `1px solid ${i < 16 ? colors.primary + '30' : colors.accent + '30'}`,
                 }}
               >
-                <span style={{ color: i < 16 ? colors.primary : colors.accent, fontWeight: 600 }}>
+                <span style={{ 'color': i < 16 ? colors.primary : colors.accent, 'font-weight': '600' }}>
                   W[{i}]
                 </span>
-                <span style={{ color: colors.text }}>
+                <span style={{ 'color': colors.text }}>
                   {hex8(w)}
                 </span>
               </div>
@@ -331,21 +331,21 @@ export function SHA256MessageSchedule() {
           ))}
         </div>
 
-        {visibleCount > 16 && visibleCount <= 64 && (
+        {visibleCount() > 16 && visibleCount() <= 64 && (
           <DiagramTooltip content="sigma0/sigma1: bitwise rotation и XOR операции, обеспечивающие diffusion в message schedule.">
-            <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
-              W[{visibleCount - 1}] = sigma1(W[{visibleCount - 3}]) + W[{visibleCount - 8}] + sigma0(W[{visibleCount - 16}]) + W[{visibleCount - 17}])
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'font-family': 'monospace' }}>
+              W[{visibleCount() - 1}] = sigma1(W[{visibleCount() - 3}]) + W[{visibleCount() - 8}] + sigma0(W[{visibleCount() - 16}]) + W[{visibleCount() - 17}])
             </div>
           </DiagramTooltip>
         )}
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
           <DiagramTooltip content="Сбросить до первых 16 слов (из блока).">
             <div>
               <button
                 onClick={reset}
-                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+                style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
               >
                 Сброс
               </button>
@@ -355,12 +355,12 @@ export function SHA256MessageSchedule() {
             <div>
               <button
                 onClick={advance}
-                disabled={visibleCount >= 64}
+                disabled={visibleCount() >= 64}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
-                  color: visibleCount >= 64 ? colors.textMuted : colors.primary,
-                  fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': visibleCount() >= 64 ? 'not-allowed' : 'pointer',
+                  'color': visibleCount() >= 64 ? colors.textMuted : colors.primary,
+                  'font-size': '13px', 'opacity': visibleCount() >= 64 ? 0.5 : 1,
                 }}
               >
                 Следующее W
@@ -371,12 +371,12 @@ export function SHA256MessageSchedule() {
             <div>
               <button
                 onClick={advanceAll}
-                disabled={visibleCount >= 64}
+                disabled={visibleCount() >= 64}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: visibleCount >= 64 ? 'not-allowed' : 'pointer',
-                  color: visibleCount >= 64 ? colors.textMuted : colors.accent,
-                  fontSize: 13, opacity: visibleCount >= 64 ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': visibleCount() >= 64 ? 'not-allowed' : 'pointer',
+                  'color': visibleCount() >= 64 ? colors.textMuted : colors.accent,
+                  'font-size': '13px', 'opacity': visibleCount() >= 64 ? 0.5 : 1,
                 }}
               >
                 Показать все 64
@@ -385,10 +385,10 @@ export function SHA256MessageSchedule() {
           </DiagramTooltip>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Показано: {visibleCount} / 64 слов.{' '}
-          <span style={{ color: colors.primary }}>Синие</span> = из блока,{' '}
-          <span style={{ color: colors.accent }}>голубые</span> = вычислены.
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Показано: {visibleCount()} / 64 слов.{' '}
+          <span style={{ 'color': colors.primary }}>Синие</span> = из блока,{' '}
+          <span style={{ 'color': colors.accent }}>голубые</span> = вычислены.
         </div>
       </div>
     </DiagramContainer>
@@ -437,14 +437,14 @@ function computeRound(vars: number[], round: number, W: number[]): RoundState {
  * highlighting for variables that changed.
  */
 export function SHA256RoundAnimation() {
-  const [step, setStep] = useState(0);
-  const [history, setHistory] = useState<number[][]>([H_INIT]);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [step, setStep] = createSignal(0);
+  const [history, setHistory] = createSignal<number[][]>([H_INIT]);
+  const [isPlaying, setIsPlaying] = createSignal(false);
 
-  const currentVars = history[step];
-  const prevVars = step > 0 ? history[step - 1] : null;
+  const currentVars = history()[step()];
+  const prevVars = step() > 0 ? history()[step() - 1] : null;
 
-  const advance = useCallback(() => {
+  const advance = () => {
     setStep(s => {
       if (s >= 64) return s;
       const nextStep = s + 1;
@@ -455,22 +455,22 @@ export function SHA256RoundAnimation() {
       });
       return nextStep;
     });
-  }, []);
+  };
 
-  const goBack = useCallback(() => {
+  const goBack = () => {
     setStep(s => Math.max(0, s - 1));
-  }, []);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setStep(0);
     setHistory([H_INIT]);
     setIsPlaying(false);
-  }, []);
+  };
 
   // Auto-play
-  const toggleAutoplay = useCallback(() => {
+  const toggleAutoplay = () => {
     setIsPlaying(prev => {
-      if (!prev && step < 64) {
+      if (!prev && step() < 64) {
         const interval = setInterval(() => {
           setStep(s => {
             if (s >= 64) {
@@ -496,7 +496,7 @@ export function SHA256RoundAnimation() {
         return false;
       }
     });
-  }, [step]);
+  };
 
   // Check which variables changed
   const changedVars = prevVars
@@ -505,33 +505,33 @@ export function SHA256RoundAnimation() {
 
   return (
     <DiagramContainer title="SHA-256: 64 раунда сжатия" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Round info */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Рабочие переменные a-h: 8 x 32-бит words. Инициализируются из текущего hash state (H0-H7). Обновляются каждый раунд через Ch, Maj, Sigma.">
             <DataBox
               label="Раунд"
-              value={step === 0 ? 'Начальное состояние (H0)' : `${step} / 64`}
+              value={step() === 0 ? 'Начальное состояние (H0)' : `${step()} / 64`}
               variant="highlight"
-              style={{ flex: 1, minWidth: 120 }}
+              style={{ 'flex': '1', 'min-width': '120px' }}
             />
           </DiagramTooltip>
-          {step > 0 && step <= 64 && (
+          {step() > 0 && step() <= 64 && (
             <>
               <DiagramTooltip content="K[t] -- round constant. Первые 32 бита дробной части кубических корней первых 64 простых чисел. Фиксированы стандартом FIPS 180-4.">
                 <DataBox
-                  label={`K[${step - 1}]`}
-                  value={hex8(K[step - 1])}
+                  label={`K[${step() - 1}]`}
+                  value={hex8(K[step() - 1])}
                   variant="default"
-                  style={{ flex: 1, minWidth: 120 }}
+                  style={{ 'flex': '1', 'min-width': '120px' }}
                 />
               </DiagramTooltip>
               <DiagramTooltip content="W[t] -- слово из message schedule. W0-W15 из блока, W16-W63 вычислены через sigma0/sigma1.">
                 <DataBox
-                  label={`W[${step - 1}]`}
-                  value={hex8(ABC_W[step - 1])}
+                  label={`W[${step() - 1}]`}
+                  value={hex8(ABC_W[step() - 1])}
                   variant="default"
-                  style={{ flex: 1, minWidth: 120 }}
+                  style={{ 'flex': '1', 'min-width': '120px' }}
                 />
               </DiagramTooltip>
             </>
@@ -542,7 +542,6 @@ export function SHA256RoundAnimation() {
         <Grid columns={4} gap={8}>
           {VAR_NAMES.map((name, i) => (
             <DiagramTooltip
-              key={name}
               content={
                 name === 'a' ? 'a = T1 + T2. Комбинирует результат нелинейных функций. Новое значение определяет начало цепочки переменных.' :
                 name === 'e' ? 'e = d + T1. Определяет вход в функцию Ch(e,f,g). Критично для нелинейности раунда.' :
@@ -551,31 +550,31 @@ export function SHA256RoundAnimation() {
             >
               <div
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  background: changedVars[i] ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${changedVars[i] ? colors.warning + '60' : colors.border}`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                  transition: 'background 300ms ease, border-color 300ms ease',
+                  'padding': '10px 12px',
+                  'border-radius': '8px',
+                  'background': changedVars[i] ? `${colors.warning}15` : 'rgba(255,255,255,0.03)',
+                  'border': `1px solid ${changedVars[i] ? colors.warning + '60' : colors.border}`,
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'gap': '4px',
+                  'transition': 'background 300ms ease, border-color 300ms ease',
                 }}
               >
                 <span style={{
-                  fontSize: 11,
-                  color: changedVars[i] ? colors.warning : colors.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  fontWeight: 600,
-                  transition: 'color 300ms ease',
+                  'font-size': '11px',
+                  'color': changedVars[i] ? colors.warning : colors.textMuted,
+                  'text-transform': 'uppercase',
+                  'letter-spacing': '0.05em',
+                  'font-weight': '600',
+                  'transition': 'color 300ms ease',
                 }}>
                   {name}
                 </span>
                 <span style={{
-                  fontSize: 14,
-                  color: changedVars[i] ? colors.text : colors.textMuted,
-                  fontFamily: 'monospace',
-                  transition: 'color 300ms ease',
+                  'font-size': '14px',
+                  'color': changedVars[i] ? colors.text : colors.textMuted,
+                  'font-family': 'monospace',
+                  'transition': 'color 300ms ease',
                 }}>
                   {hex8(currentVars[i])}
                 </span>
@@ -585,16 +584,16 @@ export function SHA256RoundAnimation() {
         </Grid>
 
         {/* T1 and T2 display (only after first round) */}
-        {step > 0 && step <= 64 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {step() > 0 && step() <= 64 && (
+          <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
             <DiagramTooltip content="T1 использует Ch(e,f,g) = (e AND f) XOR (NOT e AND g) -- бит e выбирает между f и g. Нелинейная операция, обеспечивающая confusion.">
-              <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
-                <span style={{ color: colors.accent }}>T1</span> = h + Sigma1(e) + Ch(e,f,g) + K[{step - 1}] + W[{step - 1}]
+              <div style={{ ...glassStyle, 'padding': '8px 12px', 'flex': '1', 'min-width': '200px', 'font-size': '11px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+                <span style={{ 'color': colors.accent }}>T1</span> = h + Sigma1(e) + Ch(e,f,g) + K[{step() - 1}] + W[{step() - 1}]
               </div>
             </DiagramTooltip>
             <DiagramTooltip content="T2 использует Maj(a,b,c) = (a AND b) XOR (a AND c) XOR (b AND c) -- голосование большинством. Sigma0: bitwise rotation + XOR для diffusion.">
-              <div style={{ ...glassStyle, padding: '8px 12px', flex: 1, minWidth: 200, fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
-                <span style={{ color: colors.accent }}>T2</span> = Sigma0(a) + Maj(a,b,c)
+              <div style={{ ...glassStyle, 'padding': '8px 12px', 'flex': '1', 'min-width': '200px', 'font-size': '11px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+                <span style={{ 'color': colors.accent }}>T2</span> = Sigma0(a) + Maj(a,b,c)
               </div>
             </DiagramTooltip>
           </div>
@@ -602,18 +601,18 @@ export function SHA256RoundAnimation() {
 
         {/* Variable rotation explanation */}
         <DiagramTooltip content="Каждый раунд переменные сдвигаются: предыдущий a становится b, b -> c, и т.д. Только a и e вычисляются заново через T1 и T2.">
-          <div style={{ ...glassStyle, padding: '8px 12px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontFamily: 'monospace' }}>
+          <div style={{ ...glassStyle, 'padding': '8px 12px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center', 'font-family': 'monospace' }}>
             a = T1+T2, b = a, c = b, d = c, e = d+T1, f = e, g = f, h = g
           </div>
         </DiagramTooltip>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Сбросить анимацию к начальному состоянию H0.">
             <div>
               <button
                 onClick={reset}
-                style={{ ...glassStyle, padding: '8px 16px', cursor: 'pointer', color: colors.text, fontSize: 13 }}
+                style={{ ...glassStyle, 'padding': '8px 16px', 'cursor': 'pointer', 'color': colors.text, 'font-size': '13px' }}
               >
                 Сброс
               </button>
@@ -623,12 +622,12 @@ export function SHA256RoundAnimation() {
             <div>
               <button
                 onClick={goBack}
-                disabled={step === 0}
+                disabled={step() === 0}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: step === 0 ? 'not-allowed' : 'pointer',
-                  color: step === 0 ? colors.textMuted : colors.text,
-                  fontSize: 13, opacity: step === 0 ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': step() === 0 ? 'not-allowed' : 'pointer',
+                  'color': step() === 0 ? colors.textMuted : colors.text,
+                  'font-size': '13px', 'opacity': step() === 0 ? 0.5 : 1,
                 }}
               >
                 Назад
@@ -639,12 +638,12 @@ export function SHA256RoundAnimation() {
             <div>
               <button
                 onClick={advance}
-                disabled={step >= 64}
+                disabled={step() >= 64}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: step >= 64 ? 'not-allowed' : 'pointer',
-                  color: step >= 64 ? colors.textMuted : colors.primary,
-                  fontSize: 13, opacity: step >= 64 ? 0.5 : 1,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': step() >= 64 ? 'not-allowed' : 'pointer',
+                  'color': step() >= 64 ? colors.textMuted : colors.primary,
+                  'font-size': '13px', 'opacity': step() >= 64 ? 0.5 : 1,
                 }}
               >
                 Следующий раунд
@@ -656,21 +655,21 @@ export function SHA256RoundAnimation() {
               <button
                 onClick={toggleAutoplay}
                 style={{
-                  ...glassStyle, padding: '8px 16px',
-                  cursor: 'pointer',
-                  color: isPlaying ? colors.warning : colors.accent,
-                  fontSize: 13,
+                  ...glassStyle, 'padding': '8px 16px',
+                  'cursor': 'pointer',
+                  'color': isPlaying() ? colors.warning : colors.accent,
+                  'font-size': '13px',
                 }}
               >
-                {isPlaying ? 'Стоп' : 'Автовоспроизведение'}
+                {isPlaying() ? 'Стоп' : 'Автовоспроизведение'}
               </button>
             </div>
           </DiagramTooltip>
         </div>
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: colors.textMuted }}>
-          Раунд {step} / 64 | Сообщение: "abc" |{' '}
-          <span style={{ color: colors.warning }}>Желтые</span> ячейки = изменились в этом раунде
+        <div style={{ 'text-align': 'center', 'font-size': '12px', 'color': colors.textMuted }}>
+          Раунд {step()} / 64 | Сообщение: "abc" |{' '}
+          <span style={{ 'color': colors.warning }}>Желтые</span> ячейки = изменились в этом раунде
         </div>
       </div>
     </DiagramContainer>
@@ -687,7 +686,7 @@ export function SHA256RoundAnimation() {
 export function SHA256CompressionOverview() {
   return (
     <DiagramContainer title="SHA-256: обзор функции сжатия" color="emerald">
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '8px' }}>
         <DiagramTooltip content="Вход: произвольное сообщение любой длины -- от 0 бит до 2^64 - 1 бит. SHA-256 всегда выдает 256-битный хеш.">
           <FlowNode variant="primary" size="md">
             Сообщение (любой длины)
@@ -713,8 +712,8 @@ export function SHA256CompressionOverview() {
         <Arrow direction="down" label="Для каждого блока:" />
 
         <DiagramTooltip content="Compression function: 64 раунда обработки. Каждый раунд использует Wt (message schedule word) + Kt (round constant). Финальный hash = initial state + final working variables.">
-          <div style={{ ...glassStyle, padding: 16, width: '100%', maxWidth: 500 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ ...glassStyle, 'padding': '16px', 'width': '100%', 'max-width': '500px' }}>
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '8px' }}>
               <FlowNode variant="secondary" size="sm">
                 Расписание сообщений: 16 слов → 64 слова (W)
               </FlowNode>
@@ -725,7 +724,7 @@ export function SHA256CompressionOverview() {
                 64 раунда сжатия (a,b,c,d,e,f,g,h)
               </FlowNode>
 
-              <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
+              <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center' }}>
                 Каждый раунд: T1 = h + Sigma1(e) + Ch(e,f,g) + K[i] + W[i]
                 <br />
                 T2 = Sigma0(a) + Maj(a,b,c)

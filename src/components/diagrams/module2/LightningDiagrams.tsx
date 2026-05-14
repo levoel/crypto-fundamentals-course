@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Lightning Network Diagrams
  *
@@ -7,7 +8,7 @@
  * - LNRoutingGraphDiagram: Static LN routing graph with onion routing concept
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { Grid } from '@primitives/Grid';
@@ -89,10 +90,10 @@ const ALL_STATES = [0, 1, 2];
  * Shows balance bar transitioning between Alice and Bob.
  */
 export function PaymentChannelLifecycleDiagram() {
-  const [step, setStep] = useState(0);
-  const [history, setHistory] = useState<number[]>([0]);
+  const [step, setStep] = createSignal(0);
+  const [history, setHistory] = createSignal<number[]>([0]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setStep((s) => {
       const next = Math.min(s + 1, CHANNEL_STEPS.length - 1);
       setHistory((h) => {
@@ -101,42 +102,42 @@ export function PaymentChannelLifecycleDiagram() {
       });
       return next;
     });
-  }, []);
+  };
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
     setStep((s) => Math.max(s - 1, 0));
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
     setHistory([0]);
-  }, []);
+  };
 
-  const current = CHANNEL_STEPS[step];
+  const current = CHANNEL_STEPS[step()];
   const totalCapacity = current.aliceBalance + current.bobBalance;
   const alicePct = (current.aliceBalance / totalCapacity) * 100;
 
   return (
     <DiagramContainer title="Жизненный цикл платежного канала" color="green">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {CHANNEL_STEPS.map((_s, i) => (
-          <DiagramTooltip key={i} content={CHANNEL_STEPS[i].title + ': ' + CHANNEL_STEPS[i].description.slice(0, 80) + '...'}>
+          <DiagramTooltip content={CHANNEL_STEPS[i].title + ': ' + CHANNEL_STEPS[i].description.slice(0, 80) + '...'}>
             <div
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                background: i <= step ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${i <= step ? colors.success : 'rgba(255,255,255,0.1)'}`,
-                color: i <= step ? colors.success : colors.textMuted,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '50%',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '12px',
+                'font-weight': '600',
+                'background': i <= step() ? `${colors.success}30` : 'rgba(255,255,255,0.05)',
+                'border': `2px solid ${i <= step() ? colors.success : 'rgba(255,255,255,0.1)'}`,
+                'color': i <= step() ? colors.success : colors.textMuted,
+                'cursor': 'pointer',
+                'transition': 'all 0.3s',
               }}
               onClick={() => setStep(i)}
             >
@@ -149,16 +150,16 @@ export function PaymentChannelLifecycleDiagram() {
       {/* Step title and description */}
       <div style={{
         ...glassStyle,
-        padding: 14,
-        borderColor: `${current.onChain ? colors.warning : colors.success}40`,
-        marginBottom: 16,
-        transition: 'border-color 0.3s',
+        'padding': '14px',
+        'border-color': `${current.onChain ? colors.warning : colors.success}40`,
+        'margin-bottom': '16px',
+        'transition': 'border-color 0.3s',
       }}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: current.onChain ? colors.warning : colors.success,
-          marginBottom: 6,
+          'font-size': '14px',
+          'font-weight': '700',
+          'color': current.onChain ? colors.warning : colors.success,
+          'margin-bottom': '6px',
         }}>
           {current.title}
         </div>
@@ -167,34 +168,34 @@ export function PaymentChannelLifecycleDiagram() {
           : 'Офчейн-операция: НЕ записывается в блокчейн. Мгновенно, бесплатно. Alice и Bob просто обмениваются подписанными commitment TX через прямое соединение.'
         }>
           <div style={{
-            display: 'inline-block',
-            padding: '2px 8px',
-            borderRadius: 4,
-            fontSize: 10,
-            fontWeight: 600,
-            background: current.onChain ? `${colors.warning}20` : `${colors.success}20`,
-            color: current.onChain ? colors.warning : colors.success,
-            marginBottom: 8,
+            'display': 'inline-block',
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'font-size': '10px',
+            'font-weight': '600',
+            'background': current.onChain ? `${colors.warning}20` : `${colors.success}20`,
+            'color': current.onChain ? colors.warning : colors.success,
+            'margin-bottom': '8px',
           }}>
             {current.onChain ? 'ОНЧЕЙН' : 'ОФЧЕЙН'}
           </div>
         </DiagramTooltip>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
           {current.description}
         </div>
       </div>
 
       {/* Balance visualization */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
         {/* Party labels */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
           <DiagramTooltip content="Alice -- один из участников платежного канала. Её баланс в канале уменьшается при отправке платежей Bob и увеличивается при получении от него.">
-            <div style={{ fontSize: 13, fontWeight: 700, color: colors.primary }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.primary }}>
               Alice: {current.aliceBalance} BTC
             </div>
           </DiagramTooltip>
           <DiagramTooltip content="Bob -- второй участник платежного канала. Его баланс увеличивается при получении платежей от Alice. Общая ёмкость канала (Alice + Bob) всегда постоянна.">
-            <div style={{ fontSize: 13, fontWeight: 700, color: colors.success }}>
+            <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.success }}>
               Bob: {current.bobBalance} BTC
             </div>
           </DiagramTooltip>
@@ -203,42 +204,42 @@ export function PaymentChannelLifecycleDiagram() {
         {/* Balance bar */}
         <DiagramTooltip content={`Баланс канала: Alice ${current.aliceBalance} BTC | Bob ${current.bobBalance} BTC. Общая ёмкость ${totalCapacity} BTC неизменна -- средства только перераспределяются между сторонами.`}>
           <div style={{
-            width: '100%',
-            height: 32,
-            borderRadius: 8,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            overflow: 'hidden',
-            display: 'flex',
-            position: 'relative' as const,
+            'width': '100%',
+            'height': '32px',
+            'border-radius': '8px',
+            'background': 'rgba(255,255,255,0.05)',
+            'border': '1px solid rgba(255,255,255,0.1)',
+            'overflow': 'hidden',
+            'display': 'flex',
+            'position': 'relative' as const,
           }}>
             <div style={{
-              width: `${alicePct}%`,
-              height: '100%',
-              background: `linear-gradient(90deg, ${colors.primary}60, ${colors.primary}30)`,
-              transition: 'width 0.6s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 600,
-              color: colors.primary,
-              minWidth: alicePct > 0 ? 40 : 0,
+              'width': `${alicePct}%`,
+              'height': '100%',
+              'background': `linear-gradient(90deg, ${colors.primary}60, ${colors.primary}30)`,
+              'transition': 'width 0.6s ease',
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              'font-size': '11px',
+              'font-weight': '600',
+              'color': colors.primary,
+              'min-width': alicePct > 0 ? 40 : 0,
             }}>
               {current.aliceBalance > 0 ? `${current.aliceBalance} BTC` : ''}
             </div>
             <div style={{
-              width: `${100 - alicePct}%`,
-              height: '100%',
-              background: `linear-gradient(90deg, ${colors.success}30, ${colors.success}60)`,
-              transition: 'width 0.6s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 11,
-              fontWeight: 600,
-              color: colors.success,
-              minWidth: (100 - alicePct) > 0 ? 40 : 0,
+              'width': `${100 - alicePct}%`,
+              'height': '100%',
+              'background': `linear-gradient(90deg, ${colors.success}30, ${colors.success}60)`,
+              'transition': 'width 0.6s ease',
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              'font-size': '11px',
+              'font-weight': '600',
+              'color': colors.success,
+              'min-width': (100 - alicePct) > 0 ? 40 : 0,
             }}>
               {current.bobBalance > 0 ? `${current.bobBalance} BTC` : ''}
             </div>
@@ -247,10 +248,10 @@ export function PaymentChannelLifecycleDiagram() {
 
         {/* Capacity label */}
         <div style={{
-          textAlign: 'center',
-          fontSize: 10,
-          color: colors.textMuted,
-          marginTop: 4,
+          'text-align': 'center',
+          'font-size': '10px',
+          'color': colors.textMuted,
+          'margin-top': '4px',
         }}>
           Ёмкость канала: {totalCapacity} BTC
         </div>
@@ -259,39 +260,39 @@ export function PaymentChannelLifecycleDiagram() {
       {/* Commitment TX / state info */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        borderColor: `${colors.accent}30`,
-        marginBottom: 12,
+        'padding': '12px',
+        'border-color': `${colors.accent}30`,
+        'margin-bottom': '12px',
       }}>
         <DiagramTooltip content="Commitment TX -- подписанная обеими сторонами транзакция, отражающая текущий баланс канала. Каждая сторона хранит свою версию. В случае спора, commitment TX можно опубликовать в блокчейн.">
-          <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, marginBottom: 6 }}>
+          <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.accent, 'margin-bottom': '6px' }}>
             {current.commitmentLabel}
           </div>
         </DiagramTooltip>
 
         {/* Revoked states */}
-        {step > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+        {step() > 0 && (
+          <div style={{ 'display': 'flex', 'gap': '6px', 'flex-wrap': 'wrap', 'margin-bottom': '6px' }}>
             {ALL_STATES.map((stateNum) => {
               const isRevoked = current.revokedStates.includes(stateNum);
-              const isCurrent = step > 0 && stateNum === step - 1 && !isRevoked;
-              if (stateNum >= step) return null;
+              const isCurrent = step() > 0 && stateNum === step() - 1 && !isRevoked;
+              if (stateNum >= step()) return null;
               return (
-                <DiagramTooltip key={stateNum} content={
+                <DiagramTooltip content={
                   isRevoked
                     ? `TX #${stateNum} отозвана: ключ отзыва передан другой стороне. Публикация отозванного состояния приведет к конфискации ВСЕХ средств в пользу контрагента (penalty TX).`
                     : `TX #${stateNum} -- текущее активное состояние канала. Может быть опубликована в блокчейн для закрытия канала.`
                 }>
                   <div
                     style={{
-                      padding: '3px 8px',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      background: isRevoked ? `${colors.danger}15` : `${colors.success}15`,
-                      color: isRevoked ? colors.danger : colors.success,
-                      textDecoration: isRevoked ? 'line-through' : 'none',
-                      border: `1px solid ${isRevoked ? colors.danger + '30' : colors.success + '30'}`,
+                      'padding': '3px 8px',
+                      'border-radius': '4px',
+                      'font-size': '10px',
+                      'font-weight': '600',
+                      'background': isRevoked ? `${colors.danger}15` : `${colors.success}15`,
+                      'color': isRevoked ? colors.danger : colors.success,
+                      'text-decoration': isRevoked ? 'line-through' : 'none',
+                      'border': `1px solid ${isRevoked ? colors.danger + '30' : colors.success + '30'}`,
                     }}
                   >
                     TX #{stateNum} {isRevoked ? '(отозвана)' : isCurrent ? '(текущая)' : ''}
@@ -302,24 +303,24 @@ export function PaymentChannelLifecycleDiagram() {
           </div>
         )}
 
-        <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.5' }}>
           {current.detail}
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
           <button
             onClick={handleReset}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              fontSize: 12,
-              color: colors.textMuted,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'font-size': '12px',
+              'color': colors.textMuted,
+              'border': '1px solid rgba(255,255,255,0.1)',
+              'background': 'rgba(255,255,255,0.05)',
             }}
           >
             Сброс
@@ -328,16 +329,16 @@ export function PaymentChannelLifecycleDiagram() {
         <div>
           <button
             onClick={handlePrev}
-            disabled={step <= 0}
+            disabled={step() <= 0}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: step <= 0 ? 'default' : 'pointer',
-              fontSize: 12,
-              color: step <= 0 ? colors.textMuted : colors.accent,
-              border: `1px solid ${step <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
-              background: step <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
-              opacity: step <= 0 ? 0.5 : 1,
+              'padding': '8px 16px',
+              'cursor': step() <= 0 ? 'default' : 'pointer',
+              'font-size': '12px',
+              'color': step() <= 0 ? colors.textMuted : colors.accent,
+              'border': `1px solid ${step() <= 0 ? 'rgba(255,255,255,0.1)' : colors.accent}`,
+              'background': step() <= 0 ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+              'opacity': step() <= 0 ? 0.5 : 1,
             }}
           >
             Назад
@@ -346,16 +347,16 @@ export function PaymentChannelLifecycleDiagram() {
         <div>
           <button
             onClick={handleNext}
-            disabled={step >= CHANNEL_STEPS.length - 1}
+            disabled={step() >= CHANNEL_STEPS.length - 1}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: step >= CHANNEL_STEPS.length - 1 ? 'default' : 'pointer',
-              fontSize: 12,
-              color: step >= CHANNEL_STEPS.length - 1 ? colors.textMuted : colors.success,
-              border: `1px solid ${step >= CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.success}`,
-              background: step >= CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
-              opacity: step >= CHANNEL_STEPS.length - 1 ? 0.5 : 1,
+              'padding': '8px 16px',
+              'cursor': step() >= CHANNEL_STEPS.length - 1 ? 'default' : 'pointer',
+              'font-size': '12px',
+              'color': step() >= CHANNEL_STEPS.length - 1 ? colors.textMuted : colors.success,
+              'border': `1px solid ${step() >= CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.success}`,
+              'background': step() >= CHANNEL_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.success}15`,
+              'opacity': step() >= CHANNEL_STEPS.length - 1 ? 0.5 : 1,
             }}
           >
             Далее
@@ -432,29 +433,29 @@ export function LNRoutingGraphDiagram() {
       <DiagramTooltip content="Луковая маршрутизация (Onion Routing): Alice шифрует маршрут послойно. Каждый промежуточный узел расшифровывает только свой слой и узнает только предыдущий и следующий хоп. Полный маршрут знает только отправитель.">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          borderColor: `${colors.info}30`,
-          marginBottom: 12,
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.5,
+          'padding': '10px',
+          'border-color': `${colors.info}30`,
+          'margin-bottom': '12px',
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'line-height': '1.5',
         }}>
-          <strong style={{ color: colors.info }}>Луковая маршрутизация:</strong>{' '}
-          Каждый узел знает только предыдущий и следующий хоп. Маршрут: <span style={{ color: colors.primary, fontWeight: 600 }}>Alice</span> {'->'} <span style={{ color: colors.accent, fontWeight: 600 }}>Carol</span> {'->'} <span style={{ color: colors.success, fontWeight: 600 }}>Dave</span>. Carol не знает, что платёж идёт от Alice к Dave.
+          <strong style={{ 'color': colors.info }}>Луковая маршрутизация:</strong>{' '}
+          Каждый узел знает только предыдущий и следующий хоп. Маршрут: <span style={{ 'color': colors.primary, 'font-weight': '600' }}>Alice</span> {'->'} <span style={{ 'color': colors.accent, 'font-weight': '600' }}>Carol</span> {'->'} <span style={{ 'color': colors.success, 'font-weight': '600' }}>Dave</span>. Carol не знает, что платёж идёт от Alice к Dave.
         </div>
       </DiagramTooltip>
 
       {/* SVG Graph (static, no hover) */}
       <div style={{
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: 12,
+        'width': '100%',
+        'display': 'flex',
+        'justify-content': 'center',
+        'margin-bottom': '12px',
       }}>
         <svg
           viewBox={`0 0 ${svgW} ${svgH}`}
           width="100%"
-          style={{ maxWidth: svgW, overflow: 'visible' }}
+          style={{ 'max-width': svgW, 'overflow': 'visible' }}
         >
           {/* Channels (edges) -- static, no hover handlers */}
           {LN_CHANNELS.map((ch, i) => {
@@ -466,7 +467,7 @@ export function LNRoutingGraphDiagram() {
             const strokeWidth = ch.isOnPath ? 2.5 : 1;
 
             return (
-              <g key={`ch-${i}`}>
+              <g>
                 <line
                   x1={fromNode.x}
                   y1={fromNode.y}
@@ -503,7 +504,7 @@ export function LNRoutingGraphDiagram() {
               : 'rgba(255,255,255,0.2)';
 
             return (
-              <g key={node.id}>
+              <g>
                 <circle
                   cx={node.x}
                   cy={node.y}
@@ -540,27 +541,27 @@ export function LNRoutingGraphDiagram() {
 
       {/* HTML node legend with DiagramTooltip (replaces SVG hover tooltips) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-        gap: 6,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(110px, 1fr))',
+        'gap': '6px',
+        'margin-bottom': '12px',
       }}>
         {LN_NODES.map((node) => {
           const nodeColor = node.isOnPath
             ? (node.id === 'A' ? colors.primary : node.id === 'D' ? colors.success : colors.accent)
             : colors.textMuted;
           return (
-            <DiagramTooltip key={node.id} content={`${node.label}: ${node.channels} каналов, общая ёмкость ${node.totalCapacity}. ${node.isOnPath ? 'Участвует в маршруте платежа.' : 'Не участвует в текущем маршруте.'}`}>
+            <DiagramTooltip content={`${node.label}: ${node.channels} каналов, общая ёмкость ${node.totalCapacity}. ${node.isOnPath ? 'Участвует в маршруте платежа.' : 'Не участвует в текущем маршруте.'}`}>
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                borderColor: node.isOnPath ? `${nodeColor}40` : 'rgba(255,255,255,0.08)',
-                textAlign: 'center',
+                'padding': '6px 8px',
+                'border-color': node.isOnPath ? `${nodeColor}40` : 'rgba(255,255,255,0.08)',
+                'text-align': 'center',
               }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: nodeColor }}>
+                <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': nodeColor }}>
                   {node.id}: {node.label}
                 </div>
-                <div style={{ fontSize: 9, color: colors.textMuted }}>
+                <div style={{ 'font-size': '9px', 'color': colors.textMuted }}>
                   {node.channels} кан. | {node.totalCapacity}
                 </div>
               </div>
@@ -574,13 +575,13 @@ export function LNRoutingGraphDiagram() {
         <DiagramTooltip content="Маршрут платежа выбирается отправителем (Alice). Алгоритм маршрутизации ищет путь с достаточной ликвидностью и минимальными комиссиями. Промежуточные узлы получают небольшую комиссию за пересылку.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            borderColor: `${colors.success}30`,
+            'padding': '10px',
+            'border-color': `${colors.success}30`,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: colors.success, marginBottom: 4 }}>
+            <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': colors.success, 'margin-bottom': '4px' }}>
               Маршрут платежа
             </div>
-            <div style={{ fontSize: 10, color: colors.textMuted, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'line-height': '1.5' }}>
               Alice {'->'} Carol {'->'} Dave. Сплошная линия -- выбранный маршрут. Каждый узел пересылает платёж дальше.
             </div>
           </div>
@@ -588,13 +589,13 @@ export function LNRoutingGraphDiagram() {
         <DiagramTooltip content="Луковые слои шифрования: Alice создает пакет с вложенными слоями шифрования. Carol расшифровывает внешний слой и видит: 'перешли Dave 0.01 BTC'. Carol не знает, что Alice -- исходный отправитель.">
           <div style={{
             ...glassStyle,
-            padding: 10,
-            borderColor: `${colors.info}30`,
+            'padding': '10px',
+            'border-color': `${colors.info}30`,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: colors.info, marginBottom: 4 }}>
+            <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': colors.info, 'margin-bottom': '4px' }}>
               Луковые слои
             </div>
-            <div style={{ fontSize: 10, color: colors.textMuted, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'line-height': '1.5' }}>
               Alice шифрует маршрут слоями. Carol расшифровывает свой слой: «отправь Dave». Она не знает, откуда пришёл платёж.
             </div>
           </div>

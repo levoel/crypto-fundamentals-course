@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Access Control Diagrams (SEC-04)
  *
@@ -7,7 +8,7 @@
  * - RBACHierarchyDiagram: Visual role hierarchy tree replacing ASCII art
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -90,44 +91,44 @@ export function AccessControlComparisonDiagram() {
     <DiagramContainer title="UnsafeToken vs UnsafeTokenFixed: сравнение" color="rose">
       {/* Table header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '120px 1fr 1fr',
-        gap: 1,
-        marginBottom: 1,
+        'display': 'grid',
+        'grid-template-columns': '120px 1fr 1fr',
+        'gap': '1px',
+        'margin-bottom': '1px',
       }}>
         <div style={{
           ...glassStyle,
-          padding: 10,
-          fontSize: 11,
-          fontWeight: 600,
-          color: colors.textMuted,
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          borderRadius: '12px 0 0 0',
+          'padding': '10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': colors.textMuted,
+          'font-family': 'monospace',
+          'text-align': 'center',
+          'border-radius': '12px 0 0 0',
         }}>
           Аспект
         </div>
         <div style={{
           ...glassStyle,
-          padding: 10,
-          fontSize: 11,
-          fontWeight: 600,
-          color: '#f43f5e',
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          borderRadius: 0,
+          'padding': '10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': '#f43f5e',
+          'font-family': 'monospace',
+          'text-align': 'center',
+          'border-radius': '0',
         }}>
           UnsafeToken (уязвимый)
         </div>
         <div style={{
           ...glassStyle,
-          padding: 10,
-          fontSize: 11,
-          fontWeight: 600,
-          color: colors.success,
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          borderRadius: '0 12px 0 0',
+          'padding': '10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': colors.success,
+          'font-family': 'monospace',
+          'text-align': 'center',
+          'border-radius': '0 12px 0 0',
         }}>
           UnsafeTokenFixed (исправленный)
         </div>
@@ -139,24 +140,23 @@ export function AccessControlComparisonDiagram() {
 
         return (
           <div
-            key={i}
             style={{
-              display: 'grid',
-              gridTemplateColumns: '120px 1fr 1fr',
-              gap: 1,
-              marginBottom: 1,
-              transition: 'all 0.15s',
+              'display': 'grid',
+              'grid-template-columns': '120px 1fr 1fr',
+              'gap': '1px',
+              'margin-bottom': '1px',
+              'transition': 'all 0.15s',
             }}
           >
             <div style={{
               ...glassStyle,
-              padding: 10,
-              fontSize: 11,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-              fontWeight: 600,
-              borderRadius: isLast ? '0 0 0 12px' : 0,
-              background: 'rgba(255,255,255,0.03)',
+              'padding': '10px',
+              'font-size': '11px',
+              'color': colors.textMuted,
+              'font-family': 'monospace',
+              'font-weight': '600',
+              'border-radius': isLast ? '0 0 0 12px' : 0,
+              'background': 'rgba(255,255,255,0.03)',
             }}>
               <DiagramTooltip content={ASPECT_TOOLTIPS[row.aspect] || row.aspect}>
                 {row.aspect}
@@ -164,23 +164,23 @@ export function AccessControlComparisonDiagram() {
             </div>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              fontSize: 11,
-              color: row.vulnColor,
-              fontFamily: 'monospace',
-              borderRadius: 0,
-              background: 'rgba(255,255,255,0.03)',
+              'padding': '10px',
+              'font-size': '11px',
+              'color': row.vulnColor,
+              'font-family': 'monospace',
+              'border-radius': '0',
+              'background': 'rgba(255,255,255,0.03)',
             }}>
               {row.vulnerable}
             </div>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              fontSize: 11,
-              color: row.fixedColor,
-              fontFamily: 'monospace',
-              borderRadius: isLast ? '0 0 12px 0' : 0,
-              background: 'rgba(255,255,255,0.03)',
+              'padding': '10px',
+              'font-size': '11px',
+              'color': row.fixedColor,
+              'font-family': 'monospace',
+              'border-radius': isLast ? '0 0 12px 0' : 0,
+              'background': 'rgba(255,255,255,0.03)',
             }}>
               {row.fixed}
             </div>
@@ -188,7 +188,7 @@ export function AccessControlComparisonDiagram() {
         );
       })}
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="OWASP Smart Contract Top 10 — классификация уязвимостей смарт-контрактов. Access Control (#1) лидирует по количеству потерянных средств.">
           <DataBox
             label="Ключевой вывод"
@@ -273,26 +273,26 @@ const ROLE_TOOLTIPS: Record<string, string> = {
  * none -> Ownable -> Ownable2Step -> AccessControl (RBAC).
  */
 export function RoleHierarchyDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = AC_EVOLUTION[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = AC_EVOLUTION[stepIndex()];
 
-  const accentColor = stepIndex === 0 ? '#f43f5e' : stepIndex === 1 ? colors.success : stepIndex === 2 ? colors.success : colors.primary;
+  const accentColor = stepIndex() === 0 ? '#f43f5e' : stepIndex() === 1 ? colors.success : stepIndex() === 2 ? colors.success : colors.primary;
 
   return (
     <DiagramContainer title="Эволюция access control: от нуля до RBAC" color="blue">
       {/* Step progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {AC_EVOLUTION.map((s, i) => (
-          <DiagramTooltip key={i} content={ROLE_TOOLTIPS[s.title] || s.description}>
+          <DiagramTooltip content={ROLE_TOOLTIPS[s.title] || s.description}>
             <div
               onClick={() => setStepIndex(i)}
               style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                cursor: 'pointer',
-                background: i <= stepIndex ? accentColor : 'rgba(255,255,255,0.1)',
-                transition: 'all 0.2s',
+                'flex': '1',
+                'height': '4px',
+                'border-radius': '2px',
+                'cursor': 'pointer',
+                'background': i <= stepIndex() ? accentColor : 'rgba(255,255,255,0.1)',
+                'transition': 'all 0.2s',
               }}
             />
           </DiagramTooltip>
@@ -302,11 +302,11 @@ export function RoleHierarchyDiagram() {
       {/* Step title */}
       <DiagramTooltip content={ROLE_TOOLTIPS[step.title] || step.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -314,27 +314,27 @@ export function RoleHierarchyDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '12px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -345,21 +345,21 @@ export function RoleHierarchyDiagram() {
       <DiagramTooltip content="Solidity код демонстрирует конкретный паттерн access control. Обратите внимание на import и модификатор в сигнатуре функции.">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 14,
-          background: 'rgba(0,0,0,0.3)',
-          border: `1px solid ${accentColor}30`,
+          'padding': '14px',
+          'margin-bottom': '14px',
+          'background': 'rgba(0,0,0,0.3)',
+          'border': `1px solid ${accentColor}30`,
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
             Solidity
           </div>
           <pre style={{
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: colors.accent,
-            margin: 0,
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.5,
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'color': colors.accent,
+            'margin': '0',
+            'white-space': 'pre-wrap',
+            'line-height': '1.5',
           }}>
             {step.code}
           </pre>
@@ -367,16 +367,16 @@ export function RoleHierarchyDiagram() {
       </DiagramTooltip>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
           <button
             onClick={() => setStepIndex(0)}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              color: colors.text,
-              fontSize: 13,
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'color': colors.text,
+              'font-size': '13px',
             }}
           >
             Сброс
@@ -385,14 +385,14 @@ export function RoleHierarchyDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-            disabled={stepIndex === 0}
+            disabled={stepIndex() === 0}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-              color: stepIndex === 0 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: stepIndex === 0 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': stepIndex() === 0 ? 0.5 : 1,
             }}
           >
             Назад
@@ -401,14 +401,14 @@ export function RoleHierarchyDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.min(AC_EVOLUTION.length - 1, s + 1))}
-            disabled={stepIndex >= AC_EVOLUTION.length - 1}
+            disabled={stepIndex() >= AC_EVOLUTION.length - 1}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex >= AC_EVOLUTION.length - 1 ? 'not-allowed' : 'pointer',
-              color: stepIndex >= AC_EVOLUTION.length - 1 ? colors.textMuted : accentColor,
-              fontSize: 13,
-              opacity: stepIndex >= AC_EVOLUTION.length - 1 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() >= AC_EVOLUTION.length - 1 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() >= AC_EVOLUTION.length - 1 ? colors.textMuted : accentColor,
+              'font-size': '13px',
+              'opacity': stepIndex() >= AC_EVOLUTION.length - 1 ? 0.5 : 1,
             }}
           >
             Далее
@@ -416,8 +416,8 @@ export function RoleHierarchyDiagram() {
         </div>
       </div>
 
-      {stepIndex >= AC_EVOLUTION.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= AC_EVOLUTION.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="TimelockController добавляет задержку (24-48 часов) между предложением и исполнением критических операций. Даёт пользователям время отреагировать.">
             <DataBox
               label="Рекомендация"
@@ -482,63 +482,63 @@ export function RBACHierarchyDiagram() {
       <DiagramTooltip content="DEFAULT_ADMIN_ROLE — корневая роль. Может назначать и отзывать любые другие роли. bytes32(0x00). Назначается deployer-у в конструкторе.">
         <div style={{
           ...glassStyle,
-          padding: '12px 18px',
-          borderRadius: 10,
-          border: '1px solid #ef444440',
-          background: '#ef444410',
-          marginBottom: 20,
-          textAlign: 'center',
-          cursor: 'pointer',
+          'padding': '12px 18px',
+          'border-radius': '10px',
+          'border': '1px solid #ef444440',
+          'background': '#ef444410',
+          'margin-bottom': '20px',
+          'text-align': 'center',
+          'cursor': 'pointer',
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', fontFamily: 'monospace' }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': '#ef4444', 'font-family': 'monospace' }}>
             DEFAULT_ADMIN_ROLE
           </div>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>
             может назначать любые роли
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Connector lines from root to children */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-        <div style={{ width: 2, height: 12, background: 'rgba(255,255,255,0.15)' }} />
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '4px' }}>
+        <div style={{ 'width': '2px', 'height': '12px', 'background': 'rgba(255,255,255,0.15)' }} />
       </div>
 
       {/* Horizontal connector bar */}
       <div style={{
-        height: 2,
-        background: 'rgba(255,255,255,0.12)',
-        margin: '0 10%',
-        marginBottom: 4,
+        'height': '2px',
+        'background': 'rgba(255,255,255,0.12)',
+        'margin': '0 10%',
+        'margin-bottom': '4px',
       }} />
 
       {/* Child role nodes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(2, 1fr)', 'gap': '8px' }}>
         {RBAC_CHILDREN.map((role, i) => (
-          <DiagramTooltip key={i} content={role.tooltipRu}>
+          <DiagramTooltip content={role.tooltipRu}>
             <div style={{
               ...glassStyle,
-              padding: '10px 14px',
-              borderRadius: 8,
-              border: `1px solid ${role.color}30`,
-              borderLeft: `3px solid ${role.color}`,
-              cursor: 'pointer',
-              transition: 'all 0.15s',
+              'padding': '10px 14px',
+              'border-radius': '8px',
+              'border': `1px solid ${role.color}30`,
+              'border-left': `3px solid ${role.color}`,
+              'cursor': 'pointer',
+              'transition': 'all 0.15s',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'margin-bottom': '4px' }}>
                 {/* Connector dot */}
                 <div style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: role.color,
-                  flexShrink: 0,
+                  'width': '6px',
+                  'height': '6px',
+                  'border-radius': '50%',
+                  'background': role.color,
+                  'flex-shrink': '0',
                 }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: role.color, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '11px', 'font-weight': '600', 'color': role.color, 'font-family': 'monospace' }}>
                   {role.name}
                 </span>
               </div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', paddingLeft: 12 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'padding-left': '12px' }}>
                 {role.description}
               </div>
             </div>
@@ -546,7 +546,7 @@ export function RBACHierarchyDiagram() {
         ))}
       </div>
 
-      <div style={{ marginTop: 14 }}>
+      <div style={{ 'margin-top': '14px' }}>
         <DataBox
           label="Admin role"
           value="Каждая роль имеет свой admin role. По умолчанию admin role = DEFAULT_ADMIN_ROLE. Настраивается через _setRoleAdmin()."

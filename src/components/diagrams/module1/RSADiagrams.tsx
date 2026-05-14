@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * RSA Diagrams
  *
@@ -7,7 +8,7 @@
  * - RSASecurityDiagram: Factoring problem visualization and key size comparison
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -110,37 +111,37 @@ const KEY_GEN_STEPS: StepInfo[] = [
  * Uses small primes (p=61, q=53) for educational demo.
  */
 export function RSAKeyGenerationDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     setStep((s) => Math.min(s + 1, KEY_GEN_STEPS.length - 1));
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setStep(0);
-  }, []);
+  };
 
   return (
     <DiagramContainer title="RSA: генерация ключей по шагам" color="blue">
       {/* Step indicators */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {KEY_GEN_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={s.description}>
+          <DiagramTooltip content={s.description}>
             <div
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                background: i <= step ? `${KEY_GEN_STEPS[i].color}30` : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${i <= step ? KEY_GEN_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
-                color: i <= step ? KEY_GEN_STEPS[i].color : colors.textMuted,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '50%',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '12px',
+                'font-weight': '600',
+                'background': i <= step() ? `${KEY_GEN_STEPS[i].color}30` : 'rgba(255,255,255,0.05)',
+                'border': `2px solid ${i <= step() ? KEY_GEN_STEPS[i].color : 'rgba(255,255,255,0.1)'}`,
+                'color': i <= step() ? KEY_GEN_STEPS[i].color : colors.textMuted,
+                'cursor': 'pointer',
+                'transition': 'all 0.3s',
               }}
               onClick={() => setStep(i)}
             >
@@ -153,40 +154,40 @@ export function RSAKeyGenerationDiagram() {
       {/* Current step display */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        borderColor: `${KEY_GEN_STEPS[step].color}40`,
-        marginBottom: 16,
-        transition: 'border-color 0.3s',
+        'padding': '16px',
+        'border-color': `${KEY_GEN_STEPS[step()].color}40`,
+        'margin-bottom': '16px',
+        'transition': 'border-color 0.3s',
       }}>
         <DiagramTooltip content="RSA key generation: выбрать два больших простых числа p, q. Вычислить n = p*q, phi(n) = (p-1)(q-1). Выбрать e (обычно 65537). Вычислить d = e^(-1) mod phi(n). Public key: (n, e). Private key: d.">
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: KEY_GEN_STEPS[step].color,
-            marginBottom: 8,
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': KEY_GEN_STEPS[step()].color,
+            'margin-bottom': '8px',
           }}>
-            {KEY_GEN_STEPS[step].title}
+            {KEY_GEN_STEPS[step()].title}
           </div>
         </DiagramTooltip>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 1.5 }}>
-          {KEY_GEN_STEPS[step].description}
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '12px', 'line-height': '1.5' }}>
+          {KEY_GEN_STEPS[step()].description}
         </div>
-        <DiagramTooltip content={KEY_GEN_STEPS[step].description}>
+        <DiagramTooltip content={KEY_GEN_STEPS[step()].description}>
           <div style={{
-            fontFamily: 'monospace',
-            fontSize: 13,
-            color: colors.text,
-            padding: '8px 12px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
-            marginBottom: 8,
+            'font-family': 'monospace',
+            'font-size': '13px',
+            'color': colors.text,
+            'padding': '8px 12px',
+            'background': 'rgba(255,255,255,0.03)',
+            'border-radius': '6px',
+            'margin-bottom': '8px',
           }}>
-            {KEY_GEN_STEPS[step].formula}
+            {KEY_GEN_STEPS[step()].formula}
           </div>
         </DiagramTooltip>
         <DataBox
           label="Результат"
-          value={KEY_GEN_STEPS[step].value}
+          value={KEY_GEN_STEPS[step()].value}
           variant="highlight"
         />
       </div>
@@ -194,27 +195,27 @@ export function RSAKeyGenerationDiagram() {
       {/* Accumulated results */}
       <Grid columns={2} gap={8}>
         <DiagramTooltip content="Открытый ключ (e, n) публикуется. Любой может использовать его для шифрования сообщений или верификации подписей.">
-          <DataBox label="Открытый ключ (e, n)" value={step >= 3 ? `(${RSA_E}, ${RSA_N})` : '...'} variant={step >= 3 ? 'highlight' : 'default'} />
+          <DataBox label="Открытый ключ (e, n)" value={step() >= 3 ? `(${RSA_E}, ${RSA_N})` : '...'} variant={step() >= 3 ? 'highlight' : 'default'} />
         </DiagramTooltip>
         <DiagramTooltip content="Секретный ключ (d, n) хранится в тайне. Только владелец может расшифровывать сообщения и создавать подписи.">
-          <DataBox label="Секретный ключ (d, n)" value={step >= 4 ? `(${RSA_D}, ${RSA_N})` : '...'} variant={step >= 4 ? 'highlight' : 'default'} />
+          <DataBox label="Секретный ключ (d, n)" value={step() >= 4 ? `(${RSA_D}, ${RSA_N})` : '...'} variant={step() >= 4 ? 'highlight' : 'default'} />
         </DiagramTooltip>
       </Grid>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
         <DiagramTooltip content="Вернуться к первому шагу генерации ключей RSA.">
           <div>
             <button
               onClick={handleReset}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: 'pointer',
-                fontSize: 12,
-                color: colors.textMuted,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
+                'padding': '8px 16px',
+                'cursor': 'pointer',
+                'font-size': '12px',
+                'color': colors.textMuted,
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
               }}
             >
               Сброс
@@ -225,16 +226,16 @@ export function RSAKeyGenerationDiagram() {
           <div>
             <button
               onClick={handleNext}
-              disabled={step >= KEY_GEN_STEPS.length - 1}
+              disabled={step() >= KEY_GEN_STEPS.length - 1}
               style={{
                 ...glassStyle,
-                padding: '8px 16px',
-                cursor: step >= KEY_GEN_STEPS.length - 1 ? 'default' : 'pointer',
-                fontSize: 12,
-                color: step >= KEY_GEN_STEPS.length - 1 ? colors.textMuted : colors.primary,
-                border: `1px solid ${step >= KEY_GEN_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
-                background: step >= KEY_GEN_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
-                opacity: step >= KEY_GEN_STEPS.length - 1 ? 0.5 : 1,
+                'padding': '8px 16px',
+                'cursor': step() >= KEY_GEN_STEPS.length - 1 ? 'default' : 'pointer',
+                'font-size': '12px',
+                'color': step() >= KEY_GEN_STEPS.length - 1 ? colors.textMuted : colors.primary,
+                'border': `1px solid ${step() >= KEY_GEN_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.primary}`,
+                'background': step() >= KEY_GEN_STEPS.length - 1 ? 'rgba(255,255,255,0.03)' : `${colors.primary}15`,
+                'opacity': step() >= KEY_GEN_STEPS.length - 1 ? 0.5 : 1,
               }}
             >
               Следующий шаг
@@ -255,47 +256,47 @@ export function RSAKeyGenerationDiagram() {
  * User enters a message (small number), sees c = m^e mod n and m = c^d mod n.
  */
 export function RSAEncryptDecryptDiagram() {
-  const [message, setMessage] = useState(42);
-  const ciphertext = modPow(message, RSA_E, RSA_N);
+  const [message, setMessage] = createSignal(42);
+  const ciphertext = modPow(message(), RSA_E, RSA_N);
   const decrypted = modPow(ciphertext, RSA_D, RSA_N);
 
   return (
     <DiagramContainer title="RSA: шифрование и дешифрование" color="purple">
       {/* Message input */}
-      <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 6 }}>
+      <div style={{ 'text-align': 'center', 'margin-bottom': '16px' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '6px' }}>
           Введите число для шифрования (0 &lt; m &lt; n = {RSA_N}):
         </div>
         <input
           type="number"
           min={1}
           max={RSA_N - 1}
-          value={message}
+          value={message()}
           onChange={(e) => {
             const v = parseInt(e.target.value, 10);
             if (!isNaN(v) && v > 0 && v < RSA_N) setMessage(v);
           }}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            fontSize: 16,
-            fontFamily: 'monospace',
-            color: colors.primary,
-            border: `1px solid ${colors.primary}40`,
-            background: 'rgba(255,255,255,0.05)',
-            width: 120,
-            textAlign: 'center',
+            'padding': '8px 16px',
+            'font-size': '16px',
+            'font-family': 'monospace',
+            'color': colors.primary,
+            'border': `1px solid ${colors.primary}40`,
+            'background': 'rgba(255,255,255,0.05)',
+            'width': '120px',
+            'text-align': 'center',
           }}
         />
       </div>
 
       {/* Encryption flow */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-bottom': '16px' }}>
         <DiagramTooltip content="Исходное сообщение m -- число от 0 до n-1. В реальных системах текст сначала преобразуется в число через padding-схему (OAEP).">
           <FlowNode variant="primary" size="sm">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>Сообщение</div>
-              <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{message}</div>
+            <div style={{ 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>Сообщение</div>
+              <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace' }}>{message()}</div>
             </div>
           </FlowNode>
         </DiagramTooltip>
@@ -303,51 +304,51 @@ export function RSAEncryptDecryptDiagram() {
         <DiagramTooltip content="Шифрование: c = m^e mod n. Любой может зашифровать, используя public key (n, e). Без знания d расшифровка невозможна (RSA problem).">
           <div style={{
             ...glassStyle,
-            padding: '8px 12px',
-            borderColor: `${colors.accent}40`,
-            textAlign: 'center',
+            'padding': '8px 12px',
+            'border-color': `${colors.accent}40`,
+            'text-align': 'center',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>Шифрование</div>
-            <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.accent }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>Шифрование</div>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.accent }}>
               c = m<sup>e</sup> mod n
             </div>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>
-              c = {message}<sup>{RSA_E}</sup> mod {RSA_N}
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>
+              c = {message()}<sup>{RSA_E}</sup> mod {RSA_N}
             </div>
           </div>
         </DiagramTooltip>
         <Arrow direction="right" />
         <DiagramTooltip content="Шифротекст c -- результат возведения m в степень e по модулю n. Выглядит как случайное число, не раскрывающее m.">
           <FlowNode variant="accent" size="sm">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>Шифротекст</div>
-              <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{ciphertext}</div>
+            <div style={{ 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>Шифротекст</div>
+              <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace' }}>{ciphertext}</div>
             </div>
           </FlowNode>
         </DiagramTooltip>
       </div>
 
       {/* Decryption flow */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-bottom': '16px' }}>
         <FlowNode variant="accent" size="sm">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, opacity: 0.7 }}>Шифротекст</div>
-            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{ciphertext}</div>
+          <div style={{ 'text-align': 'center' }}>
+            <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>Шифротекст</div>
+            <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace' }}>{ciphertext}</div>
           </div>
         </FlowNode>
         <Arrow direction="right" />
         <DiagramTooltip content="Расшифровка: m = c^d mod n. Только владелец private key d может расшифровать. Основано на трудности факторизации n = p * q.">
           <div style={{
             ...glassStyle,
-            padding: '8px 12px',
-            borderColor: `${colors.success}40`,
-            textAlign: 'center',
+            'padding': '8px 12px',
+            'border-color': `${colors.success}40`,
+            'text-align': 'center',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>Дешифрование</div>
-            <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.success }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>Дешифрование</div>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.success }}>
               m = c<sup>d</sup> mod n
             </div>
-            <div style={{ fontSize: 10, color: colors.textMuted }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>
               m = {ciphertext}<sup>{RSA_D}</sup> mod {RSA_N}
             </div>
           </div>
@@ -355,9 +356,9 @@ export function RSAEncryptDecryptDiagram() {
         <Arrow direction="right" />
         <DiagramTooltip content="Результат дешифрования должен совпадать с исходным сообщением. Это работает благодаря теореме Эйлера: m^(e*d) mod n = m.">
           <FlowNode variant="success" size="sm">
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>Результат</div>
-              <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{decrypted}</div>
+            <div style={{ 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'opacity': '0.7' }}>Результат</div>
+              <div style={{ 'font-size': '16px', 'font-weight': '700', 'font-family': 'monospace' }}>{decrypted}</div>
             </div>
           </FlowNode>
         </DiagramTooltip>
@@ -365,14 +366,14 @@ export function RSAEncryptDecryptDiagram() {
 
       {/* Verification */}
       <div style={{
-        textAlign: 'center',
-        fontSize: 12,
-        color: decrypted === message ? colors.success : colors.warning,
-        padding: '8px 0',
+        'text-align': 'center',
+        'font-size': '12px',
+        'color': decrypted === message() ? colors.success : colors.warning,
+        'padding': '8px 0',
       }}>
-        {decrypted === message
+        {decrypted === message()
           ? `m = ${decrypted} (совпадает с исходным сообщением)`
-          : `Ошибка: ${decrypted} !== ${message}`}
+          : `Ошибка: ${decrypted} !== ${message()}`}
       </div>
 
       {/* Key display */}
@@ -453,30 +454,30 @@ export function RSASecurityDiagram() {
       {/* Factoring problem explanation */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        borderColor: `${colors.accent}30`,
-        marginBottom: 16,
+        'padding': '16px',
+        'border-color': `${colors.accent}30`,
+        'margin-bottom': '16px',
       }}>
         <DiagramTooltip content="Задача факторизации (Integer Factorization Problem) -- одна из фундаментальных проблем теории чисел. Наилучший алгоритм (GNFS) имеет субэкспоненциальную сложность, но не полиномиальную.">
-          <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, marginBottom: 8 }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.accent, 'margin-bottom': '8px' }}>
             Задача факторизации
           </div>
         </DiagramTooltip>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6', 'margin-bottom': '12px' }}>
           Безопасность RSA основана на том, что умножить два числа легко, а разложить произведение на множители — сложно.
         </div>
         <Grid columns={2} gap={12}>
           <DiagramTooltip content="Умножение двух чисел выполняется за O(n^2) операций (школьный алгоритм) или O(n*log(n)) (FFT). Мгновенно даже для 2048-бит чисел.">
             <div style={{
               ...glassStyle,
-              padding: 12,
-              borderColor: `${colors.success}30`,
-              textAlign: 'center',
+              'padding': '12px',
+              'border-color': `${colors.success}30`,
+              'text-align': 'center',
             }}>
-              <div style={{ fontSize: 11, color: colors.success, fontWeight: 600, marginBottom: 4 }}>
+              <div style={{ 'font-size': '11px', 'color': colors.success, 'font-weight': '600', 'margin-bottom': '4px' }}>
                 Легко (наносекунды)
               </div>
-              <div style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text }}>
+              <div style={{ 'font-size': '13px', 'font-family': 'monospace', 'color': colors.text }}>
                 61 x 53 = 3233
               </div>
             </div>
@@ -484,78 +485,78 @@ export function RSASecurityDiagram() {
           <DiagramTooltip content="GNFS (General Number Field Sieve) -- лучший известный алгоритм факторизации. Для RSA-2048 потребуется ~10^15 лет на современном оборудовании.">
             <div style={{
               ...glassStyle,
-              padding: 12,
-              borderColor: '#ff444430',
-              textAlign: 'center',
+              'padding': '12px',
+              'border-color': '#ff444430',
+              'text-align': 'center',
             }}>
-              <div style={{ fontSize: 11, color: '#ff4444', fontWeight: 600, marginBottom: 4 }}>
+              <div style={{ 'font-size': '11px', 'color': '#ff4444', 'font-weight': '600', 'margin-bottom': '4px' }}>
                 Сложно (годы, века...)
               </div>
-              <div style={{ fontSize: 13, fontFamily: 'monospace', color: colors.text }}>
+              <div style={{ 'font-size': '13px', 'font-family': 'monospace', 'color': colors.text }}>
                 3233 = ? x ?
               </div>
             </div>
           </DiagramTooltip>
         </Grid>
-        <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 8, textAlign: 'center' }}>
+        <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-top': '8px', 'text-align': 'center' }}>
           Для маленьких чисел факторизация тривиальна. Для чисел из 600+ цифр — вычислительно невозможна.
         </div>
       </div>
 
       {/* Key size comparison */}
-      <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>
+      <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.text, 'margin-bottom': '12px' }}>
         Размеры ключей RSA
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
         {KEY_SIZES.map((ks) => (
-          <DiagramTooltip key={ks.bits} content={KEY_SIZE_TOOLTIPS[ks.bits] ?? ks.label}>
+          <DiagramTooltip content={KEY_SIZE_TOOLTIPS[ks.bits] ?? ks.label}>
             <div
               style={{
                 ...glassStyle,
-                padding: '10px 14px',
-                borderColor: `${ks.color}30`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
+                'padding': '10px 14px',
+                'border-color': `${ks.color}30`,
+                'display': 'flex',
+                'align-items': 'center',
+                'gap': '12px',
               }}
             >
               {/* Key size bar */}
-              <div style={{ minWidth: 90 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace', color: ks.color }}>
+              <div style={{ 'min-width': '90px' }}>
+                <div style={{ 'font-size': '13px', 'font-weight': '700', 'font-family': 'monospace', 'color': ks.color }}>
                   {ks.label}
                 </div>
               </div>
               {/* Visual bar */}
               <div style={{
-                flex: 1,
-                height: 8,
-                background: 'rgba(255,255,255,0.05)',
-                borderRadius: 4,
-                overflow: 'hidden',
+                'flex': '1',
+                'height': '8px',
+                'background': 'rgba(255,255,255,0.05)',
+                'border-radius': '4px',
+                'overflow': 'hidden',
               }}>
                 <div style={{
-                  width: `${(ks.bits / 4096) * 100}%`,
-                  height: '100%',
-                  background: ks.color,
-                  borderRadius: 4,
-                  opacity: 0.6,
-                  transition: 'width 0.5s',
+                  'width': `${(ks.bits / 4096) * 100}%`,
+                  'height': '100%',
+                  'background': ks.color,
+                  'border-radius': '4px',
+                  'opacity': '0.6',
+                  'transition': 'width 0.5s',
                 }} />
               </div>
               {/* Factor time */}
-              <div style={{ minWidth: 100, fontSize: 11, color: colors.textMuted, textAlign: 'right' }}>
+              <div style={{ 'min-width': '100px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'right' }}>
                 {ks.factorTime}
               </div>
               {/* Status badge */}
               <div style={{
-                fontSize: 10,
-                fontWeight: 600,
-                padding: '3px 8px',
-                borderRadius: 4,
-                background: `${ks.color}20`,
-                color: ks.color,
-                minWidth: 90,
-                textAlign: 'center',
+                'font-size': '10px',
+                'font-weight': '600',
+                'padding': '3px 8px',
+                'border-radius': '4px',
+                'background': `${ks.color}20`,
+                'color': ks.color,
+                'min-width': '90px',
+                'text-align': 'center',
               }}>
                 {ks.statusLabel}
               </div>
@@ -567,13 +568,13 @@ export function RSASecurityDiagram() {
       {/* Comparison with ECC */}
       <DiagramTooltip content="Quantum threat: алгоритм Шора факторизует n за полиномиальное время на квантовом компьютере. RSA будет полностью сломан. Миграция на post-quantum cryptography (lattice-based, hash-based) необходима.">
         <div style={{
-          marginTop: 16,
-          padding: 12,
+          'margin-top': '16px',
+          'padding': '12px',
           ...glassStyle,
-          borderColor: `${colors.primary}20`,
+          'border-color': `${colors.primary}20`,
         }}>
-          <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-            <strong style={{ color: colors.primary }}>RSA vs ECC:</strong>{' '}
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
+            <strong style={{ 'color': colors.primary }}>RSA vs ECC:</strong>{' '}
             Ключ RSA-2048 (256 байт) обеспечивает ту же безопасность (~112 бит), что и ключ ECC-256 (32 байта).
             Блокчейны используют ECC (следующий урок) из-за компактности ключей и быстрых подписей.
           </div>

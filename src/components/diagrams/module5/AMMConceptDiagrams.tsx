@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * AMM Concept Diagrams (DEFI-02)
  *
@@ -8,7 +9,7 @@
  * - FeeAccumulationDiagram: Fee accumulation over time showing k growth (static with hover)
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -26,13 +27,13 @@ import { colors, glassStyle } from '@primitives/shared';
  * Displays reserves, k, price, output dynamically.
  */
 export function XYKCurveDiagram() {
-  const [dx, setDx] = useState(100);
+  const [dx, setDx] = createSignal(100);
 
   const x0 = 1000;
   const y0 = 1000;
   const k = x0 * y0; // 1,000,000
 
-  const newX = x0 + dx;
+  const newX = x0 + dx();
   const newY = k / newX;
   const dy = y0 - newY;
   const price0 = y0 / x0;
@@ -56,7 +57,7 @@ export function XYKCurveDiagram() {
   const toSvgX = (xVal: number) => padL + ((xVal - xMin) / (xMax - xMin)) * plotW;
   const toSvgY = (yVal: number) => padT + plotH - ((yVal - yMin) / (yMax - yMin)) * plotH;
 
-  const curvePoints = useMemo(() => {
+  const curvePoints = createMemo(() => {
     const points: string[] = [];
     for (let xv = xMin; xv <= xMax; xv += 10) {
       const yv = k / xv;
@@ -65,7 +66,7 @@ export function XYKCurveDiagram() {
       }
     }
     return points.join(' ');
-  }, []);
+  });
 
   const p0sx = toSvgX(x0);
   const p0sy = toSvgY(y0);
@@ -75,8 +76,8 @@ export function XYKCurveDiagram() {
   return (
     <DiagramContainer title="Кривая xy = k: постоянное произведение" color="blue">
       {/* SVG curve */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Axes */}
           <line x1={padL} y1={padT} x2={padL} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
           <line x1={padL} y1={padT + plotH} x2={padL + plotW} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
@@ -87,7 +88,7 @@ export function XYKCurveDiagram() {
           <polyline points={curvePoints} fill="none" stroke={colors.primary} strokeWidth={2} />
 
           {/* Movement arrow */}
-          {dx > 0 && (
+          {dx() > 0 && (
             <line x1={p0sx} y1={p0sy} x2={p1sx} y2={p1sy} stroke={colors.accent} strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arrowhead)" />
           )}
 
@@ -95,7 +96,7 @@ export function XYKCurveDiagram() {
           <circle cx={p0sx} cy={p0sy} r={5} fill={colors.success} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
 
           {/* New point */}
-          {dx > 0 && (
+          {dx() > 0 && (
             <circle cx={p1sx} cy={p1sy} r={5} fill={colors.accent} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
           )}
 
@@ -103,7 +104,7 @@ export function XYKCurveDiagram() {
           <text x={p0sx + 8} y={p0sy - 8} fill={colors.success} fontSize={10} fontFamily="monospace">
             ({x0}, {y0})
           </text>
-          {dx > 0 && (
+          {dx() > 0 && (
             <text x={p1sx + 8} y={p1sy + 14} fill={colors.accent} fontSize={10} fontFamily="monospace">
               ({newX.toFixed(0)}, {newY.toFixed(0)})
             </text>
@@ -120,24 +121,24 @@ export function XYKCurveDiagram() {
 
       {/* Slider */}
       <DiagramTooltip content="x * y = k: постоянное произведение. При свопе X -> Y: trader добавляет dx в пул X, забирает dy из пула Y, сохраняя k = (x+dx)(y-dy). Кривая никогда не касается осей -- бесконечная ликвидность (теоретически).">
-        <div style={{ marginBottom: 16, padding: '0 8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+        <div style={{ 'margin-bottom': '16px', 'padding': '0 8px' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
+            <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               Swap amount (dx):
             </span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: colors.accent, fontFamily: 'monospace' }}>
-              {dx} Token A
+            <span style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.accent, 'font-family': 'monospace' }}>
+              {dx()} Token A
             </span>
           </div>
           <input
             type="range"
             min={1}
             max={500}
-            value={dx}
+            value={dx()}
             onChange={(e) => setDx(Number(e.target.value))}
-            style={{ width: '100%', accentColor: colors.primary }}
+            style={{ 'width': '100%', 'accent-color': colors.primary }}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
             <span>1</span>
             <span>250</span>
             <span>500</span>
@@ -148,33 +149,33 @@ export function XYKCurveDiagram() {
       {/* Computed values */}
       <DiagramTooltip content="Price impact: чем больше swap относительно liquidity pool, тем хуже цена. Для dx от x: dy = y * dx / (x + dx). Больше пул = меньше impact.">
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 8,
+          'display': 'grid',
+          'grid-template-columns': '1fr 1fr',
+          'gap': '8px',
         }}>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы до</div>
-            <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>x = {x0}, y = {y0}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Резервы до</div>
+            <div style={{ 'font-size': '12px', 'color': colors.success, 'font-family': 'monospace' }}>x = {x0}, y = {y0}</div>
           </div>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Резервы после</div>
-            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>x = {newX.toFixed(0)}, y = {newY.toFixed(0)}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Резервы после</div>
+            <div style={{ 'font-size': '12px', 'color': colors.accent, 'font-family': 'monospace' }}>x = {newX.toFixed(0)}, y = {newY.toFixed(0)}</div>
           </div>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>k = x * y</div>
-            <div style={{ fontSize: 12, color: colors.primary, fontFamily: 'monospace', fontWeight: 600 }}>{k.toLocaleString()} (const)</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>k = x * y</div>
+            <div style={{ 'font-size': '12px', 'color': colors.primary, 'font-family': 'monospace', 'font-weight': '600' }}>{k.toLocaleString()} (const)</div>
           </div>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Output (dy)</div>
-            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{dy.toFixed(2)} Token B</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Output (dy)</div>
+            <div style={{ 'font-size': '12px', 'color': colors.accent, 'font-family': 'monospace', 'font-weight': '600' }}>{dy.toFixed(2)} Token B</div>
           </div>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена до (y/x)</div>
-            <div style={{ fontSize: 12, color: colors.success, fontFamily: 'monospace' }}>{price0.toFixed(4)}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Цена до (y/x)</div>
+            <div style={{ 'font-size': '12px', 'color': colors.success, 'font-family': 'monospace' }}>{price0.toFixed(4)}</div>
           </div>
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Цена после</div>
-            <div style={{ fontSize: 12, color: colors.accent, fontFamily: 'monospace' }}>{priceAfter.toFixed(4)}</div>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Цена после</div>
+            <div style={{ 'font-size': '12px', 'color': colors.accent, 'font-family': 'monospace' }}>{priceAfter.toFixed(4)}</div>
           </div>
         </div>
       </DiagramTooltip>
@@ -269,24 +270,23 @@ const SWAP_HISTORY: SwapStep[] = [
  * 6 steps with concrete numbers. Forward/backward/reset navigation.
  */
 export function SwapStepThroughDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = SWAP_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = SWAP_HISTORY[stepIndex()];
 
   return (
     <DiagramContainer title="Swap: пошаговый расчет" color="green">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {SWAP_HISTORY.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStepIndex(i)}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              cursor: 'pointer',
-              background: i <= stepIndex ? colors.success : 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'cursor': 'pointer',
+              'background': i <= stepIndex() ? colors.success : 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }}
           />
         ))}
@@ -295,11 +295,11 @@ export function SwapStepThroughDiagram() {
       {/* Step title */}
       <DiagramTooltip content={step.description}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -307,30 +307,30 @@ export function SwapStepThroughDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
+          <div style={{
             ...glassStyle,
-            padding: 10,
+            'padding': '10px',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -338,51 +338,51 @@ export function SwapStepThroughDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <button
           onClick={() => setStepIndex(0)}
           style={{
             ...glassStyle,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            color: colors.text,
-            fontSize: 13,
+            'padding': '8px 16px',
+            'cursor': 'pointer',
+            'color': colors.text,
+            'font-size': '13px',
           }}
         >
           Сброс
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-          disabled={stepIndex === 0}
+          disabled={stepIndex() === 0}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-            color: stepIndex === 0 ? colors.textMuted : colors.text,
-            fontSize: 13,
-            opacity: stepIndex === 0 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+            'font-size': '13px',
+            'opacity': stepIndex() === 0 ? 0.5 : 1,
           }}
         >
           Назад
         </button>
         <button
           onClick={() => setStepIndex((s) => Math.min(SWAP_HISTORY.length - 1, s + 1))}
-          disabled={stepIndex >= SWAP_HISTORY.length - 1}
+          disabled={stepIndex() >= SWAP_HISTORY.length - 1}
           style={{
             ...glassStyle,
-            padding: '8px 20px',
-            cursor: stepIndex >= SWAP_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-            color: stepIndex >= SWAP_HISTORY.length - 1 ? colors.textMuted : colors.success,
-            fontSize: 13,
-            opacity: stepIndex >= SWAP_HISTORY.length - 1 ? 0.5 : 1,
+            'padding': '8px 20px',
+            'cursor': stepIndex() >= SWAP_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+            'color': stepIndex() >= SWAP_HISTORY.length - 1 ? colors.textMuted : colors.success,
+            'font-size': '13px',
+            'opacity': stepIndex() >= SWAP_HISTORY.length - 1 ? 0.5 : 1,
           }}
         >
           Далее
         </button>
       </div>
 
-      {stepIndex >= SWAP_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= SWAP_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DataBox
             label="Ключевой вывод"
             value="k растет с каждым свопом за счет комиссий. LP зарабатывают, потому что их доля пула становится ценнее."
@@ -405,29 +405,29 @@ export function SwapStepThroughDiagram() {
  * Pool: 1000 ETH / 2,000,000 USDC. Danger zone: >5% impact.
  */
 export function PriceImpactDiagram() {
-  const [swapAmount, setSwapAmount] = useState(10);
+  const [swapAmount, setSwapAmount] = createSignal(10);
 
   const poolX = 1000; // ETH
   const poolY = 2_000_000; // USDC
   const spotPrice = poolY / poolX; // 2000
 
   // With 0.3% fee
-  const dxFee = swapAmount * 0.997;
+  const dxFee = swapAmount() * 0.997;
   const newX = poolX + dxFee;
   const newY = (poolX * poolY) / newX;
   const dy = poolY - newY;
-  const effectivePrice = dy / swapAmount;
-  const priceImpact = (swapAmount / (poolX + swapAmount)) * 100;
+  const effectivePrice = dy / swapAmount();
+  const priceImpact = (swapAmount() / (poolX + swapAmount())) * 100;
 
   // Chart data points
-  const chartPoints = useMemo(() => {
+  const chartPoints = createMemo(() => {
     const points: { amount: number; impact: number }[] = [];
     const amounts = [0.1, 1, 5, 10, 20, 50, 100, 200, 300, 400, 500];
     for (const a of amounts) {
       points.push({ amount: a, impact: (a / (poolX + a)) * 100 });
     }
     return points;
-  }, []);
+  });
 
   const svgW = 320;
   const svgH = 140;
@@ -454,8 +454,8 @@ export function PriceImpactDiagram() {
   return (
     <DiagramContainer title="Price Impact: влияние размера сделки" color="purple">
       {/* Chart */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Axes */}
           <line x1={padL} y1={padT} x2={padL} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
           <line x1={padL} y1={padT + plotH} x2={padL + plotW} y2={padT + plotH} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
@@ -486,7 +486,7 @@ export function PriceImpactDiagram() {
 
           {/* Current point */}
           <circle
-            cx={toSvgX(swapAmount)}
+            cx={toSvgX(swapAmount())}
             cy={toSvgY(priceImpact)}
             r={5}
             fill={isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success}
@@ -500,28 +500,28 @@ export function PriceImpactDiagram() {
 
           {/* Scale marks */}
           {[0, 100, 200, 300, 400, 500].map((v) => (
-            <text key={v} x={toSvgX(v)} y={padT + plotH + 12} fill={colors.textMuted} fontSize={8} textAnchor="middle" fontFamily="monospace">{v}</text>
+            <text x={toSvgX(v)} y={padT + plotH + 12} fill={colors.textMuted} fontSize={8} textAnchor="middle" fontFamily="monospace">{v}</text>
           ))}
           {[0, 5, 10, 15, 20, 25, 30, 35].filter((v) => v <= maxImpact).map((v) => (
-            <text key={v} x={padL - 4} y={toSvgY(v) + 3} fill={colors.textMuted} fontSize={8} textAnchor="end" fontFamily="monospace">{v}%</text>
+            <text x={padL - 4} y={toSvgY(v) + 3} fill={colors.textMuted} fontSize={8} textAnchor="end" fontFamily="monospace">{v}%</text>
           ))}
         </svg>
       </div>
 
       {/* Slider */}
       <DiagramTooltip content="Малый swap (<1% от пула): price impact < 0.3%. Для retail trades -- незначительный slippage. Большой swap (>10% от пула): price impact > 3%. MEV bots отслеживают такие свопы для sandwich attacks.">
-        <div style={{ marginBottom: 16, padding: '0 8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'monospace' }}>
+        <div style={{ 'margin-bottom': '16px', 'padding': '0 8px' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
+            <span style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               Swap amount:
             </span>
             <span style={{
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: 'monospace',
-              color: isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
+              'font-size': '13px',
+              'font-weight': '600',
+              'font-family': 'monospace',
+              'color': isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
             }}>
-              {swapAmount} ETH
+              {swapAmount()} ETH
             </span>
           </div>
           <input
@@ -529,11 +529,11 @@ export function PriceImpactDiagram() {
             min={1}
             max={500}
             step={1}
-            value={swapAmount}
+            value={swapAmount()}
             onChange={(e) => setSwapAmount(Number(e.target.value))}
-            style={{ width: '100%', accentColor: colors.accent }}
+            style={{ 'width': '100%', 'accent-color': colors.accent }}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
             <span>1 ETH</span>
             <span>250 ETH</span>
             <span>500 ETH</span>
@@ -543,35 +543,35 @@ export function PriceImpactDiagram() {
 
       {/* Values */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 12,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '12px',
       }}>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Output</div>
-          <div style={{ fontSize: 13, color: colors.success, fontFamily: 'monospace', fontWeight: 600 }}>{dy.toFixed(2)} USDC</div>
+        <div style={{ ...glassStyle, 'padding': '10px' }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Output</div>
+          <div style={{ 'font-size': '13px', 'color': colors.success, 'font-family': 'monospace', 'font-weight': '600' }}>{dy.toFixed(2)} USDC</div>
         </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Эффективная цена</div>
-          <div style={{ fontSize: 13, color: colors.accent, fontFamily: 'monospace', fontWeight: 600 }}>{effectivePrice.toFixed(2)} USDC/ETH</div>
+        <div style={{ ...glassStyle, 'padding': '10px' }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Эффективная цена</div>
+          <div style={{ 'font-size': '13px', 'color': colors.accent, 'font-family': 'monospace', 'font-weight': '600' }}>{effectivePrice.toFixed(2)} USDC/ETH</div>
         </div>
-        <div style={{ ...glassStyle, padding: 10 }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Спотовая цена</div>
-          <div style={{ fontSize: 13, color: colors.textMuted, fontFamily: 'monospace' }}>{spotPrice.toFixed(2)} USDC/ETH</div>
+        <div style={{ ...glassStyle, 'padding': '10px' }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Спотовая цена</div>
+          <div style={{ 'font-size': '13px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{spotPrice.toFixed(2)} USDC/ETH</div>
         </div>
         <div style={{
           ...glassStyle,
-          padding: 10,
-          background: isDanger ? 'rgba(244,63,94,0.08)' : isWarning ? 'rgba(234,179,8,0.08)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${isDanger ? '#f43f5e30' : isWarning ? '#eab30830' : 'rgba(255,255,255,0.08)'}`,
+          'padding': '10px',
+          'background': isDanger ? 'rgba(244,63,94,0.08)' : isWarning ? 'rgba(234,179,8,0.08)' : 'rgba(255,255,255,0.03)',
+          'border': `1px solid ${isDanger ? '#f43f5e30' : isWarning ? '#eab30830' : 'rgba(255,255,255,0.08)'}`,
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Price impact</div>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Price impact</div>
           <div style={{
-            fontSize: 13,
-            fontFamily: 'monospace',
-            fontWeight: 600,
-            color: isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
+            'font-size': '13px',
+            'font-family': 'monospace',
+            'font-weight': '600',
+            'color': isDanger ? '#f43f5e' : isWarning ? '#eab308' : colors.success,
           }}>
             {priceImpact.toFixed(2)}% {isDanger ? '(DANGER)' : isWarning ? '(WARNING)' : '(OK)'}
           </div>
@@ -580,9 +580,9 @@ export function PriceImpactDiagram() {
 
       {/* Formula */}
       <DiagramTooltip content="Формула price impact для constant product AMM. Чистая математика: чем больше dx относительно x, тем больше проскальзывание. Uniswap V3 решает это concentrated liquidity.">
-        <div style={{ ...glassStyle, padding: 10, marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.primary, textAlign: 'center' }}>
-            price_impact = dx / (x + dx) = {swapAmount} / ({poolX} + {swapAmount}) = {priceImpact.toFixed(4)}%
+        <div style={{ ...glassStyle, 'padding': '10px', 'margin-bottom': '8px' }}>
+          <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.primary, 'text-align': 'center' }}>
+            price_impact = dx / (x + dx) = {swapAmount()} / ({poolX} + {swapAmount()}) = {priceImpact.toFixed(4)}%
           </div>
         </div>
       </DiagramTooltip>
@@ -669,36 +669,36 @@ export function FeeAccumulationDiagram() {
     <DiagramContainer title="Комиссии: как растет k" color="green">
       {/* Bar chart */}
       <div style={{
-        display: 'flex',
-        gap: 8,
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        height: 140,
-        marginBottom: 16,
-        padding: '0 8px',
+        'display': 'flex',
+        'gap': '8px',
+        'align-items': 'flex-end',
+        'justify-content': 'center',
+        'height': '140px',
+        'margin-bottom': '16px',
+        'padding': '0 8px',
       }}>
         {/* Initial k bar */}
         <DiagramTooltip content="Начальное значение k = x * y. Константа пула до первого свопа. Все последующие свопы будут увеличивать k за счёт комиссий.">
           <div
             style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: '100%',
-              justifyContent: 'flex-end',
+              'flex': '1',
+              'display': 'flex',
+              'flex-direction': 'column',
+              'align-items': 'center',
+              'height': '100%',
+              'justify-content': 'flex-end',
             }}
           >
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Initial
             </div>
             <div style={{
-              width: '100%',
-              height: '20%',
-              minHeight: 20,
-              borderRadius: '4px 4px 0 0',
-              background: 'rgba(255,255,255,0.1)',
-              transition: 'all 0.2s',
+              'width': '100%',
+              'height': '20%',
+              'min-height': '20px',
+              'border-radius': '4px 4px 0 0',
+              'background': 'rgba(255,255,255,0.1)',
+              'transition': 'all 0.2s',
             }} />
           </div>
         </DiagramTooltip>
@@ -707,32 +707,32 @@ export function FeeAccumulationDiagram() {
           const heightPercent = 20 + ((swap.kAfter - MIN_K) / kRange) * 70;
 
           return (
-            <DiagramTooltip key={i} content={`${swap.swap}: ${swap.direction}. Комиссия: ${swap.fee}. Рост k: +${(swap.kAfter - swap.kBefore).toLocaleString()} (${swap.kBefore.toLocaleString()} -> ${swap.kAfter.toLocaleString()}).`}>
+            <DiagramTooltip content={`${swap.swap}: ${swap.direction}. Комиссия: ${swap.fee}. Рост k: +${(swap.kAfter - swap.kBefore).toLocaleString()} (${swap.kBefore.toLocaleString()} -> ${swap.kAfter.toLocaleString()}).`}>
               <div
                 style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  justifyContent: 'flex-end',
+                  'flex': '1',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'align-items': 'center',
+                  'height': '100%',
+                  'justify-content': 'flex-end',
                 }}
               >
                 <div style={{
-                  fontSize: 9,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginBottom: 4,
+                  'font-size': '9px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-bottom': '4px',
                 }}>
                   {swap.swap.replace('Swap ', '#')}
                 </div>
                 <div style={{
-                  width: '100%',
-                  height: `${heightPercent}%`,
-                  minHeight: 20,
-                  borderRadius: '4px 4px 0 0',
-                  background: `${colors.success}60`,
-                  transition: 'all 0.3s',
+                  'width': '100%',
+                  'height': `${heightPercent}%`,
+                  'min-height': '20px',
+                  'border-radius': '4px 4px 0 0',
+                  'background': `${colors.success}60`,
+                  'transition': 'all 0.3s',
                 }} />
               </div>
             </DiagramTooltip>
@@ -742,11 +742,11 @@ export function FeeAccumulationDiagram() {
 
       {/* K value label */}
       <div style={{
-        textAlign: 'center',
-        marginBottom: 12,
-        fontSize: 12,
-        fontFamily: 'monospace',
-        color: colors.textMuted,
+        'text-align': 'center',
+        'margin-bottom': '12px',
+        'font-size': '12px',
+        'font-family': 'monospace',
+        'color': colors.textMuted,
       }}>
         k: {MIN_K.toLocaleString()} → {MAX_K.toLocaleString()} (+{((MAX_K - MIN_K) / MIN_K * 100).toFixed(4)}%)
       </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Programs & Instructions Diagrams (SOL-05)
  *
@@ -7,7 +8,7 @@
  * - CPIFlowDiagram: Cross-Program Invocation flow showing invoke() and invoke_signed() (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -17,7 +18,7 @@ import { colors, glassStyle } from '@primitives/shared';
 /*  Shared helpers                                                      */
 /* ================================================================== */
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -101,38 +102,38 @@ export function InstructionAnatomyDiagram() {
       {/* Instruction box with 3 sections */}
       <div style={{
         ...glassStyle,
-        padding: '16px',
-        border: `1px solid ${colors.primary}40`,
-        marginBottom: 12,
+        'padding': '16px',
+        'border': `1px solid ${colors.primary}40`,
+        'margin-bottom': '12px',
       }}>
         <div style={{
-          textAlign: 'center', fontFamily: 'monospace', fontSize: 11,
-          color: colors.textMuted, marginBottom: 12,
+          'text-align': 'center', 'font-family': 'monospace', 'font-size': '11px',
+          'color': colors.textMuted, 'margin-bottom': '12px',
         }}>
           Instruction = {'{'} program_id, accounts, data {'}'}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
           {INSTRUCTION_FIELDS.map((field) => (
-            <DiagramTooltip key={field.name} content={field.descRu}>
+            <DiagramTooltip content={field.descRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 14px',
-                  borderLeft: `3px solid ${field.color}`,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${colors.border}`,
-                  borderLeftWidth: 3,
-                  borderLeftColor: field.color,
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
+                  'padding': '10px 14px',
+                  'border-left': `3px solid ${field.color}`,
+                  'background': 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${colors.border}`,
+                  'border-left-width': '3px',
+                  'border-left-color': field.color,
+                  'cursor': 'pointer',
+                  'transition': 'background 0.15s',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: colors.text }}>
+                <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center' }}>
+                  <span style={{ 'font-family': 'monospace', 'font-size': '13px', 'font-weight': '600', 'color': colors.text }}>
                     {field.name}
                   </span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 10, color: colors.textMuted }}>
+                  <span style={{ 'font-family': 'monospace', 'font-size': '10px', 'color': colors.textMuted }}>
                     {field.type}
                   </span>
                 </div>
@@ -145,44 +146,44 @@ export function InstructionAnatomyDiagram() {
       {/* AccountMeta examples */}
       <div style={{
         ...glassStyle,
-        padding: '12px 14px',
-        marginBottom: 12,
-        borderLeft: `3px solid ${colors.success}`,
+        'padding': '12px 14px',
+        'margin-bottom': '12px',
+        'border-left': `3px solid ${colors.success}`,
       }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.success, marginBottom: 8 }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.success, 'margin-bottom': '8px' }}>
           accounts: Vec&lt;AccountMeta&gt;
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
           {ACCOUNT_META_EXAMPLES.map((meta, i) => (
-            <DiagramTooltip key={i} content={meta.tooltipRu}>
+            <DiagramTooltip content={meta.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '6px 10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  background: 'rgba(255,255,255,0.03)',
-                  cursor: 'default',
+                  'padding': '6px 10px',
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'font-family': 'monospace',
+                  'font-size': '11px',
+                  'background': 'rgba(255,255,255,0.03)',
+                  'cursor': 'default',
                 }}
               >
-                <span style={{ color: colors.text }}>{meta.pubkey}</span>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <span style={{ 'color': colors.text }}>{meta.pubkey}</span>
+                <div style={{ 'display': 'flex', 'gap': '6px' }}>
                   <span style={{
-                    padding: '1px 6px', borderRadius: 4, fontSize: 9,
-                    background: meta.isSigner ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
-                    color: meta.isSigner ? colors.primary : colors.textMuted,
-                    border: `1px solid ${meta.isSigner ? colors.primary + '40' : 'transparent'}`,
+                    'padding': '1px 6px', 'border-radius': '4px', 'font-size': '9px',
+                    'background': meta.isSigner ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
+                    'color': meta.isSigner ? colors.primary : colors.textMuted,
+                    'border': `1px solid ${meta.isSigner ? colors.primary + '40' : 'transparent'}`,
                   }}>
                     signer: {meta.isSigner ? 'true' : 'false'}
                   </span>
                   <span style={{
-                    padding: '1px 6px', borderRadius: 4, fontSize: 9,
-                    background: meta.isWritable ? `${colors.success}20` : 'rgba(255,255,255,0.05)',
-                    color: meta.isWritable ? colors.success : colors.textMuted,
-                    border: `1px solid ${meta.isWritable ? colors.success + '40' : 'transparent'}`,
+                    'padding': '1px 6px', 'border-radius': '4px', 'font-size': '9px',
+                    'background': meta.isWritable ? `${colors.success}20` : 'rgba(255,255,255,0.05)',
+                    'color': meta.isWritable ? colors.success : colors.textMuted,
+                    'border': `1px solid ${meta.isWritable ? colors.success + '40' : 'transparent'}`,
                   }}>
                     writable: {meta.isWritable ? 'true' : 'false'}
                   </span>
@@ -195,18 +196,18 @@ export function InstructionAnatomyDiagram() {
 
       {/* Anchor mapping note */}
       <DiagramTooltip content="Anchor автоматически генерирует дискриминатор инструкции из SHA-256 хеша имени метода. Первые 8 байт instruction_data используются для маршрутизации вызова к нужному handler.">
-        <div style={{ ...glassStyle, padding: '10px 12px', fontSize: 11 }}>
-          <div style={{ color: '#f59e0b', fontWeight: 600, marginBottom: 4 }}>
+        <div style={{ ...glassStyle, 'padding': '10px 12px', 'font-size': '11px' }}>
+          <div style={{ 'color': '#f59e0b', 'font-weight': '600', 'margin-bottom': '4px' }}>
             data: дискриминатор инструкции (Anchor)
           </div>
-          <div style={{ fontFamily: 'monospace', color: colors.text, lineHeight: 1.6 }}>
+          <div style={{ 'font-family': 'monospace', 'color': colors.text, 'line-height': '1.6' }}>
             <div>
-              <span style={{ color: colors.textMuted }}>// Первые 8 байт data:</span>
+              <span style={{ 'color': colors.textMuted }}>// Первые 8 байт data:</span>
             </div>
             <div>
-              SHA-256(<span style={{ color: colors.success }}>"global:increment"</span>)[..8]
+              SHA-256(<span style={{ 'color': colors.success }}>"global:increment"</span>)[..8]
             </div>
-            <div style={{ color: colors.textMuted, marginTop: 4 }}>
+            <div style={{ 'color': colors.textMuted, 'margin-top': '4px' }}>
               Anchor: #[derive(Accounts)] генерирует AccountMeta,{' '}
               #[program] маршрутизирует по дискриминатору.
             </div>
@@ -264,7 +265,7 @@ const EXECUTION_STEP_TOOLTIPS = [
   'Все 3 транзакции завершены. Каждая обработана атомарно -- при ошибке откатывается только конкретная транзакция, не затрагивая другие.',
 ];
 
-function TxBox({ tx, status, dimmed }: { tx: TxInfo; status: string; dimmed?: boolean }) {
+function TxBox(props: { tx: TxInfo; status: string; dimmed?: boolean }) {
   const statusColors: Record<string, string> = {
     pending: colors.textMuted,
     running: colors.success,
@@ -274,31 +275,31 @@ function TxBox({ tx, status, dimmed }: { tx: TxInfo; status: string; dimmed?: bo
   };
 
   return (
-    <DiagramTooltip content={TX_TOOLTIPS[tx.id]}>
+    <DiagramTooltip content={TX_TOOLTIPS[props.tx.id]}>
       <div style={{
         ...glassStyle,
-        padding: '8px 12px',
-        borderLeft: `3px solid ${tx.color}`,
-        opacity: dimmed ? 0.4 : 1,
-        transition: 'opacity 0.2s',
-        minWidth: 160,
+        'padding': '8px 12px',
+        'border-left': `3px solid ${props.tx.color}`,
+        'opacity': props.dimmed ? 0.4 : 1,
+        'transition': 'opacity 0.2s',
+        'min-width': '160px',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: tx.color }}>
-            {tx.id}
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '4px' }}>
+          <span style={{ 'font-family': 'monospace', 'font-size': '13px', 'font-weight': '600', 'color': props.tx.color }}>
+            {props.tx.id}
           </span>
           <span style={{
-            padding: '1px 8px', borderRadius: 4, fontSize: 9, fontFamily: 'monospace',
-            background: statusColors[status] + '20',
-            color: statusColors[status],
-            border: `1px solid ${statusColors[status]}40`,
+            'padding': '1px 8px', 'border-radius': '4px', 'font-size': '9px', 'font-family': 'monospace',
+            'background': statusColors[props.status] + '20',
+            'color': statusColors[props.status],
+            'border': `1px solid ${statusColors[props.status]}40`,
           }}>
-            {status}
+            {props.status}
           </span>
         </div>
-        <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
-          <div>reads: [{tx.reads.join(', ')}]</div>
-          <div>writes: [{tx.writes.join(', ')}]</div>
+        <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+          <div>reads: [{props.tx.reads.join(', ')}]</div>
+          <div>writes: [{props.tx.writes.join(', ')}]</div>
         </div>
       </div>
     </DiagramTooltip>
@@ -306,19 +307,19 @@ function TxBox({ tx, status, dimmed }: { tx: TxInfo; status: string; dimmed?: bo
 }
 
 export function TransactionExecutionDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
   const getStatus = (txIdx: number): string => {
-    if (step === 0) return 'pending';
-    if (step === 1) {
+    if (step() === 0) return 'pending';
+    if (step() === 1) {
       if (txIdx === 2) return 'conflict';
       return 'pending';
     }
-    if (step === 2) {
+    if (step() === 2) {
       if (txIdx <= 1) return 'running';
       return 'waiting';
     }
-    if (step === 3) {
+    if (step() === 3) {
       if (txIdx <= 1) return 'done';
       return 'running';
     }
@@ -328,86 +329,86 @@ export function TransactionExecutionDiagram() {
   return (
     <DiagramContainer title="Sealevel: параллельное выполнение" color="purple">
       {/* Step info */}
-      <DiagramTooltip content={EXECUTION_STEP_TOOLTIPS[step]}>
+      <DiagramTooltip content={EXECUTION_STEP_TOOLTIPS[step()]}>
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginBottom: 12,
-          borderLeft: `3px solid #a855f7`,
+          'padding': '10px 14px',
+          'margin-bottom': '12px',
+          'border-left': `3px solid #a855f7`,
         }}>
-          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
-            {EXECUTION_STEP_TITLES[step]}
+          <div style={{ 'font-weight': '600', 'color': colors.text, 'font-size': '14px', 'margin-bottom': '4px' }}>
+            {EXECUTION_STEP_TITLES[step()]}
           </div>
-          <div style={{ color: colors.textMuted, fontSize: 12 }}>
-            {EXECUTION_STEP_DESCRIPTIONS[step]}
+          <div style={{ 'color': colors.textMuted, 'font-size': '12px' }}>
+            {EXECUTION_STEP_DESCRIPTIONS[step()]}
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Transactions visualization */}
-      {step <= 1 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      {step() <= 1 && (
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
           {TRANSACTIONS.map((tx, i) => (
-            <TxBox key={tx.id} tx={tx} status={getStatus(i)} />
+            <TxBox tx={tx} status={getStatus(i)} />
           ))}
         </div>
       )}
 
       {/* Wave execution visualization */}
-      {step === 2 && (
-        <div style={{ marginBottom: 12 }}>
+      {step() === 2 && (
+        <div style={{ 'margin-bottom': '12px' }}>
           <DiagramTooltip content="Wave 1 -- группа транзакций без конфликтов по read/write аккаунтам. Sealevel назначает каждую транзакцию на отдельное ядро CPU для параллельного выполнения.">
-            <div style={{ fontSize: 11, color: colors.success, fontWeight: 600, marginBottom: 6, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '11px', 'color': colors.success, 'font-weight': '600', 'margin-bottom': '6px', 'font-family': 'monospace' }}>
               Wave 1 -- параллельно:
             </div>
           </DiagramTooltip>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <div style={{ flex: 1, ...glassStyle, padding: '6px 10px', borderTop: `2px solid ${colors.success}`, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Core 0</div>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '8px' }}>
+            <div style={{ 'flex': '1', ...glassStyle, 'padding': '6px 10px', 'border-top': `2px solid ${colors.success}`, 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Core 0</div>
               <TxBox tx={TRANSACTIONS[0]} status="running" />
             </div>
-            <div style={{ flex: 1, ...glassStyle, padding: '6px 10px', borderTop: `2px solid ${colors.success}`, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Core 1</div>
+            <div style={{ 'flex': '1', ...glassStyle, 'padding': '6px 10px', 'border-top': `2px solid ${colors.success}`, 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Core 1</div>
               <TxBox tx={TRANSACTIONS[1]} status="running" />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
             <TxBox tx={TRANSACTIONS[2]} status="waiting" dimmed />
           </div>
         </div>
       )}
 
-      {step === 3 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, fontFamily: 'monospace' }}>
-            Wave 1 -- <span style={{ color: colors.success }}>завершено</span>
+      {step() === 3 && (
+        <div style={{ 'margin-bottom': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px', 'font-family': 'monospace' }}>
+            Wave 1 -- <span style={{ 'color': colors.success }}>завершено</span>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '8px' }}>
             <TxBox tx={TRANSACTIONS[0]} status="done" dimmed />
             <TxBox tx={TRANSACTIONS[1]} status="done" dimmed />
           </div>
           <DiagramTooltip content="Wave 2 выполняется последовательно после Wave 1. TX3 зависит от Account A (прочитан TX1) и Account C (записан TX2), поэтому не могла быть в Wave 1.">
-            <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, marginBottom: 6, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '11px', 'color': '#f59e0b', 'font-weight': '600', 'margin-bottom': '6px', 'font-family': 'monospace' }}>
               Wave 2 -- последовательно:
             </div>
           </DiagramTooltip>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ ...glassStyle, padding: '6px 10px', borderTop: `2px solid #f59e0b`, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Core 0</div>
+          <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
+            <div style={{ ...glassStyle, 'padding': '6px 10px', 'border-top': `2px solid #f59e0b`, 'text-align': 'center' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Core 0</div>
               <TxBox tx={TRANSACTIONS[2]} status="running" />
             </div>
           </div>
         </div>
       )}
 
-      {step === 4 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {step() === 4 && (
+        <div style={{ 'margin-bottom': '12px' }}>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
             {TRANSACTIONS.map((tx) => (
-              <TxBox key={tx.id} tx={tx} status="done" />
+              <TxBox tx={tx} status="done" />
             ))}
           </div>
-          <div style={{ marginTop: 10 }}>
+          <div style={{ 'margin-top': '10px' }}>
             <DiagramTooltip content="В Ethereum эффекты транзакции неизвестны до выполнения EVM. В Solana read/write set декларируется заранее, что позволяет Sealevel автоматически находить параллелизм без спекулятивного выполнения.">
               <DataBox
                 label="Ключевой принцип"
@@ -420,24 +421,24 @@ export function TransactionExecutionDiagram() {
       )}
 
       {/* Conflict highlights for step 1 */}
-      {step === 1 && (
+      {step() === 1 && (
         <DiagramTooltip content="Sealevel строит граф зависимостей: если две транзакции пересекаются по write-аккаунту или одна пишет то, что другая читает -- они зависимы и не могут быть в одном wave.">
-          <div style={{ ...glassStyle, padding: '10px 12px', marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontFamily: 'monospace', lineHeight: 1.8 }}>
+          <div style={{ ...glassStyle, 'padding': '10px 12px', 'margin-bottom': '12px' }}>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'line-height': '1.8' }}>
               <div>
-                <span style={{ color: colors.primary }}>TX1</span>
-                <span style={{ color: colors.textMuted }}> reads A, writes B </span>
-                <span style={{ color: colors.success }}>TX2</span>
-                <span style={{ color: colors.textMuted }}> reads C, writes D </span>
-                <span style={{ color: colors.success, fontWeight: 600 }}>-- нет пересечений!</span>
+                <span style={{ 'color': colors.primary }}>TX1</span>
+                <span style={{ 'color': colors.textMuted }}> reads A, writes B </span>
+                <span style={{ 'color': colors.success }}>TX2</span>
+                <span style={{ 'color': colors.textMuted }}> reads C, writes D </span>
+                <span style={{ 'color': colors.success, 'font-weight': '600' }}>-- нет пересечений!</span>
               </div>
               <div>
-                <span style={{ color: '#f59e0b' }}>TX3</span>
-                <span style={{ color: colors.textMuted }}> reads </span>
-                <span style={{ color: '#ef4444', fontWeight: 600 }}>A</span>
-                <span style={{ color: colors.textMuted }}>, writes </span>
-                <span style={{ color: '#ef4444', fontWeight: 600 }}>C</span>
-                <span style={{ color: '#ef4444' }}> -- конфликт с TX1 (A) и TX2 (C)</span>
+                <span style={{ 'color': '#f59e0b' }}>TX3</span>
+                <span style={{ 'color': colors.textMuted }}> reads </span>
+                <span style={{ 'color': '#ef4444', 'font-weight': '600' }}>A</span>
+                <span style={{ 'color': colors.textMuted }}>, writes </span>
+                <span style={{ 'color': '#ef4444', 'font-weight': '600' }}>C</span>
+                <span style={{ 'color': '#ef4444' }}> -- конфликт с TX1 (A) и TX2 (C)</span>
               </div>
             </div>
           </div>
@@ -445,7 +446,7 @@ export function TransactionExecutionDiagram() {
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <DiagramTooltip content="Вернуться к начальному состоянию (транзакции в мемпуле).">
           <div>
             <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
@@ -457,8 +458,8 @@ export function TransactionExecutionDiagram() {
           <div>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              style={btnStyle(step > 0, colors.text)}
+              disabled={step() === 0}
+              style={btnStyle(step() > 0, colors.text)}
             >
               Назад
             </button>
@@ -468,8 +469,8 @@ export function TransactionExecutionDiagram() {
           <div>
             <button
               onClick={() => setStep((s) => Math.min(4, s + 1))}
-              disabled={step >= 4}
-              style={btnStyle(step < 4, '#a855f7')}
+              disabled={step() >= 4}
+              style={btnStyle(step() < 4, '#a855f7')}
             >
               Далее
             </button>
@@ -478,16 +479,16 @@ export function TransactionExecutionDiagram() {
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-top': '8px' }}>
         {EXECUTION_STEP_TITLES.map((_, i) => (
-          <DiagramTooltip key={i} content={EXECUTION_STEP_TOOLTIPS[i]}>
+          <DiagramTooltip content={EXECUTION_STEP_TOOLTIPS[i]}>
             <div
               onClick={() => setStep(i)}
               style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: i === step ? '#a855f7' : 'rgba(255,255,255,0.15)',
-                border: `1px solid ${i === step ? '#a855f7' : colors.border}`,
-                cursor: 'pointer',
+                'width': '10px', 'height': '10px', 'border-radius': '50%',
+                'background': i === step() ? '#a855f7' : 'rgba(255,255,255,0.15)',
+                'border': `1px solid ${i === step() ? '#a855f7' : colors.border}`,
+                'cursor': 'pointer',
               }}
             />
           </DiagramTooltip>
@@ -534,26 +535,26 @@ const CPI_TARGETS: CPITarget[] = [
 ];
 
 export function CPIFlowDiagram() {
-  const [showSigned, setShowSigned] = useState(false);
+  const [showSigned, setShowSigned] = createSignal(false);
 
   return (
     <DiagramContainer title="Cross-Program Invocation (CPI)" color="blue">
       {/* Toggle: invoke vs invoke_signed */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-bottom': '14px' }}>
         {[false, true].map((signed) => (
-          <DiagramTooltip key={String(signed)} content={signed ? 'invoke_signed использует PDA-подпись (Program Derived Address) для CPI-вызовов, когда вызывающая программа должна подписать транзакцию от имени PDA.' : 'invoke выполняет межпрограммный вызов (CPI) с передачей привилегий подписанта вызывающей программы. Целевая программа может использовать переданные подписи.'}>
+          <DiagramTooltip content={signed ? 'invoke_signed использует PDA-подпись (Program Derived Address) для CPI-вызовов, когда вызывающая программа должна подписать транзакцию от имени PDA.' : 'invoke выполняет межпрограммный вызов (CPI) с передачей привилегий подписанта вызывающей программы. Целевая программа может использовать переданные подписи.'}>
             <div>
               <button
                 onClick={() => setShowSigned(signed)}
                 style={{
                   ...glassStyle,
-                  padding: '6px 16px',
-                  cursor: 'pointer',
-                  background: showSigned === signed ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${showSigned === signed ? colors.primary : colors.border}`,
-                  color: showSigned === signed ? colors.primary : colors.textMuted,
-                  fontSize: 12, fontFamily: 'monospace', fontWeight: 600,
-                  borderRadius: 8,
+                  'padding': '6px 16px',
+                  'cursor': 'pointer',
+                  'background': showSigned() === signed ? `${colors.primary}20` : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${showSigned() === signed ? colors.primary : colors.border}`,
+                  'color': showSigned() === signed ? colors.primary : colors.textMuted,
+                  'font-size': '12px', 'font-family': 'monospace', 'font-weight': '600',
+                  'border-radius': '8px',
                 }}
               >
                 {signed ? 'invoke_signed (PDA)' : 'invoke (обычный)'}
@@ -564,21 +565,21 @@ export function CPIFlowDiagram() {
       </div>
 
       {/* CPI Flow */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'gap': '0', 'margin-bottom': '14px' }}>
         {/* Caller program */}
         <DiagramTooltip content="Вызывающая программа (Program A) формирует CpiContext с program_id целевой программы, списком аккаунтов и данными инструкции. При invoke_signed дополнительно передаются signer_seeds для PDA.">
           <div style={{
             ...glassStyle,
-            padding: '10px 20px',
-            borderTop: `3px solid ${colors.primary}`,
-            textAlign: 'center',
-            width: '80%',
+            'padding': '10px 20px',
+            'border-top': `3px solid ${colors.primary}`,
+            'text-align': 'center',
+            'width': '80%',
           }}>
-            <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: colors.primary }}>
+            <div style={{ 'font-family': 'monospace', 'font-size': '13px', 'font-weight': '600', 'color': colors.primary }}>
               Program A (Your Anchor Program)
             </div>
-            {showSigned && (
-              <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+            {showSigned() && (
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px' }}>
                 PDA seeds: [b"vault", authority.key()]
               </div>
             )}
@@ -587,51 +588,51 @@ export function CPIFlowDiagram() {
 
         {/* Arrow with CPI details */}
         <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '6px 0', gap: 2,
+          'display': 'flex', 'flex-direction': 'column', 'align-items': 'center',
+          'padding': '6px 0', 'gap': '2px',
         }}>
-          <div style={{ fontSize: 11, fontFamily: 'monospace', color: showSigned ? '#f59e0b' : colors.success, fontWeight: 600 }}>
-            {showSigned ? 'CPI: invoke_signed(signer_seeds)' : 'CPI: invoke()'}
+          <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': showSigned() ? '#f59e0b' : colors.success, 'font-weight': '600' }}>
+            {showSigned() ? 'CPI: invoke_signed(signer_seeds)' : 'CPI: invoke()'}
           </div>
-          <div style={{ fontSize: 18, color: showSigned ? '#f59e0b' : colors.success, lineHeight: 0.7 }}>
+          <div style={{ 'font-size': '18px', 'color': showSigned() ? '#f59e0b' : colors.success, 'line-height': '0.7' }}>
             &#8595;
           </div>
           <DiagramTooltip content="CpiContext содержит program_id целевой программы, Vec<AccountMeta> с аккаунтами и сериализованные данные инструкции. При invoke_signed добавляются signer_seeds для PDA-подписи.">
             <div style={{
               ...glassStyle,
-              padding: '6px 12px',
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: colors.textMuted,
-              textAlign: 'center',
+              'padding': '6px 12px',
+              'font-size': '10px',
+              'font-family': 'monospace',
+              'color': colors.textMuted,
+              'text-align': 'center',
             }}>
               CpiContext: program_id, accounts, data
-              {showSigned && (
-                <div style={{ color: '#f59e0b', marginTop: 2 }}>
+              {showSigned() && (
+                <div style={{ 'color': '#f59e0b', 'margin-top': '2px' }}>
                   + signer_seeds: &[&[&[u8]]]
                 </div>
               )}
             </div>
           </DiagramTooltip>
-          <div style={{ fontSize: 18, color: showSigned ? '#f59e0b' : colors.success, lineHeight: 0.7 }}>
+          <div style={{ 'font-size': '18px', 'color': showSigned() ? '#f59e0b' : colors.success, 'line-height': '0.7' }}>
             &#8595;
           </div>
         </div>
 
         {/* Target program */}
-        <DiagramTooltip content={showSigned ? 'При invoke_signed runtime проверяет, что seeds + bump + program_id дают адрес PDA. Если проверка проходит, PDA считается подписантом для целевой программы.' : 'При обычном invoke подписи из исходной транзакции передаются целевой программе. Если аккаунт отмечен как signer в исходной транзакции, он остается signer для целевой программы.'}>
+        <DiagramTooltip content={showSigned() ? 'При invoke_signed runtime проверяет, что seeds + bump + program_id дают адрес PDA. Если проверка проходит, PDA считается подписантом для целевой программы.' : 'При обычном invoke подписи из исходной транзакции передаются целевой программе. Если аккаунт отмечен как signer в исходной транзакции, он остается signer для целевой программы.'}>
           <div style={{
             ...glassStyle,
-            padding: '10px 20px',
-            borderTop: `3px solid ${showSigned ? '#f59e0b' : colors.success}`,
-            textAlign: 'center',
-            width: '80%',
+            'padding': '10px 20px',
+            'border-top': `3px solid ${showSigned() ? '#f59e0b' : colors.success}`,
+            'text-align': 'center',
+            'width': '80%',
           }}>
-            <div style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: showSigned ? '#f59e0b' : colors.success }}>
-              {showSigned ? 'Program B (Token Program)' : 'Program B (System Program)'}
+            <div style={{ 'font-family': 'monospace', 'font-size': '13px', 'font-weight': '600', 'color': showSigned() ? '#f59e0b' : colors.success }}>
+              {showSigned() ? 'Program B (Token Program)' : 'Program B (System Program)'}
             </div>
-            <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
-              {showSigned
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px' }}>
+              {showSigned()
                 ? 'invoke_signed: runtime проверяет, что seeds derive в PDA-адрес'
                 : 'invoke: обычный вызов, подписи передаются от исходной транзакции'}
             </div>
@@ -640,34 +641,34 @@ export function CPIFlowDiagram() {
       </div>
 
       {/* Common CPI targets */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 8 }}>
+      <div style={{ 'margin-bottom': '12px' }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.textMuted, 'margin-bottom': '8px' }}>
           Частые CPI-цели:
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           {CPI_TARGETS.map((target) => (
-            <DiagramTooltip key={target.name} content={target.tooltipRu}>
+            <DiagramTooltip content={target.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  flex: '1 1 auto',
-                  minWidth: 140,
-                  borderLeft: `3px solid ${target.color}`,
-                  background: 'rgba(255,255,255,0.05)',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
+                  'padding': '8px 12px',
+                  'flex': '1 1 auto',
+                  'min-width': '140px',
+                  'border-left': `3px solid ${target.color}`,
+                  'background': 'rgba(255,255,255,0.05)',
+                  'cursor': 'pointer',
+                  'transition': 'background 0.15s',
                 }}
               >
-                <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: target.color }}>
+                <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'font-weight': '600', 'color': target.color }}>
                   {target.name}
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 9, color: colors.textMuted, marginTop: 2 }}>
+                <div style={{ 'font-family': 'monospace', 'font-size': '9px', 'color': colors.textMuted, 'margin-top': '2px' }}>
                   {target.programId}
                 </div>
-                <div style={{ marginTop: 6, fontSize: 10, color: colors.text }}>
+                <div style={{ 'margin-top': '6px', 'font-size': '10px', 'color': colors.text }}>
                   {target.instructions.map((inst, j) => (
-                    <div key={j} style={{ fontFamily: 'monospace' }}>
+                    <div style={{ 'font-family': 'monospace' }}>
                       - {inst}
                     </div>
                   ))}

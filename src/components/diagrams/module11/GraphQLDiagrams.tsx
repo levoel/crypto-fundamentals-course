@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * GraphQL Diagrams (INDEX-02)
  *
@@ -6,7 +7,7 @@
  * - GraphQLQueryBuilderDiagram: Interactive GraphQL query builder with entity/field selector and generated query display
  */
 
-import { useState, useMemo } from 'react';
+import { createMemo, createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -71,42 +72,42 @@ export function GraphQLSchemaDesignDiagram() {
   return (
     <DiagramContainer title="Проектирование GraphQL схемы для блокчейн-данных" color="orange">
       {/* Three panels */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(3, 1fr)', 'gap': '8px', 'margin-bottom': '16px' }}>
         {SCHEMA_PANELS.map((panel) => (
-          <DiagramTooltip key={panel.title} content={panel.tooltip}>
+          <DiagramTooltip content={panel.tooltip}>
             <div style={{
               ...glassStyle,
-              padding: 12,
-              border: `1px solid ${panel.color}25`,
+              'padding': '12px',
+              'border': `1px solid ${panel.color}25`,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: panel.color, fontFamily: 'monospace', marginBottom: 8 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '700', 'color': panel.color, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
                 {panel.title}
               </div>
               <pre style={{
-                fontSize: 8,
-                fontFamily: 'monospace',
-                color: colors.text,
-                lineHeight: 1.5,
-                padding: '8px 10px',
-                background: `${panel.color}08`,
-                borderRadius: 4,
-                overflow: 'auto',
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
+                'font-size': '8px',
+                'font-family': 'monospace',
+                'color': colors.text,
+                'line-height': '1.5',
+                'padding': '8px 10px',
+                'background': `${panel.color}08`,
+                'border-radius': '4px',
+                'overflow': 'auto',
+                'margin': '0',
+                'white-space': 'pre-wrap',
+                'word-break': 'break-word',
               }}>
                 {panel.code}
               </pre>
               <div style={{
-                fontSize: 9,
-                color: panel.color,
-                fontFamily: 'monospace',
-                marginTop: 8,
-                padding: '6px 8px',
-                background: `${panel.color}06`,
-                borderRadius: 4,
-                borderLeft: `2px solid ${panel.color}40`,
-                lineHeight: 1.5,
+                'font-size': '9px',
+                'color': panel.color,
+                'font-family': 'monospace',
+                'margin-top': '8px',
+                'padding': '6px 8px',
+                'background': `${panel.color}06`,
+                'border-radius': '4px',
+                'border-left': `2px solid ${panel.color}40`,
+                'line-height': '1.5',
               }}>
                 {panel.annotation}
               </div>
@@ -117,25 +118,25 @@ export function GraphQLSchemaDesignDiagram() {
 
       {/* Codegen pipeline */}
       <DiagramTooltip content="Кодогенерация -- ключевой принцип: schema.graphql -- единственный файл, который вы пишете вручную. Все TypeORM-классы и AssemblyScript-типы генерируются автоматически.">
-        <div style={{ ...glassStyle, padding: 12, marginBottom: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '12px', 'border': '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Кодогенерация из схемы:
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ ...glassStyle, padding: '6px 10px', border: '1px solid rgba(167,139,250,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#a78bfa', fontFamily: 'monospace' }}>schema.graphql</div>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'align-items': 'center', 'flex-wrap': 'wrap' }}>
+            <div style={{ ...glassStyle, 'padding': '6px 10px', 'border': '1px solid rgba(167,139,250,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#a78bfa', 'font-family': 'monospace' }}>schema.graphql</div>
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-            <div style={{ ...glassStyle, padding: '6px 10px', border: '1px solid rgba(59,130,246,0.2)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace' }}>codegen</div>
+            <div style={{ 'font-size': '12px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+            <div style={{ ...glassStyle, 'padding': '6px 10px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace' }}>codegen</div>
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>&rarr;</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <div style={{ ...glassStyle, padding: '6px 10px', border: '1px solid rgba(34,197,94,0.2)' }}>
-                <div style={{ fontSize: 8, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace' }}>TypeORM entities</div>
+            <div style={{ 'font-size': '12px', 'color': 'rgba(255,255,255,0.3)' }}>&rarr;</div>
+            <div style={{ 'display': 'flex', 'gap': '6px' }}>
+              <div style={{ ...glassStyle, 'padding': '6px 10px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+                <div style={{ 'font-size': '8px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace' }}>TypeORM entities</div>
               </div>
-              <div style={{ ...glassStyle, padding: '6px 10px', border: '1px solid rgba(245,158,11,0.2)' }}>
-                <div style={{ fontSize: 8, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace' }}>AS types</div>
+              <div style={{ ...glassStyle, 'padding': '6px 10px', 'border': '1px solid rgba(245,158,11,0.2)' }}>
+                <div style={{ 'font-size': '8px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace' }}>AS types</div>
               </div>
             </div>
           </div>
@@ -203,17 +204,17 @@ const MOCK_RESPONSES: Record<EntityType, string> = {
 type QueryTab = 'query' | 'subscription' | 'connection';
 
 export function GraphQLQueryBuilderDiagram() {
-  const [entity, setEntity] = useState<EntityType>('Transfer');
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(['from', 'to', 'value', 'blockNumber']));
-  const [filterValue, setFilterValue] = useState('0xa5f3...e7f8');
-  const [orderBy, setOrderBy] = useState('blockNumber_DESC');
-  const [limit, setLimit] = useState(10);
-  const [queryTab, setQueryTab] = useState<QueryTab>('query');
+  const [entity, setEntity] = createSignal<EntityType>('Transfer');
+  const [selectedFields, setSelectedFields] = createSignal<Set<string>>(new Set(['from', 'to', 'value', 'blockNumber']));
+  const [filterValue, setFilterValue] = createSignal('0xa5f3...e7f8');
+  const [orderBy, setOrderBy] = createSignal('blockNumber_DESC');
+  const [limit, setLimit] = createSignal(10);
+  const [queryTab, setQueryTab] = createSignal<QueryTab>('query');
 
-  const entityFields = useMemo(() => ALL_FIELDS.filter((f) => f.entity === entity), [entity]);
+  const entityFields = createMemo(() => ALL_FIELDS.filter((f) => f.entity === entity()));
 
   const toggleField = (name: string) => {
-    const next = new Set(selectedFields);
+    const next = new Set(selectedFields());
     if (next.has(name)) {
       next.delete(name);
     } else {
@@ -233,33 +234,32 @@ export function GraphQLQueryBuilderDiagram() {
     }
   };
 
-  const activeFields = useMemo(
-    () => entityFields.filter((f) => selectedFields.has(f.name)).map((f) => f.name),
-    [entityFields, selectedFields],
-  );
+  const activeFields = createMemo(
+    () => entityFields.filter((f) => selectedFields().has(f.name)).map((f) => f.name),
+    [entityFields, selectedFields()]);
 
-  const pluralEntity = entity === 'Transfer' ? 'transfers' : 'accounts';
-  const filterField = entity === 'Transfer' ? 'from_eq' : 'id_eq';
+  const pluralEntity = entity() === 'Transfer' ? 'transfers' : 'accounts';
+  const filterField = entity() === 'Transfer' ? 'from_eq' : 'id_eq';
 
-  const generatedQuery = useMemo(() => {
+  const generatedQuery = createMemo(() => {
     const fields = activeFields.length > 0 ? activeFields.join('\n    ') : 'id';
-    if (queryTab === 'query') {
+    if (queryTab() === 'query') {
       return `query {
   ${pluralEntity}(
-    orderBy: ${orderBy},
-    limit: ${limit},
-    where: { ${filterField}: "${filterValue}" }
+    orderBy: ${orderBy()},
+    limit: ${limit()},
+    where: { ${filterField}: "${filterValue()}" }
   ) {
     ${fields}
   }
 }`;
     }
-    if (queryTab === 'subscription') {
+    if (queryTab() === 'subscription') {
       return `subscription {
   ${pluralEntity}(
-    orderBy: ${orderBy},
-    limit: ${limit},
-    where: { ${filterField}: "${filterValue}" }
+    orderBy: ${orderBy()},
+    limit: ${limit()},
+    where: { ${filterField}: "${filterValue()}" }
   ) {
     ${fields}
   }
@@ -268,9 +268,9 @@ export function GraphQLQueryBuilderDiagram() {
     // connection
     return `query {
   ${pluralEntity}Connection(
-    orderBy: ${orderBy},
-    first: ${limit},
-    where: { ${filterField}: "${filterValue}" }
+    orderBy: ${orderBy()},
+    first: ${limit()},
+    where: { ${filterField}: "${filterValue()}" }
   ) {
     totalCount
     edges {
@@ -284,34 +284,33 @@ export function GraphQLQueryBuilderDiagram() {
     }
   }
 }`;
-  }, [activeFields, orderBy, limit, filterValue, filterField, pluralEntity, queryTab]);
+  });
 
   return (
     <DiagramContainer title="Построение GraphQL запросов для блокчейн-данных" color="blue">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1.4fr', 'gap': '12px', 'margin-bottom': '12px' }}>
         {/* Left panel -- builder */}
-        <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(59,130,246,0.15)' }}>
+        <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(59,130,246,0.15)' }}>
           {/* Entity selector */}
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ 'margin-bottom': '10px' }}>
             <DiagramTooltip content="Сущность (Entity) -- это тип данных в вашем subgraph. Transfer хранит историю переводов, Account -- балансы и связи. Выбор сущности определяет доступные поля запроса.">
-              <div style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 Сущность:
               </div>
             </DiagramTooltip>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ 'display': 'flex', 'gap': '6px' }}>
               {(['Transfer', 'Account'] as EntityType[]).map((e) => (
                 <button
-                  key={e}
                   onClick={() => handleEntityChange(e)}
                   style={{
-                    padding: '4px 10px',
-                    borderRadius: 4,
-                    border: `1px solid ${entity === e ? '#3b82f650' : 'rgba(255,255,255,0.1)'}`,
-                    background: entity === e ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
-                    color: entity === e ? '#3b82f6' : colors.textMuted,
-                    fontSize: 9,
-                    fontFamily: 'monospace',
-                    cursor: 'pointer',
+                    'padding': '4px 10px',
+                    'border-radius': '4px',
+                    'border': `1px solid ${entity() === e ? '#3b82f650' : 'rgba(255,255,255,0.1)'}`,
+                    'background': entity() === e ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.05)',
+                    'color': entity() === e ? '#3b82f6' : colors.textMuted,
+                    'font-size': '9px',
+                    'font-family': 'monospace',
+                    'cursor': 'pointer',
                   }}
                 >
                   {e}
@@ -321,25 +320,25 @@ export function GraphQLQueryBuilderDiagram() {
           </div>
 
           {/* Field checkboxes */}
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ 'margin-bottom': '10px' }}>
             <DiagramTooltip content="Поля определяют, какие данные вернёт GraphQL-запрос. Запрашивайте только нужные поля -- это преимущество GraphQL над REST (нет over-fetching).">
-              <div style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 Поля:
               </div>
             </DiagramTooltip>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '3px' }}>
               {entityFields.map((f) => (
-                <label key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'cursor': 'pointer' }}>
                   <input
                     type="checkbox"
-                    checked={selectedFields.has(f.name)}
+                    checked={selectedFields().has(f.name)}
                     onChange={() => toggleField(f.name)}
-                    style={{ accentColor: '#3b82f6' }}
+                    style={{ 'accent-color': '#3b82f6' }}
                   />
-                  <span style={{ fontSize: 9, fontFamily: 'monospace', color: colors.text }}>
+                  <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.text }}>
                     {f.name}
                   </span>
-                  <span style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                  <span style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                     ({f.type})
                   </span>
                 </label>
@@ -348,98 +347,97 @@ export function GraphQLQueryBuilderDiagram() {
           </div>
 
           {/* Filter */}
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'margin-bottom': '10px' }}>
+            <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Фильтр ({filterField}):
             </div>
             <input
               type="text"
-              value={filterValue}
+              value={filterValue()}
               onChange={(e) => setFilterValue(e.target.value)}
               style={{
-                width: '100%',
-                padding: '4px 8px',
-                borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: colors.text,
-                fontSize: 9,
-                fontFamily: 'monospace',
-                boxSizing: 'border-box',
+                'width': '100%',
+                'padding': '4px 8px',
+                'border-radius': '4px',
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
+                'color': colors.text,
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'box-sizing': 'border-box',
               }}
             />
           </div>
 
           {/* Order */}
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'margin-bottom': '10px' }}>
+            <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Сортировка:
             </div>
             <select
-              value={orderBy}
+              value={orderBy()}
               onChange={(e) => setOrderBy(e.target.value)}
               style={{
-                width: '100%',
-                padding: '4px 8px',
-                borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: colors.text,
-                fontSize: 9,
-                fontFamily: 'monospace',
+                'width': '100%',
+                'padding': '4px 8px',
+                'border-radius': '4px',
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
+                'color': colors.text,
+                'font-size': '9px',
+                'font-family': 'monospace',
               }}
             >
-              {ORDER_OPTIONS[entity].map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+              {ORDER_OPTIONS[entity()].map((opt) => (
+                <option value={opt}>{opt}</option>
               ))}
             </select>
           </div>
 
           {/* Limit */}
           <div>
-            <div style={{ fontSize: 9, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Лимит:
             </div>
             <input
               type="number"
-              value={limit}
+              value={limit()}
               onChange={(e) => setLimit(Math.max(1, Math.min(100, Number(e.target.value) || 10)))}
               style={{
-                width: 60,
-                padding: '4px 8px',
-                borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: colors.text,
-                fontSize: 9,
-                fontFamily: 'monospace',
+                'width': '60px',
+                'padding': '4px 8px',
+                'border-radius': '4px',
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'background': 'rgba(255,255,255,0.05)',
+                'color': colors.text,
+                'font-size': '9px',
+                'font-family': 'monospace',
               }}
             />
           </div>
         </div>
 
         {/* Right panel -- generated query */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
           {/* Query type tabs */}
           <DiagramTooltip content="Три типа GraphQL-операций: Query -- одноразовое получение данных. Subscription -- подписка на изменения через WebSocket (живой поток). Connection -- курсорная пагинация для больших наборов данных.">
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ 'display': 'flex', 'gap': '4px' }}>
               {([
                 { key: 'query' as QueryTab, label: 'Query (GET)' },
                 { key: 'subscription' as QueryTab, label: 'Subscription (LIVE)' },
                 { key: 'connection' as QueryTab, label: 'Connection (PAGE)' },
               ]).map((tab) => (
                 <button
-                  key={tab.key}
                   onClick={() => setQueryTab(tab.key)}
                   style={{
-                    padding: '4px 10px',
-                    borderRadius: 4,
-                    border: `1px solid ${queryTab === tab.key ? '#3b82f650' : 'rgba(255,255,255,0.08)'}`,
-                    background: queryTab === tab.key ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
-                    color: queryTab === tab.key ? '#3b82f6' : colors.textMuted,
-                    fontSize: 8,
-                    fontFamily: 'monospace',
-                    cursor: 'pointer',
+                    'padding': '4px 10px',
+                    'border-radius': '4px',
+                    'border': `1px solid ${queryTab() === tab.key ? '#3b82f650' : 'rgba(255,255,255,0.08)'}`,
+                    'background': queryTab() === tab.key ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
+                    'color': queryTab() === tab.key ? '#3b82f6' : colors.textMuted,
+                    'font-size': '8px',
+                    'font-family': 'monospace',
+                    'cursor': 'pointer',
                   }}
                 >
                   {tab.label}
@@ -450,18 +448,18 @@ export function GraphQLQueryBuilderDiagram() {
 
           {/* Generated query */}
           <DiagramTooltip content="GraphQL-запрос генерируется из выбранных параметров. orderBy, limit, where -- стандартные аргументы Subsquid/The Graph. Запрос отправляется POST-запросом на GraphQL-эндпоинт.">
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.15)', flex: 1 }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.15)', 'flex': '1' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                 Сгенерированный запрос:
               </div>
               <pre style={{
-                fontSize: 8,
-                fontFamily: 'monospace',
-                color: colors.text,
-                lineHeight: 1.5,
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
+                'font-size': '8px',
+                'font-family': 'monospace',
+                'color': colors.text,
+                'line-height': '1.5',
+                'margin': '0',
+                'white-space': 'pre-wrap',
+                'word-break': 'break-word',
               }}>
                 {generatedQuery}
               </pre>
@@ -470,22 +468,22 @@ export function GraphQLQueryBuilderDiagram() {
 
           {/* Mock response */}
           <DiagramTooltip content="GraphQL всегда возвращает JSON с полем data. Структура ответа точно повторяет структуру запроса -- никаких лишних данных, только запрошенные поля.">
-            <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(34,197,94,0.15)' }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 6 }}>
+            <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(34,197,94,0.15)' }}>
+              <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                 Ответ (mock):
               </div>
               <pre style={{
-                fontSize: 7,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                lineHeight: 1.4,
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: 100,
-                overflow: 'auto',
+                'font-size': '7px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'line-height': '1.4',
+                'margin': '0',
+                'white-space': 'pre-wrap',
+                'word-break': 'break-word',
+                'max-height': '100px',
+                'overflow': 'auto',
               }}>
-                {MOCK_RESPONSES[entity]}
+                {MOCK_RESPONSES[entity()]}
               </pre>
             </div>
           </DiagramTooltip>

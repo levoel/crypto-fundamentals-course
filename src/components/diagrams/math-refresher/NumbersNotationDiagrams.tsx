@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Numbers & Notation Diagrams (MATH-01)
  *
@@ -6,7 +7,7 @@
  * - NotationDictionary: Math notation lookup with Python equivalents
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -49,11 +50,11 @@ function getNibbles(n: number): { high: string; low: string } {
  * Binary view shows bit positions; hex view shows nibble grouping.
  */
 export function NumberLineDiagram() {
-  const [value, setValue] = useState(42);
-  const [activeBase, setActiveBase] = useState<Base>('decimal');
+  const [value, setValue] = createSignal(42);
+  const [activeBase, setActiveBase] = createSignal<Base>('decimal');
 
-  const bits = getBitPositions(value);
-  const nibbles = getNibbles(value);
+  const bits = getBitPositions(value());
+  const nibbles = getNibbles(value());
 
   const bases: { key: Base; label: string }[] = [
     { key: 'decimal', label: 'DEC' },
@@ -64,17 +65,16 @@ export function NumberLineDiagram() {
   // Number line: show 0-255, highlight current value
   const lineWidth = 400;
   const lineY = 30;
-  const markerX = (value / 255) * lineWidth;
+  const markerX = (value() / 255) * lineWidth;
 
   return (
     <DiagramContainer title="Числа: десятичная, двоичная, шестнадцатеричная" color="blue">
-      <InteractiveValue value={value} onChange={setValue} min={0} max={255} label="Число" />
+      <InteractiveValue value={value()} onChange={setValue} min={0} max={255} label="Число" />
 
       {/* Base toggle buttons */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-top': '12px' }}>
         {bases.map((b) => (
           <DiagramTooltip
-            key={b.key}
             content={
               b.key === 'decimal'
                 ? 'Десятичная система (основание 10) -- привычная человеку. В криптографии используется редко, но удобна для отображения значений (размер блока, gas-лимит, баланс).'
@@ -88,13 +88,13 @@ export function NumberLineDiagram() {
                 onClick={() => setActiveBase(b.key)}
                 style={{
                   ...glassStyle,
-                  padding: '6px 16px',
-                  cursor: 'pointer',
-                  background: activeBase === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${activeBase === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-                  color: activeBase === b.key ? colors.primary : colors.text,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
+                  'padding': '6px 16px',
+                  'cursor': 'pointer',
+                  'background': activeBase() === b.key ? `${colors.primary}30` : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${activeBase() === b.key ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+                  'color': activeBase() === b.key ? colors.primary : colors.text,
+                  'font-size': '13px',
+                  'font-family': 'monospace',
                 }}
               >
                 {b.label}
@@ -105,14 +105,14 @@ export function NumberLineDiagram() {
       </div>
 
       {/* Number line SVG */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16, overflowX: 'auto' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-top': '16px', 'overflow-x': 'auto' }}>
         <svg width={lineWidth + 40} height={60} viewBox={`0 0 ${lineWidth + 40} 60`}>
           <line x1={20} y1={lineY} x2={lineWidth + 20} y2={lineY} stroke={colors.border} strokeWidth={2} />
           {/* Ticks at 0, 64, 128, 192, 255 */}
           {[0, 64, 128, 192, 255].map((t) => {
             const tx = 20 + (t / 255) * lineWidth;
             return (
-              <g key={t}>
+              <g>
                 <line x1={tx} y1={lineY - 6} x2={tx} y2={lineY + 6} stroke={colors.textMuted} strokeWidth={1} />
                 <text x={tx} y={lineY + 20} textAnchor="middle" fill={colors.textMuted} fontSize={10} fontFamily="monospace">
                   {t}
@@ -123,126 +123,125 @@ export function NumberLineDiagram() {
           {/* Current value marker */}
           <circle cx={20 + markerX} cy={lineY} r={6} fill={colors.primary} stroke={colors.primary} strokeWidth={2} />
           <text x={20 + markerX} y={lineY - 12} textAnchor="middle" fill={colors.primary} fontSize={12} fontFamily="monospace" fontWeight="bold">
-            {toBase(value, activeBase)}
+            {toBase(value(), activeBase())}
           </text>
         </svg>
       </div>
 
       {/* Three representations */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(3, 1fr)', 'gap': '8px', 'margin-top': '12px' }}>
         <DiagramTooltip content="Десятичное представление числа. Каждый разряд -- степень 10. Человеко-читаемая форма, используется в UI кошельков и эксплореров для отображения балансов.">
-          <DataBox label="Десятичная" value={String(value)} variant={activeBase === 'decimal' ? 'highlight' : 'default'} />
+          <DataBox label="Десятичная" value={String(value())} variant={activeBase() === 'decimal' ? 'highlight' : 'default'} />
         </DiagramTooltip>
         <DiagramTooltip content="Двоичное представление (с префиксом 0b). Каждый разряд -- степень 2. Именно в этой форме данные хранятся в памяти и обрабатываются криптографическими алгоритмами (SHA-256, AES).">
-          <DataBox label="Двоичная" value={toBase(value, 'binary')} variant={activeBase === 'binary' ? 'highlight' : 'default'} />
+          <DataBox label="Двоичная" value={toBase(value(), 'binary')} variant={activeBase() === 'binary' ? 'highlight' : 'default'} />
         </DiagramTooltip>
         <DiagramTooltip content="Hex-представление (с префиксом 0x). Один hex-символ = 4 бита, что делает его идеальным для записи байтов. Ethereum-адреса, tx-хеши, keccak256 -- всё в hex.">
-          <DataBox label="Шестнадцатеричная" value={toBase(value, 'hex')} variant={activeBase === 'hex' ? 'highlight' : 'default'} />
+          <DataBox label="Шестнадцатеричная" value={toBase(value(), 'hex')} variant={activeBase() === 'hex' ? 'highlight' : 'default'} />
         </DiagramTooltip>
       </div>
 
       {/* Binary bit positions */}
-      {activeBase === 'binary' && (
-        <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
+      {activeBase() === 'binary' && (
+        <div style={{ ...glassStyle, 'padding': '12px', 'margin-top': '12px' }}>
           <DiagramTooltip content="Каждый бит имеет позиционный вес -- степень двойки (2^n). Установленные биты (1) суммируются для получения числа. В криптографии размер ключа измеряется в битах: 256 бит для secp256k1, 128/256 бит для AES.">
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px' }}>
               Разрядные значения (позиции битов):
             </div>
           </DiagramTooltip>
-          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '4px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
             {bits.map((b) => (
               <DiagramTooltip
-                key={b.position}
                 content={`Позиция ${b.position}: вес = 2^${b.position} = ${b.value}. ${b.bit === 1 ? `Бит установлен -- добавляет ${b.value} к итоговому значению.` : 'Бит не установлен (0) -- не вносит вклад в сумму.'}`}
               >
                 <div
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: '4px 6px',
-                    borderRadius: 6,
-                    background: b.bit === 1 ? `${colors.primary}25` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${b.bit === 1 ? colors.primary + '40' : 'rgba(255,255,255,0.06)'}`,
-                    minWidth: 40,
+                    'display': 'flex',
+                    'flex-direction': 'column',
+                    'align-items': 'center',
+                    'padding': '4px 6px',
+                    'border-radius': '6px',
+                    'background': b.bit === 1 ? `${colors.primary}25` : 'rgba(255,255,255,0.03)',
+                    'border': `1px solid ${b.bit === 1 ? colors.primary + '40' : 'rgba(255,255,255,0.06)'}`,
+                    'min-width': '40px',
                   }}
                 >
-                  <span style={{ fontSize: 10, color: colors.textMuted }}>{b.value}</span>
-                  <span style={{ fontSize: 16, fontFamily: 'monospace', color: b.bit === 1 ? colors.primary : colors.textMuted, fontWeight: 600 }}>
+                  <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>{b.value}</span>
+                  <span style={{ 'font-size': '16px', 'font-family': 'monospace', 'color': b.bit === 1 ? colors.primary : colors.textMuted, 'font-weight': '600' }}>
                     {b.bit}
                   </span>
                 </div>
               </DiagramTooltip>
             ))}
           </div>
-          {value > 0 && (
-            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'center', fontFamily: 'monospace' }}>
-              {bits.filter((b) => b.bit === 1).map((b) => b.value).join(' + ')} = {value}
+          {value() > 0 && (
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-top': '8px', 'text-align': 'center', 'font-family': 'monospace' }}>
+              {bits.filter((b) => b.bit === 1).map((b) => b.value).join(' + ')} = {value()}
             </div>
           )}
         </div>
       )}
 
       {/* Hex nibble grouping */}
-      {activeBase === 'hex' && (
-        <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
+      {activeBase() === 'hex' && (
+        <div style={{ ...glassStyle, 'padding': '12px', 'margin-top': '12px' }}>
           <DiagramTooltip content="Нибл (nibble) -- группа из 4 бит, представляющая одну hex-цифру (0-F). Два нибла = 1 байт (8 бит). Именно поэтому каждый байт в hex записывается двумя символами: 0xFF = 11111111.">
-            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px' }}>
               Группировка по 4 бита (ниблы):
             </div>
           </DiagramTooltip>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ 'display': 'flex', 'gap': '16px', 'justify-content': 'center', 'align-items': 'center' }}>
             <DiagramTooltip content="Старший нибл (high nibble) -- первые 4 бита байта. Содержит значение, умноженное на 16. В Ethereum-адресах каждый байт представлен двумя hex-символами: старшим и младшим ниблом.">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Старший нибл</div>
+              <div style={{ 'text-align': 'center' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Старший нибл</div>
                 <div style={{
-                padding: '8px 16px',
-                borderRadius: 8,
-                background: `${colors.accent}20`,
-                border: `1px solid ${colors.accent}40`,
-                fontFamily: 'monospace',
-                fontSize: 20,
-                color: colors.accent,
-                fontWeight: 600,
+                'padding': '8px 16px',
+                'border-radius': '8px',
+                'background': `${colors.accent}20`,
+                'border': `1px solid ${colors.accent}40`,
+                'font-family': 'monospace',
+                'font-size': '20px',
+                'color': colors.accent,
+                'font-weight': '600',
               }}>
                 {nibbles.high}
               </div>
-              <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4, fontFamily: 'monospace' }}>
-                {value.toString(2).padStart(8, '0').slice(0, 4)}
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px', 'font-family': 'monospace' }}>
+                {value().toString(2).padStart(8, '0').slice(0, 4)}
               </div>
               </div>
             </DiagramTooltip>
             <DiagramTooltip content="Младший нибл (low nibble) -- последние 4 бита байта. Содержит значение от 0 до 15. Вместе со старшим ниблом образует один байт -- минимальную адресуемую единицу памяти.">
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4 }}>Младший нибл</div>
+              <div style={{ 'text-align': 'center' }}>
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '4px' }}>Младший нибл</div>
                 <div style={{
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  background: `${colors.success}20`,
-                  border: `1px solid ${colors.success}40`,
-                  fontFamily: 'monospace',
-                  fontSize: 20,
-                  color: colors.success,
-                  fontWeight: 600,
+                  'padding': '8px 16px',
+                  'border-radius': '8px',
+                  'background': `${colors.success}20`,
+                  'border': `1px solid ${colors.success}40`,
+                  'font-family': 'monospace',
+                  'font-size': '20px',
+                  'color': colors.success,
+                  'font-weight': '600',
                 }}>
                   {nibbles.low}
                 </div>
-                <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 4, fontFamily: 'monospace' }}>
-                  {value.toString(2).padStart(8, '0').slice(4)}
+                <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px', 'font-family': 'monospace' }}>
+                  {value().toString(2).padStart(8, '0').slice(4)}
                 </div>
               </div>
             </DiagramTooltip>
           </div>
-          <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'center', fontFamily: 'monospace' }}>
-            0x{nibbles.high}{nibbles.low} = {parseInt(nibbles.high, 16)} * 16 + {parseInt(nibbles.low, 16)} = {value}
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-top': '8px', 'text-align': 'center', 'font-family': 'monospace' }}>
+            0x{nibbles.high}{nibbles.low} = {parseInt(nibbles.high, 16)} * 16 + {parseInt(nibbles.low, 16)} = {value()}
           </div>
         </div>
       )}
 
       {/* Conversion summary */}
-      <div style={{ ...glassStyle, padding: 12, marginTop: 12 }}>
-        <div style={{ fontSize: 13, color: colors.text, fontFamily: 'monospace', textAlign: 'center' }}>
-          {value} = {toBase(value, 'binary')} = {toBase(value, 'hex')}
+      <div style={{ ...glassStyle, 'padding': '12px', 'margin-top': '12px' }}>
+        <div style={{ 'font-size': '13px', 'color': colors.text, 'font-family': 'monospace', 'text-align': 'center' }}>
+          {value()} = {toBase(value(), 'binary')} = {toBase(value(), 'hex')}
         </div>
       </div>
     </DiagramContainer>
@@ -380,28 +379,27 @@ const notationEntries: NotationEntry[] = [
  * Click to expand with concrete example.
  */
 export function NotationDictionary() {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = createSignal<number | null>(null);
 
   return (
     <DiagramContainer title="Словарь математической нотации" color="purple">
-      <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12 }}>
+      <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '12px' }}>
         Нажмите на символ, чтобы увидеть пример использования ({notationEntries.length} символов)
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'monospace', fontSize: 13 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'collapse', 'font-family': 'monospace', 'font-size': '13px' }}>
           <thead>
             <tr>
               {['Символ', 'Читается', 'Python', 'Где'].map((h) => (
                 <th
-                  key={h}
                   style={{
-                    padding: '8px 10px',
-                    textAlign: 'left',
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    borderBottom: `1px solid ${colors.border}`,
-                    whiteSpace: 'nowrap',
+                    'padding': '8px 10px',
+                    'text-align': 'left',
+                    'color': colors.textMuted,
+                    'font-size': '11px',
+                    'border-bottom': `1px solid ${colors.border}`,
+                    'white-space': 'nowrap',
                   }}
                 >
                   {h}
@@ -413,76 +411,75 @@ export function NotationDictionary() {
             {notationEntries.map((entry, i) => (
               <>
                 <tr
-                  key={`row-${i}`}
-                  onClick={() => setSelected(selected === i ? null : i)}
+                  onClick={() => setSelected(selected() === i ? null : i)}
                   style={{
-                    cursor: 'pointer',
-                    background: selected === i ? `${colors.secondary}15` : i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
-                    transition: 'background 0.15s',
+                    'cursor': 'pointer',
+                    'background': selected() === i ? `${colors.secondary}15` : i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    'transition': 'background 0.15s',
                   }}
                 >
                   <td style={{
-                    padding: '8px 10px',
-                    fontSize: 18,
-                    color: selected === i ? colors.secondary : colors.text,
-                    borderBottom: selected === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                    'padding': '8px 10px',
+                    'font-size': '18px',
+                    'color': selected() === i ? colors.secondary : colors.text,
+                    'border-bottom': selected() === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
                   }}>
                     <DiagramTooltip content={entry.tooltip}>
                       <span>{entry.symbol}</span>
                     </DiagramTooltip>
                   </td>
                   <td style={{
-                    padding: '8px 10px',
-                    color: colors.text,
-                    borderBottom: selected === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                    'padding': '8px 10px',
+                    'color': colors.text,
+                    'border-bottom': selected() === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
                   }}>
                     {entry.reading}
                   </td>
                   <td style={{
-                    padding: '8px 10px',
-                    color: colors.accent,
-                    borderBottom: selected === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                    'padding': '8px 10px',
+                    'color': colors.accent,
+                    'border-bottom': selected() === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
                   }}>
                     {entry.python}
                   </td>
                   <td style={{
-                    padding: '8px 10px',
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    borderBottom: selected === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
-                    whiteSpace: 'nowrap',
+                    'padding': '8px 10px',
+                    'color': colors.textMuted,
+                    'font-size': '11px',
+                    'border-bottom': selected() === i ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                    'white-space': 'nowrap',
                   }}>
                     {entry.usedIn}
                   </td>
                 </tr>
-                {selected === i && (
-                  <tr key={`example-${i}`}>
+                {selected() === i && (
+                  <tr>
                     <td
                       colSpan={4}
                       style={{
-                        padding: '8px 10px 12px',
-                        borderBottom: `1px solid rgba(255,255,255,0.05)`,
-                        background: `${colors.secondary}08`,
+                        'padding': '8px 10px 12px',
+                        'border-bottom': `1px solid rgba(255,255,255,0.05)`,
+                        'background': `${colors.secondary}08`,
                       }}
                     >
-                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap' }}>
                         <div style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          background: 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${colors.secondary}30`,
+                          'padding': '6px 12px',
+                          'border-radius': '6px',
+                          'background': 'rgba(255,255,255,0.05)',
+                          'border': `1px solid ${colors.secondary}30`,
                         }}>
-                          <span style={{ fontSize: 11, color: colors.textMuted }}>Математика: </span>
-                          <span style={{ color: colors.text }}>{entry.example}</span>
+                          <span style={{ 'font-size': '11px', 'color': colors.textMuted }}>Математика: </span>
+                          <span style={{ 'color': colors.text }}>{entry.example}</span>
                         </div>
                         <div style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          background: 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${colors.accent}30`,
+                          'padding': '6px 12px',
+                          'border-radius': '6px',
+                          'background': 'rgba(255,255,255,0.05)',
+                          'border': `1px solid ${colors.accent}30`,
                         }}>
-                          <span style={{ fontSize: 11, color: colors.textMuted }}>Python: </span>
-                          <span style={{ color: colors.accent }}>{entry.examplePython}</span>
+                          <span style={{ 'font-size': '11px', 'color': colors.textMuted }}>Python: </span>
+                          <span style={{ 'color': colors.accent }}>{entry.examplePython}</span>
                         </div>
                       </div>
                     </td>

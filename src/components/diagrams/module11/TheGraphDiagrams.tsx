@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * The Graph Diagrams (INDEX-07)
  *
@@ -44,70 +45,70 @@ export function GraphNodeArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура Graph Node: от блокчейна до API" color="purple">
       {/* Main pipeline */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, overflowX: 'auto', paddingBottom: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'align-items': 'center', 'margin-bottom': '12px', 'overflow-x': 'auto', 'padding-bottom': '8px' }}>
         {GRAPH_NODE_COMPONENTS.filter((c) => c.id !== 'ipfs').map((comp, i, arr) => (
-          <div key={comp.id} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'flex-shrink': '0' }}>
             <DiagramTooltip content={comp.tooltip}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 12px',
-                  border: `1px solid ${comp.color}20`,
-                  background: 'rgba(255,255,255,0.02)',
-                  textAlign: 'center',
-                  minWidth: 90,
+                  'padding': '10px 12px',
+                  'border': `1px solid ${comp.color}20`,
+                  'background': 'rgba(255,255,255,0.02)',
+                  'text-align': 'center',
+                  'min-width': '90px',
                 }}
               >
-                <div style={{ fontSize: 9, fontWeight: 600, color: comp.color, fontFamily: 'monospace' }}>
+                <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': comp.color, 'font-family': 'monospace' }}>
                   {comp.label}
                 </div>
               </div>
             </DiagramTooltip>
             {i < arr.length - 1 && (
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.25)' }}>&rarr;</div>
+              <div style={{ 'font-size': '14px', 'color': 'rgba(255,255,255,0.25)' }}>&rarr;</div>
             )}
           </div>
         ))}
       </div>
 
       {/* IPFS + Graph Node sub-components */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
         {/* IPFS */}
         <DiagramTooltip content="IPFS (InterPlanetary File System) хранит subgraph manifests, GraphQL-схемы и скомпилированные WASM-файлы. Обязателен для deploy -- Graph Node скачивает subgraph из IPFS по CID.">
           <div
             style={{
               ...glassStyle,
-              padding: 10,
-              border: '1px solid rgba(34,197,94,0.15)',
+              'padding': '10px',
+              'border': '1px solid rgba(34,197,94,0.15)',
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               IPFS (Kubo v0.17.0)
             </div>
-            <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               Subgraph manifests, схемы, WASM
             </div>
-            <div style={{ fontSize: 9, color: '#22c55e', marginTop: 4 }}>&uarr; upload subgraph</div>
+            <div style={{ 'font-size': '9px', 'color': '#22c55e', 'margin-top': '4px' }}>&uarr; upload subgraph</div>
           </div>
         </DiagramTooltip>
 
         {/* Graph Node internals */}
         <DiagramTooltip content="Graph Node -- монолитный Rust binary с четырьмя подсистемами: Ethereum Adapter (RPC), Block Ingestor (чтение блоков), Subgraph Processor (WASM маппинги), Store Interface (запись в PostgreSQL).">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.15)' }}>
+            <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
               Graph Node (внутренние компоненты):
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+            <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '4px' }}>
               {GRAPH_NODE_SUB_COMPONENTS.map((sub) => (
-                <div key={sub.label} style={{
+                <div style={{
                   ...glassStyle,
-                  padding: '4px 6px',
-                  border: '1px solid rgba(59,130,246,0.1)',
-                  fontSize: 7,
-                  fontFamily: 'monospace',
+                  'padding': '4px 6px',
+                  'border': '1px solid rgba(59,130,246,0.1)',
+                  'font-size': '7px',
+                  'font-family': 'monospace',
                 }}>
-                  <div style={{ color: '#3b82f6', fontWeight: 600 }}>{sub.label}</div>
-                  <div style={{ color: colors.textMuted }}>{sub.desc}</div>
+                  <div style={{ 'color': '#3b82f6', 'font-weight': '600' }}>{sub.label}</div>
+                  <div style={{ 'color': colors.textMuted }}>{sub.desc}</div>
                 </div>
               ))}
             </div>
@@ -162,37 +163,37 @@ export function SubgraphManifestDiagram() {
   return (
     <DiagramContainer title="Анатомия subgraph.yaml: манифест индексатора" color="blue">
       {/* Annotated code */}
-      <div style={{ ...glassStyle, padding: 12, marginBottom: 16, border: '1px solid rgba(255,255,255,0.08)', maxHeight: 380, overflowY: 'auto' }}>
+      <div style={{ ...glassStyle, 'padding': '12px', 'margin-bottom': '16px', 'border': '1px solid rgba(255,255,255,0.08)', 'max-height': '380px', 'overflow-y': 'auto' }}>
         {MANIFEST_LINES.map((line, i) => {
           const lineContent = (
             <div style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'flex-start',
-              padding: '2px 0',
-              background: line.highlight ? 'rgba(239,68,68,0.06)' : 'transparent',
-              borderLeft: line.highlight ? '2px solid rgba(239,68,68,0.4)' : '2px solid transparent',
-              paddingLeft: 6,
+              'display': 'flex',
+              'gap': '12px',
+              'align-items': 'flex-start',
+              'padding': '2px 0',
+              'background': line.highlight ? 'rgba(239,68,68,0.06)' : 'transparent',
+              'border-left': line.highlight ? '2px solid rgba(239,68,68,0.4)' : '2px solid transparent',
+              'padding-left': '6px',
             }}>
               <div style={{
-                flex: 1,
-                fontSize: 9,
-                fontFamily: 'monospace',
-                color: line.color,
-                whiteSpace: 'pre',
-                lineHeight: 1.7,
+                'flex': '1',
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'color': line.color,
+                'white-space': 'pre',
+                'line-height': '1.7',
               }}>
                 {line.code}
               </div>
               {line.annotation && (
                 <div style={{
-                  fontSize: 8,
-                  fontFamily: 'monospace',
-                  color: line.highlight ? '#ef4444' : colors.textMuted,
-                  fontStyle: 'italic',
-                  minWidth: 180,
-                  lineHeight: 1.7,
-                  flexShrink: 0,
+                  'font-size': '8px',
+                  'font-family': 'monospace',
+                  'color': line.highlight ? '#ef4444' : colors.textMuted,
+                  'font-style': 'italic',
+                  'min-width': '180px',
+                  'line-height': '1.7',
+                  'flex-shrink': '0',
                 }}>
                   {line.annotation}
                 </div>
@@ -201,11 +202,11 @@ export function SubgraphManifestDiagram() {
           );
 
           return line.tooltip ? (
-            <DiagramTooltip key={i} content={line.tooltip}>
+            <DiagramTooltip content={line.tooltip}>
               {lineContent}
             </DiagramTooltip>
           ) : (
-            <div key={i}>{lineContent}</div>
+            <div>{lineContent}</div>
           );
         })}
       </div>
@@ -250,38 +251,38 @@ export function AssemblyScriptComparisonDiagram() {
   return (
     <DiagramContainer title="AssemblyScript vs TypeScript: ключевые отличия" color="orange">
       {/* Comparison table */}
-      <div style={{ overflowX: 'auto', marginBottom: 16 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, fontFamily: 'monospace' }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-bottom': '16px' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'collapse', 'font-size': '9px', 'font-family': 'monospace' }}>
           <thead>
             <tr>
               <th style={{
-                padding: '6px 10px',
-                textAlign: 'left',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                color: colors.textMuted,
-                fontWeight: 600,
+                'padding': '6px 10px',
+                'text-align': 'left',
+                'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                'color': colors.textMuted,
+                'font-weight': '600',
               }}>
                 <DiagramTooltip content="Каждый аспект показывает конкретное различие между TypeScript (Subsquid) и AssemblyScript (The Graph) -- от синтаксиса до API работы с данными.">
                   <span>Аспект</span>
                 </DiagramTooltip>
               </th>
               <th style={{
-                padding: '6px 10px',
-                textAlign: 'left',
-                borderBottom: '1px solid rgba(34,197,94,0.2)',
-                color: '#22c55e',
-                fontWeight: 600,
+                'padding': '6px 10px',
+                'text-align': 'left',
+                'border-bottom': '1px solid rgba(34,197,94,0.2)',
+                'color': '#22c55e',
+                'font-weight': '600',
               }}>
                 <DiagramTooltip content="Subsquid использует полноценный TypeScript с Node.js runtime. Все npm-пакеты, async/await, Array методы -- всё доступно без ограничений.">
                   <span>TypeScript (Subsquid)</span>
                 </DiagramTooltip>
               </th>
               <th style={{
-                padding: '6px 10px',
-                textAlign: 'left',
-                borderBottom: '1px solid rgba(245,158,11,0.2)',
-                color: '#f59e0b',
-                fontWeight: 600,
+                'padding': '6px 10px',
+                'text-align': 'left',
+                'border-bottom': '1px solid rgba(245,158,11,0.2)',
+                'color': '#f59e0b',
+                'font-weight': '600',
               }}>
                 <DiagramTooltip content="The Graph использует AssemblyScript -- подмножество TypeScript, компилируемое в WebAssembly. Синтаксис похож, но многие стандартные возможности TypeScript отсутствуют.">
                   <span>AssemblyScript (The Graph)</span>
@@ -291,25 +292,25 @@ export function AssemblyScriptComparisonDiagram() {
           </thead>
           <tbody>
             {COMPARISON_ROWS.map((row) => (
-              <tr key={row.aspect}>
+              <tr>
                 <td style={{
-                  padding: '5px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  color: colors.text,
+                  'padding': '5px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.04)',
+                  'color': colors.text,
                 }}>
                   {row.aspect}
                 </td>
                 <td style={{
-                  padding: '5px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  color: row.tsColor,
+                  'padding': '5px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.04)',
+                  'color': row.tsColor,
                 }}>
                   {row.typescript}
                 </td>
                 <td style={{
-                  padding: '5px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  color: row.asColor,
+                  'padding': '5px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.04)',
+                  'color': row.asColor,
                 }}>
                   {row.assemblyscript}
                 </td>
@@ -320,20 +321,20 @@ export function AssemblyScriptComparisonDiagram() {
       </div>
 
       {/* Code comparison */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '8px', 'margin-bottom': '16px' }}>
         <DiagramTooltip content="Subsquid: батч-обработка. Получаем массив событий, фильтруем .filter(), маппим .map(), вставляем массивом через ctx.store.insert(). Одна SQL-транзакция на батч.">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(34,197,94,0.2)' }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: '#22c55e', fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+            <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
               Subsquid: обычный TypeScript
             </div>
             <pre style={{
-              fontSize: 8,
-              fontFamily: 'monospace',
-              color: colors.text,
-              lineHeight: 1.6,
-              margin: 0,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              'font-size': '8px',
+              'font-family': 'monospace',
+              'color': colors.text,
+              'line-height': '1.6',
+              'margin': '0',
+              'white-space': 'pre-wrap',
+              'word-break': 'break-word',
             }}>
 {`// Subsquid: обычный TypeScript
 const transfers = events
@@ -344,18 +345,18 @@ await ctx.store.insert(transfers)`}
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="The Graph: по-событийная обработка. Каждое событие вызывает отдельный handler. entity.save() -- синхронный вызов (нет async). Каждый save() -- отдельная запись в БД.">
-          <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(245,158,11,0.2)' }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 6 }}>
+          <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(245,158,11,0.2)' }}>
+            <div style={{ 'font-size': '9px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
               Graph: AssemblyScript (НЕ TypeScript!)
             </div>
             <pre style={{
-              fontSize: 8,
-              fontFamily: 'monospace',
-              color: colors.text,
-              lineHeight: 1.6,
-              margin: 0,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              'font-size': '8px',
+              'font-family': 'monospace',
+              'color': colors.text,
+              'line-height': '1.6',
+              'margin': '0',
+              'white-space': 'pre-wrap',
+              'word-break': 'break-word',
             }}>
 {`// Graph: AssemblyScript (НЕ TypeScript!)
 // Нет .filter(), нет .map(), нет await

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Anchor Basics Diagrams (SOL-06)
  *
@@ -6,7 +7,7 @@
  * - AnchorChecksTableDiagram: What Anchor checks automatically vs what requires manual validation (interactive table with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -87,32 +88,32 @@ const MACRO_ANNOTATIONS: MacroAnnotation[] = [
  * Click on each macro to see generated code details.
  */
 export function AnchorProgramStructureDiagram() {
-  const [selectedMacro, setSelectedMacro] = useState<number>(0);
+  const [selectedMacro, setSelectedMacro] = createSignal<number>(0);
 
-  const current = MACRO_ANNOTATIONS[selectedMacro];
+  const current = MACRO_ANNOTATIONS[selectedMacro()];
 
   return (
     <DiagramContainer title="Структура Anchor-программы: макросы" color="blue">
       {/* Macro selector tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {MACRO_ANNOTATIONS.map((m, i) => {
-          const isActive = i === selectedMacro;
+          const isActive = i === selectedMacro();
           return (
-            <DiagramTooltip key={i} content={m.tooltipRu}>
+            <DiagramTooltip content={m.tooltipRu}>
               <div>
                 <button
                   onClick={() => setSelectedMacro(i)}
                   style={{
                     ...glassStyle,
-                    padding: '8px 14px',
-                    cursor: 'pointer',
-                    background: isActive ? `${m.color}20` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? m.color : 'rgba(255,255,255,0.08)'}`,
-                    color: isActive ? m.color : colors.textMuted,
-                    fontSize: 13,
-                    fontFamily: 'monospace',
-                    fontWeight: isActive ? 600 : 400,
-                    transition: 'all 0.2s',
+                    'padding': '8px 14px',
+                    'cursor': 'pointer',
+                    'background': isActive ? `${m.color}20` : 'rgba(255,255,255,0.03)',
+                    'border': `1px solid ${isActive ? m.color : 'rgba(255,255,255,0.08)'}`,
+                    'color': isActive ? m.color : colors.textMuted,
+                    'font-size': '13px',
+                    'font-family': 'monospace',
+                    'font-weight': isActive ? 600 : 400,
+                    'transition': 'all 0.2s',
                   }}
                 >
                   {m.macro}
@@ -127,20 +128,20 @@ export function AnchorProgramStructureDiagram() {
       <DiagramTooltip content={`Этот макрос применяется к ${current.macro === '#[program]' ? 'модулю программы' : current.macro === '#[derive(Accounts)]' ? 'структуре контекста инструкции' : current.macro === '#[account]' ? 'структуре данных аккаунта' : 'enum пользовательских ошибок'}. Anchor анализирует его на этапе компиляции и генерирует boilerplate-код.`}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          background: `${current.color}08`,
-          border: `1px solid ${current.color}30`,
-          marginBottom: 12,
+          'padding': '14px',
+          'background': `${current.color}08`,
+          'border': `1px solid ${current.color}30`,
+          'margin-bottom': '12px',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             Применяется к:
           </div>
           <pre style={{
-            margin: 0,
-            fontSize: 13,
-            fontFamily: 'monospace',
-            color: current.color,
-            whiteSpace: 'pre-wrap',
+            'margin': '0',
+            'font-size': '13px',
+            'font-family': 'monospace',
+            'color': current.color,
+            'white-space': 'pre-wrap',
           }}>
             {current.target}
           </pre>
@@ -149,10 +150,10 @@ export function AnchorProgramStructureDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {current.description}
       </div>
@@ -161,34 +162,34 @@ export function AnchorProgramStructureDiagram() {
       <DiagramTooltip content="Anchor генерирует этот код на этапе компиляции через proc-макросы Rust. Разработчик пишет декларативные аннотации, а компилятор создает весь boilerplate: валидацию, (де)сериализацию, dispatch и error handling.">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          'padding': '14px',
+          'background': 'rgba(255,255,255,0.02)',
+          'border': '1px solid rgba(255,255,255,0.08)',
         }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Что генерирует компилятор:
           </div>
           {current.generates.map((g, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
-              marginBottom: 6,
+            <div style={{
+              'display': 'flex',
+              'align-items': 'flex-start',
+              'gap': '8px',
+              'margin-bottom': '6px',
             }}>
               <span style={{
-                fontSize: 11,
-                color: current.color,
-                fontFamily: 'monospace',
-                flexShrink: 0,
-                marginTop: 2,
+                'font-size': '11px',
+                'color': current.color,
+                'font-family': 'monospace',
+                'flex-shrink': '0',
+                'margin-top': '2px',
               }}>
                 {i + 1}.
               </span>
               <span style={{
-                fontSize: 12,
-                color: colors.text,
-                fontFamily: 'monospace',
-                lineHeight: 1.5,
+                'font-size': '12px',
+                'color': colors.text,
+                'font-family': 'monospace',
+                'line-height': '1.5',
               }}>
                 {g}
               </span>
@@ -329,9 +330,9 @@ const CHECKS: CheckItem[] = [
  * remaining_accounts, post-CPI freshness, CPI target, overflow).
  */
 export function AnchorChecksTableDiagram() {
-  const [filter, setFilter] = useState<'all' | 'automatic' | 'manual'>('all');
+  const [filter, setFilter] = createSignal<'all' | 'automatic' | 'manual'>('all');
 
-  const filtered = filter === 'all' ? CHECKS : CHECKS.filter((c) => c.category === filter);
+  const filtered = filter() === 'all' ? CHECKS : CHECKS.filter((c) => c.category === filter());
 
   const autoCount = CHECKS.filter((c) => c.category === 'automatic').length;
   const manualCount = CHECKS.filter((c) => c.category === 'manual').length;
@@ -339,28 +340,28 @@ export function AnchorChecksTableDiagram() {
   return (
     <DiagramContainer title="Anchor: автоматические vs ручные проверки" color="emerald">
       {/* Filter buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '16px' }}>
         {([
           { key: 'all' as const, label: `Все (${CHECKS.length})`, color: colors.text, tooltipRu: 'Показать все проверки: автоматические (Anchor) и ручные (разработчик). Всего 11 категорий проверок безопасности.' },
           { key: 'automatic' as const, label: `Автоматические (${autoCount})`, color: colors.success, tooltipRu: 'Anchor выполняет эти проверки автоматически при десериализации контекста. Разработчику нужно только правильно определить типы полей.' },
           { key: 'manual' as const, label: `Ручные (${manualCount})`, color: '#f59e0b', tooltipRu: 'Эти проверки разработчик должен реализовать самостоятельно в handler. Anchor не может автоматизировать проверку бизнес-логики.' },
         ]).map((f) => {
-          const isActive = filter === f.key;
+          const isActive = filter() === f.key;
           return (
-            <DiagramTooltip key={f.key} content={f.tooltipRu}>
+            <DiagramTooltip content={f.tooltipRu}>
               <div>
                 <button
                   onClick={() => setFilter(f.key)}
                   style={{
                     ...glassStyle,
-                    padding: '6px 14px',
-                    cursor: 'pointer',
-                    background: isActive ? `${f.color}20` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isActive ? f.color : 'rgba(255,255,255,0.08)'}`,
-                    color: isActive ? f.color : colors.textMuted,
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    transition: 'all 0.2s',
+                    'padding': '6px 14px',
+                    'cursor': 'pointer',
+                    'background': isActive ? `${f.color}20` : 'rgba(255,255,255,0.03)',
+                    'border': `1px solid ${isActive ? f.color : 'rgba(255,255,255,0.08)'}`,
+                    'color': isActive ? f.color : colors.textMuted,
+                    'font-size': '12px',
+                    'font-family': 'monospace',
+                    'transition': 'all 0.2s',
                   }}
                 >
                   {f.label}
@@ -373,18 +374,18 @@ export function AnchorChecksTableDiagram() {
 
       {/* Table header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '28px 1fr 200px',
-        gap: 2,
-        marginBottom: 2,
+        'display': 'grid',
+        'grid-template-columns': '28px 1fr 200px',
+        'gap': '2px',
+        'margin-bottom': '2px',
       }}>
-        <div style={{ ...glassStyle, padding: '6px 8px', fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '6px 8px', 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center' }}>
           #
         </div>
-        <div style={{ ...glassStyle, padding: '6px 10px', fontSize: 11, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace' }}>
+        <div style={{ ...glassStyle, 'padding': '6px 10px', 'font-size': '11px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace' }}>
           Проверка
         </div>
-        <div style={{ ...glassStyle, padding: '6px 10px', fontSize: 11, fontWeight: 600, color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '6px 10px', 'font-size': '11px', 'font-weight': '600', 'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center' }}>
           Кто проверяет
         </div>
       </div>
@@ -395,49 +396,49 @@ export function AnchorChecksTableDiagram() {
         const catColor = isAuto ? colors.success : '#f59e0b';
 
         return (
-          <DiagramTooltip key={i} content={item.tooltipRu}>
+          <DiagramTooltip content={item.tooltipRu}>
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: '28px 1fr 200px',
-                gap: 2,
-                marginBottom: 2,
-                cursor: 'pointer',
+                'display': 'grid',
+                'grid-template-columns': '28px 1fr 200px',
+                'gap': '2px',
+                'margin-bottom': '2px',
+                'cursor': 'pointer',
               }}
             >
               <div style={{
                 ...glassStyle,
-                padding: '8px 4px',
-                fontSize: 10,
-                color: catColor,
-                fontFamily: 'monospace',
-                textAlign: 'center',
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.15s',
+                'padding': '8px 4px',
+                'font-size': '10px',
+                'color': catColor,
+                'font-family': 'monospace',
+                'text-align': 'center',
+                'background': 'rgba(255,255,255,0.02)',
+                'transition': 'all 0.15s',
               }}>
                 {i + 1}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '8px 10px',
-                fontSize: 12,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.15s',
+                'padding': '8px 10px',
+                'font-size': '12px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'background': 'rgba(255,255,255,0.02)',
+                'transition': 'all 0.15s',
               }}>
                 {item.check}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '8px 10px',
-                fontSize: 11,
-                color: catColor,
-                fontFamily: 'monospace',
-                fontWeight: 600,
-                textAlign: 'center',
-                background: `${catColor}05`,
-                transition: 'all 0.15s',
+                'padding': '8px 10px',
+                'font-size': '11px',
+                'color': catColor,
+                'font-family': 'monospace',
+                'font-weight': '600',
+                'text-align': 'center',
+                'background': `${catColor}05`,
+                'transition': 'all 0.15s',
               }}>
                 {isAuto ? 'Anchor (auto)' : 'Developer (manual)'}
               </div>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * ERC-721 & ERC-1155 Diagrams (ETH-09)
  *
@@ -6,7 +7,7 @@
  * - ERCComparisonDiagram: ERC-20 vs ERC-721 vs ERC-1155 comparison (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
@@ -44,45 +45,44 @@ NFT_COLLECTION.forEach((nft) => {
  * Contrasts with ERC-20: each token is UNIQUE (tokenId).
  */
 export function ERC721OwnershipDiagram() {
-  const [showMappings, setShowMappings] = useState(false);
+  const [showMappings, setShowMappings] = createSignal(false);
 
   return (
     <DiagramContainer title="ERC-721: уникальные токены (NFT)" color="purple">
       {/* NFT cards grid */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         {NFT_COLLECTION.map((nft) => (
           <DiagramTooltip
-            key={nft.tokenId}
             content={`Token ID #${nft.tokenId}: уникальный non-fungible токен. Владелец: ${nft.owner}. В отличие от ERC-20, каждый токен уникален и неделим. ownerOf(tokenId) возвращает текущего владельца.`}
           >
             <div
               style={{
                 ...glassStyle,
-                padding: 12,
-                minWidth: 100,
-                textAlign: 'center',
-                background: 'rgba(255,255,255,0.03)',
-                border: `1px solid rgba(255,255,255,0.08)`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                'padding': '12px',
+                'min-width': '100px',
+                'text-align': 'center',
+                'background': 'rgba(255,255,255,0.03)',
+                'border': `1px solid rgba(255,255,255,0.08)`,
+                'cursor': 'pointer',
+                'transition': 'all 0.2s',
               }}
             >
               {/* Token ID badge */}
               <div style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: nft.color,
-                fontFamily: 'monospace',
-                marginBottom: 4,
+                'font-size': '18px',
+                'font-weight': '700',
+                'color': nft.color,
+                'font-family': 'monospace',
+                'margin-bottom': '4px',
               }}>
                 #{nft.tokenId}
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                 {nft.owner}
               </div>
-              <div style={{ marginTop: 8, fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+              <div style={{ 'margin-top': '8px', 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                 <div>{nft.ownerShort}</div>
-                <div style={{ color: nft.color, marginTop: 2 }}>{nft.uri}</div>
+                <div style={{ 'color': nft.color, 'margin-top': '2px' }}>{nft.uri}</div>
               </div>
             </div>
           </DiagramTooltip>
@@ -91,42 +91,42 @@ export function ERC721OwnershipDiagram() {
 
       {/* Mappings toggle */}
       <button
-        onClick={() => setShowMappings(!showMappings)}
+        onClick={() => setShowMappings(!showMappings())}
         style={{
           ...glassStyle,
-          padding: '6px 14px',
-          cursor: 'pointer',
-          background: showMappings ? `${colors.primary}15` : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${showMappings ? colors.primary : 'rgba(255,255,255,0.1)'}`,
-          color: showMappings ? colors.primary : colors.textMuted,
-          fontSize: 12,
-          fontFamily: 'monospace',
-          marginBottom: 12,
+          'padding': '6px 14px',
+          'cursor': 'pointer',
+          'background': showMappings() ? `${colors.primary}15` : 'rgba(255,255,255,0.05)',
+          'border': `1px solid ${showMappings() ? colors.primary : 'rgba(255,255,255,0.1)'}`,
+          'color': showMappings() ? colors.primary : colors.textMuted,
+          'font-size': '12px',
+          'font-family': 'monospace',
+          'margin-bottom': '12px',
         }}
       >
-        {showMappings ? 'Скрыть маппинги' : 'Показать внутренние маппинги'}
+        {showMappings() ? 'Скрыть маппинги' : 'Показать внутренние маппинги'}
       </button>
 
-      {showMappings && (
+      {showMappings() && (
         <div style={{
           ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
+          'padding': '12px',
+          'margin-bottom': '12px',
         }}>
-          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-bottom': '8px' }}>
             mapping(uint256 =&gt; address) _owners:
           </div>
           {NFT_COLLECTION.map((nft) => (
-            <div key={nft.tokenId} style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, marginBottom: 2 }}>
-              <span style={{ color: colors.textMuted }}>_owners[{nft.tokenId}]</span> = <span style={{ color: nft.color }}>{nft.owner}</span>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.text, 'margin-bottom': '2px' }}>
+              <span style={{ 'color': colors.textMuted }}>_owners[{nft.tokenId}]</span> = <span style={{ 'color': nft.color }}>{nft.owner}</span>
             </div>
           ))}
-          <div style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textMuted, marginTop: 12, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-top': '12px', 'margin-bottom': '8px' }}>
             mapping(address =&gt; uint256) _balances:
           </div>
           {Object.entries(BALANCES).map(([owner, count]) => (
-            <div key={owner} style={{ fontSize: 11, fontFamily: 'monospace', color: colors.text, marginBottom: 2 }}>
-              <span style={{ color: colors.textMuted }}>_balances[{owner}]</span> = <span style={{ color: colors.primary }}>{count}</span>
+            <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.text, 'margin-bottom': '2px' }}>
+              <span style={{ 'color': colors.textMuted }}>_balances[{owner}]</span> = <span style={{ 'color': colors.primary }}>{count}</span>
             </div>
           ))}
         </div>
@@ -135,13 +135,13 @@ export function ERC721OwnershipDiagram() {
       {/* ERC-20 vs ERC-721 contrast */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        fontSize: 12,
-        color: colors.textMuted,
-        lineHeight: 1.6,
+        'padding': '12px',
+        'font-size': '12px',
+        'color': colors.textMuted,
+        'line-height': '1.6',
       }}>
-        <span style={{ color: colors.success, fontFamily: 'monospace' }}>ERC-20</span>: balanceOf(Alice) = 500 (сколько токенов, не какие)<br />
-        <span style={{ color: colors.primary, fontFamily: 'monospace' }}>ERC-721</span>: balanceOf(Alice) = 2, но каждый токен уникален (#0, #2)
+        <span style={{ 'color': colors.success, 'font-family': 'monospace' }}>ERC-20</span>: balanceOf(Alice) = 500 (сколько токенов, не какие)<br />
+        <span style={{ 'color': colors.primary, 'font-family': 'monospace' }}>ERC-721</span>: balanceOf(Alice) = 2, но каждый токен уникален (#0, #2)
       </div>
     </DiagramContainer>
   );
@@ -234,51 +234,51 @@ export function ERCComparisonDiagram() {
     <DiagramContainer title="ERC-20 vs ERC-721 vs ERC-1155" color="blue">
       {/* Header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '130px 1fr 1fr 1fr',
-        gap: 2,
-        marginBottom: 2,
+        'display': 'grid',
+        'grid-template-columns': '130px 1fr 1fr 1fr',
+        'gap': '2px',
+        'margin-bottom': '2px',
       }}>
         <div style={{
           ...glassStyle,
-          padding: '8px 10px',
-          fontSize: 11,
-          fontWeight: 600,
-          color: colors.textMuted,
-          fontFamily: 'monospace',
+          'padding': '8px 10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': colors.textMuted,
+          'font-family': 'monospace',
         }}>
           Свойство
         </div>
         <div style={{
           ...glassStyle,
-          padding: '8px 10px',
-          fontSize: 11,
-          fontWeight: 600,
-          color: COL_COLORS.erc20,
-          fontFamily: 'monospace',
-          textAlign: 'center',
+          'padding': '8px 10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': COL_COLORS.erc20,
+          'font-family': 'monospace',
+          'text-align': 'center',
         }}>
           ERC-20
         </div>
         <div style={{
           ...glassStyle,
-          padding: '8px 10px',
-          fontSize: 11,
-          fontWeight: 600,
-          color: COL_COLORS.erc721,
-          fontFamily: 'monospace',
-          textAlign: 'center',
+          'padding': '8px 10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': COL_COLORS.erc721,
+          'font-family': 'monospace',
+          'text-align': 'center',
         }}>
           ERC-721
         </div>
         <div style={{
           ...glassStyle,
-          padding: '8px 10px',
-          fontSize: 11,
-          fontWeight: 600,
-          color: COL_COLORS.erc1155,
-          fontFamily: 'monospace',
-          textAlign: 'center',
+          'padding': '8px 10px',
+          'font-size': '11px',
+          'font-weight': '600',
+          'color': COL_COLORS.erc1155,
+          'font-family': 'monospace',
+          'text-align': 'center',
         }}>
           ERC-1155
         </div>
@@ -287,22 +287,21 @@ export function ERCComparisonDiagram() {
       {/* Rows */}
       {COMPARISON_DATA.map((row, i) => (
         <div
-          key={i}
           style={{
-            display: 'grid',
-            gridTemplateColumns: '130px 1fr 1fr 1fr',
-            gap: 2,
-            marginBottom: 2,
+            'display': 'grid',
+            'grid-template-columns': '130px 1fr 1fr 1fr',
+            'gap': '2px',
+            'margin-bottom': '2px',
           }}
         >
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 11,
-            color: colors.textMuted,
-            fontFamily: 'monospace',
-            background: 'rgba(255,255,255,0.02)',
-            transition: 'all 0.15s',
+            'padding': '8px 10px',
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'font-family': 'monospace',
+            'background': 'rgba(255,255,255,0.02)',
+            'transition': 'all 0.15s',
           }}>
             <DiagramTooltip content={row.tooltipRu}>
               <span>{row.label}</span>
@@ -310,41 +309,41 @@ export function ERCComparisonDiagram() {
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 10,
-            color: colors.text,
-            fontFamily: 'monospace',
-            background: 'rgba(255,255,255,0.02)',
-            transition: 'all 0.15s',
+            'padding': '8px 10px',
+            'font-size': '10px',
+            'color': colors.text,
+            'font-family': 'monospace',
+            'background': 'rgba(255,255,255,0.02)',
+            'transition': 'all 0.15s',
           }}>
             {row.erc20}
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 10,
-            color: colors.text,
-            fontFamily: 'monospace',
-            background: 'rgba(255,255,255,0.02)',
-            transition: 'all 0.15s',
+            'padding': '8px 10px',
+            'font-size': '10px',
+            'color': colors.text,
+            'font-family': 'monospace',
+            'background': 'rgba(255,255,255,0.02)',
+            'transition': 'all 0.15s',
           }}>
             {row.erc721}
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 10px',
-            fontSize: 10,
-            color: colors.text,
-            fontFamily: 'monospace',
-            background: 'rgba(255,255,255,0.02)',
-            transition: 'all 0.15s',
+            'padding': '8px 10px',
+            'font-size': '10px',
+            'color': colors.text,
+            'font-family': 'monospace',
+            'background': 'rgba(255,255,255,0.02)',
+            'transition': 'all 0.15s',
           }}>
             {row.erc1155}
           </div>
         </div>
       ))}
 
-      <div style={{ marginTop: 12, fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+      <div style={{ 'margin-top': '12px', 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
         ERC-1155 объединяет преимущества обоих стандартов: fungible токены (как GOLD) и non-fungible (как BADGE)
         в одном контракте с batch-операциями для экономии газа.
       </div>

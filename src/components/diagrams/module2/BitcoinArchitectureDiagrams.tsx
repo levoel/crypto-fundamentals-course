@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Bitcoin Architecture Diagrams (BTC-01)
  *
@@ -6,6 +7,7 @@
  * - BitcoinVsBankingDiagram: Side-by-side comparison of traditional banking vs Bitcoin
  */
 
+import { type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -87,7 +89,7 @@ function getCenter(comp: NodeComponent): { cx: number; cy: number } {
 export function NodeArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура узла Bitcoin" color="blue">
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
         <svg width={540} height={370} viewBox="0 0 540 370">
           {/* Arrows */}
           {NODE_ARROWS.map(({ from, to }, i) => {
@@ -97,7 +99,6 @@ export function NodeArchitectureDiagram() {
             const t = getCenter(tComp);
             return (
               <line
-                key={i}
                 x1={f.cx}
                 y1={f.cy}
                 x2={t.cx}
@@ -126,7 +127,7 @@ export function NodeArchitectureDiagram() {
 
           {/* Components (static, no hover) */}
           {NODE_COMPONENTS.map((comp) => (
-            <g key={comp.id}>
+            <g>
               <rect
                 x={comp.x}
                 y={comp.y}
@@ -156,20 +157,20 @@ export function NodeArchitectureDiagram() {
 
       {/* HTML node legend with DiagramTooltip (replaces SVG hover + conditional DataBox) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginTop: 8,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(3, 1fr)',
+        'gap': '8px',
+        'margin-top': '8px',
       }}>
         {NODE_COMPONENTS.map((comp) => (
-          <DiagramTooltip key={comp.id} content={comp.description}>
+          <DiagramTooltip content={comp.description}>
             <div style={{
               ...glassStyle,
-              padding: '8px 10px',
-              borderColor: `${comp.color}30`,
-              textAlign: 'center',
+              'padding': '8px 10px',
+              'border-color': `${comp.color}30`,
+              'text-align': 'center',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: comp.color }}>
+              <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': comp.color }}>
                 {comp.label}
               </div>
             </div>
@@ -203,23 +204,23 @@ const COMPARISON_DATA: ComparisonRow[] = [
 export function BitcoinVsBankingDiagram() {
   return (
     <DiagramContainer title="Bitcoin vs банковская система" color="purple">
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', fontSize: 13 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'separate', 'border-spacing': '0 4px', 'font-size': '13px' }}>
           <thead>
             <tr>
-              <th style={{ ...headerCell, width: '25%' }}>Аспект</th>
-              <th style={{ ...headerCell, width: '37.5%', color: '#e74c3c' }}>Банковская система</th>
-              <th style={{ ...headerCell, width: '37.5%', color: colors.success }}>Bitcoin</th>
+              <th style={{ ...headerCell, 'width': '25%' }}>Аспект</th>
+              <th style={{ ...headerCell, 'width': '37.5%', 'color': '#e74c3c' }}>Банковская система</th>
+              <th style={{ ...headerCell, 'width': '37.5%', 'color': colors.success }}>Bitcoin</th>
             </tr>
           </thead>
           <tbody>
             {COMPARISON_DATA.map((row, i) => (
-              <tr key={i} style={{ cursor: 'default' }}>
+              <tr style={{ 'cursor': 'default' }}>
                 <td style={{
                   ...cellStyle,
-                  fontWeight: 600,
-                  color: colors.text,
-                  background: 'rgba(255,255,255,0.03)',
+                  'font-weight': '600',
+                  'color': colors.text,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   <DiagramTooltip content={row.tooltipRu}>
                     <span>{row.aspect}</span>
@@ -227,15 +228,15 @@ export function BitcoinVsBankingDiagram() {
                 </td>
                 <td style={{
                   ...cellStyle,
-                  color: colors.textMuted,
-                  background: 'rgba(255,255,255,0.03)',
+                  'color': colors.textMuted,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   {row.banking}
                 </td>
                 <td style={{
                   ...cellStyle,
-                  color: colors.text,
-                  background: 'rgba(255,255,255,0.03)',
+                  'color': colors.text,
+                  'background': 'rgba(255,255,255,0.03)',
                 }}>
                   {row.bitcoin}
                 </td>
@@ -245,7 +246,7 @@ export function BitcoinVsBankingDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="UTXO (Unspent Transaction Output) -- неизрасходованный выход транзакции. В Bitcoin нет поля 'баланс'. Кошелек суммирует все UTXO, принадлежащие вашим ключам, чтобы показать баланс.">
           <DataBox
             label="Ключевое отличие"
@@ -258,7 +259,7 @@ export function BitcoinVsBankingDiagram() {
   );
 }
 
-const headerCell: React.CSSProperties = {
+const headerCell: JSX.CSSProperties = {
   padding: '8px 12px',
   textAlign: 'left',
   fontSize: 12,
@@ -266,7 +267,7 @@ const headerCell: React.CSSProperties = {
   borderBottom: `1px solid ${colors.border}`,
 };
 
-const cellStyle: React.CSSProperties = {
+const cellStyle: JSX.CSSProperties = {
   padding: '8px 12px',
   fontFamily: 'monospace',
   fontSize: 12,

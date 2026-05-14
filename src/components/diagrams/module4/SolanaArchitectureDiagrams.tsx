@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Solana Architecture Diagrams (SOL-01)
  *
@@ -6,6 +7,7 @@
  * - SolanaInnovationsDiagram: 8 key Solana innovations overview (static with DiagramTooltip)
  */
 
+import { type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors } from '@primitives/shared';
@@ -96,7 +98,7 @@ const COMPARISON_DATA: ComparisonRow[] = [
   },
 ];
 
-const headerCell: React.CSSProperties = {
+const headerCell: JSX.CSSProperties = {
   padding: '8px 12px',
   textAlign: 'left',
   fontSize: 12,
@@ -104,7 +106,7 @@ const headerCell: React.CSSProperties = {
   borderBottom: `1px solid ${colors.border}`,
 };
 
-const cellStyle: React.CSSProperties = {
+const cellStyle: JSX.CSSProperties = {
   padding: '8px 12px',
   fontFamily: 'monospace',
   fontSize: 12,
@@ -115,38 +117,38 @@ const cellStyle: React.CSSProperties = {
 export function SolanaVsEthereumDiagram() {
   return (
     <DiagramContainer title="Ethereum vs Solana: сравнение архитектур" color="green">
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', fontSize: 13 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'separate', 'border-spacing': '0 4px', 'font-size': '13px' }}>
           <thead>
             <tr>
-              <th style={{ ...headerCell, width: '20%' }}>Аспект</th>
-              <th style={{ ...headerCell, width: '40%', color: '#8b5cf6' }}>Ethereum</th>
-              <th style={{ ...headerCell, width: '40%', color: '#22c55e' }}>Solana</th>
+              <th style={{ ...headerCell, 'width': '20%' }}>Аспект</th>
+              <th style={{ ...headerCell, 'width': '40%', 'color': '#8b5cf6' }}>Ethereum</th>
+              <th style={{ ...headerCell, 'width': '40%', 'color': '#22c55e' }}>Solana</th>
             </tr>
           </thead>
           <tbody>
             {COMPARISON_DATA.map((row, i) => (
-              <DiagramTooltip key={i} content={row.tooltip}>
-                <tr style={{ cursor: 'default' }}>
+              <DiagramTooltip content={row.tooltip}>
+                <tr style={{ 'cursor': 'default' }}>
                   <td style={{
                     ...cellStyle,
-                    fontWeight: 600,
-                    color: colors.text,
-                    background: 'rgba(255,255,255,0.03)',
+                    'font-weight': '600',
+                    'color': colors.text,
+                    'background': 'rgba(255,255,255,0.03)',
                   }}>
                     {row.aspect}
                   </td>
                   <td style={{
                     ...cellStyle,
-                    color: colors.textMuted,
-                    background: 'rgba(255,255,255,0.03)',
+                    'color': colors.textMuted,
+                    'background': 'rgba(255,255,255,0.03)',
                   }}>
                     {row.ethereum}
                   </td>
                   <td style={{
                     ...cellStyle,
-                    color: colors.text,
-                    background: 'rgba(255,255,255,0.03)',
+                    'color': colors.text,
+                    'background': 'rgba(255,255,255,0.03)',
                   }}>
                     {row.solana}
                   </td>
@@ -249,15 +251,15 @@ export function SolanaInnovationsDiagram() {
   return (
     <DiagramContainer title="8 инноваций Solana" color="purple">
       {/* Layer legend */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap', 'margin-bottom': '16px', 'justify-content': 'center' }}>
         {(Object.keys(LAYER_COLORS) as Innovation['layer'][]).map((layer) => (
-          <div key={layer} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px' }}>
             <div style={{
-              width: 10, height: 10, borderRadius: 3,
-              background: LAYER_COLORS[layer],
-              opacity: 0.7,
+              'width': '10px', 'height': '10px', 'border-radius': '3px',
+              'background': LAYER_COLORS[layer],
+              'opacity': '0.7',
             }} />
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               {LAYER_LABELS[layer]}
             </span>
           </div>
@@ -266,41 +268,41 @@ export function SolanaInnovationsDiagram() {
 
       {/* Grid of innovation cards */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 10,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
+        'gap': '10px',
       }}>
         {INNOVATIONS.map((innovation) => {
           const layerColor = LAYER_COLORS[innovation.layer];
           return (
-            <DiagramTooltip key={innovation.id} content={innovation.fullDesc}>
+            <DiagramTooltip content={innovation.fullDesc}>
               <div
                 style={{
-                  padding: '12px 14px',
-                  borderRadius: 8,
-                  cursor: 'default',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: `1px solid rgba(255,255,255,0.08)`,
-                  transition: 'all 0.15s',
+                  'padding': '12px 14px',
+                  'border-radius': '8px',
+                  'cursor': 'default',
+                  'background': 'rgba(255,255,255,0.05)',
+                  'border': `1px solid rgba(255,255,255,0.08)`,
+                  'transition': 'all 0.15s',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '6px' }}>
                   <span style={{
-                    fontSize: 10, fontFamily: 'monospace', fontWeight: 700,
-                    color: layerColor,
-                    background: `${layerColor}20`,
-                    padding: '2px 6px', borderRadius: 4,
+                    'font-size': '10px', 'font-family': 'monospace', 'font-weight': '700',
+                    'color': layerColor,
+                    'background': `${layerColor}20`,
+                    'padding': '2px 6px', 'border-radius': '4px',
                   }}>
                     {innovation.id}
                   </span>
                   <span style={{
-                    fontSize: 13, fontFamily: 'monospace', fontWeight: 600,
-                    color: colors.text,
+                    'font-size': '13px', 'font-family': 'monospace', 'font-weight': '600',
+                    'color': colors.text,
                   }}>
                     {innovation.name}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.4 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'line-height': '1.4' }}>
                   {innovation.shortDesc}
                 </div>
               </div>

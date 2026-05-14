@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Optimistic Rollup Diagrams (SCALE-05)
  *
@@ -7,7 +8,7 @@
  * - L1L2MessageDiagram: 6-step step-through showing L1<->L2 deposit and withdrawal flows (history array)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -123,9 +124,9 @@ const ROLLUP_STEP_TOOLTIPS = [
  * History array pattern with Step/Back/Reset navigation.
  */
 export function RollupArchitectureDiagram() {
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = createSignal(0);
 
-  const step = ROLLUP_STEPS[stepIdx];
+  const step = ROLLUP_STEPS[stepIdx()];
 
   const goNext = () => setStepIdx((i) => Math.min(i + 1, ROLLUP_STEPS.length - 1));
   const goBack = () => setStepIdx((i) => Math.max(i - 1, 0));
@@ -134,26 +135,26 @@ export function RollupArchitectureDiagram() {
   return (
     <DiagramContainer title="Архитектура Optimistic Rollup" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '14px', 'flex-wrap': 'wrap' }}>
         {ROLLUP_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={ROLLUP_STEP_TOOLTIPS[i]}>
+          <DiagramTooltip content={ROLLUP_STEP_TOOLTIPS[i]}>
             <div
               onClick={() => setStepIdx(i)}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: i === stepIdx ? 700 : 400,
-                cursor: 'pointer',
-                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-                transition: 'all 0.2s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '6px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'font-weight': i === stepIdx() ? 700 : 400,
+                'cursor': 'pointer',
+                'background': i === stepIdx() ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                'color': i === stepIdx() ? s.highlight : i < stepIdx() ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                'border': `1px solid ${i === stepIdx() ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                'transition': 'all 0.2s',
               }}
             >
               {i + 1}
@@ -165,48 +166,47 @@ export function RollupArchitectureDiagram() {
       {/* Step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 14,
-        border: `1px solid ${step.highlight}30`,
+        'padding': '16px',
+        'margin-bottom': '14px',
+        'border': `1px solid ${step.highlight}30`,
       }}>
         {/* Title and phase */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: step.highlight, fontFamily: 'monospace' }}>
-            Step {stepIdx + 1}: {step.title}
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px', 'flex-wrap': 'wrap', 'gap': '8px' }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': step.highlight, 'font-family': 'monospace' }}>
+            Step {stepIdx() + 1}: {step.title}
           </div>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${step.highlight}15`,
-            color: step.highlight,
-            border: `1px solid ${step.highlight}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${step.highlight}15`,
+            'color': step.highlight,
+            'border': `1px solid ${step.highlight}30`,
           }}>
             {step.phase}
           </span>
         </div>
 
         {/* Description */}
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 14 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '14px' }}>
           {step.description}
         </div>
 
         {/* Actors */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '10px', 'flex-wrap': 'wrap' }}>
           {step.actors.map((actor) => (
             <div
-              key={actor.name}
               style={{
                 ...glassStyle,
-                padding: '6px 12px',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: actor.active ? actor.color : 'rgba(255,255,255,0.2)',
-                border: `1px solid ${actor.active ? actor.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                borderRadius: 6,
-                opacity: actor.active ? 1 : 0.5,
-                transition: 'all 0.3s',
+                'padding': '6px 12px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'color': actor.active ? actor.color : 'rgba(255,255,255,0.2)',
+                'border': `1px solid ${actor.active ? actor.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                'border-radius': '6px',
+                'opacity': actor.active ? 1 : 0.5,
+                'transition': 'all 0.3s',
               }}
             >
               {actor.name}
@@ -215,20 +215,20 @@ export function RollupArchitectureDiagram() {
         </div>
 
         {/* Data flow */}
-        <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
-          <span style={{ color: step.highlight }}>Data flow:</span> {step.dataFlow}
+        <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+          <span style={{ 'color': step.highlight }}>Data flow:</span> {step.dataFlow}
         </div>
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
-        <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-bottom': '14px' }}>
+        <button onClick={reset} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
           Reset
         </button>
-        <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+        <button onClick={goBack} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
           Back
         </button>
-        <button onClick={goNext} disabled={stepIdx === ROLLUP_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === ROLLUP_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === ROLLUP_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === ROLLUP_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === ROLLUP_STEPS.length - 1 ? 0.5 : 1 }}>
+        <button onClick={goNext} disabled={stepIdx() === ROLLUP_STEPS.length - 1} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === ROLLUP_STEPS.length - 1 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === ROLLUP_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, 'border': `1px solid ${stepIdx() === ROLLUP_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, 'border-radius': '6px', 'opacity': stepIdx() === ROLLUP_STEPS.length - 1 ? 0.5 : 1 }}>
           Step
         </button>
       </div>
@@ -304,33 +304,33 @@ const FRAUD_PROOF_TYPES: FraudProofType[] = [
 export function FraudProofComparisonDiagram() {
   return (
     <DiagramContainer title="Fraud Proofs: однораундовые vs интерактивные" color="orange">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 14 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': 'repeat(2, 1fr)', 'gap': '12px', 'margin-bottom': '14px' }}>
         {FRAUD_PROOF_TYPES.map((type, idx) => (
-          <DiagramTooltip key={idx} content={type.tooltipRu}>
+          <DiagramTooltip content={type.tooltipRu}>
             <div
               style={{
                 ...glassStyle,
-                padding: 14,
-                border: `1px solid rgba(255,255,255,0.08)`,
-                borderRadius: 8,
-                transition: 'all 0.2s',
+                'padding': '14px',
+                'border': `1px solid rgba(255,255,255,0.08)`,
+                'border-radius': '8px',
+                'transition': 'all 0.2s',
               }}
             >
               {/* Header */}
-              <div style={{ fontSize: 13, fontWeight: 700, color: type.color, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': type.color, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 {type.name}
               </div>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 12 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '12px' }}>
                 {type.project}
               </div>
 
               {/* Steps */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: type.color, fontFamily: 'monospace', marginBottom: 6 }}>
+              <div style={{ 'margin-bottom': '12px' }}>
+                <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': type.color, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
                   Процесс:
                 </div>
                 {type.steps.map((step, i) => (
-                  <div key={i} style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.6, paddingLeft: 8, borderLeft: `2px solid ${type.color}30` }}>
+                  <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.6', 'padding-left': '8px', 'border-left': `2px solid ${type.color}30` }}>
                     {i + 1}. {step}
                   </div>
                 ))}
@@ -338,22 +338,22 @@ export function FraudProofComparisonDiagram() {
 
               {/* Pros/Cons */}
               <div>
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
+                <div style={{ 'margin-bottom': '8px' }}>
+                  <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#10b981', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                     Pros:
                   </div>
                   {type.pros.map((pro, i) => (
-                    <div key={i} style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.5, paddingLeft: 8 }}>
+                    <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.5', 'padding-left': '8px' }}>
                       + {pro}
                     </div>
                   ))}
                 </div>
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#f43f5e', fontFamily: 'monospace', marginBottom: 4 }}>
+                <div style={{ 'margin-bottom': '8px' }}>
+                  <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#f43f5e', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                     Cons:
                   </div>
                   {type.cons.map((con, i) => (
-                    <div key={i} style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace', lineHeight: 1.5, paddingLeft: 8 }}>
+                    <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace', 'line-height': '1.5', 'padding-left': '8px' }}>
                       - {con}
                     </div>
                   ))}
@@ -363,16 +363,16 @@ export function FraudProofComparisonDiagram() {
               {/* Gas + stage note -- always visible */}
               <div style={{
                 ...glassStyle,
-                padding: 8,
-                marginTop: 6,
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: type.color,
-                border: `1px solid ${type.color}30`,
-                borderRadius: 6,
+                'padding': '8px',
+                'margin-top': '6px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'color': type.color,
+                'border': `1px solid ${type.color}30`,
+                'border-radius': '6px',
               }}>
                 <div>Gas: {type.gasNote}</div>
-                <div style={{ marginTop: 4, color: colors.textMuted }}>{type.stageNote}</div>
+                <div style={{ 'margin-top': '4px', 'color': colors.textMuted }}>{type.stageNote}</div>
               </div>
             </div>
           </DiagramTooltip>
@@ -482,9 +482,9 @@ const MESSAGE_STEP_TOOLTIPS = [
  * History array pattern with Step/Back/Reset navigation.
  */
 export function L1L2MessageDiagram() {
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = createSignal(0);
 
-  const step = MESSAGE_STEPS[stepIdx];
+  const step = MESSAGE_STEPS[stepIdx()];
 
   const goNext = () => setStepIdx((i) => Math.min(i + 1, MESSAGE_STEPS.length - 1));
   const goBack = () => setStepIdx((i) => Math.max(i - 1, 0));
@@ -495,26 +495,26 @@ export function L1L2MessageDiagram() {
   return (
     <DiagramContainer title="L1 <-> L2: депозиты и выводы" color="green">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '14px', 'flex-wrap': 'wrap' }}>
         {MESSAGE_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={MESSAGE_STEP_TOOLTIPS[i]}>
+          <DiagramTooltip content={MESSAGE_STEP_TOOLTIPS[i]}>
             <div
               onClick={() => setStepIdx(i)}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: i === stepIdx ? 700 : 400,
-                cursor: 'pointer',
-                background: i === stepIdx ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
-                color: i === stepIdx ? s.highlight : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-                border: `1px solid ${i === stepIdx ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
-                transition: 'all 0.2s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '6px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'font-weight': i === stepIdx() ? 700 : 400,
+                'cursor': 'pointer',
+                'background': i === stepIdx() ? `${s.highlight}20` : 'rgba(255,255,255,0.03)',
+                'color': i === stepIdx() ? s.highlight : i < stepIdx() ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                'border': `1px solid ${i === stepIdx() ? s.highlight + '50' : 'rgba(255,255,255,0.06)'}`,
+                'transition': 'all 0.2s',
               }}
             >
               {i + 1}
@@ -524,27 +524,27 @@ export function L1L2MessageDiagram() {
       </div>
 
       {/* Direction badge */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '12px' }}>
         <span style={{
-          fontSize: 10,
-          fontFamily: 'monospace',
-          padding: '3px 10px',
-          borderRadius: 4,
-          background: isDeposit ? '#6366f115' : '#f59e0b15',
-          color: isDeposit ? '#6366f1' : '#f59e0b',
-          border: `1px solid ${isDeposit ? '#6366f130' : '#f59e0b30'}`,
-          fontWeight: 600,
+          'font-size': '10px',
+          'font-family': 'monospace',
+          'padding': '3px 10px',
+          'border-radius': '4px',
+          'background': isDeposit ? '#6366f115' : '#f59e0b15',
+          'color': isDeposit ? '#6366f1' : '#f59e0b',
+          'border': `1px solid ${isDeposit ? '#6366f130' : '#f59e0b30'}`,
+          'font-weight': '600',
         }}>
           {isDeposit ? 'DEPOSIT (L1 -> L2)' : 'WITHDRAWAL (L2 -> L1)'}
         </span>
         <span style={{
-          fontSize: 10,
-          fontFamily: 'monospace',
-          padding: '3px 10px',
-          borderRadius: 4,
-          background: 'rgba(255,255,255,0.03)',
-          color: step.highlight,
-          border: `1px solid ${step.highlight}30`,
+          'font-size': '10px',
+          'font-family': 'monospace',
+          'padding': '3px 10px',
+          'border-radius': '4px',
+          'background': 'rgba(255,255,255,0.03)',
+          'color': step.highlight,
+          'border': `1px solid ${step.highlight}30`,
         }}>
           {step.duration}
         </span>
@@ -553,36 +553,36 @@ export function L1L2MessageDiagram() {
       {/* Step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 14,
-        border: `1px solid ${step.highlight}30`,
+        'padding': '16px',
+        'margin-bottom': '14px',
+        'border': `1px solid ${step.highlight}30`,
       }}>
         {/* Title */}
-        <div style={{ fontSize: 13, fontWeight: 600, color: step.highlight, fontFamily: 'monospace', marginBottom: 4 }}>
-          Step {stepIdx + 1}: {step.title}
+        <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': step.highlight, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
+          Step {stepIdx() + 1}: {step.title}
         </div>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 12 }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '12px' }}>
           {step.phase}
         </div>
 
         {/* Description */}
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 14 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '14px' }}>
           {step.description}
         </div>
 
         {/* Two-lane status */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '10px' }}>
           <DiagramTooltip content="Ethereum L1 -- settlement layer. Все активы в конечном итоге защищены консенсусом Ethereum.">
             <div style={{
               ...glassStyle,
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #6366f130',
+              'padding': '10px',
+              'border-radius': '6px',
+              'border': '1px solid #6366f130',
             }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#6366f1', fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#6366f1', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 L1 (Ethereum)
               </div>
-              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace' }}>
                 {step.l1Status}
               </div>
             </div>
@@ -590,14 +590,14 @@ export function L1L2MessageDiagram() {
           <DiagramTooltip content="L2 Rollup -- execution layer. Транзакции выполняются здесь с низкими комиссиями, а безопасность наследуется от L1.">
             <div style={{
               ...glassStyle,
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #10b98130',
+              'padding': '10px',
+              'border-radius': '6px',
+              'border': '1px solid #10b98130',
             }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#10b981', fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '10px', 'font-weight': '600', 'color': '#10b981', 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 L2 (Rollup)
               </div>
-              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace' }}>
                 {step.l2Status}
               </div>
             </div>
@@ -606,14 +606,14 @@ export function L1L2MessageDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
-        <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-bottom': '14px' }}>
+        <button onClick={reset} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
           Reset
         </button>
-        <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+        <button onClick={goBack} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
           Back
         </button>
-        <button onClick={goNext} disabled={stepIdx === MESSAGE_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === MESSAGE_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === MESSAGE_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === MESSAGE_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === MESSAGE_STEPS.length - 1 ? 0.5 : 1 }}>
+        <button onClick={goNext} disabled={stepIdx() === MESSAGE_STEPS.length - 1} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === MESSAGE_STEPS.length - 1 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === MESSAGE_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, 'border': `1px solid ${stepIdx() === MESSAGE_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, 'border-radius': '6px', 'opacity': stepIdx() === MESSAGE_STEPS.length - 1 ? 0.5 : 1 }}>
           Step
         </button>
       </div>

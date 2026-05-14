@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Mining Diagrams (BTC-06)
  *
@@ -6,7 +7,7 @@
  * - HashTargetVisualization: Number-line hash-below-target with probability display
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { createEffect, createSignal, onCleanup, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -48,7 +49,7 @@ function fnvHash(input: string): string {
 /*  Shared helpers                                                      */
 /* ================================================================== */
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -116,102 +117,101 @@ function hashMeetsTarget(hash: string, leadingZeros: number): boolean {
 /* ================================================================== */
 
 export function MiningSimulator() {
-  const [nonce, setNonce] = useState(0);
-  const [difficulty, setDifficulty] = useState(1);
-  const [speed, setSpeed] = useState<Speed>('step');
-  const [mining, setMining] = useState(false);
-  const [found, setFound] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [nonce, setNonce] = createSignal(0);
+  const [difficulty, setDifficulty] = createSignal(1);
+  const [speed, setSpeed] = createSignal<Speed>('step');
+  const [mining, setMining] = createSignal(false);
+  const [found, setFound] = createSignal(false);
+  let intervalRef: ReturnType<typeof setInterval> | null = null;
 
-  const headerStr = buildHeaderString(nonce);
+  const headerStr = buildHeaderString(nonce());
   const hash = fnvHash(headerStr);
-  const meetsTarget = hashMeetsTarget(hash, difficulty);
+  const meetsTarget = hashMeetsTarget(hash, difficulty());
 
   // Target string for display
-  const targetDisplay = '0'.repeat(difficulty) + 'f'.repeat(16 - difficulty);
+  const targetDisplay = '0'.repeat(difficulty()) + 'f'.repeat(16 - difficulty());
 
   // Stop mining when block found
-  useEffect(() => {
-    if (meetsTarget && mining) {
+  createEffect(() => {
+    if (meetsTarget && mining()) {
       setMining(false);
       setFound(true);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (intervalRef) {
+        clearInterval(intervalRef);
+        intervalRef = null;
       }
     }
-  }, [meetsTarget, mining]);
+  });
 
   // Auto-mining interval
-  useEffect(() => {
-    if (mining && speed !== 'step') {
-      intervalRef.current = setInterval(() => {
+  createEffect(() => {
+    if (mining() && speed() !== 'step') {
+      intervalRef = setInterval(() => {
         setNonce((n) => n + 1);
-      }, SPEED_INTERVALS[speed]);
-      return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
+      }, SPEED_INTERVALS[speed()]);
+      onCleanup(() => {
+        if (intervalRef) clearInterval(intervalRef);
+      });
     }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    onCleanup(() => {
+      if (intervalRef) {
+        clearInterval(intervalRef);
+        intervalRef = null;
       }
-    };
-  }, [mining, speed]);
+    });
+  });
 
-  const handleStartStop = useCallback(() => {
-    if (mining) {
+  const handleStartStop = () => {
+    if (mining()) {
       setMining(false);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (intervalRef) {
+        clearInterval(intervalRef);
+        intervalRef = null;
       }
     } else {
       setFound(false);
       setMining(true);
     }
-  }, [mining]);
+  };
 
-  const handleIncrement = useCallback(() => {
+  const handleIncrement = () => {
     setFound(false);
     setNonce((n) => n + 1);
-  }, []);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     setMining(false);
     setFound(false);
     setNonce(0);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (intervalRef) {
+      clearInterval(intervalRef);
+      intervalRef = null;
     }
-  }, []);
+  };
 
-  const handleDifficultyChange = useCallback((v: number) => {
+  const handleDifficultyChange = (v: number) => {
     setDifficulty(v);
     setMining(false);
     setFound(false);
     setNonce(0);
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (intervalRef) {
+      clearInterval(intervalRef);
+      intervalRef = null;
     }
-  }, []);
+  };
 
   // Render hash with green matching prefix
   const renderHash = () => {
     return hash.split('').map((ch, i) => {
-      const matchesTarget = i < difficulty && ch === '0';
+      const matchesTarget = i < difficulty() && ch === '0';
       return (
         <span
-          key={i}
           style={{
-            color: matchesTarget ? '#4ade80' : found && meetsTarget ? '#4ade80' : colors.text,
-            fontWeight: matchesTarget ? 700 : 400,
-            fontFamily: 'monospace',
-            fontSize: 18,
-            transition: 'color 0.15s',
+            'color': matchesTarget ? '#4ade80' : found() && meetsTarget ? '#4ade80' : colors.text,
+            'font-weight': matchesTarget ? 700 : 400,
+            'font-family': 'monospace',
+            'font-size': '18px',
+            'transition': 'color 0.15s',
           }}
         >
           {ch}
@@ -222,13 +222,13 @@ export function MiningSimulator() {
 
   return (
     <DiagramContainer title="Майнинг-симулятор: поиск nonce" color="green">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '16px' }}>
         {/* Top: header fields + hash result */}
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap' }}>
           {/* Left: block header fields */}
-          <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ 'flex': '1', 'min-width': '220px', 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
             <DiagramTooltip content="Заголовок блока Bitcoin -- 80 байт, содержащих version, prev hash, merkle root, timestamp, nBits (target) и nonce. Майнер изменяет nonce и хеширует заголовок дважды (SHA-256d), пока хеш не станет меньше target.">
-              <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 4 }}>
+              <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-weight': '600', 'margin-bottom': '4px' }}>
                 Заголовок блока
               </div>
             </DiagramTooltip>
@@ -240,18 +240,17 @@ export function MiningSimulator() {
               { label: 'nBits', value: HEADER_FIELDS.nBits },
             ].map(({ label, value }) => (
               <div
-                key={label}
                 style={{
                   ...glassStyle,
-                  padding: '4px 10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: 12,
+                  'padding': '4px 10px',
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'font-size': '12px',
                 }}
               >
-                <span style={{ color: colors.textMuted }}>{label}</span>
-                <span style={{ fontFamily: 'monospace', color: colors.text }}>{value}</span>
+                <span style={{ 'color': colors.textMuted }}>{label}</span>
+                <span style={{ 'font-family': 'monospace', 'color': colors.text }}>{value}</span>
               </div>
             ))}
             {/* Nonce - highlighted */}
@@ -259,53 +258,53 @@ export function MiningSimulator() {
               <div
                 style={{
                   ...glassStyle,
-                  padding: '6px 10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: 12,
-                  border: `1px solid ${colors.primary}50`,
-                  background: `${colors.primary}10`,
+                  'padding': '6px 10px',
+                  'display': 'flex',
+                  'justify-content': 'space-between',
+                  'align-items': 'center',
+                  'font-size': '12px',
+                  'border': `1px solid ${colors.primary}50`,
+                  'background': `${colors.primary}10`,
                 }}
               >
-                <span style={{ color: colors.primary, fontWeight: 600 }}>Nonce</span>
-                <span style={{ fontFamily: 'monospace', color: colors.primary, fontWeight: 600, fontSize: 14 }}>
-                  {nonce}
+                <span style={{ 'color': colors.primary, 'font-weight': '600' }}>Nonce</span>
+                <span style={{ 'font-family': 'monospace', 'color': colors.primary, 'font-weight': '600', 'font-size': '14px' }}>
+                  {nonce()}
                 </span>
               </div>
             </DiagramTooltip>
           </div>
 
           {/* Right: hash result and target */}
-          <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: colors.textMuted, fontWeight: 600, marginBottom: 4 }}>
+          <div style={{ 'flex': '1', 'min-width': '220px', 'display': 'flex', 'flex-direction': 'column', 'gap': '8px' }}>
+            <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'font-weight': '600', 'margin-bottom': '4px' }}>
               Результат хеширования
             </div>
             <DiagramTooltip content="SHA-256d хеш заголовка блока. Майнер ищет nonce, при котором хеш начинается с необходимого количества нулей. Зелёные символы показывают совпадение с target.">
               <div
                 style={{
                   ...glassStyle,
-                  padding: '12px',
-                  border: `1px solid ${found && meetsTarget ? '#4ade80' : colors.border}`,
-                  background: found && meetsTarget ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)',
-                  transition: 'all 0.3s',
+                  'padding': '12px',
+                  'border': `1px solid ${found() && meetsTarget ? '#4ade80' : colors.border}`,
+                  'background': found() && meetsTarget ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.03)',
+                  'transition': 'all 0.3s',
                 }}
               >
-                <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Hash:</div>
-                <div style={{ letterSpacing: 1, lineHeight: 1.6 }}>{renderHash()}</div>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px' }}>Hash:</div>
+                <div style={{ 'letter-spacing': '1px', 'line-height': '1.6' }}>{renderHash()}</div>
               </div>
             </DiagramTooltip>
             <DiagramTooltip content="Целевое значение (target) задаёт верхнюю границу допустимого хеша. Хеш блока должен быть меньше target для принятия блока сетью. Больше ведущих нулей = меньше target = выше сложность.">
-              <div style={{ ...glassStyle, padding: '12px' }}>
-                <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>Target (цель):</div>
-                <div style={{ fontFamily: 'monospace', fontSize: 18, color: colors.accent, letterSpacing: 1 }}>
+              <div style={{ ...glassStyle, 'padding': '12px' }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '6px' }}>Target (цель):</div>
+                <div style={{ 'font-family': 'monospace', 'font-size': '18px', 'color': colors.accent, 'letter-spacing': '1px' }}>
                   {targetDisplay}
                 </div>
               </div>
             </DiagramTooltip>
             <DiagramTooltip content="Количество ведущих нулей в целевом хеше. Больше нулей = выше сложность = больше попыток для нахождения валидного блока. Каждый дополнительный ноль увеличивает сложность в 16 раз.">
               <InteractiveValue
-                value={difficulty}
+                value={difficulty()}
                 onChange={handleDifficultyChange}
                 min={1}
                 max={5}
@@ -319,47 +318,47 @@ export function MiningSimulator() {
         <div
           style={{
             ...glassStyle,
-            padding: '10px 14px',
-            textAlign: 'center',
-            fontSize: 13,
-            fontFamily: 'monospace',
-            color: found && meetsTarget ? '#4ade80' : mining ? colors.accent : colors.textMuted,
-            border: `1px solid ${found && meetsTarget ? '#4ade80' + '50' : colors.border}`,
-            background: found && meetsTarget ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.03)',
+            'padding': '10px 14px',
+            'text-align': 'center',
+            'font-size': '13px',
+            'font-family': 'monospace',
+            'color': found() && meetsTarget ? '#4ade80' : mining() ? colors.accent : colors.textMuted,
+            'border': `1px solid ${found() && meetsTarget ? '#4ade80' + '50' : colors.border}`,
+            'background': found() && meetsTarget ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.03)',
           }}
         >
-          {found && meetsTarget
-            ? `Блок найден! Nonce: ${nonce} (hash < target)`
-            : mining
-              ? `Майнинг... Nonce: ${nonce}`
-              : `Готов к майнингу. Nonce: ${nonce}`}
+          {found() && meetsTarget
+            ? `Блок найден! Nonce: ${nonce()} (hash < target)`
+            : mining()
+              ? `Майнинг... Nonce: ${nonce()}`
+              : `Готов к майнингу. Nonce: ${nonce()}`}
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           <DiagramTooltip content="Увеличить nonce на 1 и пересчитать хеш. В ручном режиме (Пошагово) позволяет наблюдать, как каждое изменение nonce полностью меняет хеш (лавинный эффект).">
-            <div style={{ display: 'inline-block' }}>
+            <div style={{ 'display': 'inline-block' }}>
               <button
                 onClick={handleIncrement}
-                disabled={mining}
-                style={btnStyle(!mining, colors.primary)}
+                disabled={mining()}
+                style={btnStyle(!mining(), colors.primary)}
               >
                 +1 Nonce
               </button>
             </div>
           </DiagramTooltip>
-          <DiagramTooltip content={mining ? "Остановить перебор nonce." : "Запустить симуляцию перебора nonce для поиска хеша меньше целевого значения."}>
-            <div style={{ display: 'inline-block' }}>
+          <DiagramTooltip content={mining() ? "Остановить перебор nonce." : "Запустить симуляцию перебора nonce для поиска хеша меньше целевого значения."}>
+            <div style={{ 'display': 'inline-block' }}>
               <button
                 onClick={handleStartStop}
-                style={btnStyle(true, mining ? '#ef4444' : '#4ade80')}
+                style={btnStyle(true, mining() ? '#ef4444' : '#4ade80')}
               >
-                {mining ? 'Стоп' : 'Старт майнинг'}
+                {mining() ? 'Стоп' : 'Старт майнинг'}
               </button>
             </div>
           </DiagramTooltip>
           <DiagramTooltip content="Сбросить nonce в 0 и остановить майнинг. Начать поиск заново.">
-            <div style={{ display: 'inline-block' }}>
+            <div style={{ 'display': 'inline-block' }}>
               <button onClick={handleReset} style={btnStyle(true, colors.textMuted)}>
                 Сброс
               </button>
@@ -368,7 +367,7 @@ export function MiningSimulator() {
         </div>
 
         {/* Speed selector */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '6px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           {(['step', 'slow', 'fast', 'turbo'] as Speed[]).map((s) => {
             const speedTooltips: Record<Speed, string> = {
               step: 'Ручной режим -- нажимайте "+1 Nonce" для каждой попытки. Лучше всего для понимания процесса.',
@@ -377,19 +376,19 @@ export function MiningSimulator() {
               turbo: 'Максимальная скорость (10мс). Демонстрирует экспоненциальный рост времени поиска при увеличении сложности.',
             };
             return (
-              <DiagramTooltip key={s} content={speedTooltips[s]}>
-                <div style={{ display: 'inline-block' }}>
+              <DiagramTooltip content={speedTooltips[s]}>
+                <div style={{ 'display': 'inline-block' }}>
                   <button
                     onClick={() => setSpeed(s)}
                     style={{
                       ...glassStyle,
-                      padding: '5px 12px',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      color: speed === s ? colors.primary : colors.textMuted,
-                      background: speed === s ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${speed === s ? colors.primary + '40' : colors.border}`,
-                      borderRadius: 6,
+                      'padding': '5px 12px',
+                      'cursor': 'pointer',
+                      'font-size': '12px',
+                      'color': speed() === s ? colors.primary : colors.textMuted,
+                      'background': speed() === s ? `${colors.primary}15` : 'rgba(255,255,255,0.03)',
+                      'border': `1px solid ${speed() === s ? colors.primary + '40' : colors.border}`,
+                      'border-radius': '6px',
                     }}
                   >
                     {SPEED_LABELS[s]}
@@ -413,11 +412,11 @@ export function MiningSimulator() {
  * Hashes below target = green (valid), above = red (invalid).
  */
 export function HashTargetVisualization() {
-  const [difficulty, setDifficulty] = useState(2);
+  const [difficulty, setDifficulty] = createSignal(2);
 
   // We use a 0-to-1 scale representing 0x0000..0000 to 0xFFFF..FFFF
   // Target position = (16^(16-difficulty)) / 16^16 = 16^(-difficulty) = 1/16^difficulty
-  const targetFraction = Math.pow(16, -difficulty);
+  const targetFraction = Math.pow(16, -difficulty());
   const targetPercent = Math.min(targetFraction * 100, 100);
 
   // Generate sample hashes as points
@@ -449,10 +448,10 @@ export function HashTargetVisualization() {
 
   return (
     <DiagramContainer title="Хеш ниже цели: лотерея Proof of Work" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px', 'align-items': 'center' }}>
         <DiagramTooltip content="Количество ведущих нулей в целевом хеше определяет сложность. Чем больше нулей, тем меньше target и тем меньше вероятность найти валидный хеш за одну попытку.">
           <InteractiveValue
-            value={difficulty}
+            value={difficulty()}
             onChange={setDifficulty}
             min={1}
             max={5}
@@ -460,7 +459,7 @@ export function HashTargetVisualization() {
           />
         </DiagramTooltip>
 
-        <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ 'overflow-x': 'auto', 'width': '100%', 'display': 'flex', 'justify-content': 'center' }}>
           <svg width={barWidth + 40} height={200} viewBox={`0 0 ${barWidth + 40} 200`}>
             {/* Axis labels */}
             <text x={20} y={barY - 10} fill={colors.textMuted} fontSize={10} fontFamily="monospace">
@@ -524,7 +523,7 @@ export function HashTargetVisualization() {
               const y = barY + barHeight + 20 + i * 22;
               const dotY = barY + barHeight / 2;
               return (
-                <g key={s.label}>
+                <g>
                   {/* Dot on bar */}
                   <circle
                     cx={x}
@@ -560,11 +559,11 @@ export function HashTargetVisualization() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           <DiagramTooltip content="Вероятность нахождения валидного хеша за одну попытку. При d ведущих нулях (hex) вероятность = 1/16^d. Среднее количество попыток = 16^d.">
             <DataBox
               label="Вероятность"
-              value={`target / 2^64 = 1 / 16^${difficulty} = 1 / ${Math.pow(16, difficulty).toLocaleString()}`}
+              value={`target / 2^64 = 1 / 16^${difficulty()} = 1 / ${Math.pow(16, difficulty()).toLocaleString()}`}
               variant="default"
             />
           </DiagramTooltip>
@@ -578,7 +577,7 @@ export function HashTargetVisualization() {
         </div>
 
         <DiagramTooltip content="Proof of Work -- это лотерея. Каждый хеш -- случайное число на числовой прямой. Зелёная зона (0..target) -- выигрышная. Чем уже зона, тем сложнее «выиграть» и тем больше энергии тратит сеть.">
-          <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', maxWidth: 480 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'text-align': 'center', 'max-width': '480px' }}>
             Зеленая зона -- хеши меньше цели (валидный блок).
             Красные точки -- хеши выше цели (не прошли PoW).
             Чем больше ведущих нулей, тем уже зеленая зона и тем больше попыток нужно.

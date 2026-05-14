@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Interactive Proof Diagrams (ZK-03)
  *
@@ -7,7 +8,7 @@
  * - FiatShamirDiagram: Fiat-Shamir transform comparison (static, side-by-side)
  */
 
-import { useState, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -91,8 +92,8 @@ const SIGMA_STEPS: SigmaStep[] = [
  * 5-step step-through showing Sigma (3-move) protocol pattern.
  */
 export function SigmaProtocolDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = SIGMA_STEPS[step];
 
   const handleNext = () => {
@@ -101,8 +102,8 @@ export function SigmaProtocolDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -110,17 +111,17 @@ export function SigmaProtocolDiagram() {
   return (
     <DiagramContainer title="Sigma протокол: три шага ZK-доказательства" color="purple">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {SIGMA_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.color}20` : i < step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.color : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.color}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -128,7 +129,7 @@ export function SigmaProtocolDiagram() {
       </div>
 
       {/* Message Sequence Diagram */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         <svg width={400} height={180} viewBox="0 0 400 180">
           {/* Prover column */}
           <rect x={30} y={10} width={80} height={24} rx={4} fill="rgba(167,139,250,0.15)" stroke="#a78bfa" strokeWidth={1} />
@@ -182,24 +183,24 @@ export function SigmaProtocolDiagram() {
       <DiagramTooltip content={current.tooltip}>
         <div style={{
           ...glassStyle,
-          padding: 14,
-          marginBottom: 12,
-          border: `1px solid ${current.color}30`,
+          'padding': '14px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${current.color}30`,
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: current.color, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '13px', 'font-weight': '700', 'color': current.color, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             {step + 1}. {current.title}: {current.subtitle}
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '10px' }}>
             {current.description}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(167,139,250,0.15)' }}>
-              <div style={{ fontSize: 9, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 2 }}>Prover:</div>
-              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.proverAction}</div>
+          <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '10px' }}>
+            <div style={{ ...glassStyle, 'padding': '8px', 'border': '1px solid rgba(167,139,250,0.15)' }}>
+              <div style={{ 'font-size': '9px', 'color': '#a78bfa', 'font-family': 'monospace', 'margin-bottom': '2px' }}>Prover:</div>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace' }}>{current.proverAction}</div>
             </div>
-            <div style={{ ...glassStyle, padding: 8, border: '1px solid rgba(59,130,246,0.15)' }}>
-              <div style={{ fontSize: 9, color: '#3b82f6', fontFamily: 'monospace', marginBottom: 2 }}>Verifier:</div>
-              <div style={{ fontSize: 10, color: colors.text, fontFamily: 'monospace' }}>{current.verifierAction}</div>
+            <div style={{ ...glassStyle, 'padding': '8px', 'border': '1px solid rgba(59,130,246,0.15)' }}>
+              <div style={{ 'font-size': '9px', 'color': '#3b82f6', 'font-family': 'monospace', 'margin-bottom': '2px' }}>Verifier:</div>
+              <div style={{ 'font-size': '10px', 'color': colors.text, 'font-family': 'monospace' }}>{current.verifierAction}</div>
             </div>
           </div>
         </div>
@@ -207,33 +208,33 @@ export function SigmaProtocolDiagram() {
 
       {/* Verify equation at step 4 */}
       {step === 4 && (
-        <div style={{ ...glassStyle, padding: 10, marginBottom: 12, border: '1px solid rgba(34,197,94,0.2)' }}>
-          <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#22c55e', lineHeight: 1.6 }}>
+        <div style={{ ...glassStyle, 'padding': '10px', 'margin-bottom': '12px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+          <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#22c55e', 'line-height': '1.6' }}>
             sG = (k + cx)G = kG + cxG = R + cP {'  '}
-            <span style={{ fontWeight: 700 }}>Verifier убежден. Секрет x НЕ раскрыт.</span>
+            <span style={{ 'font-weight': '700' }}>Verifier убежден. Секрет x НЕ раскрыт.</span>
           </div>
         </div>
       )}
 
       {/* Navigation */}
       <DiagramTooltip content="Навигация по шагам Sigma-протокола: commitment (P->V), challenge (V->P), response (P->V), verify. Три хода — минимальная структура для ZK-доказательства.">
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={handleBack} disabled={history.length <= 1} style={{
-            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)', color: history.length > 1 ? colors.text : colors.textMuted,
-            fontSize: 11, fontFamily: 'monospace', cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+        <div style={{ 'display': 'flex', 'gap': '8px' }}>
+          <button onClick={handleBack} disabled={history().length <= 1} style={{
+            'padding': '6px 16px', 'border-radius': '6px', 'border': '1px solid rgba(255,255,255,0.15)',
+            'background': 'rgba(255,255,255,0.05)', 'color': history().length > 1 ? colors.text : colors.textMuted,
+            'font-size': '11px', 'font-family': 'monospace', 'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
           }}>Back</button>
           <button onClick={handleNext} disabled={step >= SIGMA_STEPS.length - 1} style={{
-            padding: '6px 16px', borderRadius: 6,
-            border: `1px solid ${step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
-            background: step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
-            color: step < SIGMA_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
-            fontSize: 11, fontFamily: 'monospace', cursor: step < SIGMA_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+            'padding': '6px 16px', 'border-radius': '6px',
+            'border': `1px solid ${step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            'background': step < SIGMA_STEPS.length - 1 ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.05)',
+            'color': step < SIGMA_STEPS.length - 1 ? '#a78bfa' : colors.textMuted,
+            'font-size': '11px', 'font-family': 'monospace', 'cursor': step < SIGMA_STEPS.length - 1 ? 'pointer' : 'not-allowed',
           }}>Step</button>
           <button onClick={handleReset} style={{
-            padding: '6px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.05)', color: colors.textMuted, fontSize: 11,
-            fontFamily: 'monospace', cursor: 'pointer',
+            'padding': '6px 16px', 'border-radius': '6px', 'border': '1px solid rgba(255,255,255,0.15)',
+            'background': 'rgba(255,255,255,0.05)', 'color': colors.textMuted, 'font-size': '11px',
+            'font-family': 'monospace', 'cursor': 'pointer',
           }}>Reset</button>
         </div>
       </DiagramTooltip>
@@ -281,13 +282,13 @@ const SCHNORR_Q = 11; // order of g=5 mod 23
  * Editable secret x, "Run Round" button, honest vs cheater modes.
  */
 export function SchnorrProtocolDiagram() {
-  const [x, setX] = useState(7);
-  const [mode, setMode] = useState<'honest' | 'cheater'>('honest');
-  const [rounds, setRounds] = useState<RoundResult[]>([]);
+  const [x, setX] = createSignal(7);
+  const [mode, setMode] = createSignal<'honest' | 'cheater'>('honest');
+  const [rounds, setRounds] = createSignal<RoundResult[]>([]);
 
-  const P = modPow(SCHNORR_G, x, SCHNORR_P);
+  const P = modPow(SCHNORR_G, x(), SCHNORR_P);
 
-  const runRound = useCallback(() => {
+  const runRound = () => {
     const k = Math.floor(Math.random() * (SCHNORR_Q - 1)) + 1;
     const R = modPow(SCHNORR_G, k, SCHNORR_P);
     const c = Math.floor(Math.random() * (SCHNORR_Q - 1)) + 1;
@@ -295,8 +296,8 @@ export function SchnorrProtocolDiagram() {
     let s: number;
     let honest: boolean;
 
-    if (mode === 'honest') {
-      s = (k + c * x) % SCHNORR_Q;
+    if (mode() === 'honest') {
+      s = (k + c * x()) % SCHNORR_Q;
       honest = true;
     } else {
       // Cheater: doesn't know x, picks random s
@@ -309,40 +310,40 @@ export function SchnorrProtocolDiagram() {
     const valid = lhs === rhs;
 
     setRounds((prev) => [...prev.slice(-4), { k, R, c, s, lhs, rhs, valid, honest }]);
-  }, [x, mode, P]);
+  };
 
   const clearRounds = () => setRounds([]);
 
-  const passCount = rounds.filter((r) => r.valid).length;
-  const failCount = rounds.filter((r) => !r.valid).length;
+  const passCount = rounds().filter((r) => r.valid).length;
+  const failCount = rounds().filter((r) => !r.valid).length;
 
   return (
     <DiagramContainer title="Schnorr протокол: пример с числами" color="blue">
       {/* Parameters */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
-        <div style={{ ...glassStyle, padding: 8, textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>p (prime)</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, fontFamily: 'monospace' }}>{SCHNORR_P}</div>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr 1fr', 'gap': '8px', 'margin-bottom': '12px' }}>
+        <div style={{ ...glassStyle, 'padding': '8px', 'text-align': 'center', 'border': '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>p (prime)</div>
+          <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': colors.text, 'font-family': 'monospace' }}>{SCHNORR_P}</div>
         </div>
-        <div style={{ ...glassStyle, padding: 8, textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>g (generator)</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, fontFamily: 'monospace' }}>{SCHNORR_G}</div>
+        <div style={{ ...glassStyle, 'padding': '8px', 'text-align': 'center', 'border': '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>g (generator)</div>
+          <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': colors.text, 'font-family': 'monospace' }}>{SCHNORR_G}</div>
         </div>
-        <div style={{ ...glassStyle, padding: 8, textAlign: 'center', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace' }}>q (order)</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, fontFamily: 'monospace' }}>{SCHNORR_Q}</div>
+        <div style={{ ...glassStyle, 'padding': '8px', 'text-align': 'center', 'border': '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace' }}>q (order)</div>
+          <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': colors.text, 'font-family': 'monospace' }}>{SCHNORR_Q}</div>
         </div>
       </div>
 
       {/* Secret key input */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(167,139,250,0.2)' }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px', 'margin-bottom': '12px' }}>
+        <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(167,139,250,0.2)' }}>
           <DiagramTooltip content="Секретный ключ x — приватное значение, которое доказывающий хочет подтвердить знание без раскрытия. В Schnorr-протоколе x определяет публичный ключ P = g^x mod p.">
-            <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Secret key x:</div>
+            <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Secret key x:</div>
           </DiagramTooltip>
           <input
             type="number"
-            value={x}
+            value={x()}
             min={1}
             max={SCHNORR_Q - 1}
             onChange={(e) => {
@@ -351,41 +352,41 @@ export function SchnorrProtocolDiagram() {
               clearRounds();
             }}
             style={{
-              width: '100%',
-              padding: '4px 8px',
-              fontSize: 14,
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              color: '#a78bfa',
-              background: 'rgba(167,139,250,0.08)',
-              border: '1px solid rgba(167,139,250,0.3)',
-              borderRadius: 4,
-              outline: 'none',
+              'width': '100%',
+              'padding': '4px 8px',
+              'font-size': '14px',
+              'font-family': 'monospace',
+              'font-weight': '700',
+              'color': '#a78bfa',
+              'background': 'rgba(167,139,250,0.08)',
+              'border': '1px solid rgba(167,139,250,0.3)',
+              'border-radius': '4px',
+              'outline': 'none',
             }}
           />
         </div>
-        <div style={{ ...glassStyle, padding: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>Public key P = g^x mod p:</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>
-            {SCHNORR_G}^{x} mod {SCHNORR_P} = {P}
+        <div style={{ ...glassStyle, 'padding': '10px', 'border': '1px solid rgba(59,130,246,0.2)' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>Public key P = g^x mod p:</div>
+          <div style={{ 'font-size': '14px', 'font-weight': '700', 'color': '#3b82f6', 'font-family': 'monospace' }}>
+            {SCHNORR_G}^{x()} mod {SCHNORR_P} = {P}
           </div>
         </div>
       </div>
 
       {/* Mode toggle + Run button */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <DiagramTooltip content={mode === 'honest'
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '12px' }}>
+        <DiagramTooltip content={mode() === 'honest'
           ? 'Честный режим: доказывающий знает секретный ключ x и корректно вычисляет response z = r + e*x. Верификация всегда проходит успешно.'
           : 'Режим мошенника: доказывающий НЕ знает x и пытается угадать challenge заранее. С вероятностью ~100% обман раскрывается.'}>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ 'display': 'flex', 'gap': '8px' }}>
             <button
               onClick={() => { setMode('honest'); clearRounds(); }}
               style={{
-                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-                border: `1px solid ${mode === 'honest' ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                background: mode === 'honest' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-                color: mode === 'honest' ? '#22c55e' : colors.textMuted,
-                fontWeight: mode === 'honest' ? 600 : 400,
+                'padding': '6px 14px', 'border-radius': '6px', 'font-size': '10px', 'font-family': 'monospace', 'cursor': 'pointer',
+                'border': `1px solid ${mode() === 'honest' ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                'background': mode() === 'honest' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+                'color': mode() === 'honest' ? '#22c55e' : colors.textMuted,
+                'font-weight': mode() === 'honest' ? 600 : 400,
               }}
             >
               Honest Prover
@@ -393,11 +394,11 @@ export function SchnorrProtocolDiagram() {
             <button
               onClick={() => { setMode('cheater'); clearRounds(); }}
               style={{
-                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-                border: `1px solid ${mode === 'cheater' ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                background: mode === 'cheater' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
-                color: mode === 'cheater' ? '#ef4444' : colors.textMuted,
-                fontWeight: mode === 'cheater' ? 600 : 400,
+                'padding': '6px 14px', 'border-radius': '6px', 'font-size': '10px', 'font-family': 'monospace', 'cursor': 'pointer',
+                'border': `1px solid ${mode() === 'cheater' ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                'background': mode() === 'cheater' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.05)',
+                'color': mode() === 'cheater' ? '#ef4444' : colors.textMuted,
+                'font-weight': mode() === 'cheater' ? 600 : 400,
               }}
             >
               Cheater (no x)
@@ -405,12 +406,12 @@ export function SchnorrProtocolDiagram() {
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Выполнить один раунд протокола Шнорра: commitment -> challenge -> response -> verification.">
-          <div style={{ marginLeft: 'auto' }}>
+          <div style={{ 'margin-left': 'auto' }}>
             <button
               onClick={runRound}
               style={{
-                padding: '6px 18px', borderRadius: 6, fontSize: 11, fontFamily: 'monospace', cursor: 'pointer',
-                border: '1px solid rgba(96,165,250,0.3)', background: 'rgba(96,165,250,0.15)', color: '#60a5fa', fontWeight: 600,
+                'padding': '6px 18px', 'border-radius': '6px', 'font-size': '11px', 'font-family': 'monospace', 'cursor': 'pointer',
+                'border': '1px solid rgba(96,165,250,0.3)', 'background': 'rgba(96,165,250,0.15)', 'color': '#60a5fa', 'font-weight': '600',
               }}
             >
               Run Round
@@ -422,8 +423,8 @@ export function SchnorrProtocolDiagram() {
             <button
               onClick={clearRounds}
               style={{
-                padding: '6px 14px', borderRadius: 6, fontSize: 10, fontFamily: 'monospace', cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: colors.textMuted,
+                'padding': '6px 14px', 'border-radius': '6px', 'font-size': '10px', 'font-family': 'monospace', 'cursor': 'pointer',
+                'border': '1px solid rgba(255,255,255,0.1)', 'background': 'rgba(255,255,255,0.05)', 'color': colors.textMuted,
               }}
             >
               Clear
@@ -433,14 +434,14 @@ export function SchnorrProtocolDiagram() {
       </div>
 
       {/* Rounds table */}
-      {rounds.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
+      {rounds().length > 0 && (
+        <div style={{ 'margin-bottom': '12px' }}>
           {/* Header */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '30px 40px 40px 40px 40px 60px 60px 50px',
-            gap: 1,
-            marginBottom: 1,
+            'display': 'grid',
+            'grid-template-columns': '30px 40px 40px 40px 40px 60px 60px 50px',
+            'gap': '1px',
+            'margin-bottom': '1px',
           }}>
             {[
               { h: '#', tip: 'Номер раунда протокола.' },
@@ -452,34 +453,34 @@ export function SchnorrProtocolDiagram() {
               { h: 'R*P^c', tip: 'Правая часть проверки: R * P^c mod p. Если g^s == R*P^c, доказательство верно.' },
               { h: 'Result', tip: 'Результат верификации: PASS (g^s == R*P^c) или FAIL (значения не совпадают).' },
             ].map(({ h, tip }) => (
-              <DiagramTooltip key={h} content={tip}>
+              <DiagramTooltip content={tip}>
                 <div style={{
-                  ...glassStyle, padding: '4px 4px', fontSize: 8, fontWeight: 600,
-                  color: colors.textMuted, fontFamily: 'monospace', textAlign: 'center',
+                  ...glassStyle, 'padding': '4px 4px', 'font-size': '8px', 'font-weight': '600',
+                  'color': colors.textMuted, 'font-family': 'monospace', 'text-align': 'center',
                 }}>{h}</div>
               </DiagramTooltip>
             ))}
           </div>
           {/* Rows */}
-          {rounds.map((r, i) => (
-            <div key={i} style={{
-              display: 'grid',
-              gridTemplateColumns: '30px 40px 40px 40px 40px 60px 60px 50px',
-              gap: 1,
-              marginBottom: 1,
+          {rounds().map((r, i) => (
+            <div style={{
+              'display': 'grid',
+              'grid-template-columns': '30px 40px 40px 40px 40px 60px 60px 50px',
+              'gap': '1px',
+              'margin-bottom': '1px',
             }}>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: colors.textMuted }}>{i + 1}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: '#a78bfa' }}>{r.k}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: colors.text }}>{r.R}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: '#f59e0b' }}>{r.c}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: '#3b82f6' }}>{r.s}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: colors.text }}>{r.lhs}</div>
-              <div style={{ ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center', color: colors.text }}>{r.rhs}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': colors.textMuted }}>{i + 1}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': '#a78bfa' }}>{r.k}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': colors.text }}>{r.R}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': '#f59e0b' }}>{r.c}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': '#3b82f6' }}>{r.s}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': colors.text }}>{r.lhs}</div>
+              <div style={{ ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center', 'color': colors.text }}>{r.rhs}</div>
               <div style={{
-                ...glassStyle, padding: '4px', fontSize: 9, fontFamily: 'monospace', textAlign: 'center',
-                fontWeight: 700,
-                color: r.valid ? '#22c55e' : '#ef4444',
-                background: r.valid ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                ...glassStyle, 'padding': '4px', 'font-size': '9px', 'font-family': 'monospace', 'text-align': 'center',
+                'font-weight': '700',
+                'color': r.valid ? '#22c55e' : '#ef4444',
+                'background': r.valid ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
               }}>
                 {r.valid ? 'PASS' : 'FAIL'}
               </div>
@@ -487,26 +488,26 @@ export function SchnorrProtocolDiagram() {
           ))}
 
           {/* Stats */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#22c55e' }}>Pass: {passCount}</span>
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#ef4444' }}>Fail: {failCount}</span>
-            <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted }}>
-              Total: {rounds.length} | {mode === 'honest' ? 'Honest prover: всегда pass' : `Cheater: ~${rounds.length > 0 ? Math.round(failCount / rounds.length * 100) : 0}% fail`}
+          <div style={{ 'display': 'flex', 'gap': '16px', 'margin-top': '8px' }}>
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#22c55e' }}>Pass: {passCount}</span>
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#ef4444' }}>Fail: {failCount}</span>
+            <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted }}>
+              Total: {rounds().length} | {mode() === 'honest' ? 'Honest prover: всегда pass' : `Cheater: ~${rounds().length > 0 ? Math.round(failCount / rounds().length * 100) : 0}% fail`}
             </span>
           </div>
         </div>
       )}
 
-      <DiagramTooltip content={mode === 'honest'
-        ? `Честный доказывающий знает секрет x=${x} и всегда корректно вычисляет response s = k + c*x mod ${SCHNORR_Q}. Верификация g^s == R*P^c ВСЕГДА проходит — это свойство completeness.`
+      <DiagramTooltip content={mode() === 'honest'
+        ? `Честный доказывающий знает секрет x=${x()} и всегда корректно вычисляет response s = k + c*x mod ${SCHNORR_Q}. Верификация g^s == R*P^c ВСЕГДА проходит — это свойство completeness.`
         : 'Мошенник не знает x и выбирает случайный s. Вероятность прохождения верификации пренебрежимо мала — это свойство soundness протокола Шнорра.'}>
         <DataBox
-          label={mode === 'honest' ? 'Honest Prover' : 'Cheater'}
-          value={mode === 'honest'
-            ? `Честный prover знает x=${x}, поэтому вычисляет s = k + c*x (mod ${SCHNORR_Q}). Верификация g^s == R * P^c ВСЕГДА проходит.`
+          label={mode() === 'honest' ? 'Honest Prover' : 'Cheater'}
+          value={mode() === 'honest'
+            ? `Честный prover знает x=${x()}, поэтому вычисляет s = k + c*x (mod ${SCHNORR_Q}). Верификация g^s == R * P^c ВСЕГДА проходит.`
             : `Cheater НЕ знает x, выбирает случайный s. Верификация g^s == R * P^c проходит только при совпадении (~0%). Запустите 5-10 раундов!`
           }
-          variant={mode === 'honest' ? 'info' : 'warning'}
+          variant={mode() === 'honest' ? 'info' : 'warning'}
         />
       </DiagramTooltip>
     </DiagramContainer>
@@ -525,15 +526,15 @@ export function SchnorrProtocolDiagram() {
 export function FiatShamirDiagram() {
   return (
     <DiagramContainer title="Fiat-Shamir: из диалога в одно сообщение" color="orange">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr auto 1fr', 'gap': '12px', 'margin-bottom': '16px' }}>
         {/* Left: Interactive */}
-        <div style={{ ...glassStyle, padding: 14, border: '1px solid rgba(167,139,250,0.2)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', fontFamily: 'monospace', marginBottom: 12, textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '14px', 'border': '1px solid rgba(167,139,250,0.2)' }}>
+          <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': '#a78bfa', 'font-family': 'monospace', 'margin-bottom': '12px', 'text-align': 'center' }}>
             Интерактивный протокол
           </div>
 
           {/* 3 arrows */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '12px' }}>
             <svg width={180} height={140} viewBox="0 0 180 140">
               {/* P and V labels */}
               <text x={20} y={14} fill="#a78bfa" fontSize={9} fontFamily="monospace" fontWeight={600}>P</text>
@@ -558,33 +559,33 @@ export function FiatShamirDiagram() {
             </svg>
           </div>
 
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.5, textAlign: 'center' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'line-height': '1.5', 'text-align': 'center' }}>
             3 сообщения. Verifier ДОЛЖЕН быть online. Verifier выбирает случайный c.
           </div>
         </div>
 
         {/* Center: Transform arrow */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#f97316', fontFamily: 'monospace', writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'justify-content': 'center', 'gap': '8px' }}>
+          <div style={{ 'font-size': '9px', 'font-weight': '700', 'color': '#f97316', 'font-family': 'monospace', 'writing-mode': 'vertical-rl', 'text-orientation': 'mixed' }}>
             Fiat-Shamir
           </div>
           <svg width={30} height={40} viewBox="0 0 30 40">
             <line x1={5} y1={20} x2={25} y2={20} stroke="#f97316" strokeWidth={2} markerEnd="url(#aFSM)" />
             <defs><marker id="aFSM" viewBox="0 0 10 10" refX={8} refY={5} markerWidth={6} markerHeight={6} orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f97316" /></marker></defs>
           </svg>
-          <div style={{ fontSize: 8, color: '#f97316', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.4 }}>
+          <div style={{ 'font-size': '8px', 'color': '#f97316', 'font-family': 'monospace', 'text-align': 'center', 'line-height': '1.4' }}>
             c = random<br />{'-> '}c = H(stmt || R)
           </div>
         </div>
 
         {/* Right: Non-interactive */}
-        <div style={{ ...glassStyle, padding: 14, border: '1px solid rgba(34,197,94,0.2)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace', marginBottom: 12, textAlign: 'center' }}>
+        <div style={{ ...glassStyle, 'padding': '14px', 'border': '1px solid rgba(34,197,94,0.2)' }}>
+          <div style={{ 'font-size': '11px', 'font-weight': '700', 'color': '#22c55e', 'font-family': 'monospace', 'margin-bottom': '12px', 'text-align': 'center' }}>
             Неинтерактивный (Fiat-Shamir)
           </div>
 
           {/* Single arrow */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '12px' }}>
             <svg width={180} height={140} viewBox="0 0 180 140">
               <text x={20} y={14} fill="#a78bfa" fontSize={9} fontFamily="monospace" fontWeight={600}>P</text>
               <text x={160} y={14} fill="#3b82f6" fontSize={9} fontFamily="monospace" fontWeight={600}>V</text>
@@ -607,7 +608,7 @@ export function FiatShamirDiagram() {
             </svg>
           </div>
 
-          <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', lineHeight: 1.5, textAlign: 'center' }}>
+          <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'line-height': '1.5', 'text-align': 'center' }}>
             1 сообщение. Verifier может быть offline. Hash H "имитирует" случайного verifier.
           </div>
         </div>

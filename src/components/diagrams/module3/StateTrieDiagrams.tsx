@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * State Trie Diagrams (ETH-03)
  *
@@ -6,7 +7,7 @@
  * - FourTriesDiagram: Relationship between 4 tries (static with DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -40,7 +41,7 @@ function truncHex(s: string, len = 8): string {
   return s.length > len ? s.slice(0, len) + '...' : s;
 }
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -208,9 +209,9 @@ function findNode(nodes: MPTNode[], id: string): MPTNode | undefined {
 }
 
 export function MPTVisualizationDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = MPT_STEPS[step];
+  const current = MPT_STEPS[step()];
 
   return (
     <DiagramContainer title="Modified Merkle Patricia Trie" color="green">
@@ -218,40 +219,40 @@ export function MPTVisualizationDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginBottom: 12,
-          borderLeft: `3px solid ${colors.success}`,
+          'padding': '10px 14px',
+          'margin-bottom': '12px',
+          'border-left': `3px solid ${colors.success}`,
         }}>
-          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+          <div style={{ 'font-weight': '600', 'color': colors.text, 'font-size': '14px', 'margin-bottom': '4px' }}>
             {current.title}
           </div>
-          <div style={{ color: colors.textMuted, fontSize: 12, lineHeight: 1.5 }}>
+          <div style={{ 'color': colors.textMuted, 'font-size': '12px', 'line-height': '1.5' }}>
             {current.description}
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 8, fontSize: 11 }}>
+      <div style={{ 'display': 'flex', 'gap': '16px', 'justify-content': 'center', 'margin-bottom': '8px', 'font-size': '11px' }}>
         {[
           { type: 'branch', label: 'Branch (16 детей + value)', color: NODE_COLORS.branch, tooltip: 'Branch node: 17 элементов (16 children для hex nibbles 0-F + value). Развилка в trie. Путь определяется hex-encoded key.' },
           { type: 'extension', label: 'Extension (общий префикс)', color: NODE_COLORS.extension, tooltip: 'Extension node: сжатие общего prefix. Содержит shared nibbles + ссылку на следующий node. Оптимизация: уменьшает глубину дерева.' },
           { type: 'leaf', label: 'Leaf (ключ + значение)', color: NODE_COLORS.leaf, tooltip: 'Leaf node: конечный узел с оставшимся key suffix + value. Содержит account data (nonce, balance, storageRoot, codeHash).' },
         ].map((item) => (
-          <DiagramTooltip key={item.type} content={item.tooltip}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+          <DiagramTooltip content={item.tooltip}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'cursor': 'pointer' }}>
               <div style={{
-                width: 10, height: 10, borderRadius: 3,
-                background: item.color + '30', border: `1.5px solid ${item.color}`,
+                'width': '10px', 'height': '10px', 'border-radius': '3px',
+                'background': item.color + '30', 'border': `1.5px solid ${item.color}`,
               }} />
-              <span style={{ color: colors.textMuted, fontFamily: 'monospace' }}>{item.label}</span>
+              <span style={{ 'color': colors.textMuted, 'font-family': 'monospace' }}>{item.label}</span>
             </div>
           </DiagramTooltip>
         ))}
       </div>
 
       {/* SVG Trie */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
         <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`}>
           <defs>
             <marker id="mpt-arrow" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
@@ -272,7 +273,7 @@ export function MPTVisualizationDiagram() {
             const edgeOpacity = edge.dimmed ? 0.15 : edge.highlighted ? 0.9 : 0.4;
 
             return (
-              <g key={i}>
+              <g>
                 <line
                   x1={x1} y1={y1} x2={x2} y2={y2}
                   stroke={edgeColor} strokeWidth={edge.highlighted ? 2 : 1.5}
@@ -306,8 +307,7 @@ export function MPTVisualizationDiagram() {
 
             return (
               <g
-                key={node.id}
-                style={{ transition: 'opacity 300ms ease' }}
+                style={{ 'transition': 'opacity 300ms ease' }}
                 opacity={opacity}
               >
                 <rect
@@ -341,48 +341,47 @@ export function MPTVisualizationDiagram() {
       {/* State root */}
       <div style={{
         ...glassStyle,
-        padding: '6px 14px',
-        textAlign: 'center',
-        fontFamily: 'monospace',
-        fontSize: 12,
-        marginTop: 8,
+        'padding': '6px 14px',
+        'text-align': 'center',
+        'font-family': 'monospace',
+        'font-size': '12px',
+        'margin-top': '8px',
       }}>
-        <span style={{ color: colors.textMuted }}>State Root: </span>
-        <span style={{ color: '#22c55e', fontWeight: 600 }}>0x{truncHex(current.stateRoot, 16)}</span>
+        <span style={{ 'color': colors.textMuted }}>State Root: </span>
+        <span style={{ 'color': '#22c55e', 'font-weight': '600' }}>0x{truncHex(current.stateRoot, 16)}</span>
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
           Сброс
         </button>
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={btnStyle(step > 0, colors.text)}
+          disabled={step() === 0}
+          style={btnStyle(step() > 0, colors.text)}
         >
           Назад
         </button>
         <button
           onClick={() => setStep((s) => Math.min(MPT_STEPS.length - 1, s + 1))}
-          disabled={step >= MPT_STEPS.length - 1}
-          style={btnStyle(step < MPT_STEPS.length - 1, colors.success)}
+          disabled={step() >= MPT_STEPS.length - 1}
+          style={btnStyle(step() < MPT_STEPS.length - 1, colors.success)}
         >
           Далее
         </button>
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-top': '8px' }}>
         {MPT_STEPS.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStep(i)}
             style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: i === step ? colors.success : 'rgba(255,255,255,0.15)',
-              border: `1px solid ${i === step ? colors.success : colors.border}`,
-              cursor: 'pointer',
+              'width': '10px', 'height': '10px', 'border-radius': '50%',
+              'background': i === step() ? colors.success : 'rgba(255,255,255,0.15)',
+              'border': `1px solid ${i === step() ? colors.success : colors.border}`,
+              'cursor': 'pointer',
             }}
           />
         ))}
@@ -459,7 +458,7 @@ export function FourTriesDiagram() {
   return (
     <DiagramContainer title="Четыре дерева Ethereum" color="blue">
       {/* Block header */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
         <svg width={600} height={300} viewBox="0 0 600 300">
           <defs>
             <marker id="four-tries-arrow" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
@@ -480,7 +479,7 @@ export function FourTriesDiagram() {
             { label: 'transactionsRoot', color: colors.primary, x: 200, y: 88 },
             { label: 'receiptsRoot', color: '#e879f9', x: 200, y: 108 },
           ].map((field) => (
-            <text key={field.label} x={field.x} y={field.y} fill={field.color} fontSize={10} fontFamily="monospace">
+            <text x={field.x} y={field.y} fill={field.color} fontSize={10} fontFamily="monospace">
               {field.label}: 0x{fnvHash(field.label).slice(0, 8)}...
             </text>
           ))}
@@ -491,7 +490,6 @@ export function FourTriesDiagram() {
             const fromY = 120;
             return (
               <line
-                key={`arrow-${trie.id}`}
                 x1={fromX} y1={fromY}
                 x2={trie.x} y2={trie.y - 25}
                 stroke={trie.color} strokeWidth={1.5} strokeDasharray="5,3"
@@ -514,7 +512,7 @@ export function FourTriesDiagram() {
             const bw = 110;
             const bh = 55;
             return (
-              <g key={trie.id}>
+              <g>
                 <rect
                   x={trie.x - bw / 2}
                   y={trie.y - bh / 2}
@@ -568,22 +566,22 @@ export function FourTriesDiagram() {
 
       {/* HTML trie cards below SVG with DiagramTooltip */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-        gap: 8,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(240px, 1fr))',
+        'gap': '8px',
       }}>
         {FOUR_TRIES.map((trie) => (
-          <DiagramTooltip key={trie.id} content={trie.description}>
+          <DiagramTooltip content={trie.description}>
             <div style={{
               ...glassStyle,
-              padding: '10px 12px',
-              borderLeft: `3px solid ${trie.color}`,
-              cursor: 'pointer',
+              'padding': '10px 12px',
+              'border-left': `3px solid ${trie.color}`,
+              'cursor': 'pointer',
             }}>
-              <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: trie.color, marginBottom: 4 }}>
+              <div style={{ 'font-family': 'monospace', 'font-size': '12px', 'font-weight': '600', 'color': trie.color, 'margin-bottom': '4px' }}>
                 {trie.name}
               </div>
-              <div style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted }}>
+              <div style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.textMuted }}>
                 <div>Key: {trie.key}</div>
                 <div>Root: {trie.rootField}</div>
               </div>

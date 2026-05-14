@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Hash Function Diagrams
  *
@@ -7,7 +8,7 @@
  * - HashPropertyComparison: Three hash properties explained visually
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -133,16 +134,15 @@ export function HashFunctionOverview() {
       title="Хеш-функция: вход любого размера -> фиксированный выход"
       color="blue"
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '16px' }}>
         {examples.map((ex, i) => (
           <div
-            key={i}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              flexWrap: 'wrap',
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              'gap': '8px',
+              'flex-wrap': 'wrap',
             }}
           >
             <DiagramTooltip content="Вход хеш-функции: произвольные данные любой длины (текст, файл, блок транзакций). Даже 1 бит изменения полностью меняет выход.">
@@ -198,11 +198,11 @@ function countDiffBits(hex1: string, hex2: string): number {
  * Uses a lightweight JS SHA-256 implementation (no SubtleCrypto dependency).
  */
 export function AvalancheEffectDemo() {
-  const [input1, setInput1] = useState('Hello');
-  const [input2, setInput2] = useState('hello');
+  const [input1, setInput1] = createSignal('Hello');
+  const [input2, setInput2] = createSignal('hello');
 
-  const hash1 = sha256JS(input1);
-  const hash2 = sha256JS(input2);
+  const hash1 = sha256JS(input1());
+  const hash2 = sha256JS(input2());
   const diffBits = countDiffBits(hash1, hash2);
   const pct = ((diffBits / 256) * 100).toFixed(1);
 
@@ -212,11 +212,10 @@ export function AvalancheEffectDemo() {
       const isDiff = ch !== h2[i];
       return (
         <span
-          key={i}
           style={{
-            color: isDiff ? colors.danger : colors.success,
-            fontFamily: 'monospace',
-            fontSize: 13,
+            'color': isDiff ? colors.danger : colors.success,
+            'font-family': 'monospace',
+            'font-size': '13px',
           }}
         >
           {ch}
@@ -227,46 +226,46 @@ export function AvalancheEffectDemo() {
 
   return (
     <DiagramContainer title="Лавинный эффект" color="purple">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px' }}>
         {/* Input fields */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ fontSize: 12, color: colors.textMuted, display: 'block', marginBottom: 4 }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap' }}>
+          <div style={{ 'flex': '1', 'min-width': '200px' }}>
+            <label style={{ 'font-size': '12px', 'color': colors.textMuted, 'display': 'block', 'margin-bottom': '4px' }}>
               Вход 1
             </label>
             <input
               type="text"
-              value={input1}
+              value={input1()}
               onChange={e => setInput1(e.target.value)}
               style={{
                 ...glassStyle,
-                width: '100%',
-                padding: '8px 12px',
-                color: colors.text,
-                fontSize: 14,
-                fontFamily: 'monospace',
-                outline: 'none',
-                boxSizing: 'border-box',
+                'width': '100%',
+                'padding': '8px 12px',
+                'color': colors.text,
+                'font-size': '14px',
+                'font-family': 'monospace',
+                'outline': 'none',
+                'box-sizing': 'border-box',
               }}
             />
           </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ fontSize: 12, color: colors.textMuted, display: 'block', marginBottom: 4 }}>
+          <div style={{ 'flex': '1', 'min-width': '200px' }}>
+            <label style={{ 'font-size': '12px', 'color': colors.textMuted, 'display': 'block', 'margin-bottom': '4px' }}>
               Вход 2
             </label>
             <input
               type="text"
-              value={input2}
+              value={input2()}
               onChange={e => setInput2(e.target.value)}
               style={{
                 ...glassStyle,
-                width: '100%',
-                padding: '8px 12px',
-                color: colors.text,
-                fontSize: 14,
-                fontFamily: 'monospace',
-                outline: 'none',
-                boxSizing: 'border-box',
+                'width': '100%',
+                'padding': '8px 12px',
+                'color': colors.text,
+                'font-size': '14px',
+                'font-family': 'monospace',
+                'outline': 'none',
+                'box-sizing': 'border-box',
               }}
             />
           </div>
@@ -274,11 +273,11 @@ export function AvalancheEffectDemo() {
 
         {/* Hash output 1 */}
         <DiagramTooltip content="Хеш первого входа. Зелёные символы совпадают со вторым хешем, красные -- отличаются. Даже минимальное изменение входа ('H' -> 'h') полностью перемешивает выход.">
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '4px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
             SHA-256("{input1}")
           </div>
-          <div style={{ wordBreak: 'break-all', lineHeight: 1.6 }}>
+          <div style={{ 'word-break': 'break-all', 'line-height': '1.6' }}>
             {renderHashDiff(hash1, hash2)}
           </div>
         </div>
@@ -286,24 +285,24 @@ export function AvalancheEffectDemo() {
 
         {/* Hash output 2 */}
         <DiagramTooltip content="Хеш второго входа. Сравните с первым -- при хорошей хеш-функции ~50% бит отличаются. Это свойство называется лавинный эффект (avalanche effect).">
-        <div style={{ ...glassStyle, padding: 12 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ ...glassStyle, 'padding': '12px' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-bottom': '4px', 'text-transform': 'uppercase', 'letter-spacing': '0.05em' }}>
             SHA-256("{input2}")
           </div>
-          <div style={{ wordBreak: 'break-all', lineHeight: 1.6 }}>
+          <div style={{ 'word-break': 'break-all', 'line-height': '1.6' }}>
             {renderHashDiff(hash2, hash1)}
           </div>
         </div>
         </DiagramTooltip>
 
         {/* Statistics */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Количество бит, отличающихся между двумя хешами. Идеальное значение -- около 128 из 256 (50%). Это гарантирует, что похожие входы дают совершенно разные хеши.">
           <DataBox
             label="Отличающихся бит"
             value={`${diffBits} / 256`}
             variant="highlight"
-            style={{ flex: 1, minWidth: 140 }}
+            style={{ 'flex': '1', 'min-width': '140px' }}
           />
           </DiagramTooltip>
           <DiagramTooltip content="Процент изменённых бит. Значение близкое к 50% подтверждает лавинный эффект -- ключевое свойство криптографических хеш-функций.">
@@ -311,14 +310,14 @@ export function AvalancheEffectDemo() {
             label="Процент изменений"
             value={`${pct}%`}
             variant="highlight"
-            style={{ flex: 1, minWidth: 140 }}
+            style={{ 'flex': '1', 'min-width': '140px' }}
           />
           </DiagramTooltip>
         </div>
 
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
-          <span style={{ color: colors.success }}>Зеленый</span> = совпадает,{' '}
-          <span style={{ color: colors.danger }}>красный</span> = отличается.
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'text-align': 'center' }}>
+          <span style={{ 'color': colors.success }}>Зеленый</span> = совпадает,{' '}
+          <span style={{ 'color': colors.danger }}>красный</span> = отличается.
           Идеальная хеш-функция меняет ~50% бит при любом изменении входа.
         </div>
       </div>
@@ -377,69 +376,69 @@ export function HashPropertyComparison() {
     >
       <Grid columns={3} gap={12}>
         {HASH_PROPERTIES.map((prop, i) => (
-          <DiagramTooltip key={i} content={prop.tooltip}>
+          <DiagramTooltip content={prop.tooltip}>
           <div
             style={{
               ...glassStyle,
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
+              'padding': '16px',
+              'display': 'flex',
+              'flex-direction': 'column',
+              'gap': '10px',
             }}
           >
             {/* Icon */}
             <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: `${colors.primary}20`,
-              border: `1px solid ${colors.primary}40`,
-              color: colors.primary,
-              fontFamily: 'monospace',
-              fontWeight: 700,
-              fontSize: 16,
+              'width': '36px',
+              'height': '36px',
+              'border-radius': '50%',
+              'display': 'flex',
+              'align-items': 'center',
+              'justify-content': 'center',
+              'background': `${colors.primary}20`,
+              'border': `1px solid ${colors.primary}40`,
+              'color': colors.primary,
+              'font-family': 'monospace',
+              'font-weight': '700',
+              'font-size': '16px',
             }}>
               {prop.icon}
             </div>
 
             {/* Name */}
             <div style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: colors.text,
+              'font-size': '14px',
+              'font-weight': '600',
+              'color': colors.text,
             }}>
               {prop.name}
             </div>
 
             {/* Formal definition */}
             <div style={{
-              fontSize: 12,
-              color: colors.textMuted,
-              fontFamily: 'monospace',
-              lineHeight: 1.5,
+              'font-size': '12px',
+              'color': colors.textMuted,
+              'font-family': 'monospace',
+              'line-height': '1.5',
             }}>
               {prop.formal}
             </div>
 
             {/* Analogy */}
             <div style={{
-              fontSize: 12,
-              color: colors.accent,
-              lineHeight: 1.5,
-              fontStyle: 'italic',
+              'font-size': '12px',
+              'color': colors.accent,
+              'line-height': '1.5',
+              'font-style': 'italic',
             }}>
               {prop.analogy}
             </div>
 
             {/* Difficulty */}
             <div style={{
-              fontSize: 11,
-              color: colors.warning,
-              fontFamily: 'monospace',
-              marginTop: 'auto',
+              'font-size': '11px',
+              'color': colors.warning,
+              'font-family': 'monospace',
+              'margin-top': 'auto',
             }}>
               {prop.difficulty}
             </div>

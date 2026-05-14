@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * RefresherCallout - Cross-reference component for math refresher lessons.
  *
@@ -14,36 +15,36 @@ interface RefresherCalloutProps {
   lessonTitle: string;
 }
 
-export function RefresherCallout({ topic, lessonId, lessonTitle }: RefresherCalloutProps) {
+export function RefresherCallout(props: RefresherCalloutProps) {
   return (
     <div
-      className="not-prose"
+      class="not-prose"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        background: 'rgba(245, 158, 11, 0.1)',
-        border: '1px solid rgba(245, 158, 11, 0.2)',
-        fontSize: '14px',
-        color: '#fbbf24',
-        margin: '16px 0',
+        'display': 'flex',
+        'align-items': 'center',
+        'gap': '8px',
+        'padding': '8px 16px',
+        'border-radius': '8px',
+        'background': 'rgba(245, 158, 11, 0.1)',
+        'border': '1px solid rgba(245, 158, 11, 0.2)',
+        'font-size': '14px',
+        'color': '#fbbf24',
+        'margin': '16px 0',
       }}
     >
-      <span style={{ fontSize: '16px', flexShrink: 0 }}>&#x1F9ED;</span>
+      <span style={{ 'font-size': '16px', 'flex-shrink': '0' }}>&#x1F9ED;</span>
       <span>
-        {"Нужно вспомнить " + topic + "? "}
+        {"Нужно вспомнить " + props.topic + "? "}
         <a
-          href={`/course/01-math-refresher/${lessonId}`}
+          href={`/course/01-math-refresher/${props.lessonId}`}
           style={{
-            color: '#fbbf24',
-            textDecoration: 'underline',
+            'color': '#fbbf24',
+            'text-decoration': 'underline',
           }}
           onMouseEnter={(e) => { (e.target as HTMLAnchorElement).style.color = '#fef3c7'; }}
           onMouseLeave={(e) => { (e.target as HTMLAnchorElement).style.color = '#fbbf24'; }}
         >
-          {lessonTitle}
+          {props.lessonTitle}
         </a>
       </span>
     </div>

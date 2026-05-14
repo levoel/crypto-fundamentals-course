@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Block Cipher Modes Diagrams
  *
@@ -8,7 +9,7 @@
  * - GCMModeDiagram: Authenticated encryption flow with step-through
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -40,29 +41,24 @@ function xorHex(a: string, b: string): string {
   return result.join('');
 }
 
-function StepControls({
-  step,
-  maxStep,
-  onStep,
-  onReset,
-}: {
+function StepControls(props: {
   step: number;
   maxStep: number;
   onStep: () => void;
   onReset: () => void;
 }) {
   return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+    <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
       <DiagramTooltip content="Сброс: вернуться к начальному состоянию и показать исходные блоки данных.">
-      <div style={{ display: 'inline-block' }}>
+      <div style={{ 'display': 'inline-block' }}>
       <button
-        onClick={onReset}
+        onClick={props.onReset}
         style={{
           ...glassStyle,
-          padding: '6px 14px',
-          cursor: 'pointer',
-          color: colors.text,
-          fontSize: 13,
+          'padding': '6px 14px',
+          'cursor': 'pointer',
+          'color': colors.text,
+          'font-size': '13px',
         }}
       >
         Сброс
@@ -70,19 +66,19 @@ function StepControls({
       </div>
       </DiagramTooltip>
       <DiagramTooltip content="Следующий шаг: обработать следующий блок данных. Каждый шаг демонстрирует одну итерацию шифрования.">
-      <div style={{ display: 'inline-block' }}>
+      <div style={{ 'display': 'inline-block' }}>
       <button
-        onClick={onStep}
-        disabled={step >= maxStep}
+        onClick={props.onStep}
+        disabled={props.step >= props.maxStep}
         style={{
           ...glassStyle,
-          padding: '6px 14px',
-          cursor: step >= maxStep ? 'not-allowed' : 'pointer',
-          color: step >= maxStep ? colors.textMuted : colors.primary,
-          fontSize: 13,
-          opacity: step >= maxStep ? 0.5 : 1,
-          background: step < maxStep ? `${colors.primary}15` : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${step < maxStep ? colors.primary + '40' : 'rgba(255,255,255,0.1)'}`,
+          'padding': '6px 14px',
+          'cursor': props.step >= props.maxStep ? 'not-allowed' : 'pointer',
+          'color': props.step >= props.maxStep ? colors.textMuted : colors.primary,
+          'font-size': '13px',
+          'opacity': props.step >= props.maxStep ? 0.5 : 1,
+          'background': props.step < props.maxStep ? `${colors.primary}15` : 'rgba(255,255,255,0.05)',
+          'border': `1px solid ${props.step < props.maxStep ? colors.primary + '40' : 'rgba(255,255,255,0.1)'}`,
         }}
       >
         Следующий шаг
@@ -90,44 +86,39 @@ function StepControls({
       </div>
       </DiagramTooltip>
       <span style={{
-        fontSize: 12,
-        color: colors.textMuted,
-        display: 'flex',
-        alignItems: 'center',
-        fontFamily: 'monospace',
+        'font-size': '12px',
+        'color': colors.textMuted,
+        'display': 'flex',
+        'align-items': 'center',
+        'font-family': 'monospace',
       }}>
-        {step}/{maxStep}
+        {props.step}/{props.maxStep}
       </span>
     </div>
   );
 }
 
 /** Block display component. */
-function Block({
-  label,
-  value,
-  active,
-  color: blockColor,
-}: {
+function Block(props: {
   label: string;
   value: string;
   active?: boolean;
   color?: string;
 }) {
-  const c = blockColor || colors.text;
+  const c = () => props.color || colors.text;
   return (
     <div style={{
       ...glassStyle,
-      padding: '8px 12px',
-      minWidth: 90,
-      textAlign: 'center',
-      borderColor: active ? `${c}50` : 'rgba(255,255,255,0.08)',
-      background: active ? `${c}10` : 'rgba(255,255,255,0.02)',
-      transition: 'all 0.3s',
+      'padding': '8px 12px',
+      'min-width': '90px',
+      'text-align': 'center',
+      'border-color': props.active ? `${c()}50` : 'rgba(255,255,255,0.08)',
+      'background': props.active ? `${c()}10` : 'rgba(255,255,255,0.02)',
+      'transition': 'all 0.3s',
     }}>
-      <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 11, color: c, fontFamily: 'monospace', fontWeight: active ? 600 : 400 }}>
-        {value}
+      <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'margin-bottom': '2px' }}>{props.label}</div>
+      <div style={{ 'font-size': '11px', 'color': c(), 'font-family': 'monospace', 'font-weight': props.active ? 600 : 400 }}>
+        {props.value}
       </div>
     </div>
   );
@@ -184,33 +175,32 @@ export function ECBPenguinDiagram() {
       color="red"
     >
       <div style={{
-        display: 'flex',
-        gap: 32,
-        justifyContent: 'center',
-        flexWrap: 'wrap',
+        'display': 'flex',
+        'gap': '32px',
+        'justify-content': 'center',
+        'flex-wrap': 'wrap',
       }}>
         {/* Original pattern */}
         <DiagramTooltip content="Оригинальное изображение. Каждый блок 16 байт шифруется независимо в ECB mode. Чёткий паттерн виден невооружённым глазом.">
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: colors.text, marginBottom: 8, fontWeight: 600 }}>
+        <div style={{ 'text-align': 'center' }}>
+          <div style={{ 'font-size': '13px', 'color': colors.text, 'margin-bottom': '8px', 'font-weight': '600' }}>
             Исходное изображение
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(8, ${cellSize}px)`,
-            gap: `${gap}px`,
-            width: 'fit-content',
-            margin: '0 auto',
+            'display': 'grid',
+            'grid-template-columns': `repeat(8, ${cellSize}px)`,
+            'gap': `${gap}px`,
+            'width': 'fit-content',
+            'margin': '0 auto',
           }}>
             {PATTERN_ORIGINAL.flat().map((val, i) => (
               <div
-                key={i}
                 style={{
-                  width: cellSize,
-                  height: cellSize,
-                  borderRadius: 3,
-                  background: val === 1 ? colors.primary : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${val === 1 ? colors.primary + '60' : 'rgba(255,255,255,0.08)'}`,
+                  'width': cellSize,
+                  'height': cellSize,
+                  'border-radius': '3px',
+                  'background': val === 1 ? colors.primary : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${val === 1 ? colors.primary + '60' : 'rgba(255,255,255,0.08)'}`,
                 }}
               />
             ))}
@@ -220,31 +210,30 @@ export function ECBPenguinDiagram() {
 
         {/* ECB encrypted - pattern visible */}
         <DiagramTooltip content="ECB шифрование: одинаковые блоки plaintext дают одинаковые блоки ciphertext. Паттерн виден! ECB НЕ скрывает структуру данных. Никогда не используйте ECB для реальных данных.">
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: colors.error || '#ef4444', marginBottom: 8, fontWeight: 600 }}>
+        <div style={{ 'text-align': 'center' }}>
+          <div style={{ 'font-size': '13px', 'color': colors.error || '#ef4444', 'margin-bottom': '8px', 'font-weight': '600' }}>
             ECB шифрование
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(8, ${cellSize}px)`,
-            gap: `${gap}px`,
-            width: 'fit-content',
-            margin: '0 auto',
+            'display': 'grid',
+            'grid-template-columns': `repeat(8, ${cellSize}px)`,
+            'gap': `${gap}px`,
+            'width': 'fit-content',
+            'margin': '0 auto',
           }}>
             {PATTERN_ORIGINAL.flat().map((val, i) => (
               <div
-                key={i}
                 style={{
-                  width: cellSize,
-                  height: cellSize,
-                  borderRadius: 3,
-                  background: ECB_COLORS[val],
-                  border: `1px solid rgba(255,255,255,0.08)`,
+                  'width': cellSize,
+                  'height': cellSize,
+                  'border-radius': '3px',
+                  'background': ECB_COLORS[val],
+                  'border': `1px solid rgba(255,255,255,0.08)`,
                 }}
               />
             ))}
           </div>
-          <div style={{ fontSize: 10, color: colors.error || '#ef4444', marginTop: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.error || '#ef4444', 'margin-top': '4px' }}>
             Паттерн все еще виден!
           </div>
         </div>
@@ -252,31 +241,30 @@ export function ECBPenguinDiagram() {
 
         {/* CBC/proper encrypted - pattern hidden */}
         <DiagramTooltip content="CBC/CTR шифрование: каждый блок зависит от предыдущего (CBC) или счётчика (CTR). Паттерн полностью скрыт -- выглядит как случайный шум.">
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: colors.success, marginBottom: 8, fontWeight: 600 }}>
+        <div style={{ 'text-align': 'center' }}>
+          <div style={{ 'font-size': '13px', 'color': colors.success, 'margin-bottom': '8px', 'font-weight': '600' }}>
             CBC/CTR шифрование
           </div>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(8, ${cellSize}px)`,
-            gap: `${gap}px`,
-            width: 'fit-content',
-            margin: '0 auto',
+            'display': 'grid',
+            'grid-template-columns': `repeat(8, ${cellSize}px)`,
+            'gap': `${gap}px`,
+            'width': 'fit-content',
+            'margin': '0 auto',
           }}>
             {PATTERN_ORIGINAL.flat().map((_, i) => (
               <div
-                key={i}
                 style={{
-                  width: cellSize,
-                  height: cellSize,
-                  borderRadius: 3,
-                  background: CBC_SEED[i % CBC_SEED.length],
-                  border: `1px solid rgba(255,255,255,0.08)`,
+                  'width': cellSize,
+                  'height': cellSize,
+                  'border-radius': '3px',
+                  'background': CBC_SEED[i % CBC_SEED.length],
+                  'border': `1px solid rgba(255,255,255,0.08)`,
                 }}
               />
             ))}
           </div>
-          <div style={{ fontSize: 10, color: colors.success, marginTop: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.success, 'margin-top': '4px' }}>
             Паттерн скрыт
           </div>
         </div>
@@ -285,13 +273,13 @@ export function ECBPenguinDiagram() {
 
       <DiagramTooltip content="ECB -- единственный режим без обратной связи между блоками. Все остальные режимы (CBC, CTR, GCM) решают эту проблему разными способами: цепочкой, счётчиком или аутентификацией.">
       <div style={{
-        marginTop: 16,
-        padding: 12,
+        'margin-top': '16px',
+        'padding': '12px',
         ...glassStyle,
-        borderColor: 'rgba(239,68,68,0.3)',
+        'border-color': 'rgba(239,68,68,0.3)',
       }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
-          <strong style={{ color: colors.error || '#ef4444' }}>Проблема ECB:</strong>{' '}
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'line-height': '1.6' }}>
+          <strong style={{ 'color': colors.error || '#ef4444' }}>Проблема ECB:</strong>{' '}
           Одинаковые блоки открытого текста всегда дают одинаковые блоки шифротекста.
           Это означает, что паттерны в данных видны после шифрования.
           Это катастрофично для изображений и структурированных данных {'\u2014'} злоумышленник видит
@@ -317,7 +305,7 @@ const CBC_KEY = 'secret';
  * before encryption, creating a chain.
  */
 export function CBCModeDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   // step 0: show IV and plaintext blocks
   // step 1: XOR P1 with IV, encrypt -> C1
   // step 2: XOR P2 with C1, encrypt -> C2
@@ -338,57 +326,56 @@ export function CBCModeDiagram() {
       color="blue"
     >
       {/* Initial state: plaintext blocks */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ 'margin-bottom': '12px' }}>
         <DiagramTooltip content="Обратите внимание: блоки P1 и P2 содержат одинаковые данные (41414141). В ECB они дали бы одинаковый шифротекст, но CBC разрушает этот паттерн.">
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'text-align': 'center' }}>
           Открытый текст (заметьте: P1 и P2 одинаковы!)
         </div>
         </DiagramTooltip>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           <DiagramTooltip content="Initialization Vector (IV): случайный 128-бит блок, XOR-ящийся с первым блоком plaintext. Должен быть уникальным для каждого сообщения, но не секретным.">
-          <Block label="IV" value={CBC_IV} active={step >= 0} color={colors.accent} />
+          <Block label="IV" value={CBC_IV} active={step() >= 0} color={colors.accent} />
           </DiagramTooltip>
           {CBC_PLAINTEXTS.map((p, i) => (
             <Block
-              key={i}
               label={`Блок ${i + 1}`}
               value={p}
-              active={step >= i + 1}
-              color={step === i + 1 ? colors.primary : undefined}
+              active={step() >= i + 1}
+              color={step() === i + 1 ? colors.primary : undefined}
             />
           ))}
         </div>
       </div>
 
       {/* Processing visualization */}
-      {step >= 1 && (
+      {step() >= 1 && (
         <div style={{
-          padding: 12,
+          'padding': '12px',
           ...glassStyle,
-          borderColor: `${colors.primary}30`,
-          marginBottom: 12,
+          'border-color': `${colors.primary}30`,
+          'margin-bottom': '12px',
         }}>
-          <div style={{ fontSize: 12, color: colors.primary, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
-            Шаг {step}: Обработка блока {step}
+          <div style={{ 'font-size': '12px', 'color': colors.primary, 'font-weight': '600', 'margin-bottom': '8px', 'text-align': 'center' }}>
+            Шаг {step()}: Обработка блока {step()}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '6px', 'flex-wrap': 'wrap' }}>
             <Block
-              label={step === 1 ? 'IV' : `C${step - 1}`}
-              value={step === 1 ? CBC_IV : ciphertexts[step - 2]}
+              label={step() === 1 ? 'IV' : `C${step() - 1}`}
+              value={step() === 1 ? CBC_IV : ciphertexts[step() - 2]}
               active
               color={colors.accent}
             />
-            <span style={{ fontSize: 16, color: colors.textMuted }}>XOR</span>
+            <span style={{ 'font-size': '16px', 'color': colors.textMuted }}>XOR</span>
             <Block
-              label={`P${step}`}
-              value={CBC_PLAINTEXTS[step - 1]}
+              label={`P${step()}`}
+              value={CBC_PLAINTEXTS[step() - 1]}
               active
               color={colors.primary}
             />
             <Arrow direction="right" label="AES" />
             <Block
-              label={`C${step}`}
-              value={ciphertexts[step - 1]}
+              label={`C${step()}`}
+              value={ciphertexts[step() - 1]}
               active
               color={colors.success}
             />
@@ -398,32 +385,31 @@ export function CBCModeDiagram() {
 
       {/* Ciphertext output */}
       <div>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'text-align': 'center' }}>
           Шифротекст
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           {ciphertexts.map((ct, i) => (
             <Block
-              key={i}
               label={`C${i + 1}`}
-              value={step > i ? ct : '????????'}
-              active={step > i}
-              color={step > i ? colors.success : undefined}
+              value={step() > i ? ct : '????????'}
+              active={step() > i}
+              color={step() > i ? colors.success : undefined}
             />
           ))}
         </div>
       </div>
 
       {/* Key observation */}
-      {step >= 3 && (
+      {step() >= 3 && (
         <DiagramTooltip content="XOR с предыдущим ciphertext блоком -- это 'цепочка' (chaining). Каждый блок ciphertext зависит от ВСЕХ предыдущих блоков plaintext, поэтому одинаковые данные дают разный шифротекст.">
         <div style={{
-          marginTop: 12,
-          padding: 10,
+          'margin-top': '12px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: `${colors.success}30`,
+          'border-color': `${colors.success}30`,
         }}>
-          <div style={{ fontSize: 12, color: colors.success, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.success, 'line-height': '1.6' }}>
             P1 и P2 одинаковы ({CBC_PLAINTEXTS[0]}), но C1 ({ciphertexts[0]}) и C2 ({ciphertexts[1]}) {'\u2014'} разные!
             CBC разрушает паттерны благодаря цепочке XOR.
           </div>
@@ -432,13 +418,13 @@ export function CBCModeDiagram() {
       )}
 
       <StepControls
-        step={step}
+        step={step()}
         maxStep={3}
         onStep={() => setStep((s) => Math.min(3, s + 1))}
         onReset={() => setStep(0)}
       />
 
-      <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+      <div style={{ 'margin-top': '8px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
         Шифрование последовательное: C(n) зависит от C(n-1). Нельзя параллелизировать.
       </div>
     </DiagramContainer>
@@ -459,7 +445,7 @@ const CTR_KEY = 'ctrkey';
  * Highlights: no block chaining, can encrypt blocks in parallel.
  */
 export function CTRModeDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   // step 0: show nonce and plaintext blocks
   // step 1: encrypt counter 0, XOR with P1 -> C1
   // step 2: encrypt counter 1, XOR with P2 -> C2
@@ -484,61 +470,60 @@ export function CTRModeDiagram() {
       color="purple"
     >
       {/* Plaintext blocks */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ 'margin-bottom': '12px' }}>
         <DiagramTooltip content="Счётчик (counter): nonce + block_number. Уникальный для каждого блока. Шифруется AES, затем XOR с plaintext. Превращает блочный шифр в потоковый.">
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
-          Nonce: <span style={{ fontFamily: 'monospace', color: colors.accent }}>{CTR_NONCE}</span> | Открытый текст:
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'text-align': 'center' }}>
+          Nonce: <span style={{ 'font-family': 'monospace', 'color': colors.accent }}>{CTR_NONCE}</span> | Открытый текст:
         </div>
         </DiagramTooltip>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           {CTR_PLAINTEXTS.map((p, i) => (
             <Block
-              key={i}
               label={`Блок ${i + 1}`}
               value={p}
-              active={step >= i + 1}
-              color={step === i + 1 ? colors.primary : undefined}
+              active={step() >= i + 1}
+              color={step() === i + 1 ? colors.primary : undefined}
             />
           ))}
         </div>
       </div>
 
       {/* Processing for current step */}
-      {step >= 1 && step <= 3 && (
+      {step() >= 1 && step() <= 3 && (
         <div style={{
-          padding: 12,
+          'padding': '12px',
           ...glassStyle,
-          borderColor: `${colors.accent}30`,
-          marginBottom: 12,
+          'border-color': `${colors.accent}30`,
+          'margin-bottom': '12px',
         }}>
-          <div style={{ fontSize: 12, color: colors.accent, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
-            Шаг {step}: Блок {step}
+          <div style={{ 'font-size': '12px', 'color': colors.accent, 'font-weight': '600', 'margin-bottom': '8px', 'text-align': 'center' }}>
+            Шаг {step()}: Блок {step()}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'gap': '6px', 'flex-wrap': 'wrap' }}>
             <Block
-              label={`Счетчик ${step - 1}`}
-              value={counterBlocks[step - 1]}
+              label={`Счетчик ${step() - 1}`}
+              value={counterBlocks[step() - 1]}
               active
               color={colors.accent}
             />
             <Arrow direction="right" label="AES" />
             <Block
               label="Keystream"
-              value={keystreams[step - 1]}
+              value={keystreams[step() - 1]}
               active
               color={colors.warning}
             />
-            <span style={{ fontSize: 16, color: colors.textMuted }}>XOR</span>
+            <span style={{ 'font-size': '16px', 'color': colors.textMuted }}>XOR</span>
             <Block
-              label={`P${step}`}
-              value={CTR_PLAINTEXTS[step - 1]}
+              label={`P${step()}`}
+              value={CTR_PLAINTEXTS[step() - 1]}
               active
               color={colors.primary}
             />
             <Arrow direction="right" />
             <Block
-              label={`C${step}`}
-              value={ciphertexts[step - 1]}
+              label={`C${step()}`}
+              value={ciphertexts[step() - 1]}
               active
               color={colors.success}
             />
@@ -548,39 +533,38 @@ export function CTRModeDiagram() {
 
       {/* Ciphertext output */}
       <div>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'text-align': 'center' }}>
           Шифротекст
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
           {ciphertexts.map((ct, i) => (
             <Block
-              key={i}
               label={`C${i + 1}`}
-              value={step > i ? ct : '????????'}
-              active={step > i}
-              color={step > i ? colors.success : undefined}
+              value={step() > i ? ct : '????????'}
+              active={step() > i}
+              color={step() > i ? colors.success : undefined}
             />
           ))}
         </div>
       </div>
 
       <StepControls
-        step={step}
+        step={step()}
         maxStep={3}
         onStep={() => setStep((s) => Math.min(3, s + 1))}
         onReset={() => setStep(0)}
       />
 
       {/* Key insight */}
-      {step >= 3 && (
+      {step() >= 3 && (
         <DiagramTooltip content="Параллелизация: каждый блок шифруется независимо (counter -> AES -> XOR). В отличие от CBC, CTR позволяет шифровать/расшифровывать блоки в любом порядке. Идеально для многоядерных процессоров.">
         <div style={{
-          marginTop: 8,
-          padding: 10,
+          'margin-top': '8px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: `${colors.success}30`,
+          'border-color': `${colors.success}30`,
         }}>
-          <div style={{ fontSize: 12, color: colors.success, lineHeight: 1.6 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.success, 'line-height': '1.6' }}>
             Каждый блок шифруется независимо (Nonce + счетчик). Блоки можно обрабатывать параллельно!
             CTR превращает блочный шифр в потоковый шифр.
           </div>
@@ -588,7 +572,7 @@ export function CTRModeDiagram() {
         </DiagramTooltip>
       )}
 
-      <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+      <div style={{ 'margin-top': '8px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
         Ethereum keystore файлы используют AES-128-CTR.
         Никогда не используйте один nonce дважды с одним ключом!
       </div>
@@ -611,7 +595,7 @@ const GCM_AAD = 'заголовок';
  * Output: ciphertext + authentication tag.
  */
 export function GCMModeDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
   // step 0: show inputs (plaintext, key, nonce, AAD)
   // step 1: CTR encryption of P1 -> C1, GHASH starts with AAD
   // step 2: CTR encryption of P2 -> C2, GHASH continues
@@ -631,60 +615,59 @@ export function GCMModeDiagram() {
       color="green"
     >
       {/* Inputs */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8, textAlign: 'center' }}>
+      <div style={{ 'margin-bottom': '12px' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'margin-bottom': '8px', 'text-align': 'center' }}>
           Входные данные
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Block label="Nonce" value={GCM_NONCE} active={step >= 0} color={colors.accent} />
-          <Block label="AAD" value={GCM_AAD} active={step >= 0} color={colors.warning} />
+        <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
+          <Block label="Nonce" value={GCM_NONCE} active={step() >= 0} color={colors.accent} />
+          <Block label="AAD" value={GCM_AAD} active={step() >= 0} color={colors.warning} />
           {GCM_PLAINTEXTS.map((p, i) => (
             <Block
-              key={i}
               label={`P${i + 1}`}
               value={p}
-              active={step >= i + 1}
-              color={step === i + 1 ? colors.primary : undefined}
+              active={step() >= i + 1}
+              color={step() === i + 1 ? colors.primary : undefined}
             />
           ))}
         </div>
       </div>
 
       {/* Two parallel tracks */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '16px', 'justify-content': 'center', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
         {/* Encryption track */}
         <DiagramTooltip content="Шифрование в GCM использует CTR mode: nonce + счётчик шифруется AES, затем XOR с plaintext. Блоки обрабатываются параллельно. Счётчик начинается с 1 (0 зарезервирован для auth tag).">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          flex: '1 1 300px',
-          maxWidth: 400,
-          borderColor: `${colors.primary}30`,
+          'padding': '12px',
+          'flex': '1 1 300px',
+          'max-width': '400px',
+          'border-color': `${colors.primary}30`,
         }}>
-          <div style={{ fontSize: 12, color: colors.primary, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
+          <div style={{ 'font-size': '12px', 'color': colors.primary, 'font-weight': '600', 'margin-bottom': '8px', 'text-align': 'center' }}>
             Шифрование (CTR)
           </div>
-          {step >= 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {GCM_PLAINTEXTS.slice(0, Math.min(step, 2)).map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.accent }}>
+          {step() >= 1 && (
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
+              {GCM_PLAINTEXTS.slice(0, Math.min(step(), 2)).map((p, i) => (
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
+                  <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.accent }}>
                     E(Nonce|{i + 1})
                   </span>
-                  <span style={{ fontSize: 12, color: colors.textMuted }}>XOR</span>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.primary }}>
+                  <span style={{ 'font-size': '12px', 'color': colors.textMuted }}>XOR</span>
+                  <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.primary }}>
                     {p}
                   </span>
-                  <span style={{ fontSize: 12, color: colors.textMuted }}>=</span>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.success, fontWeight: 600 }}>
+                  <span style={{ 'font-size': '12px', 'color': colors.textMuted }}>=</span>
+                  <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.success, 'font-weight': '600' }}>
                     {ciphertexts[i]}
                   </span>
                 </div>
               ))}
             </div>
           )}
-          {step < 1 && (
-            <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+          {step() < 1 && (
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
               Ожидание...
             </div>
           )}
@@ -695,35 +678,35 @@ export function GCMModeDiagram() {
         <DiagramTooltip content="GHASH: multiplication в GF(2^128) для аутентификации. Вычисляет authentication tag из ciphertext + AAD (associated data). Galois field arithmetic обеспечивает быстрое вычисление на аппаратном уровне.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          flex: '1 1 300px',
-          maxWidth: 400,
-          borderColor: `${colors.warning}30`,
+          'padding': '12px',
+          'flex': '1 1 300px',
+          'max-width': '400px',
+          'border-color': `${colors.warning}30`,
         }}>
-          <div style={{ fontSize: 12, color: colors.warning, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
+          <div style={{ 'font-size': '12px', 'color': colors.warning, 'font-weight': '600', 'margin-bottom': '8px', 'text-align': 'center' }}>
             Аутентификация (GHASH)
           </div>
-          {step >= 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {step >= 1 && (
-                <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.warning, textAlign: 'center' }}>
+          {step() >= 1 && (
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px' }}>
+              {step() >= 1 && (
+                <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.warning, 'text-align': 'center' }}>
                   GHASH(AAD) = {pseudoEncrypt(GCM_AAD, 'ghash').slice(0, 8)}
                 </div>
               )}
-              {step >= 2 && (
-                <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.warning, textAlign: 'center' }}>
+              {step() >= 2 && (
+                <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.warning, 'text-align': 'center' }}>
                   GHASH(AAD, C1, C2) = {pseudoEncrypt(GCM_AAD + ciphertexts.join(''), 'ghash').slice(0, 8)}
                 </div>
               )}
-              {step >= 3 && (
-                <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.success, fontWeight: 600, textAlign: 'center' }}>
+              {step() >= 3 && (
+                <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.success, 'font-weight': '600', 'text-align': 'center' }}>
                   Tag = E(Nonce|0) XOR GHASH = {authTag}
                 </div>
               )}
             </div>
           )}
-          {step < 1 && (
-            <div style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+          {step() < 1 && (
+            <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
               Ожидание...
             </div>
           )}
@@ -732,24 +715,24 @@ export function GCMModeDiagram() {
       </div>
 
       {/* Output */}
-      {step >= 3 && (
+      {step() >= 3 && (
         <DiagramTooltip content="Authentication tag: 128-бит MAC, гарантирующий целостность и подлинность. Если tag не совпадает -- данные были модифицированы. AEAD = Authenticated Encryption with Associated Data.">
         <div style={{
-          padding: 12,
+          'padding': '12px',
           ...glassStyle,
-          borderColor: `${colors.success}40`,
-          background: `${colors.success}08`,
+          'border-color': `${colors.success}40`,
+          'background': `${colors.success}08`,
         }}>
-          <div style={{ fontSize: 12, color: colors.success, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>
+          <div style={{ 'font-size': '12px', 'color': colors.success, 'font-weight': '600', 'margin-bottom': '8px', 'text-align': 'center' }}>
             Результат GCM
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'flex-wrap': 'wrap' }}>
             {ciphertexts.map((ct, i) => (
-              <Block key={i} label={`C${i + 1}`} value={ct} active color={colors.success} />
+              <Block label={`C${i + 1}`} value={ct} active color={colors.success} />
             ))}
             <Block label="Auth Tag" value={authTag} active color={colors.warning} />
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 8, textAlign: 'center', lineHeight: 1.5 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'margin-top': '8px', 'text-align': 'center', 'line-height': '1.5' }}>
             Если кто-то изменит шифротекст, тег не совпадет {'\u2014'} подделка будет обнаружена.
             GCM обеспечивает и конфиденциальность, и целостность данных.
           </div>
@@ -758,13 +741,13 @@ export function GCMModeDiagram() {
       )}
 
       <StepControls
-        step={step}
+        step={step()}
         maxStep={3}
         onStep={() => setStep((s) => Math.min(3, s + 1))}
         onReset={() => setStep(0)}
       />
 
-      <div style={{ marginTop: 8, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+      <div style={{ 'margin-top': '8px', 'font-size': '11px', 'color': colors.textMuted, 'text-align': 'center' }}>
         GCM = CTR (шифрование) + GHASH (аутентификация). Стандарт для TLS 1.3 и большинства современных протоколов.
       </div>
     </DiagramContainer>

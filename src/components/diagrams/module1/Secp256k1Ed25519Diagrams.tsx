@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Secp256k1 and Ed25519 Comparison Diagrams
  *
@@ -90,30 +91,30 @@ export function CurveComparisonDiagram() {
     <DiagramContainer title="secp256k1 vs Ed25519: сравнение параметров" color="purple">
       {/* Header */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 2,
-        marginBottom: 2,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr 1fr',
+        'gap': '2px',
+        'margin-bottom': '2px',
       }}>
         <div style={{
           ...glassStyle,
-          padding: '10px 12px',
-          fontSize: 12,
-          fontWeight: 700,
-          color: colors.textMuted,
-          borderColor: 'rgba(255,255,255,0.08)',
+          'padding': '10px 12px',
+          'font-size': '12px',
+          'font-weight': '700',
+          'color': colors.textMuted,
+          'border-color': 'rgba(255,255,255,0.08)',
         }}>
           Параметр
         </div>
         <DiagramTooltip content="secp256k1: кривая y^2 = x^3 + 7 над Fp. Используется в Bitcoin и Ethereum. Koblitz curve -- эффективное вычисление. Не была выбрана NIST (нет backdoor подозрений).">
           <div style={{
             ...glassStyle,
-            padding: '10px 12px',
-            fontSize: 12,
-            fontWeight: 700,
-            color: colors.warning,
-            borderColor: `${colors.warning}30`,
-            textAlign: 'center',
+            'padding': '10px 12px',
+            'font-size': '12px',
+            'font-weight': '700',
+            'color': colors.warning,
+            'border-color': `${colors.warning}30`,
+            'text-align': 'center',
           }}>
             secp256k1
           </div>
@@ -121,12 +122,12 @@ export function CurveComparisonDiagram() {
         <DiagramTooltip content="Ed25519: twisted Edwards curve -x^2 + y^2 = 1 + dx^2y^2. Используется в Solana, Cardano, Monero. Быстрые подписи, детерминированный nonce (нет nonce reuse risk).">
           <div style={{
             ...glassStyle,
-            padding: '10px 12px',
-            fontSize: 12,
-            fontWeight: 700,
-            color: colors.accent,
-            borderColor: `${colors.accent}30`,
-            textAlign: 'center',
+            'padding': '10px 12px',
+            'font-size': '12px',
+            'font-weight': '700',
+            'color': colors.accent,
+            'border-color': `${colors.accent}30`,
+            'text-align': 'center',
           }}>
             Ed25519
           </div>
@@ -136,46 +137,45 @@ export function CurveComparisonDiagram() {
       {/* Rows */}
       {CURVE_PARAMS.map((param, i) => (
         <div
-          key={i}
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            gap: 2,
-            marginBottom: 2,
+            'display': 'grid',
+            'grid-template-columns': '1fr 1fr 1fr',
+            'gap': '2px',
+            'margin-bottom': '2px',
           }}
         >
           <DiagramTooltip content={CURVE_PARAM_TOOLTIPS[param.label] ?? param.label}>
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: colors.text,
-              borderColor: 'rgba(255,255,255,0.05)',
+              'padding': '8px 12px',
+              'font-size': '11px',
+              'color': colors.text,
+              'border-color': 'rgba(255,255,255,0.05)',
             }}>
               {param.label}
             </div>
           </DiagramTooltip>
           <div style={{
             ...glassStyle,
-            padding: '8px 12px',
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: colors.textMuted,
-            borderColor: 'rgba(255,255,255,0.05)',
-            textAlign: 'center',
-            wordBreak: 'break-word',
+            'padding': '8px 12px',
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'color': colors.textMuted,
+            'border-color': 'rgba(255,255,255,0.05)',
+            'text-align': 'center',
+            'word-break': 'break-word',
           }}>
             {param.secp256k1}
           </div>
           <div style={{
             ...glassStyle,
-            padding: '8px 12px',
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: colors.textMuted,
-            borderColor: 'rgba(255,255,255,0.05)',
-            textAlign: 'center',
-            wordBreak: 'break-word',
+            'padding': '8px 12px',
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'color': colors.textMuted,
+            'border-color': 'rgba(255,255,255,0.05)',
+            'text-align': 'center',
+            'word-break': 'break-word',
           }}>
             {param.ed25519}
           </div>
@@ -185,16 +185,16 @@ export function CurveComparisonDiagram() {
       {/* Security note */}
       <DiagramTooltip content="128-бит безопасность означает ~2^128 операций для взлома (Pollard rho). Оба варианта безопасны до появления квантовых компьютеров, после чего потребуется миграция на post-quantum схемы.">
         <div style={{
-          marginTop: 12,
-          padding: 10,
+          'margin-top': '12px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: `${colors.success}20`,
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-          textAlign: 'center',
+          'border-color': `${colors.success}20`,
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
+          'text-align': 'center',
         }}>
-          <strong style={{ color: colors.success }}>Обе кривые обеспечивают ~128 бит безопасности.</strong>{' '}
+          <strong style={{ 'color': colors.success }}>Обе кривые обеспечивают ~128 бит безопасности.</strong>{' '}
           Ed25519 быстрее и проще в реализации; secp256k1 проверена 15+ годами использования в Bitcoin.
         </div>
       </DiagramTooltip>
@@ -239,40 +239,40 @@ export function BlockchainCurveUsage() {
         {/* secp256k1 column */}
         <div>
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: colors.warning,
-            marginBottom: 10,
-            textAlign: 'center',
-            fontFamily: 'monospace',
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': colors.warning,
+            'margin-bottom': '10px',
+            'text-align': 'center',
+            'font-family': 'monospace',
           }}>
             secp256k1
           </div>
           {secpChains.map((chain) => (
-            <DiagramTooltip key={chain.name} content={chain.description}>
+            <DiagramTooltip content={chain.description}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  borderColor: `${chain.color}30`,
-                  marginBottom: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
+                  'padding': '8px 12px',
+                  'border-color': `${chain.color}30`,
+                  'margin-bottom': '6px',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'gap': '10px',
                 }}
               >
                 <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: chain.color,
-                  flexShrink: 0,
+                  'width': '8px',
+                  'height': '8px',
+                  'border-radius': '50%',
+                  'background': chain.color,
+                  'flex-shrink': '0',
                 }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: chain.color }}>
-                    {chain.name} <span style={{ fontSize: 10, color: colors.textMuted }}>({chain.year})</span>
+                  <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': chain.color }}>
+                    {chain.name} <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>({chain.year})</span>
                   </div>
-                  <div style={{ fontSize: 10, color: colors.textMuted }}>{chain.description}</div>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>{chain.description}</div>
                 </div>
               </div>
             </DiagramTooltip>
@@ -282,40 +282,40 @@ export function BlockchainCurveUsage() {
         {/* Ed25519 column */}
         <div>
           <div style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: colors.accent,
-            marginBottom: 10,
-            textAlign: 'center',
-            fontFamily: 'monospace',
+            'font-size': '14px',
+            'font-weight': '700',
+            'color': colors.accent,
+            'margin-bottom': '10px',
+            'text-align': 'center',
+            'font-family': 'monospace',
           }}>
             Ed25519
           </div>
           {edChains.map((chain) => (
-            <DiagramTooltip key={chain.name} content={chain.description}>
+            <DiagramTooltip content={chain.description}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  borderColor: `${chain.color}30`,
-                  marginBottom: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
+                  'padding': '8px 12px',
+                  'border-color': `${chain.color}30`,
+                  'margin-bottom': '6px',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'gap': '10px',
                 }}
               >
                 <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: chain.color,
-                  flexShrink: 0,
+                  'width': '8px',
+                  'height': '8px',
+                  'border-radius': '50%',
+                  'background': chain.color,
+                  'flex-shrink': '0',
                 }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: chain.color }}>
-                    {chain.name} <span style={{ fontSize: 10, color: colors.textMuted }}>({chain.year})</span>
+                  <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': chain.color }}>
+                    {chain.name} <span style={{ 'font-size': '10px', 'color': colors.textMuted }}>({chain.year})</span>
                   </div>
-                  <div style={{ fontSize: 10, color: colors.textMuted }}>{chain.description}</div>
+                  <div style={{ 'font-size': '10px', 'color': colors.textMuted }}>{chain.description}</div>
                 </div>
               </div>
             </DiagramTooltip>
@@ -326,16 +326,16 @@ export function BlockchainCurveUsage() {
       {/* Trend note */}
       <DiagramTooltip content="Переход на Ed25519 обусловлен: 1) детерминированный nonce исключает nonce reuse атаку, 2) complete addition law упрощает реализацию (нет edge cases), 3) batch verification ускоряет валидацию блоков.">
         <div style={{
-          marginTop: 12,
-          padding: 10,
+          'margin-top': '12px',
+          'padding': '10px',
           ...glassStyle,
-          borderColor: `${colors.accent}20`,
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-          textAlign: 'center',
+          'border-color': `${colors.accent}20`,
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
+          'text-align': 'center',
         }}>
-          <strong style={{ color: colors.accent }}>Тренд:</strong>{' '}
+          <strong style={{ 'color': colors.accent }}>Тренд:</strong>{' '}
           Ранние блокчейны (Bitcoin, Ethereum) выбрали secp256k1. Новые блокчейны (Solana, Polkadot, NEAR) предпочитают Ed25519
           за скорость, детерминированные подписи и устойчивость к side-channel атакам.
         </div>

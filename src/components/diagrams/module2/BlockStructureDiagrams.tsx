@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Block Structure Diagrams (BTC-03)
  *
@@ -7,7 +8,7 @@
  * - MerkleInBlockDiagram: Merkle tree inside a block connecting to header
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { colors, glassStyle } from '@primitives/shared';
@@ -106,49 +107,49 @@ const HEADER_FIELDS: HeaderField[] = [
 ];
 
 export function BlockHeaderExplorer() {
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = createSignal<number | null>(null);
 
   const totalBytes = HEADER_FIELDS.reduce((s, f) => s + f.size, 0);
-  const selected = selectedIdx !== null ? HEADER_FIELDS[selectedIdx] : null;
+  const selected = selectedIdx() !== null ? HEADER_FIELDS[selectedIdx()] : null;
 
   return (
     <DiagramContainer title="Заголовок блока Bitcoin (80 байт)" color="blue">
       {/* Header bar */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '2px', 'margin-bottom': '12px' }}>
         {HEADER_FIELDS.map((field, i) => {
           const widthPct = (field.size / totalBytes) * 100;
-          const isSelected = selectedIdx === i;
+          const isSelected = selectedIdx() === i;
           return (
-            <DiagramTooltip key={i} content={field.description}>
+            <DiagramTooltip content={field.description}>
               <div
                 onClick={() => setSelectedIdx(isSelected ? null : i)}
                 style={{
-                  flex: `0 0 ${widthPct}%`,
-                  minWidth: 0,
-                  padding: '6px 4px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  background: isSelected ? field.color + '25' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${isSelected ? field.color : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: 4,
-                  transition: 'all 0.15s',
+                  'flex': `0 0 ${widthPct}%`,
+                  'min-width': '0',
+                  'padding': '6px 4px',
+                  'text-align': 'center',
+                  'cursor': 'pointer',
+                  'background': isSelected ? field.color + '25' : 'rgba(255,255,255,0.05)',
+                  'border': `1px solid ${isSelected ? field.color : 'rgba(255,255,255,0.1)'}`,
+                  'border-radius': '4px',
+                  'transition': 'all 0.15s',
                 }}
               >
                 <div style={{
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                  color: isSelected ? field.color : colors.textMuted,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  'font-size': '9px',
+                  'font-family': 'monospace',
+                  'color': isSelected ? field.color : colors.textMuted,
+                  'white-space': 'nowrap',
+                  'overflow': 'hidden',
+                  'text-overflow': 'ellipsis',
                 }}>
                   {field.nameRu}
                 </div>
                 <div style={{
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  color: colors.text,
-                  fontWeight: isSelected ? 600 : 400,
+                  'font-size': '10px',
+                  'font-family': 'monospace',
+                  'color': colors.text,
+                  'font-weight': isSelected ? 600 : 400,
                 }}>
                   {field.size} B
                 </div>
@@ -162,40 +163,40 @@ export function BlockHeaderExplorer() {
       {selected ? (
         <div style={{
           ...glassStyle,
-          padding: 14,
-          borderLeft: `3px solid ${selected.color}`,
+          'padding': '14px',
+          'border-left': `3px solid ${selected.color}`,
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontWeight: 600, color: selected.color, fontSize: 14 }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '8px' }}>
+            <span style={{ 'font-weight': '600', 'color': selected.color, 'font-size': '14px' }}>
               {selected.nameRu} ({selected.name})
             </span>
-            <span style={{ fontFamily: 'monospace', fontSize: 12, color: colors.textMuted }}>
+            <span style={{ 'font-family': 'monospace', 'font-size': '12px', 'color': colors.textMuted }}>
               {selected.size} байт
             </span>
           </div>
 
-          <div style={{ fontSize: 12, color: colors.text, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'margin-bottom': '8px' }}>
             {selected.description}
           </div>
 
           <div style={{
             ...glassStyle,
-            padding: '6px 10px',
-            fontFamily: 'monospace',
-            fontSize: 11,
-            color: colors.textMuted,
-            wordBreak: 'break-all',
-            marginBottom: 8,
+            'padding': '6px 10px',
+            'font-family': 'monospace',
+            'font-size': '11px',
+            'color': colors.textMuted,
+            'word-break': 'break-all',
+            'margin-bottom': '8px',
           }}>
             hex: {truncHex(selected.hex, 16)}
           </div>
 
-          <div style={{ fontSize: 11, color: colors.textMuted, fontStyle: 'italic' }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-style': 'italic' }}>
             Роль в PoW: {selected.role}
           </div>
         </div>
       ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'text-align': 'center' }}>
           Нажмите на поле заголовка, чтобы узнать подробности
         </div>
       )}
@@ -204,16 +205,16 @@ export function BlockHeaderExplorer() {
       <DiagramTooltip content="Заголовок блока всегда ровно 80 байт. Майнер хеширует эти 80 байт дважды (SHA-256d) и проверяет, что результат меньше target. Если да -- блок найден.">
         <div style={{
           ...glassStyle,
-          padding: '8px 14px',
-          marginTop: 12,
-          textAlign: 'center',
-          fontFamily: 'monospace',
-          fontSize: 13,
+          'padding': '8px 14px',
+          'margin-top': '12px',
+          'text-align': 'center',
+          'font-family': 'monospace',
+          'font-size': '13px',
         }}>
-          <span style={{ color: colors.primary }}>80 байт</span>
-          <span style={{ color: colors.textMuted }}> {'->'} SHA-256(SHA-256(header)) {'->'} </span>
-          <span style={{ color: colors.success }}>Block Hash</span>
-          <span style={{ color: colors.textMuted }}> (должен быть {'<'} target)</span>
+          <span style={{ 'color': colors.primary }}>80 байт</span>
+          <span style={{ 'color': colors.textMuted }}> {'->'} SHA-256(SHA-256(header)) {'->'} </span>
+          <span style={{ 'color': colors.success }}>Block Hash</span>
+          <span style={{ 'color': colors.textMuted }}> (должен быть {'<'} target)</span>
         </div>
       </DiagramTooltip>
     </DiagramContainer>
@@ -271,33 +272,33 @@ const CHAIN_BLOCKS: BlockInfo[] = [
 export function BlockChainLinkDiagram() {
   return (
     <DiagramContainer title="Цепочка блоков" color="green">
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ display: 'flex', gap: 0, alignItems: 'center', minWidth: 700, padding: '8px 0' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <div style={{ 'display': 'flex', 'gap': '0', 'align-items': 'center', 'min-width': '700px', 'padding': '8px 0' }}>
           {CHAIN_BLOCKS.map((block, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center' }}>
               {/* Block */}
               <DiagramTooltip content={block.tooltipRu}>
                 <div
                   style={{
                     ...glassStyle,
-                    padding: '10px 12px',
-                    width: 150,
-                    cursor: 'pointer',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    transition: 'all 0.15s',
+                    'padding': '10px 12px',
+                    'width': '150px',
+                    'cursor': 'pointer',
+                    'background': 'rgba(255,255,255,0.05)',
+                    'border': '1px solid rgba(255,255,255,0.1)',
+                    'transition': 'all 0.15s',
                   }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>
+                  <div style={{ 'font-size': '13px', 'font-weight': '600', 'color': colors.text, 'margin-bottom': '4px' }}>
                     #{block.height}
                   </div>
-                  <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.success, marginBottom: 2 }}>
+                  <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.success, 'margin-bottom': '2px' }}>
                     {truncHex(block.hash, 12)}
                   </div>
-                  <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted }}>
+                  <div style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.textMuted }}>
                     prev: {truncHex(block.prevHash, 10)}
                   </div>
-                  <div style={{ fontSize: 9, color: colors.textMuted, marginTop: 2 }}>
+                  <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'margin-top': '2px' }}>
                     {block.txCount} tx | {block.time}
                   </div>
                 </div>
@@ -305,7 +306,7 @@ export function BlockChainLinkDiagram() {
 
               {/* Arrow */}
               {i < CHAIN_BLOCKS.length - 1 && (
-                <svg width={30} height={30} viewBox="0 0 30 30" style={{ flexShrink: 0 }}>
+                <svg width={30} height={30} viewBox="0 0 30 30" style={{ 'flex-shrink': '0' }}>
                   <line x1={0} y1={15} x2={22} y2={15} stroke={colors.border} strokeWidth={1.5} />
                   <polygon points="22,10 30,15 22,20" fill={colors.border} />
                 </svg>
@@ -318,15 +319,15 @@ export function BlockChainLinkDiagram() {
       <DiagramTooltip content="Неизменяемость блокчейна: изменение любого блока инвалидирует все последующие блоки, потому что каждый блок содержит хеш предыдущего. Чем больше подтверждений, тем выше защита.">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          marginTop: 8,
-          borderColor: `${colors.warning}30`,
-          fontSize: 12,
-          color: colors.textMuted,
-          textAlign: 'center',
-          lineHeight: 1.6,
+          'padding': '10px',
+          'margin-top': '8px',
+          'border-color': `${colors.warning}30`,
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'text-align': 'center',
+          'line-height': '1.6',
         }}>
-          <strong style={{ color: colors.warning }}>Неизменяемость:</strong>{' '}
+          <strong style={{ 'color': colors.warning }}>Неизменяемость:</strong>{' '}
           Изменение блока #{CHAIN_BLOCKS[0].height} инвалидирует все {CHAIN_BLOCKS.length} блоков в цепочке. Каждый новый блок делает предыдущие более защищёнными.
         </div>
       </DiagramTooltip>
@@ -387,29 +388,29 @@ export function MerkleInBlockDiagram() {
       {/* Block header representation */}
       <div style={{
         ...glassStyle,
-        padding: '8px 12px',
-        display: 'flex',
-        gap: 8,
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        marginBottom: 8,
+        'padding': '8px 12px',
+        'display': 'flex',
+        'gap': '8px',
+        'justify-content': 'center',
+        'flex-wrap': 'wrap',
+        'margin-bottom': '8px',
       }}>
         {['Version', 'Prev Hash', 'Merkle Root', 'Time', 'nBits', 'Nonce'].map((field) => (
-          <DiagramTooltip key={field} content={
+          <DiagramTooltip content={
             field === 'Merkle Root'
               ? 'Merkle Root -- единственное поле заголовка, связанное с содержимым блока. Остальные 5 полей описывают метаданные блока.'
               : `${field} -- одно из 6 полей 80-байтового заголовка блока.`
           }>
             <span
               style={{
-                padding: '3px 8px',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                borderRadius: 4,
-                background: field === 'Merkle Root' ? `${colors.accent}25` : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${field === 'Merkle Root' ? colors.accent : 'rgba(255,255,255,0.1)'}`,
-                color: field === 'Merkle Root' ? colors.accent : colors.textMuted,
-                fontWeight: field === 'Merkle Root' ? 600 : 400,
+                'padding': '3px 8px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'border-radius': '4px',
+                'background': field === 'Merkle Root' ? `${colors.accent}25` : 'rgba(255,255,255,0.05)',
+                'border': `1px solid ${field === 'Merkle Root' ? colors.accent : 'rgba(255,255,255,0.1)'}`,
+                'color': field === 'Merkle Root' ? colors.accent : colors.textMuted,
+                'font-weight': field === 'Merkle Root' ? 600 : 400,
               }}
             >
               {field}
@@ -419,7 +420,7 @@ export function MerkleInBlockDiagram() {
       </div>
 
       {/* Arrow from header to tree root */}
-      <div style={{ textAlign: 'center', marginBottom: 4 }}>
+      <div style={{ 'text-align': 'center', 'margin-bottom': '4px' }}>
         <svg width={20} height={20} viewBox="0 0 20 20">
           <line x1={10} y1={0} x2={10} y2={14} stroke={colors.accent} strokeWidth={1.5} />
           <polygon points="6,14 10,20 14,14" fill={colors.accent} />
@@ -427,7 +428,7 @@ export function MerkleInBlockDiagram() {
       </div>
 
       {/* Merkle tree SVG (static, no hover) */}
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
         <svg width={500} height={200} viewBox="0 0 500 200">
           {/* Edges */}
           {edges.map(([from, to], i) => {
@@ -435,7 +436,6 @@ export function MerkleInBlockDiagram() {
             const t = nodePositions[to];
             return (
               <line
-                key={i}
                 x1={f.x} y1={f.y + 15}
                 x2={t.x} y2={t.y - 5}
                 stroke={colors.border}
@@ -451,7 +451,7 @@ export function MerkleInBlockDiagram() {
             const nodeColor = isRoot ? colors.accent : id.startsWith('m') ? colors.primary : colors.success;
 
             return (
-              <g key={id}>
+              <g>
                 <rect
                   x={node.x - 45}
                   y={node.y - 12}
@@ -492,27 +492,27 @@ export function MerkleInBlockDiagram() {
 
       {/* HTML Merkle legend with DiagramTooltip (replaces SVG hover + conditional DataBox) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-        gap: 6,
-        marginTop: 8,
+        'display': 'grid',
+        'grid-template-columns': 'repeat(auto-fill, minmax(130px, 1fr))',
+        'gap': '6px',
+        'margin-top': '8px',
       }}>
         {merkleLegend.map((node) => (
-          <DiagramTooltip key={node.label} content={node.tooltipRu}>
+          <DiagramTooltip content={node.tooltipRu}>
             <div style={{
               ...glassStyle,
-              padding: '6px 8px',
-              textAlign: 'center',
-              borderColor: node.label === 'Merkle Root' ? `${colors.accent}30` : 'rgba(255,255,255,0.08)',
+              'padding': '6px 8px',
+              'text-align': 'center',
+              'border-color': node.label === 'Merkle Root' ? `${colors.accent}30` : 'rgba(255,255,255,0.08)',
             }}>
               <div style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: node.label === 'Merkle Root' ? colors.accent : node.label.startsWith('H(tx') && !node.label.includes('+') ? colors.success : colors.primary,
+                'font-size': '10px',
+                'font-weight': '600',
+                'color': node.label === 'Merkle Root' ? colors.accent : node.label.startsWith('H(tx') && !node.label.includes('+') ? colors.success : colors.primary,
               }}>
                 {node.label}
               </div>
-              <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted }}>
+              <div style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.textMuted }}>
                 {truncHex(node.hash)}
               </div>
             </div>
@@ -523,11 +523,11 @@ export function MerkleInBlockDiagram() {
       {/* Reference to Phase 2 */}
       <div style={{
         ...glassStyle,
-        padding: '8px 14px',
-        marginTop: 8,
-        textAlign: 'center',
-        fontSize: 12,
-        color: colors.textMuted,
+        'padding': '8px 14px',
+        'margin-top': '8px',
+        'text-align': 'center',
+        'font-size': '12px',
+        'color': colors.textMuted,
       }}>
         Подробнее о деревьях Меркла: CRYPTO-13 (построение) и CRYPTO-14 (Merkle Proof)
       </div>

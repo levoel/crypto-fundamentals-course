@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Plasma Diagrams (SCALE-04)
  *
@@ -6,7 +7,7 @@
  * - MassExitDiagram: 5-step step-through showing the mass exit problem (history array)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -36,8 +37,8 @@ export function PlasmaArchitectureDiagram() {
 
   return (
     <DiagramContainer title="Архитектура Plasma" color="orange">
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <svg width={svgW} height={svgH} style={{ overflow: 'visible' }}>
+      <div style={{ 'display': 'flex', 'justify-content': 'center', 'margin-bottom': '16px' }}>
+        <svg width={svgW} height={svgH} style={{ 'overflow': 'visible' }}>
           {/* Defs for arrow markers */}
           <defs>
             <marker id="arrowDown" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">
@@ -102,37 +103,37 @@ export function PlasmaArchitectureDiagram() {
       </div>
 
       {/* Layer tooltips below SVG */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         <DiagramTooltip content="L1 (Ethereum) хранит Plasma-контракт, который принимает депозиты и Merkle roots от оператора. L1 -- арбитр: при dispute пользователь может выйти, предоставив Merkle proof своего баланса.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6366f1', padding: '3px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#6366f1', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(99,102,241,0.1)', 'border': '1px solid rgba(99,102,241,0.2)' }}>
             L1 (Ethereum)
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Оператор -- единственный узел, обрабатывающий транзакции на child chain. Он формирует блоки, вычисляет Merkle root и публикует его на L1. Centralized point of failure: если оператор злонамерен или исчезнет, пользователи должны массово выйти.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#f59e0b', padding: '3px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#f59e0b', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(245,158,11,0.1)', 'border': '1px solid rgba(245,158,11,0.2)' }}>
             Operator
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Child chain -- отдельный блокчейн, где происходят пользовательские транзакции. Высокая пропускная способность, но данные НЕ публикуются на L1. Это фундаментальная проблема data availability Plasma.">
-          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', padding: '3px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#10b981', 'padding': '3px 8px', 'border-radius': '4px', 'background': 'rgba(16,185,129,0.1)', 'border': '1px solid rgba(16,185,129,0.2)' }}>
             Child Chain
           </span>
         </DiagramTooltip>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         <DiagramTooltip content="Депозит -- перевод активов с L1 в Plasma child chain. Средства блокируются в Plasma-контракте на Ethereum, а эквивалент появляется на child chain.">
-          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#10b981', padding: '2px 6px', borderRadius: 3, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
+          <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': '#10b981', 'padding': '2px 6px', 'border-radius': '3px', 'background': 'rgba(16,185,129,0.08)', 'border': '1px solid rgba(16,185,129,0.15)' }}>
             Deposits
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Merkle root -- криптографический хеш всех транзакций в блоке child chain. Оператор публикует только root (32 байта) на L1, не сами транзакции. Это экономит газ, но создает проблему data availability.">
-          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#a78bfa', padding: '2px 6px', borderRadius: 3, background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)' }}>
+          <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': '#a78bfa', 'padding': '2px 6px', 'border-radius': '3px', 'background': 'rgba(167,139,250,0.08)', 'border': '1px solid rgba(167,139,250,0.15)' }}>
             Merkle roots
           </span>
         </DiagramTooltip>
         <DiagramTooltip content="Exit -- вывод средств обратно на L1. Пользователь предоставляет Merkle proof своего баланса. Challenge period позволяет оспорить невалидные выходы. Это единственный механизм безопасности для пользователей.">
-          <span style={{ fontSize: 9, fontFamily: 'monospace', color: '#f43f5e', padding: '2px 6px', borderRadius: 3, background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.15)' }}>
+          <span style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': '#f43f5e', 'padding': '2px 6px', 'border-radius': '3px', 'background': 'rgba(244,63,94,0.08)', 'border': '1px solid rgba(244,63,94,0.15)' }}>
             Exits (Merkle proof)
           </span>
         </DiagramTooltip>
@@ -216,9 +217,9 @@ const MASS_EXIT_STEPS: MassExitStep[] = [
  * History array pattern with Step/Back/Reset navigation.
  */
 export function MassExitDiagram() {
-  const [stepIdx, setStepIdx] = useState(0);
+  const [stepIdx, setStepIdx] = createSignal(0);
 
-  const step = MASS_EXIT_STEPS[stepIdx];
+  const step = MASS_EXIT_STEPS[stepIdx()];
 
   const goNext = () => setStepIdx((i) => Math.min(i + 1, MASS_EXIT_STEPS.length - 1));
   const goBack = () => setStepIdx((i) => Math.max(i - 1, 0));
@@ -227,26 +228,26 @@ export function MassExitDiagram() {
   return (
     <DiagramContainer title="Mass Exit Problem: почему Plasma проиграла" color="red">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '14px' }}>
         {MASS_EXIT_STEPS.map((s, i) => (
-          <DiagramTooltip key={i} content={s.tooltipRu}>
+          <DiagramTooltip content={s.tooltipRu}>
             <div
               onClick={() => setStepIdx(i)}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: i === stepIdx ? 700 : 400,
-                cursor: 'pointer',
-                background: i === stepIdx ? `${s.statusColor}20` : 'rgba(255,255,255,0.03)',
-                color: i === stepIdx ? s.statusColor : i < stepIdx ? colors.textMuted : 'rgba(255,255,255,0.2)',
-                border: `1px solid ${i === stepIdx ? s.statusColor + '50' : 'rgba(255,255,255,0.06)'}`,
-                transition: 'all 0.2s',
+                'width': '28px',
+                'height': '28px',
+                'border-radius': '6px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'font-weight': i === stepIdx() ? 700 : 400,
+                'cursor': 'pointer',
+                'background': i === stepIdx() ? `${s.statusColor}20` : 'rgba(255,255,255,0.03)',
+                'color': i === stepIdx() ? s.statusColor : i < stepIdx() ? colors.textMuted : 'rgba(255,255,255,0.2)',
+                'border': `1px solid ${i === stepIdx() ? s.statusColor + '50' : 'rgba(255,255,255,0.06)'}`,
+                'transition': 'all 0.2s',
               }}
             >
               {i + 1}
@@ -258,27 +259,27 @@ export function MassExitDiagram() {
       {/* Step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 14,
-        border: `1px solid ${step.statusColor}30`,
+        'padding': '16px',
+        'margin-bottom': '14px',
+        'border': `1px solid ${step.statusColor}30`,
       }}>
         {/* Title + status */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px', 'flex-wrap': 'wrap', 'gap': '8px' }}>
           <DiagramTooltip content={step.tooltipRu}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: step.statusColor, fontFamily: 'monospace' }}>
-              Step {stepIdx + 1}: {step.title}
+            <span style={{ 'font-size': '13px', 'font-weight': '600', 'color': step.statusColor, 'font-family': 'monospace' }}>
+              Step {stepIdx() + 1}: {step.title}
             </span>
           </DiagramTooltip>
           <DiagramTooltip content={`Статус: ${step.icon}. L1 нагрузка ${step.l1Load}%, затронуто пользователей: ${step.usersAffected}/1000.`}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${step.statusColor}15`,
-              color: step.statusColor,
-              border: `1px solid ${step.statusColor}30`,
-              fontWeight: 700,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${step.statusColor}15`,
+              'color': step.statusColor,
+              'border': `1px solid ${step.statusColor}30`,
+              'font-weight': '700',
             }}>
               {step.icon}
             </span>
@@ -286,95 +287,95 @@ export function MassExitDiagram() {
         </div>
 
         {/* Description */}
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 14 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '14px' }}>
           {step.description}
         </div>
 
         {/* Metrics */}
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+        <div style={{ 'display': 'flex', 'gap': '20px', 'flex-wrap': 'wrap' }}>
           {/* L1 Load */}
-          <div style={{ flex: 1, minWidth: 140 }}>
+          <div style={{ 'flex': '1', 'min-width': '140px' }}>
             <DiagramTooltip content={`L1 нагрузка ${step.l1Load}%. При mass exit тысячи exit-транзакций конкурируют за блок-пространство Ethereum. Каждая exit-транзакция требует Merkle proof (~500-1000 gas).`}>
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4, display: 'inline-block' }}>
-                L1 Load: <span style={{ color: step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981' }}>{step.l1Load}%</span>
+              <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-bottom': '4px', 'display': 'inline-block' }}>
+                L1 Load: <span style={{ 'color': step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981' }}>{step.l1Load}%</span>
               </span>
             </DiagramTooltip>
             <div style={{
-              height: 14,
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 4,
-              overflow: 'hidden',
+              'height': '14px',
+              'background': 'rgba(255,255,255,0.05)',
+              'border-radius': '4px',
+              'overflow': 'hidden',
             }}>
               <div style={{
-                width: `${step.l1Load}%`,
-                height: '100%',
-                background: step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981',
-                opacity: 0.7,
-                borderRadius: 4,
-                transition: 'width 0.3s',
+                'width': `${step.l1Load}%`,
+                'height': '100%',
+                'background': step.l1Load > 80 ? '#ef4444' : step.l1Load > 40 ? '#f59e0b' : '#10b981',
+                'opacity': '0.7',
+                'border-radius': '4px',
+                'transition': 'width 0.3s',
               }} />
             </div>
           </div>
 
           {/* Users affected */}
-          <div style={{ flex: 1, minWidth: 140 }}>
+          <div style={{ 'flex': '1', 'min-width': '140px' }}>
             <DiagramTooltip content={`${step.usersAffected} из 1000 пользователей затронуты. При data withholding пользователи теряют возможность доказать свои балансы и вынуждены использовать последнее известное состояние для exit.`}>
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4, display: 'inline-block' }}>
-                Users affected: <span style={{ color: step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981' }}>{step.usersAffected}/1000</span>
+              <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-bottom': '4px', 'display': 'inline-block' }}>
+                Users affected: <span style={{ 'color': step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981' }}>{step.usersAffected}/1000</span>
               </span>
             </DiagramTooltip>
             <div style={{
-              height: 14,
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 4,
-              overflow: 'hidden',
+              'height': '14px',
+              'background': 'rgba(255,255,255,0.05)',
+              'border-radius': '4px',
+              'overflow': 'hidden',
             }}>
               <div style={{
-                width: `${(step.usersAffected / 1000) * 100}%`,
-                height: '100%',
-                background: step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981',
-                opacity: 0.7,
-                borderRadius: 4,
-                transition: 'width 0.3s',
+                'width': `${(step.usersAffected / 1000) * 100}%`,
+                'height': '100%',
+                'background': step.usersAffected > 500 ? '#f43f5e' : step.usersAffected > 0 ? '#f59e0b' : '#10b981',
+                'opacity': '0.7',
+                'border-radius': '4px',
+                'transition': 'width 0.3s',
               }} />
             </div>
           </div>
         </div>
 
         {/* L1 congestion visualization in step 4 */}
-        {stepIdx === 3 && (
+        {stepIdx() === 3 && (
           <div style={{
-            marginTop: 12,
-            padding: 10,
-            background: 'rgba(239,68,68,0.08)',
-            borderRadius: 6,
-            border: '1px solid rgba(239,68,68,0.2)',
+            'margin-top': '12px',
+            'padding': '10px',
+            'background': 'rgba(239,68,68,0.08)',
+            'border-radius': '6px',
+            'border': '1px solid rgba(239,68,68,0.2)',
           }}>
             <DiagramTooltip content="Визуализация переполнения Ethereum mempool. Красные блоки -- exit-транзакции Plasma-пользователей. При mass exit mempool заполняется тысячами exit TX, вытесняя обычные транзакции.">
-              <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#ef4444', marginBottom: 6, fontWeight: 600, display: 'inline-block' }}>
+              <span style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#ef4444', 'margin-bottom': '6px', 'font-weight': '600', 'display': 'inline-block' }}>
                 Ethereum Mempool Overflow:
               </span>
             </DiagramTooltip>
-            <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+            <div style={{ 'display': 'flex', 'gap': '3px', 'flex-wrap': 'wrap' }}>
               {Array.from({ length: 40 }, (_, i) => (
-                <div key={i} style={{
-                  width: 16,
-                  height: 12,
-                  borderRadius: 2,
-                  background: i < 35 ? '#ef4444' : 'rgba(255,255,255,0.05)',
-                  opacity: i < 35 ? 0.6 : 0.3,
-                  fontSize: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontFamily: 'monospace',
+                <div style={{
+                  'width': '16px',
+                  'height': '12px',
+                  'border-radius': '2px',
+                  'background': i < 35 ? '#ef4444' : 'rgba(255,255,255,0.05)',
+                  'opacity': i < 35 ? 0.6 : 0.3,
+                  'font-size': '6px',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  'color': 'white',
+                  'font-family': 'monospace',
                 }}>
                   TX
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 9, fontFamily: 'monospace', color: colors.textMuted, marginTop: 6 }}>
+            <div style={{ 'font-size': '9px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-top': '6px' }}>
               35/40 TX slots filled with exit transactions. Gas price: 500+ gwei
             </div>
           </div>
@@ -382,19 +383,19 @@ export function MassExitDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-bottom': '14px' }}>
         <div>
-          <button onClick={reset} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+          <button onClick={reset} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
             Reset
           </button>
         </div>
         <div>
-          <button onClick={goBack} disabled={stepIdx === 0} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === 0 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, opacity: stepIdx === 0 ? 0.5 : 1 }}>
+          <button onClick={goBack} disabled={stepIdx() === 0} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === 0 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === 0 ? 'rgba(255,255,255,0.2)' : colors.textMuted, 'border': '1px solid rgba(255,255,255,0.1)', 'border-radius': '6px', 'opacity': stepIdx() === 0 ? 0.5 : 1 }}>
             Back
           </button>
         </div>
         <div>
-          <button onClick={goNext} disabled={stepIdx === MASS_EXIT_STEPS.length - 1} style={{ ...glassStyle, padding: '6px 14px', cursor: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'not-allowed' : 'pointer', fontSize: 11, fontFamily: 'monospace', color: stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, border: `1px solid ${stepIdx === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, borderRadius: 6, opacity: stepIdx === MASS_EXIT_STEPS.length - 1 ? 0.5 : 1 }}>
+          <button onClick={goNext} disabled={stepIdx() === MASS_EXIT_STEPS.length - 1} style={{ ...glassStyle, 'padding': '6px 14px', 'cursor': stepIdx() === MASS_EXIT_STEPS.length - 1 ? 'not-allowed' : 'pointer', 'font-size': '11px', 'font-family': 'monospace', 'color': stepIdx() === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.2)' : colors.accent, 'border': `1px solid ${stepIdx() === MASS_EXIT_STEPS.length - 1 ? 'rgba(255,255,255,0.1)' : colors.accent + '50'}`, 'border-radius': '6px', 'opacity': stepIdx() === MASS_EXIT_STEPS.length - 1 ? 0.5 : 1 }}>
             Step
           </button>
         </div>

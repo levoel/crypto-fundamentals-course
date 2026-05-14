@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Proof of Stake Diagrams (ETH-10)
  *
@@ -76,37 +77,37 @@ const POW_VS_POS_DATA: ComparisonRow[] = [
 export function PoWvsPoSDiagram() {
   return (
     <DiagramContainer title="Proof of Work vs Proof of Stake" color="green">
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 12 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'separate', 'border-spacing': '0', 'font-size': '12px' }}>
           <thead>
             <tr>
               <th style={{
-                padding: '10px 12px',
-                textAlign: 'left',
-                color: colors.textMuted,
-                fontWeight: 600,
-                borderBottom: `1px solid ${colors.border}`,
-                whiteSpace: 'nowrap',
+                'padding': '10px 12px',
+                'text-align': 'left',
+                'color': colors.textMuted,
+                'font-weight': '600',
+                'border-bottom': `1px solid ${colors.border}`,
+                'white-space': 'nowrap',
               }}>
                 Аспект
               </th>
               <th style={{
-                padding: '10px 12px',
-                textAlign: 'left',
-                color: '#f97316',
-                fontWeight: 700,
-                borderBottom: `1px solid ${colors.border}`,
-                whiteSpace: 'nowrap',
+                'padding': '10px 12px',
+                'text-align': 'left',
+                'color': '#f97316',
+                'font-weight': '700',
+                'border-bottom': `1px solid ${colors.border}`,
+                'white-space': 'nowrap',
               }}>
                 PoW (Bitcoin)
               </th>
               <th style={{
-                padding: '10px 12px',
-                textAlign: 'left',
-                color: '#4ade80',
-                fontWeight: 700,
-                borderBottom: `1px solid ${colors.border}`,
-                whiteSpace: 'nowrap',
+                'padding': '10px 12px',
+                'text-align': 'left',
+                'color': '#4ade80',
+                'font-weight': '700',
+                'border-bottom': `1px solid ${colors.border}`,
+                'white-space': 'nowrap',
               }}>
                 PoS (Ethereum)
               </th>
@@ -115,41 +116,40 @@ export function PoWvsPoSDiagram() {
           <tbody>
             {POW_VS_POS_DATA.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  background: 'transparent',
-                  transition: 'background 0.2s',
-                  cursor: 'default',
+                  'background': 'transparent',
+                  'transition': 'background 0.2s',
+                  'cursor': 'default',
                 }}
               >
                 <td style={{
-                  padding: '8px 12px',
-                  color: colors.text,
-                  fontWeight: 600,
-                  borderBottom: `1px solid ${colors.border}`,
-                  verticalAlign: 'top',
+                  'padding': '8px 12px',
+                  'color': colors.text,
+                  'font-weight': '600',
+                  'border-bottom': `1px solid ${colors.border}`,
+                  'vertical-align': 'top',
                 }}>
                   <DiagramTooltip content={row.tooltip}>
                     <span>{row.aspect}</span>
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '8px 12px',
-                  color: '#f97316',
-                  borderBottom: `1px solid ${colors.border}`,
-                  verticalAlign: 'top',
-                  fontFamily: 'monospace',
-                  fontSize: 11,
+                  'padding': '8px 12px',
+                  'color': '#f97316',
+                  'border-bottom': `1px solid ${colors.border}`,
+                  'vertical-align': 'top',
+                  'font-family': 'monospace',
+                  'font-size': '11px',
                 }}>
                   {row.pow}
                 </td>
                 <td style={{
-                  padding: '8px 12px',
-                  color: '#4ade80',
-                  borderBottom: `1px solid ${colors.border}`,
-                  verticalAlign: 'top',
-                  fontFamily: 'monospace',
-                  fontSize: 11,
+                  'padding': '8px 12px',
+                  'color': '#4ade80',
+                  'border-bottom': `1px solid ${colors.border}`,
+                  'vertical-align': 'top',
+                  'font-family': 'monospace',
+                  'font-size': '11px',
                 }}>
                   {row.pos}
                 </td>
@@ -161,11 +161,11 @@ export function PoWvsPoSDiagram() {
 
       {/* Summary */}
       <div style={{
-        marginTop: 12,
-        display: 'flex',
-        gap: 12,
-        flexWrap: 'wrap',
-        justifyContent: 'center',
+        'margin-top': '12px',
+        'display': 'flex',
+        'gap': '12px',
+        'flex-wrap': 'wrap',
+        'justify-content': 'center',
       }}>
         <DataBox
           label="The Merge"
@@ -220,27 +220,27 @@ export function BeaconChainDiagram() {
 
   return (
     <DiagramContainer title="Beacon Chain: слоты и эпохи" color="blue">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '12px', 'align-items': 'center' }}>
 
         {/* Legend */}
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '16px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           {[
             { color: '#4ade80', label: 'Предложен (finalized)' },
             { color: colors.primary, label: 'Предложен (pending)' },
             { color: '#ef4444', label: 'Пропущен (missed)' },
           ].map(({ color, label }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '6px', 'font-size': '11px' }}>
               <div style={{
-                width: 12, height: 12, borderRadius: 3,
-                background: `${color}30`, border: `2px solid ${color}`,
+                'width': '12px', 'height': '12px', 'border-radius': '3px',
+                'background': `${color}30`, 'border': `2px solid ${color}`,
               }} />
-              <span style={{ color: colors.textMuted }}>{label}</span>
+              <span style={{ 'color': colors.textMuted }}>{label}</span>
             </div>
           ))}
         </div>
 
         {/* Slots grid */}
-        <div style={{ overflowX: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ 'overflow-x': 'auto', 'width': '100%', 'display': 'flex', 'justify-content': 'center' }}>
           <svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
             {/* Epoch label */}
             <text x={svgWidth / 2} y={18} fill={colors.text} fontSize={13} fontWeight={700} textAnchor="middle">
@@ -268,7 +268,7 @@ export function BeaconChainDiagram() {
               }
 
               return (
-                <g key={i} style={{ cursor: 'default' }}>
+                <g style={{ 'cursor': 'default' }}>
                   <rect
                     x={x}
                     y={y}
@@ -312,14 +312,14 @@ export function BeaconChainDiagram() {
         </div>
 
         {/* Slot detail cards below SVG */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           <DiagramTooltip content="Slot: 12-секундный интервал. Случайно выбранный proposer предлагает блок. Комитет из ~128 валидаторов аттестует блок. 32 слота = 1 epoch.">
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: colors.text,
-              fontFamily: 'monospace',
+              'padding': '8px 12px',
+              'font-size': '11px',
+              'color': colors.text,
+              'font-family': 'monospace',
             }}>
               Слот = 12 сек
             </div>
@@ -327,10 +327,10 @@ export function BeaconChainDiagram() {
           <DiagramTooltip content="Epoch: 32 слота (~6.4 минуты). Контрольная точка для finality. Два finalized epochs подряд = economic finality.">
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: colors.text,
-              fontFamily: 'monospace',
+              'padding': '8px 12px',
+              'font-size': '11px',
+              'color': colors.text,
+              'font-family': 'monospace',
             }}>
               Эпоха = 32 слота
             </div>
@@ -338,10 +338,10 @@ export function BeaconChainDiagram() {
           <DiagramTooltip content="Casper FFG + LMD GHOST: Casper обеспечивает финальность через checkpoint каждую эпоху. GHOST выбирает каноническую цепочку по весу аттестаций.">
             <div style={{
               ...glassStyle,
-              padding: '8px 12px',
-              fontSize: 11,
-              color: colors.text,
-              fontFamily: 'monospace',
+              'padding': '8px 12px',
+              'font-size': '11px',
+              'color': colors.text,
+              'font-family': 'monospace',
             }}>
               Финальность = 2 эпохи
             </div>
@@ -349,7 +349,7 @@ export function BeaconChainDiagram() {
         </div>
 
         {/* Key metrics */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           <DataBox label="Слот" value="12 секунд" variant="default" />
           <DataBox label="Эпоха" value="32 слота = 6.4 мин" variant="default" />
           <DataBox label="Финальность" value="2 эпохи = 12.8 мин" variant="highlight" />
@@ -359,17 +359,17 @@ export function BeaconChainDiagram() {
         {/* Finality explanation */}
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          fontSize: 12,
-          color: colors.textMuted,
-          lineHeight: 1.6,
-          maxWidth: 560,
-          textAlign: 'center',
+          'padding': '10px 14px',
+          'font-size': '12px',
+          'color': colors.textMuted,
+          'line-height': '1.6',
+          'max-width': '560px',
+          'text-align': 'center',
         }}>
-          <strong style={{ color: colors.primary }}>Casper FFG + LMD GHOST:</strong>{' '}
+          <strong style={{ 'color': colors.primary }}>Casper FFG + LMD GHOST:</strong>{' '}
           Casper FFG обеспечивает финальность (checkpoint каждую эпоху, финализация через 2 эпохи).
           LMD GHOST выбирает каноническую цепочку внутри эпохи по весу аттестаций.
-          Вместе они образуют <strong style={{ color: colors.accent }}>Gasper</strong> -- консенсус Ethereum.
+          Вместе они образуют <strong style={{ 'color': colors.accent }}>Gasper</strong> -- консенсус Ethereum.
         </div>
       </div>
     </DiagramContainer>

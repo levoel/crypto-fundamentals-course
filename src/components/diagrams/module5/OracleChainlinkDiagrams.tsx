@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Oracle Chainlink Diagrams (DEFI-08)
  *
@@ -6,7 +7,7 @@
  * - PriceFeedDataFlowDiagram: Price feed data flow with heartbeat and methods table (DiagramTooltip)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -81,71 +82,71 @@ const ARCH_STAGES: ArchStage[] = [
  * Click on each stage to see details.
  */
 export function OracleArchitectureDiagram() {
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = createSignal<number | null>(null);
 
-  const selected = selectedIdx !== null ? ARCH_STAGES[selectedIdx] : null;
+  const selected = selectedIdx() !== null ? ARCH_STAGES[selectedIdx()] : null;
 
   return (
     <DiagramContainer title="Chainlink: архитектура оракулов" color="blue">
       {/* Flow diagram */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        overflowX: 'auto',
-        paddingBottom: 8,
-        marginBottom: 16,
+        'display': 'flex',
+        'align-items': 'center',
+        'gap': '4px',
+        'overflow-x': 'auto',
+        'padding-bottom': '8px',
+        'margin-bottom': '16px',
       }}>
         {ARCH_STAGES.map((stage, i) => {
-          const isSelected = selectedIdx === i;
+          const isSelected = selectedIdx() === i;
 
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center' }}>
               {/* Stage box */}
               <DiagramTooltip content={stage.tooltipRu}>
                 <div
                   onClick={() => setSelectedIdx(isSelected ? null : i)}
                   style={{
                     ...glassStyle,
-                    padding: '12px 14px',
-                    cursor: 'pointer',
-                    minWidth: 110,
-                    textAlign: 'center',
-                    background: isSelected ? `${stage.color}15` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isSelected ? stage.color : 'rgba(255,255,255,0.08)'}`,
-                    transition: 'all 0.2s',
+                    'padding': '12px 14px',
+                    'cursor': 'pointer',
+                    'min-width': '110px',
+                    'text-align': 'center',
+                    'background': isSelected ? `${stage.color}15` : 'rgba(255,255,255,0.03)',
+                    'border': `1px solid ${isSelected ? stage.color : 'rgba(255,255,255,0.08)'}`,
+                    'transition': 'all 0.2s',
                   }}
                 >
                   <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: `${stage.color}20`,
-                    border: `1px solid ${stage.color}60`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 8px',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    fontFamily: 'monospace',
-                    color: stage.color,
+                    'width': '32px',
+                    'height': '32px',
+                    'border-radius': '50%',
+                    'background': `${stage.color}20`,
+                    'border': `1px solid ${stage.color}60`,
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'justify-content': 'center',
+                    'margin': '0 auto 8px',
+                    'font-size': '12px',
+                    'font-weight': '700',
+                    'font-family': 'monospace',
+                    'color': stage.color,
                   }}>
                     {stage.icon}
                   </div>
                   <div style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: isSelected ? stage.color : colors.text,
-                    fontFamily: 'monospace',
-                    marginBottom: 4,
+                    'font-size': '11px',
+                    'font-weight': '600',
+                    'color': isSelected ? stage.color : colors.text,
+                    'font-family': 'monospace',
+                    'margin-bottom': '4px',
                   }}>
                     {stage.name}
                   </div>
                   <div style={{
-                    fontSize: 10,
-                    color: colors.textMuted,
-                    lineHeight: 1.3,
+                    'font-size': '10px',
+                    'color': colors.textMuted,
+                    'line-height': '1.3',
                   }}>
                     {stage.description}
                   </div>
@@ -155,10 +156,10 @@ export function OracleArchitectureDiagram() {
               {/* Arrow between stages */}
               {i < ARCH_STAGES.length - 1 && (
                 <div style={{
-                  fontSize: 16,
-                  color: 'rgba(255,255,255,0.3)',
-                  padding: '0 2px',
-                  flexShrink: 0,
+                  'font-size': '16px',
+                  'color': 'rgba(255,255,255,0.3)',
+                  'padding': '0 2px',
+                  'flex-shrink': '0',
                 }}>
                   {'>'}
                 </div>
@@ -172,25 +173,25 @@ export function OracleArchitectureDiagram() {
       {selected && (
         <div style={{
           ...glassStyle,
-          padding: 16,
-          background: `${selected.color}08`,
-          border: `1px solid ${selected.color}30`,
-          marginBottom: 16,
-          transition: 'all 0.3s',
+          'padding': '16px',
+          'background': `${selected.color}08`,
+          'border': `1px solid ${selected.color}30`,
+          'margin-bottom': '16px',
+          'transition': 'all 0.3s',
         }}>
           <div style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: selected.color,
-            fontFamily: 'monospace',
-            marginBottom: 4,
+            'font-size': '13px',
+            'font-weight': '600',
+            'color': selected.color,
+            'font-family': 'monospace',
+            'margin-bottom': '4px',
           }}>
             {selected.name} ({selected.nameEn})
           </div>
           <div style={{
-            fontSize: 13,
-            color: colors.text,
-            lineHeight: 1.6,
+            'font-size': '13px',
+            'color': colors.text,
+            'line-height': '1.6',
           }}>
             {selected.detail}
           </div>
@@ -281,22 +282,22 @@ export function PriceFeedDataFlowDiagram() {
     <DiagramContainer title="Price Feed: данные и heartbeat" color="green">
       {/* Update triggers */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         <DiagramTooltip content="Heartbeat: гарантия свежести данных. Обновление происходит каждые N секунд даже при стабильной цене. ETH/USD: 3600s, USDC/USD: 86400s.">
           <div style={{
             ...glassStyle,
-            padding: 12,
-            background: `${colors.primary}08`,
-            border: `1px solid ${colors.primary}20`,
+            'padding': '12px',
+            'background': `${colors.primary}08`,
+            'border': `1px solid ${colors.primary}20`,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: colors.primary, fontFamily: 'monospace', marginBottom: 6 }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.primary, 'font-family': 'monospace', 'margin-bottom': '6px' }}>
               Heartbeat
             </div>
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.5' }}>
               Обновление каждые N секунд (ETH/USD: 3600s = 1 час). Гарантирует свежесть данных даже при стабильной цене.
             </div>
           </div>
@@ -304,14 +305,14 @@ export function PriceFeedDataFlowDiagram() {
         <DiagramTooltip content="Deviation Threshold: обновление при движении цены > X%. ETH/USD: 0.5%. Обеспечивает точность при волатильности. Чем ниже порог -- тем чаще обновления и выше gas costs.">
           <div style={{
             ...glassStyle,
-            padding: 12,
-            background: '#f59e0b08',
-            border: '1px solid #f59e0b20',
+            'padding': '12px',
+            'background': '#f59e0b08',
+            'border': '1px solid #f59e0b20',
           }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', fontFamily: 'monospace', marginBottom: 6 }}>
+            <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': '#f59e0b', 'font-family': 'monospace', 'margin-bottom': '6px' }}>
               Deviation Threshold
             </div>
-            <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.5' }}>
               Обновление при движении цены {'>'} X% (ETH/USD: 0.5%). Обеспечивает точность при волатильности.
             </div>
           </div>
@@ -319,32 +320,32 @@ export function PriceFeedDataFlowDiagram() {
       </div>
 
       {/* latestRoundData return fields */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-family': 'monospace' }}>
           latestRoundData() return values:
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
           {RETURN_FIELDS.map((field, i) => (
-            <DiagramTooltip key={i} content={field.tooltipRu}>
+            <DiagramTooltip content={field.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '8px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  transition: 'all 0.2s',
+                  'padding': '8px 12px',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'gap': '12px',
+                  'background': 'rgba(255,255,255,0.02)',
+                  'border': '1px solid rgba(255,255,255,0.06)',
+                  'transition': 'all 0.2s',
                 }}
               >
-                <span style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: field.color, minWidth: 130 }}>
+                <span style={{ 'font-size': '12px', 'font-family': 'monospace', 'font-weight': '600', 'color': field.color, 'min-width': '130px' }}>
                   {field.name}
                 </span>
-                <span style={{ fontSize: 11, fontFamily: 'monospace', color: colors.textMuted, minWidth: 60 }}>
+                <span style={{ 'font-size': '11px', 'font-family': 'monospace', 'color': colors.textMuted, 'min-width': '60px' }}>
                   {field.type}
                 </span>
-                <span style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.4 }}>
+                <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.4' }}>
                   {field.description}
                 </span>
               </div>
@@ -354,29 +355,29 @@ export function PriceFeedDataFlowDiagram() {
       </div>
 
       {/* AggregatorV3Interface methods */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-family': 'monospace' }}>
           AggregatorV3Interface methods:
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '4px' }}>
           {AGGREGATOR_METHODS.map((method, i) => (
-            <DiagramTooltip key={i} content={method.tooltipRu}>
+            <DiagramTooltip content={method.tooltipRu}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 12px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  transition: 'all 0.2s',
+                  'padding': '10px 12px',
+                  'background': 'rgba(255,255,255,0.02)',
+                  'border': '1px solid rgba(255,255,255,0.06)',
+                  'transition': 'all 0.2s',
                 }}
               >
-                <div style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: colors.success, marginBottom: 4 }}>
+                <div style={{ 'font-size': '12px', 'font-family': 'monospace', 'font-weight': '600', 'color': colors.success, 'margin-bottom': '4px' }}>
                   {method.name}
                 </div>
-                <div style={{ fontSize: 10, fontFamily: 'monospace', color: colors.textMuted, marginBottom: 4 }}>
+                <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': colors.textMuted, 'margin-bottom': '4px' }}>
                   returns: {method.returns}
                 </div>
-                <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+                <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.5' }}>
                   {method.description}
                 </div>
               </div>
@@ -387,24 +388,24 @@ export function PriceFeedDataFlowDiagram() {
 
       {/* Key feed addresses table */}
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 8, fontFamily: 'monospace' }}>
+        <div style={{ 'font-size': '12px', 'font-weight': '600', 'color': colors.textMuted, 'margin-bottom': '8px', 'font-family': 'monospace' }}>
           Key mainnet feed addresses:
         </div>
         {/* Header */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '80px 1fr 60px 100px 60px',
-          gap: 1,
-          marginBottom: 1,
+          'display': 'grid',
+          'grid-template-columns': '80px 1fr 60px 100px 60px',
+          'gap': '1px',
+          'margin-bottom': '1px',
         }}>
           {['Pair', 'Address', 'Dec', 'Heartbeat', 'Dev'].map((h) => (
-            <div key={h} style={{
+            <div style={{
               ...glassStyle,
-              padding: '6px 8px',
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.textMuted,
-              textAlign: 'center',
+              'padding': '6px 8px',
+              'font-size': '10px',
+              'font-weight': '600',
+              'color': colors.textMuted,
+              'text-align': 'center',
             }}>
               {h}
             </div>
@@ -412,66 +413,66 @@ export function PriceFeedDataFlowDiagram() {
         </div>
         {/* Rows */}
         {FEED_ADDRESSES.map((feed, i) => (
-          <DiagramTooltip key={i} content={feed.tooltipRu}>
+          <DiagramTooltip content={feed.tooltipRu}>
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: '80px 1fr 60px 100px 60px',
-                gap: 1,
-                marginBottom: 1,
+                'display': 'grid',
+                'grid-template-columns': '80px 1fr 60px 100px 60px',
+                'gap': '1px',
+                'margin-bottom': '1px',
               }}
             >
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 11,
-                fontWeight: 600,
-                fontFamily: 'monospace',
-                color: colors.text,
-                transition: 'all 0.2s',
+                'padding': '6px 8px',
+                'font-size': '11px',
+                'font-weight': '600',
+                'font-family': 'monospace',
+                'color': colors.text,
+                'transition': 'all 0.2s',
               }}>
                 {feed.pair}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                transition: 'all 0.2s',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                'padding': '6px 8px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'transition': 'all 0.2s',
+                'overflow': 'hidden',
+                'text-overflow': 'ellipsis',
+                'white-space': 'nowrap',
               }}>
                 {feed.address}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                textAlign: 'center',
+                'padding': '6px 8px',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'text-align': 'center',
               }}>
                 {feed.decimals}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                textAlign: 'center',
+                'padding': '6px 8px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'text-align': 'center',
               }}>
                 {feed.heartbeat}
               </div>
               <div style={{
                 ...glassStyle,
-                padding: '6px 8px',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: colors.textMuted,
-                textAlign: 'center',
+                'padding': '6px 8px',
+                'font-size': '10px',
+                'font-family': 'monospace',
+                'color': colors.textMuted,
+                'text-align': 'center',
               }}>
                 {feed.deviation}
               </div>

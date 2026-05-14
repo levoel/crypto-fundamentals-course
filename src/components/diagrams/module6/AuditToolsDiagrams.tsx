@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Audit Tools Diagrams (SEC-10)
  *
@@ -6,7 +7,7 @@
  * - SlitherOutputGuideDiagram: Mock Slither output for VulnerableVault.sol with triage annotations
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -70,34 +71,34 @@ const CATEGORY_TOOLTIPS: Record<string, string> = {
 export function ToolComparisonDiagram() {
   return (
     <DiagramContainer title="Сравнение инструментов: Slither vs Mythril vs Aderyn" color="green">
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ 'overflow-x': 'auto' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 12,
-          fontFamily: 'monospace',
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-size': '12px',
+          'font-family': 'monospace',
         }}>
           <thead>
             <tr>
               <th style={{
-                padding: '8px 10px',
-                textAlign: 'left',
-                fontSize: 10,
-                color: colors.textMuted,
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                minWidth: 90,
+                'padding': '8px 10px',
+                'text-align': 'left',
+                'font-size': '10px',
+                'color': colors.textMuted,
+                'border-bottom': '1px solid rgba(255,255,255,0.1)',
+                'min-width': '90px',
               }}>
                 Критерий
               </th>
               {(['Slither', 'Mythril', 'Aderyn'] as const).map((tool) => (
-                <th key={tool} style={{
-                  padding: '8px 10px',
-                  textAlign: 'left',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: TOOL_COLORS[tool],
-                  borderBottom: `2px solid ${TOOL_COLORS[tool]}40`,
-                  minWidth: 140,
+                <th style={{
+                  'padding': '8px 10px',
+                  'text-align': 'left',
+                  'font-size': '11px',
+                  'font-weight': '600',
+                  'color': TOOL_COLORS[tool],
+                  'border-bottom': `2px solid ${TOOL_COLORS[tool]}40`,
+                  'min-width': '140px',
                 }}>
                   <DiagramTooltip content={TOOL_TOOLTIPS[tool]}>
                     {tool}
@@ -109,46 +110,45 @@ export function ToolComparisonDiagram() {
           <tbody>
             {TOOL_ROWS.map((row, i) => (
               <tr
-                key={i}
                 style={{
-                  transition: 'background 0.15s',
+                  'transition': 'background 0.15s',
                 }}
               >
                 <td style={{
-                  padding: '7px 10px',
-                  color: colors.textMuted,
-                  fontWeight: 600,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  'padding': '7px 10px',
+                  'color': colors.textMuted,
+                  'font-weight': '600',
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
                 }}>
                   <DiagramTooltip content={CATEGORY_TOOLTIPS[row.category] || row.category}>
                     {row.category}
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '7px 10px',
-                  color: colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
+                  'padding': '7px 10px',
+                  'color': colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
                 }}>
                   {row.slither}
                 </td>
                 <td style={{
-                  padding: '7px 10px',
-                  color: colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
+                  'padding': '7px 10px',
+                  'color': colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
                 }}>
                   {row.mythril}
                 </td>
                 <td style={{
-                  padding: '7px 10px',
-                  color: colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
+                  'padding': '7px 10px',
+                  'color': colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
                 }}>
                   {row.aderyn}
                 </td>
@@ -158,7 +158,7 @@ export function ToolComparisonDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="Layered defense — принцип: каждый инструмент покрывает слабости другого. Slither находит паттерны, Mythril — глубокие баги, manual review — бизнес-логику.">
           <DataBox
             label="Layered defense"
@@ -280,12 +280,12 @@ const TRIAGE_TOOLTIPS: Record<TriageClass, string> = {
  * location, detector name, severity. Triage classification: TP/FP/Info.
  */
 export function SlitherOutputGuideDiagram() {
-  const [selectedFinding, setSelectedFinding] = useState<number>(0);
-  const [filter, setFilter] = useState<TriageClass | 'all'>('all');
+  const [selectedFinding, setSelectedFinding] = createSignal<number>(0);
+  const [filter, setFilter] = createSignal<TriageClass | 'all'>('all');
 
-  const filtered = filter === 'all'
+  const filtered = filter() === 'all'
     ? MOCK_FINDINGS
-    : MOCK_FINDINGS.filter((f) => f.triage === filter);
+    : MOCK_FINDINGS.filter((f) => f.triage === filter());
 
   const triageSummary = {
     TP: MOCK_FINDINGS.filter((f) => f.triage === 'TP').length,
@@ -297,29 +297,29 @@ export function SlitherOutputGuideDiagram() {
     <DiagramContainer title="Slither Output: VulnerableVault.sol (triage guide)" color="red">
       {/* Triage summary */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         {(Object.entries(triageSummary) as [TriageClass, number][]).map(([cls, count]) => (
-          <DiagramTooltip key={cls} content={TRIAGE_TOOLTIPS[cls]}>
+          <DiagramTooltip content={TRIAGE_TOOLTIPS[cls]}>
             <div
               onClick={() => setFilter((prev) => prev === cls ? 'all' : cls)}
               style={{
                 ...glassStyle,
-                padding: 10,
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: filter === cls ? `${TRIAGE_COLORS[cls]}10` : 'transparent',
-                border: filter === cls ? `1px solid ${TRIAGE_COLORS[cls]}40` : '1px solid rgba(255,255,255,0.08)',
-                transition: 'all 0.2s',
+                'padding': '10px',
+                'text-align': 'center',
+                'cursor': 'pointer',
+                'background': filter() === cls ? `${TRIAGE_COLORS[cls]}10` : 'transparent',
+                'border': filter() === cls ? `1px solid ${TRIAGE_COLORS[cls]}40` : '1px solid rgba(255,255,255,0.08)',
+                'transition': 'all 0.2s',
               }}
             >
-              <div style={{ fontSize: 18, fontWeight: 700, color: TRIAGE_COLORS[cls], fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '18px', 'font-weight': '700', 'color': TRIAGE_COLORS[cls], 'font-family': 'monospace' }}>
                 {count}
               </div>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginTop: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '2px' }}>
                 {TRIAGE_LABELS[cls]}
               </div>
             </div>
@@ -330,23 +330,23 @@ export function SlitherOutputGuideDiagram() {
       {/* Mock terminal output */}
       <DiagramTooltip content="Детекторы Slither проверяют ~80 паттернов уязвимостей. Каждый результат включает: detector name, severity (Impact + Confidence), описание и файл:строка.">
         <div style={{
-          background: 'rgba(0,0,0,0.3)',
-          borderRadius: 6,
-          padding: 10,
-          marginBottom: 14,
-          border: '1px solid rgba(255,255,255,0.06)',
-          fontFamily: 'monospace',
-          fontSize: 10,
-          color: colors.textMuted,
-          lineHeight: 1.3,
+          'background': 'rgba(0,0,0,0.3)',
+          'border-radius': '6px',
+          'padding': '10px',
+          'margin-bottom': '14px',
+          'border': '1px solid rgba(255,255,255,0.06)',
+          'font-family': 'monospace',
+          'font-size': '10px',
+          'color': colors.textMuted,
+          'line-height': '1.3',
         }}>
           <div>$ docker compose --profile security run slither contracts/security/VulnerableVault.sol</div>
-          <div style={{ color: colors.success, marginTop: 4 }}>Compilation warnings/errors on VulnerableVault.sol:</div>
+          <div style={{ 'color': colors.success, 'margin-top': '4px' }}>Compilation warnings/errors on VulnerableVault.sol:</div>
           <div>...</div>
-          <div style={{ marginTop: 4 }}>
+          <div style={{ 'margin-top': '4px' }}>
             VulnerableVault.sol analyzed ({MOCK_FINDINGS.length} findings)
           </div>
-          <div style={{ color: '#f43f5e' }}>
+          <div style={{ 'color': '#f43f5e' }}>
             {MOCK_FINDINGS.filter((f) => f.severity === 'High').length} High,{' '}
             {MOCK_FINDINGS.filter((f) => f.severity === 'Medium').length} Medium,{' '}
             {MOCK_FINDINGS.filter((f) => f.severity === 'Low').length} Low,{' '}
@@ -356,83 +356,82 @@ export function SlitherOutputGuideDiagram() {
       </DiagramTooltip>
 
       {/* Findings list */}
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ 'margin-bottom': '14px' }}>
         {filtered.map((finding) => {
-          const isSelected = selectedFinding === finding.id;
+          const isSelected = selectedFinding() === finding.id;
           return (
             <div
-              key={finding.id}
               onClick={() => setSelectedFinding(finding.id)}
               style={{
                 ...glassStyle,
-                padding: 10,
-                marginBottom: 6,
-                cursor: 'pointer',
-                background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
-                border: isSelected
+                'padding': '10px',
+                'margin-bottom': '6px',
+                'cursor': 'pointer',
+                'background': isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
+                'border': isSelected
                   ? `1px solid ${SEVERITY_COLORS[finding.severity]}40`
                   : '1px solid rgba(255,255,255,0.06)',
-                transition: 'all 0.15s',
+                'transition': 'all 0.15s',
               }}
             >
               {/* Header line */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '4px' }}>
                 <DiagramTooltip content={SEVERITY_TOOLTIPS[finding.severity]}>
                   <span style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: SEVERITY_COLORS[finding.severity],
-                    fontFamily: 'monospace',
-                    padding: '1px 6px',
-                    borderRadius: 3,
-                    background: `${SEVERITY_COLORS[finding.severity]}15`,
-                    border: `1px solid ${SEVERITY_COLORS[finding.severity]}30`,
+                    'font-size': '9px',
+                    'font-weight': '700',
+                    'color': SEVERITY_COLORS[finding.severity],
+                    'font-family': 'monospace',
+                    'padding': '1px 6px',
+                    'border-radius': '3px',
+                    'background': `${SEVERITY_COLORS[finding.severity]}15`,
+                    'border': `1px solid ${SEVERITY_COLORS[finding.severity]}30`,
                   }}>
                     {finding.severity}
                   </span>
                 </DiagramTooltip>
                 <span style={{
-                  fontSize: 9,
-                  color: TRIAGE_COLORS[finding.triage],
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
+                  'font-size': '9px',
+                  'color': TRIAGE_COLORS[finding.triage],
+                  'font-family': 'monospace',
+                  'font-weight': '600',
                 }}>
                   [{finding.triage}]
                 </span>
-                <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+                <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                   {finding.detector}
                 </span>
               </div>
 
               {/* Location */}
-              <div style={{ fontSize: 10, color: colors.accent, fontFamily: 'monospace', marginBottom: 4 }}>
+              <div style={{ 'font-size': '10px', 'color': colors.accent, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 {finding.location}
               </div>
 
               {/* Description */}
-              <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.4 }}>
+              <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.4' }}>
                 {finding.description}
               </div>
 
               {/* Triage detail (expanded) */}
               {isSelected && (
                 <div style={{
-                  marginTop: 8,
-                  padding: 8,
-                  borderRadius: 4,
-                  background: `${TRIAGE_COLORS[finding.triage]}08`,
-                  border: `1px solid ${TRIAGE_COLORS[finding.triage]}20`,
+                  'margin-top': '8px',
+                  'padding': '8px',
+                  'border-radius': '4px',
+                  'background': `${TRIAGE_COLORS[finding.triage]}08`,
+                  'border': `1px solid ${TRIAGE_COLORS[finding.triage]}20`,
                 }}>
                   <div style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: TRIAGE_COLORS[finding.triage],
-                    fontFamily: 'monospace',
-                    marginBottom: 4,
+                    'font-size': '10px',
+                    'font-weight': '600',
+                    'color': TRIAGE_COLORS[finding.triage],
+                    'font-family': 'monospace',
+                    'margin-bottom': '4px',
                   }}>
                     Triage: {TRIAGE_LABELS[finding.triage]}
                   </div>
-                  <div style={{ fontSize: 11, color: colors.text, lineHeight: 1.5 }}>
+                  <div style={{ 'font-size': '11px', 'color': colors.text, 'line-height': '1.5' }}>
                     {finding.triageReason}
                   </div>
                 </div>

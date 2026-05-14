@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Flash Loan Attack Diagrams (SEC-08)
  *
@@ -6,7 +7,7 @@
  * - DeFiAttacksTimelineDiagram: Static timeline of 5 major flash loan attacks ($500M+ total)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -132,24 +133,24 @@ const STEP_TOOLTIPS: Record<string, string> = {
  * KEY INSIGHT: vulnerability is NOT flash loan, it's spot price oracle.
  */
 export function FlashLoanAttackStepsDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const step = ATTACK_HISTORY[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const step = ATTACK_HISTORY[stepIndex()];
 
   return (
     <DiagramContainer title="Flash Loan Attack: пошаговый PoC" color="red">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {ATTACK_HISTORY.map((s, i) => (
-          <DiagramTooltip key={i} content={STEP_TOOLTIPS[s.highlight] || s.description.slice(0, 120)}>
+          <DiagramTooltip content={STEP_TOOLTIPS[s.highlight] || s.description.slice(0, 120)}>
             <div
               onClick={() => setStepIndex(i)}
               style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                cursor: 'pointer',
-                background: i <= stepIndex ? '#f43f5e' : 'rgba(255,255,255,0.1)',
-                transition: 'all 0.2s',
+                'flex': '1',
+                'height': '4px',
+                'border-radius': '2px',
+                'cursor': 'pointer',
+                'background': i <= stepIndex() ? '#f43f5e' : 'rgba(255,255,255,0.1)',
+                'transition': 'all 0.2s',
               }}
             />
           </DiagramTooltip>
@@ -159,11 +160,11 @@ export function FlashLoanAttackStepsDiagram() {
       {/* Step title */}
       <DiagramTooltip content={STEP_TOOLTIPS[step.highlight] || step.description.slice(0, 120)}>
         <div style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '14px',
+          'font-weight': '600',
+          'color': colors.text,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {step.title}
         </div>
@@ -171,30 +172,30 @@ export function FlashLoanAttackStepsDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {step.description}
       </div>
 
       {/* Values grid */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 16,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '16px',
       }}>
         {step.values.map((v, i) => (
-          <div key={i} style={{
+          <div style={{
             ...glassStyle,
-            padding: 10,
+            'padding': '10px',
           }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               {v.label}
             </div>
-            <div style={{ fontSize: 13, color: v.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '13px', 'color': v.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {v.value}
             </div>
           </div>
@@ -202,16 +203,16 @@ export function FlashLoanAttackStepsDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
           <button
             onClick={() => setStepIndex(0)}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              color: colors.text,
-              fontSize: 13,
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'color': colors.text,
+              'font-size': '13px',
             }}
           >
             Сброс
@@ -220,14 +221,14 @@ export function FlashLoanAttackStepsDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-            disabled={stepIndex === 0}
+            disabled={stepIndex() === 0}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-              color: stepIndex === 0 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: stepIndex === 0 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': stepIndex() === 0 ? 0.5 : 1,
             }}
           >
             Назад
@@ -236,14 +237,14 @@ export function FlashLoanAttackStepsDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.min(ATTACK_HISTORY.length - 1, s + 1))}
-            disabled={stepIndex >= ATTACK_HISTORY.length - 1}
+            disabled={stepIndex() >= ATTACK_HISTORY.length - 1}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex >= ATTACK_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
-              color: stepIndex >= ATTACK_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
-              fontSize: 13,
-              opacity: stepIndex >= ATTACK_HISTORY.length - 1 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() >= ATTACK_HISTORY.length - 1 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() >= ATTACK_HISTORY.length - 1 ? colors.textMuted : '#f43f5e',
+              'font-size': '13px',
+              'opacity': stepIndex() >= ATTACK_HISTORY.length - 1 ? 0.5 : 1,
             }}
           >
             Далее
@@ -251,8 +252,8 @@ export function FlashLoanAttackStepsDiagram() {
         </div>
       </div>
 
-      {stepIndex >= ATTACK_HISTORY.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= ATTACK_HISTORY.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Защита от oracle manipulation: 1) Chainlink price feeds (off-chain aggregation), 2) TWAP (time-weighted average price), 3) circuit breakers при резких изменениях цены.">
             <DataBox
               label="ROOT CAUSE: spot price oracle"
@@ -338,19 +339,19 @@ export function DeFiAttacksTimelineDiagram() {
       <DiagramTooltip content="Суммарные потери от flash loan атак значительно превышают эту цифру. Здесь показаны только 5 крупнейших. Общий ущерб от DeFi эксплойтов превышает $10B.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          marginBottom: 16,
-          textAlign: 'center',
-          background: 'rgba(244,63,94,0.06)',
-          border: '1px solid rgba(244,63,94,0.2)',
+          'padding': '12px',
+          'margin-bottom': '16px',
+          'text-align': 'center',
+          'background': 'rgba(244,63,94,0.06)',
+          'border': '1px solid rgba(244,63,94,0.2)',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             Суммарные потери (только эти 5 атак)
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#f43f5e', fontFamily: 'monospace' }}>
+          <div style={{ 'font-size': '20px', 'font-weight': '700', 'color': '#f43f5e', 'font-family': 'monospace' }}>
             ${TOTAL_LOSSES.toFixed(1)}M+
           </div>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginTop: 4 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-top': '4px' }}>
             Все атаки эксплуатировали oracle или price manipulation
           </div>
         </div>
@@ -358,57 +359,56 @@ export function DeFiAttacksTimelineDiagram() {
 
       {/* Bar chart timeline */}
       <div style={{
-        display: 'flex',
-        gap: 8,
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        height: 140,
-        marginBottom: 16,
-        padding: '0 8px',
+        'display': 'flex',
+        'gap': '8px',
+        'align-items': 'flex-end',
+        'justify-content': 'center',
+        'height': '140px',
+        'margin-bottom': '16px',
+        'padding': '0 8px',
       }}>
         {MAJOR_ATTACKS.map((attack, i) => {
           const heightPercent = 20 + (attack.lossNum / MAX_LOSS) * 70;
 
           return (
             <DiagramTooltip
-              key={i}
               content={`${attack.protocol} (${attack.date}): ${attack.vector}. Потери: ${attack.loss}. ${attack.description}`}
             >
               <div
                 style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  height: '100%',
-                  justifyContent: 'flex-end',
-                  cursor: 'pointer',
+                  'flex': '1',
+                  'display': 'flex',
+                  'flex-direction': 'column',
+                  'align-items': 'center',
+                  'height': '100%',
+                  'justify-content': 'flex-end',
+                  'cursor': 'pointer',
                 }}
               >
                 <div style={{
-                  fontSize: 9,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginBottom: 4,
-                  textAlign: 'center',
+                  'font-size': '9px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-bottom': '4px',
+                  'text-align': 'center',
                 }}>
                   {attack.loss}
                 </div>
                 <div style={{
-                  width: '100%',
-                  height: `${heightPercent}%`,
-                  minHeight: 20,
-                  borderRadius: '4px 4px 0 0',
-                  background: '#f43f5e60',
-                  transition: 'all 0.3s',
+                  'width': '100%',
+                  'height': `${heightPercent}%`,
+                  'min-height': '20px',
+                  'border-radius': '4px 4px 0 0',
+                  'background': '#f43f5e60',
+                  'transition': 'all 0.3s',
                 }} />
                 <div style={{
-                  fontSize: 8,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  marginTop: 4,
-                  textAlign: 'center',
-                  lineHeight: 1.3,
+                  'font-size': '8px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'margin-top': '4px',
+                  'text-align': 'center',
+                  'line-height': '1.3',
                 }}>
                   {attack.protocol}
                   <br />

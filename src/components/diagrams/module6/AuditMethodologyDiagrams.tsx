@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Audit Methodology Diagrams (SEC-09)
  *
@@ -6,7 +7,7 @@
  * - AuditChecklistDiagram: 12 interactive checkboxes grouped by OWASP categories with progress bar
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -104,25 +105,25 @@ const PIPELINE_TOOLTIPS: Record<string, string> = {
  * Key insight: automated tools find ~20%, manual review finds ~80%.
  */
 export function AuditPipelineDiagram() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const phase = AUDIT_PHASES[stepIndex];
+  const [stepIndex, setStepIndex] = createSignal(0);
+  const phase = AUDIT_PHASES[stepIndex()];
 
   return (
     <DiagramContainer title="Методология аудита: 4-фазный процесс" color="blue">
       {/* Phase progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {AUDIT_PHASES.map((p, i) => (
-          <DiagramTooltip key={i} content={`${p.title}: ${p.description.slice(0, 120)}...`}>
+          <DiagramTooltip content={`${p.title}: ${p.description.slice(0, 120)}...`}>
             <div
               onClick={() => setStepIndex(i)}
               style={{
-                flex: Number(p.percentage.replace('%', '')),
-                height: 6,
-                borderRadius: 3,
-                cursor: 'pointer',
-                background: i <= stepIndex ? p.color : 'rgba(255,255,255,0.1)',
-                transition: 'all 0.3s',
-                position: 'relative',
+                'flex': Number(p.percentage.replace('%', '')),
+                'height': '6px',
+                'border-radius': '3px',
+                'cursor': 'pointer',
+                'background': i <= stepIndex() ? p.color : 'rgba(255,255,255,0.1)',
+                'transition': 'all 0.3s',
+                'position': 'relative',
               }}
             />
           </DiagramTooltip>
@@ -130,17 +131,16 @@ export function AuditPipelineDiagram() {
       </div>
 
       {/* Percentage labels */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '14px' }}>
         {AUDIT_PHASES.map((p, i) => (
           <div
-            key={i}
             style={{
-              flex: Number(p.percentage.replace('%', '')),
-              textAlign: 'center',
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: i <= stepIndex ? p.color : colors.textMuted,
-              fontWeight: i === stepIndex ? 700 : 400,
+              'flex': Number(p.percentage.replace('%', '')),
+              'text-align': 'center',
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'color': i <= stepIndex() ? p.color : colors.textMuted,
+              'font-weight': i === stepIndex() ? 700 : 400,
             }}
           >
             {p.percentage}
@@ -151,11 +151,11 @@ export function AuditPipelineDiagram() {
       {/* Phase title */}
       <DiagramTooltip content={phase.insight}>
         <div style={{
-          fontSize: 15,
-          fontWeight: 600,
-          color: phase.color,
-          marginBottom: 8,
-          fontFamily: 'monospace',
+          'font-size': '15px',
+          'font-weight': '600',
+          'color': phase.color,
+          'margin-bottom': '8px',
+          'font-family': 'monospace',
         }}>
           {phase.title} ({phase.percentage} времени)
         </div>
@@ -163,10 +163,10 @@ export function AuditPipelineDiagram() {
 
       {/* Description */}
       <div style={{
-        fontSize: 13,
-        color: colors.text,
-        lineHeight: 1.6,
-        marginBottom: 14,
+        'font-size': '13px',
+        'color': colors.text,
+        'line-height': '1.6',
+        'margin-bottom': '14px',
       }}>
         {phase.description}
       </div>
@@ -174,19 +174,19 @@ export function AuditPipelineDiagram() {
       {/* Tasks list */}
       <div style={{
         ...glassStyle,
-        padding: 12,
-        marginBottom: 12,
+        'padding': '12px',
+        'margin-bottom': '12px',
       }}>
-        <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+        <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
           Задачи фазы:
         </div>
         {phase.tasks.map((task, i) => (
-          <div key={i} style={{
-            fontSize: 12,
-            color: colors.text,
-            fontFamily: 'monospace',
-            padding: '3px 0',
-            borderBottom: i < phase.tasks.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+          <div style={{
+            'font-size': '12px',
+            'color': colors.text,
+            'font-family': 'monospace',
+            'padding': '3px 0',
+            'border-bottom': i < phase.tasks.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
           }}>
             {i + 1}. {task}
           </div>
@@ -195,27 +195,27 @@ export function AuditPipelineDiagram() {
 
       {/* Deliverable */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 8,
-        marginBottom: 14,
+        'display': 'grid',
+        'grid-template-columns': '1fr 1fr',
+        'gap': '8px',
+        'margin-bottom': '14px',
       }}>
         <DiagramTooltip content="Deliverable -- конкретный артефакт, который аудитор создаёт по итогам фазы. Без deliverable фаза не считается завершённой.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               Deliverable
             </div>
-            <div style={{ fontSize: 12, color: phase.color, fontFamily: 'monospace', fontWeight: 600 }}>
+            <div style={{ 'font-size': '12px', 'color': phase.color, 'font-family': 'monospace', 'font-weight': '600' }}>
               {phase.deliverable}
             </div>
           </div>
         </DiagramTooltip>
         <DiagramTooltip content="Процент времени аудита, выделяемый на эту фазу. Распределение может меняться в зависимости от сложности проекта и scope.">
-          <div style={{ ...glassStyle, padding: 10 }}>
-            <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ ...glassStyle, 'padding': '10px' }}>
+            <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
               % от audit time
             </div>
-            <div style={{ fontSize: 18, color: phase.color, fontFamily: 'monospace', fontWeight: 700 }}>
+            <div style={{ 'font-size': '18px', 'color': phase.color, 'font-family': 'monospace', 'font-weight': '700' }}>
               {phase.percentage}
             </div>
           </div>
@@ -225,27 +225,27 @@ export function AuditPipelineDiagram() {
       {/* Insight */}
       <div style={{
         ...glassStyle,
-        padding: 10,
-        background: `${phase.color}08`,
-        border: `1px solid ${phase.color}30`,
-        marginBottom: 16,
+        'padding': '10px',
+        'background': `${phase.color}08`,
+        'border': `1px solid ${phase.color}30`,
+        'margin-bottom': '16px',
       }}>
-        <div style={{ fontSize: 12, color: phase.color, lineHeight: 1.5, fontStyle: 'italic' }}>
+        <div style={{ 'font-size': '12px', 'color': phase.color, 'line-height': '1.5', 'font-style': 'italic' }}>
           {phase.insight}
         </div>
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center' }}>
         <div>
           <button
             onClick={() => setStepIndex(0)}
             style={{
               ...glassStyle,
-              padding: '8px 16px',
-              cursor: 'pointer',
-              color: colors.text,
-              fontSize: 13,
+              'padding': '8px 16px',
+              'cursor': 'pointer',
+              'color': colors.text,
+              'font-size': '13px',
             }}
           >
             Сброс
@@ -254,14 +254,14 @@ export function AuditPipelineDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.max(0, s - 1))}
-            disabled={stepIndex === 0}
+            disabled={stepIndex() === 0}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
-              color: stepIndex === 0 ? colors.textMuted : colors.text,
-              fontSize: 13,
-              opacity: stepIndex === 0 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() === 0 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() === 0 ? colors.textMuted : colors.text,
+              'font-size': '13px',
+              'opacity': stepIndex() === 0 ? 0.5 : 1,
             }}
           >
             Назад
@@ -270,14 +270,14 @@ export function AuditPipelineDiagram() {
         <div>
           <button
             onClick={() => setStepIndex((s) => Math.min(AUDIT_PHASES.length - 1, s + 1))}
-            disabled={stepIndex >= AUDIT_PHASES.length - 1}
+            disabled={stepIndex() >= AUDIT_PHASES.length - 1}
             style={{
               ...glassStyle,
-              padding: '8px 20px',
-              cursor: stepIndex >= AUDIT_PHASES.length - 1 ? 'not-allowed' : 'pointer',
-              color: stepIndex >= AUDIT_PHASES.length - 1 ? colors.textMuted : phase.color,
-              fontSize: 13,
-              opacity: stepIndex >= AUDIT_PHASES.length - 1 ? 0.5 : 1,
+              'padding': '8px 20px',
+              'cursor': stepIndex() >= AUDIT_PHASES.length - 1 ? 'not-allowed' : 'pointer',
+              'color': stepIndex() >= AUDIT_PHASES.length - 1 ? colors.textMuted : phase.color,
+              'font-size': '13px',
+              'opacity': stepIndex() >= AUDIT_PHASES.length - 1 ? 0.5 : 1,
             }}
           >
             Далее
@@ -285,8 +285,8 @@ export function AuditPipelineDiagram() {
         </div>
       </div>
 
-      {stepIndex >= AUDIT_PHASES.length - 1 && (
-        <div style={{ marginTop: 12 }}>
+      {stepIndex() >= AUDIT_PHASES.length - 1 && (
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Это соотношение подтверждается статистикой: инструменты находят типовые уязвимости (reentrancy, overflow), а manual review — бизнес-логику, экономические атаки, oracle manipulation.">
             <DataBox
               label="Ключевое распределение"
@@ -340,7 +340,7 @@ const CHECKLIST_ITEMS: ChecklistItem[] = [
  * Progress bar shows completion. DiagramTooltip with item.tooltip data.
  */
 export function AuditChecklistDiagram() {
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [checked, setChecked] = createSignal<Set<string>>(new Set());
 
   const toggleItem = (id: string) => {
     setChecked((prev) => {
@@ -351,45 +351,45 @@ export function AuditChecklistDiagram() {
     });
   };
 
-  const progress = (checked.size / CHECKLIST_ITEMS.length) * 100;
+  const progress = (checked().size / CHECKLIST_ITEMS.length) * 100;
 
   return (
     <DiagramContainer title="Security Audit Checklist (OWASP-based)" color="green">
       {/* Progress bar */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 6,
+          'display': 'flex',
+          'justify-content': 'space-between',
+          'margin-bottom': '6px',
         }}>
           <DiagramTooltip content="Прогресс показывает долю пройденных проверок. Это базовый checklist из 12 пунктов — полный аудит включает 50+ проверок.">
-            <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>
+            <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
               Прогресс аудита
             </span>
           </DiagramTooltip>
           <span style={{
-            fontSize: 10,
-            fontFamily: 'monospace',
-            color: progress === 100 ? colors.success : colors.accent,
-            fontWeight: 600,
+            'font-size': '10px',
+            'font-family': 'monospace',
+            'color': progress === 100 ? colors.success : colors.accent,
+            'font-weight': '600',
           }}>
-            {checked.size}/{CHECKLIST_ITEMS.length} ({Math.round(progress)}%)
+            {checked().size}/{CHECKLIST_ITEMS.length} ({Math.round(progress)}%)
           </span>
         </div>
         <div style={{
-          height: 6,
-          borderRadius: 3,
-          background: 'rgba(255,255,255,0.08)',
-          overflow: 'hidden',
+          'height': '6px',
+          'border-radius': '3px',
+          'background': 'rgba(255,255,255,0.08)',
+          'overflow': 'hidden',
         }}>
           <div style={{
-            height: '100%',
-            width: `${progress}%`,
-            borderRadius: 3,
-            background: progress === 100
+            'height': '100%',
+            'width': `${progress}%`,
+            'border-radius': '3px',
+            'background': progress === 100
               ? colors.success
               : `linear-gradient(90deg, ${colors.primary}, ${colors.accent})`,
-            transition: 'width 0.3s ease',
+            'transition': 'width 0.3s ease',
           }} />
         </div>
       </div>
@@ -397,67 +397,67 @@ export function AuditChecklistDiagram() {
       {/* Categories */}
       {CHECKLIST_CATEGORIES.map((cat) => {
         const items = CHECKLIST_ITEMS.filter((item) => item.category === cat.name);
-        const catChecked = items.filter((item) => checked.has(item.id)).length;
+        const catChecked = items.filter((item) => checked().has(item.id)).length;
 
         return (
-          <div key={cat.name} style={{ marginBottom: 14 }}>
+          <div style={{ 'margin-bottom': '14px' }}>
             <div style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: cat.color,
-              fontFamily: 'monospace',
-              marginBottom: 6,
-              display: 'flex',
-              justifyContent: 'space-between',
+              'font-size': '11px',
+              'font-weight': '600',
+              'color': cat.color,
+              'font-family': 'monospace',
+              'margin-bottom': '6px',
+              'display': 'flex',
+              'justify-content': 'space-between',
             }}>
               <span>{cat.name}</span>
-              <span style={{ color: colors.textMuted, fontWeight: 400 }}>
+              <span style={{ 'color': colors.textMuted, 'font-weight': '400' }}>
                 {catChecked}/{items.length}
               </span>
             </div>
 
             {items.map((item) => {
-              const isChecked = checked.has(item.id);
+              const isChecked = checked().has(item.id);
 
               return (
-                <DiagramTooltip key={item.id} content={item.tooltip}>
+                <DiagramTooltip content={item.tooltip}>
                   <div
                     onClick={() => toggleItem(item.id)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '5px 8px',
-                      marginBottom: 2,
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      'display': 'flex',
+                      'align-items': 'center',
+                      'gap': '8px',
+                      'padding': '5px 8px',
+                      'margin-bottom': '2px',
+                      'border-radius': '4px',
+                      'cursor': 'pointer',
+                      'transition': 'all 0.15s',
                     }}
                   >
                     <div style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 3,
-                      border: `1.5px solid ${isChecked ? colors.success : 'rgba(255,255,255,0.2)'}`,
-                      background: isChecked ? `${colors.success}20` : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'all 0.2s',
+                      'width': '16px',
+                      'height': '16px',
+                      'border-radius': '3px',
+                      'border': `1.5px solid ${isChecked ? colors.success : 'rgba(255,255,255,0.2)'}`,
+                      'background': isChecked ? `${colors.success}20` : 'transparent',
+                      'display': 'flex',
+                      'align-items': 'center',
+                      'justify-content': 'center',
+                      'flex-shrink': '0',
+                      'transition': 'all 0.2s',
                     }}>
                       {isChecked && (
-                        <span style={{ fontSize: 10, color: colors.success, lineHeight: 1 }}>
+                        <span style={{ 'font-size': '10px', 'color': colors.success, 'line-height': '1' }}>
                           &#10003;
                         </span>
                       )}
                     </div>
                     <span style={{
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      color: isChecked ? colors.textMuted : colors.text,
-                      textDecoration: isChecked ? 'line-through' : 'none',
-                      transition: 'all 0.2s',
+                      'font-size': '12px',
+                      'font-family': 'monospace',
+                      'color': isChecked ? colors.textMuted : colors.text,
+                      'text-decoration': isChecked ? 'line-through' : 'none',
+                      'transition': 'all 0.2s',
                     }}>
                       {item.label}
                     </span>
@@ -470,7 +470,7 @@ export function AuditChecklistDiagram() {
       })}
 
       {progress === 100 && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ 'margin-top': '12px' }}>
           <DiagramTooltip content="Полный checklist аудита включает дополнительные категории: governance, upgrades (proxy patterns), token standards (ERC20/721/1155), external integrations, gas optimization.">
             <DataBox
               label="Checklist complete"

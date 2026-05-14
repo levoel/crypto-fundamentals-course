@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Circuit Writing Diagrams (ZK-08)
  *
@@ -6,7 +7,7 @@
  * - CircuitComplexityDiagram: Circuit complexity progression (4 levels, static)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -108,8 +109,8 @@ const PIPELINE_STEPS: PipelineStep[] = [
  * history array, step/back/reset, commands shown.
  */
 export function ProofPipelineDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < PIPELINE_STEPS.length - 1) {
@@ -117,8 +118,8 @@ export function ProofPipelineDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -128,50 +129,49 @@ export function ProofPipelineDiagram() {
   return (
     <DiagramContainer title="Circom/snarkjs: полный pipeline от .circom до verification" color="purple">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '3px', 'margin-bottom': '16px' }}>
         {PIPELINE_STEPS.map((st, i) => (
           <div
-            key={i}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background: i <= current ? st.color : 'rgba(255,255,255,0.08)',
-              transition: 'background 0.3s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'background': i <= current ? st.color : 'rgba(255,255,255,0.08)',
+              'transition': 'background 0.3s',
             }}
           />
         ))}
       </div>
 
       {/* Flow visualization */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
         {PIPELINE_STEPS.map((st, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '4px' }}>
             <DiagramTooltip content={st.tooltip}>
               <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 8,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: i <= current ? '#fff' : colors.textMuted,
-                background: i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.3s',
+                'width': '40px',
+                'height': '40px',
+                'border-radius': '6px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '8px',
+                'font-weight': '700',
+                'font-family': 'monospace',
+                'color': i <= current ? '#fff' : colors.textMuted,
+                'background': i <= current ? `${st.color}30` : 'rgba(255,255,255,0.04)',
+                'border': `1px solid ${i === current ? st.color : i < current ? `${st.color}40` : 'rgba(255,255,255,0.08)'}`,
+                'transition': 'all 0.3s',
               }}>
                 {st.icon}
               </div>
             </DiagramTooltip>
             {i < PIPELINE_STEPS.length - 1 && (
               <div style={{
-                width: 12,
-                height: 2,
-                background: i < current ? `${PIPELINE_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
-                transition: 'background 0.3s',
+                'width': '12px',
+                'height': '2px',
+                'background': i < current ? `${PIPELINE_STEPS[i + 1].color}60` : 'rgba(255,255,255,0.08)',
+                'transition': 'background 0.3s',
               }} />
             )}
           </div>
@@ -182,41 +182,41 @@ export function ProofPipelineDiagram() {
       <DiagramTooltip content={s.tooltip}>
         <div style={{
           ...glassStyle,
-          padding: 16,
-          marginBottom: 8,
-          border: `1px solid ${s.color}30`,
-          background: `${s.color}08`,
-          borderRadius: 8,
+          'padding': '16px',
+          'margin-bottom': '8px',
+          'border': `1px solid ${s.color}30`,
+          'background': `${s.color}08`,
+          'border-radius': '8px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
             <span style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: s.color,
-              padding: '2px 8px',
-              borderRadius: 4,
-              background: `${s.color}15`,
-              border: `1px solid ${s.color}30`,
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'color': s.color,
+              'padding': '2px 8px',
+              'border-radius': '4px',
+              'background': `${s.color}15`,
+              'border': `1px solid ${s.color}30`,
             }}>
               {s.label}
             </span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+            <span style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text }}>
               {s.title}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '8px' }}>
             {s.description}
           </div>
           {/* Command */}
           <DiagramTooltip content={`CLI-команда для этого шага pipeline. Выполняется в терминале проекта с установленным circom и snarkjs.`}>
             <div style={{
-              padding: '6px 10px',
-              borderRadius: 4,
-              background: 'rgba(0,0,0,0.3)',
-              fontSize: 10,
-              fontFamily: 'monospace',
-              color: '#10b981',
-              overflowX: 'auto',
+              'padding': '6px 10px',
+              'border-radius': '4px',
+              'background': 'rgba(0,0,0,0.3)',
+              'font-size': '10px',
+              'font-family': 'monospace',
+              'color': '#10b981',
+              'overflow-x': 'auto',
             }}>
               $ {s.command}
             </div>
@@ -226,26 +226,25 @@ export function ProofPipelineDiagram() {
 
       {/* Controls */}
       <DiagramTooltip content="Навигация по 8 шагам Circom/snarkjs pipeline: от написания circuit до верификации proof. Каждый шаг — отдельная CLI-команда.">
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px' }}>
           {[
-            { label: 'Back', action: back, disabled: history.length <= 1 },
+            { label: 'Back', action: back, disabled: history().length <= 1 },
             { label: `Step ${current + 1}/${PIPELINE_STEPS.length}`, action: step, disabled: current >= PIPELINE_STEPS.length - 1 },
-            { label: 'Reset', action: reset, disabled: history.length <= 1 },
+            { label: 'Reset', action: reset, disabled: history().length <= 1 },
           ].map((btn) => (
             <button
-              key={btn.label}
               onClick={btn.action}
               disabled={btn.disabled}
               style={{
                 ...glassStyle,
-                padding: '6px 14px',
-                cursor: btn.disabled ? 'default' : 'pointer',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 6,
-                opacity: btn.disabled ? 0.5 : 1,
+                'padding': '6px 14px',
+                'cursor': btn.disabled ? 'default' : 'pointer',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                'border': '1px solid rgba(255,255,255,0.1)',
+                'border-radius': '6px',
+                'opacity': btn.disabled ? 0.5 : 1,
               }}
             >
               {btn.label}
@@ -328,36 +327,36 @@ export function CircuitComplexityDiagram() {
   return (
     <DiagramContainer title="Прогрессия сложности circuits: от Multiplier до Age Check" color="green">
       {/* Progression boxes */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'margin-bottom': '14px', 'flex-wrap': 'wrap' }}>
         {CIRCUIT_LEVELS.map((level, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 180 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'flex': '1', 'min-width': '180px' }}>
             <DiagramTooltip content={level.tooltip}>
               <div style={{
                 ...glassStyle,
-                padding: 14,
-                borderRadius: 8,
-                border: `1px solid ${level.color}30`,
-                background: `${level.color}06`,
-                flex: 1,
+                'padding': '14px',
+                'border-radius': '8px',
+                'border': `1px solid ${level.color}30`,
+                'background': `${level.color}06`,
+                'flex': '1',
               }}>
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'justify-content': 'space-between', 'margin-bottom': '6px' }}>
                   <span style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: level.color,
-                    fontFamily: 'monospace',
+                    'font-size': '12px',
+                    'font-weight': '700',
+                    'color': level.color,
+                    'font-family': 'monospace',
                   }}>
                     {level.name}
                   </span>
                   <span style={{
-                    fontSize: 9,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    color: level.color,
-                    background: `${level.color}15`,
-                    border: `1px solid ${level.color}30`,
-                    fontFamily: 'monospace',
+                    'font-size': '9px',
+                    'padding': '2px 6px',
+                    'border-radius': '4px',
+                    'color': level.color,
+                    'background': `${level.color}15`,
+                    'border': `1px solid ${level.color}30`,
+                    'font-family': 'monospace',
                   }}>
                     {level.difficulty}
                   </span>
@@ -365,31 +364,31 @@ export function CircuitComplexityDiagram() {
 
                 {/* Constraints */}
                 <div style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: colors.text,
-                  fontFamily: 'monospace',
-                  marginBottom: 6,
+                  'font-size': '10px',
+                  'font-weight': '600',
+                  'color': colors.text,
+                  'font-family': 'monospace',
+                  'margin-bottom': '6px',
                 }}>
                   {level.constraints}
                 </div>
 
                 {/* Description */}
                 <div style={{
-                  fontSize: 10,
-                  color: colors.textMuted,
-                  lineHeight: 1.5,
-                  marginBottom: 6,
+                  'font-size': '10px',
+                  'color': colors.textMuted,
+                  'line-height': '1.5',
+                  'margin-bottom': '6px',
                 }}>
                   {level.description}
                 </div>
 
                 {/* File reference */}
                 <div style={{
-                  fontSize: 9,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
-                  fontStyle: 'italic',
+                  'font-size': '9px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
+                  'font-style': 'italic',
                 }}>
                   {level.file}
                 </div>
@@ -399,9 +398,9 @@ export function CircuitComplexityDiagram() {
             {/* Arrow between levels */}
             {i < CIRCUIT_LEVELS.length - 1 && (
               <div style={{
-                fontSize: 14,
-                color: 'rgba(255,255,255,0.2)',
-                fontWeight: 700,
+                'font-size': '14px',
+                'color': 'rgba(255,255,255,0.2)',
+                'font-weight': '700',
               }}>
                 {'\u2192'}
               </div>

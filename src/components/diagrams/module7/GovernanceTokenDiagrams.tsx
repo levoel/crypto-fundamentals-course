@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Governance Token Diagrams (GOV-02)
  *
@@ -6,7 +7,7 @@
  * - VotingPowerDiagram: Voting power vs token balance interactive demo
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -75,8 +76,8 @@ const DELEGATION_STEPS: DelegationStep[] = [
  * 5 steps: mint -> self-delegate -> transfer -> representative-delegate -> snapshot.
  */
 export function DelegationFlowDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = DELEGATION_STEPS[step];
 
   const handleNext = () => {
@@ -85,8 +86,8 @@ export function DelegationFlowDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -95,19 +96,19 @@ export function DelegationFlowDiagram() {
     const numVal = parseInt(value.replace(/[^0-9]/g, '')) || 0;
     const width = max > 0 ? Math.min((numVal / max) * 100, 100) : 0;
     return (
-      <div style={{ marginBottom: 6 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace' }}>{label}</span>
-          <span style={{ fontSize: 10, color, fontFamily: 'monospace', fontWeight: 600 }}>{value}</span>
+      <div style={{ 'margin-bottom': '6px' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '2px' }}>
+          <span style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace' }}>{label}</span>
+          <span style={{ 'font-size': '10px', color, 'font-family': 'monospace', 'font-weight': '600' }}>{value}</span>
         </div>
-        <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4 }}>
+        <div style={{ 'height': '8px', 'background': 'rgba(255,255,255,0.05)', 'border-radius': '4px' }}>
           <div style={{
-            height: '100%',
-            width: `${width}%`,
-            background: color,
-            borderRadius: 4,
-            transition: 'width 0.4s ease',
-            opacity: 0.7,
+            'height': '100%',
+            'width': `${width}%`,
+            'background': color,
+            'border-radius': '4px',
+            'transition': 'width 0.4s ease',
+            'opacity': '0.7',
           }} />
         </div>
       </div>
@@ -117,21 +118,21 @@ export function DelegationFlowDiagram() {
   return (
     <DiagramContainer title="Делегирование: от токенов к голосам" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'margin-bottom': '16px' }}>
         {DELEGATION_STEPS.map((_, i) => (
-          <div key={i} style={{
-            width: 24,
-            height: 24,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? 'rgba(96,165,250,0.3)' : i < step ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
-            color: i === step ? '#60a5fa' : i < step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.1)'}`,
+          <div style={{
+            'width': '24px',
+            'height': '24px',
+            'border-radius': '50%',
+            'display': 'flex',
+            'align-items': 'center',
+            'justify-content': 'center',
+            'font-size': '10px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? 'rgba(96,165,250,0.3)' : i < step ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
+            'color': i === step ? '#60a5fa' : i < step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.1)'}`,
           }}>
             {i + 1}
           </div>
@@ -141,9 +142,9 @@ export function DelegationFlowDiagram() {
       {/* Current step */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 12,
-        border: '1px solid rgba(96,165,250,0.2)',
+        'padding': '16px',
+        'margin-bottom': '12px',
+        'border': '1px solid rgba(96,165,250,0.2)',
       }}>
         <DiagramTooltip content={
           step === 0 ? 'mint() создает governance-токены. Но сами по себе токены НЕ дают права голоса -- это ключевое отличие ERC20Votes от обычного ERC20. Без вызова delegate() voting power остается нулевым, что защищает от flash loan атак.'
@@ -154,25 +155,25 @@ export function DelegationFlowDiagram() {
         }>
           <div>
             <div style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#60a5fa',
-              fontFamily: 'monospace',
-              marginBottom: 4,
+              'font-size': '13px',
+              'font-weight': '600',
+              'color': '#60a5fa',
+              'font-family': 'monospace',
+              'margin-bottom': '4px',
             }}>
               {current.title}
             </div>
-            <div style={{ fontSize: 12, color: colors.text }}>
+            <div style={{ 'font-size': '12px', 'color': colors.text }}>
               {current.description}
             </div>
           </div>
         </DiagramTooltip>
 
         {/* Alice and Bob panels */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12, marginBottom: 12 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px', 'margin-top': '12px', 'margin-bottom': '12px' }}>
           <DiagramTooltip content="Alice -- основной участник в примере делегирования. Она получает токены через mint(), активирует voting power через delegate(self) и может получать делегированные голоса от других участников.">
-            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(96,165,250,0.15)' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#60a5fa', fontFamily: 'monospace', marginBottom: 8 }}>
+            <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(96,165,250,0.15)' }}>
+              <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': '#60a5fa', 'font-family': 'monospace', 'margin-bottom': '8px' }}>
                 Alice
               </div>
               {renderBar('balanceOf', current.alice.balance, 1000000, '#60a5fa')}
@@ -180,8 +181,8 @@ export function DelegationFlowDiagram() {
             </div>
           </DiagramTooltip>
           <DiagramTooltip content="Bob -- получатель токенов через transfer(). Он имеет баланс, но если не вызовет delegate(), его voting power будет нулевым. Bob может делегировать голоса себе или представителю (Alice).">
-            <div style={{ ...glassStyle, padding: 12, border: '1px solid rgba(249,115,22,0.15)' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#f97316', fontFamily: 'monospace', marginBottom: 8 }}>
+            <div style={{ ...glassStyle, 'padding': '12px', 'border': '1px solid rgba(249,115,22,0.15)' }}>
+              <div style={{ 'font-size': '11px', 'font-weight': '600', 'color': '#f97316', 'font-family': 'monospace', 'margin-bottom': '8px' }}>
                 Bob
               </div>
               {renderBar('balanceOf', current.bob.balance, 1000000, '#f97316')}
@@ -193,12 +194,12 @@ export function DelegationFlowDiagram() {
         {/* Insight */}
         <DiagramTooltip content="Инсайт показывает ключевой вывод каждого шага. Обратите внимание, как voting power изменяется отдельно от баланса токенов -- это фундаментальное свойство ERC20Votes.">
           <div style={{
-            padding: '8px 12px',
-            borderRadius: 6,
-            background: `${current.insightColor}10`,
-            border: `1px solid ${current.insightColor}30`,
+            'padding': '8px 12px',
+            'border-radius': '6px',
+            'background': `${current.insightColor}10`,
+            'border': `1px solid ${current.insightColor}30`,
           }}>
-            <span style={{ fontSize: 11, color: current.insightColor, fontFamily: 'monospace', fontWeight: 600 }}>
+            <span style={{ 'font-size': '11px', 'color': current.insightColor, 'font-family': 'monospace', 'font-weight': '600' }}>
               {current.insight}
             </span>
           </div>
@@ -206,40 +207,40 @@ export function DelegationFlowDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
+        <button onClick={handleBack} disabled={history().length <= 1} style={{
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': history().length > 1 ? colors.text : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
         }}>
           Back
         </button>
         <button onClick={handleNext} disabled={step >= DELEGATION_STEPS.length - 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(96,165,250,0.3)',
-          background: step < DELEGATION_STEPS.length - 1 ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < DELEGATION_STEPS.length - 1 ? '#60a5fa' : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: step < DELEGATION_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(96,165,250,0.3)',
+          'background': step < DELEGATION_STEPS.length - 1 ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.05)',
+          'color': step < DELEGATION_STEPS.length - 1 ? '#60a5fa' : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': step < DELEGATION_STEPS.length - 1 ? 'pointer' : 'not-allowed',
         }}>
           Step
         </button>
         <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': 'pointer',
         }}>
           Reset
         </button>
@@ -259,19 +260,19 @@ export function DelegationFlowDiagram() {
  * Slider for token amount + toggle for delegation status.
  */
 export function VotingPowerDiagram() {
-  const [amount, setAmount] = useState(500000);
-  const [delegated, setDelegated] = useState(false);
+  const [amount, setAmount] = createSignal(500000);
+  const [delegated, setDelegated] = createSignal(false);
 
   return (
     <DiagramContainer title="Balance vs Voting Power: зачем нужна делегация" color="orange">
       {/* Slider */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '4px' }}>
           <DiagramTooltip content="Количество governance-токенов на балансе. В модели 1 token = 1 vote, больше токенов означает больше влияния. Однако некоторые DAO экспериментируют с квадратичным голосованием (quadratic voting), где влияние растет как корень из количества токенов.">
-            <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Token Amount</span>
+            <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Token Amount</span>
           </DiagramTooltip>
-          <span style={{ fontSize: 11, color: '#f97316', fontFamily: 'monospace', fontWeight: 600 }}>
-            {amount.toLocaleString()}
+          <span style={{ 'font-size': '11px', 'color': '#f97316', 'font-family': 'monospace', 'font-weight': '600' }}>
+            {amount().toLocaleString()}
           </span>
         </div>
         <input
@@ -279,81 +280,81 @@ export function VotingPowerDiagram() {
           min={0}
           max={1000000}
           step={10000}
-          value={amount}
+          value={amount()}
           onChange={(e) => setAmount(Number(e.target.value))}
-          style={{ width: '100%', accentColor: '#f97316' }}
+          style={{ 'width': '100%', 'accent-color': '#f97316' }}
         />
       </div>
 
       {/* Delegation toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px', 'margin-bottom': '16px' }}>
         <DiagramTooltip content="Делегация -- обязательный шаг для активации voting power в ERC20Votes. Без вызова delegate() баланс токенов не конвертируется в голоса. Можно делегировать себе (self-delegate) или представителю. Это защита от flash loan атак: snapshot фиксирует голоса до начала голосования.">
-          <span style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>Delegated?</span>
+          <span style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace' }}>Delegated?</span>
         </DiagramTooltip>
         <button
-          onClick={() => setDelegated(!delegated)}
+          onClick={() => setDelegated(!delegated())}
           style={{
-            padding: '4px 12px',
-            borderRadius: 6,
-            border: `1px solid ${delegated ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
-            background: delegated ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-            color: delegated ? '#22c55e' : '#ef4444',
-            fontSize: 11,
-            fontFamily: 'monospace',
-            fontWeight: 600,
-            cursor: 'pointer',
+            'padding': '4px 12px',
+            'border-radius': '6px',
+            'border': `1px solid ${delegated() ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'}`,
+            'background': delegated() ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+            'color': delegated() ? '#22c55e' : '#ef4444',
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'font-weight': '600',
+            'cursor': 'pointer',
           }}
         >
-          {delegated ? 'Yes' : 'No'}
+          {delegated() ? 'Yes' : 'No'}
         </button>
       </div>
 
       {/* Two columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '12px', 'margin-bottom': '16px' }}>
         {/* Balance */}
         <div style={{
           ...glassStyle,
-          padding: 16,
-          textAlign: 'center',
-          border: '1px solid rgba(96,165,250,0.2)',
+          'padding': '16px',
+          'text-align': 'center',
+          'border': '1px solid rgba(96,165,250,0.2)',
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Balance (ERC20)
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             balanceOf(user)
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#60a5fa', fontFamily: 'monospace' }}>
-            {amount.toLocaleString()}
+          <div style={{ 'font-size': '20px', 'font-weight': '700', 'color': '#60a5fa', 'font-family': 'monospace' }}>
+            {amount().toLocaleString()}
           </div>
         </div>
 
         {/* Voting Power */}
         <div style={{
           ...glassStyle,
-          padding: 16,
-          textAlign: 'center',
-          border: `1px solid ${delegated ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+          'padding': '16px',
+          'text-align': 'center',
+          'border': `1px solid ${delegated() ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
         }}>
-          <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 8 }}>
+          <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '8px' }}>
             Voting Power (ERC20Votes)
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+          <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
             getVotes(user)
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: delegated ? '#22c55e' : '#ef4444', fontFamily: 'monospace' }}>
-            {delegated ? amount.toLocaleString() : '0'}
+          <div style={{ 'font-size': '20px', 'font-weight': '700', 'color': delegated() ? '#22c55e' : '#ef4444', 'font-family': 'monospace' }}>
+            {delegated() ? amount().toLocaleString() : '0'}
           </div>
-          {!delegated && (
+          {!delegated() && (
             <div style={{
-              marginTop: 6,
-              padding: '4px 8px',
-              borderRadius: 4,
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              fontSize: 9,
-              color: '#ef4444',
-              fontFamily: 'monospace',
+              'margin-top': '6px',
+              'padding': '4px 8px',
+              'border-radius': '4px',
+              'background': 'rgba(239,68,68,0.1)',
+              'border': '1px solid rgba(239,68,68,0.3)',
+              'font-size': '9px',
+              'color': '#ef4444',
+              'font-family': 'monospace',
             }}>
               delegation required!
             </div>
@@ -365,22 +366,22 @@ export function VotingPowerDiagram() {
       <DiagramTooltip content="token.delegate(address(this)) -- Solidity-вызов для самоделегирования. address(this) в контексте контракта означает адрес самого контракта. Для EOA (обычного кошелька) используется token.delegate(msg.sender). После вызова создается checkpoint с текущим балансом как voting power.">
         <div style={{
           ...glassStyle,
-          padding: 12,
-          marginBottom: 12,
-          border: '1px solid rgba(255,255,255,0.08)',
+          'padding': '12px',
+          'margin-bottom': '12px',
+          'border': '1px solid rgba(255,255,255,0.08)',
         }}>
           <div style={{
-            fontSize: 10,
-            color: colors.textMuted,
-            fontFamily: 'monospace',
-            marginBottom: 4,
+            'font-size': '10px',
+            'color': colors.textMuted,
+            'font-family': 'monospace',
+            'margin-bottom': '4px',
           }}>
             Активация voting power:
           </div>
           <code style={{
-            fontSize: 11,
-            color: delegated ? '#22c55e' : '#f97316',
-            fontFamily: 'monospace',
+            'font-size': '11px',
+            'color': delegated() ? '#22c55e' : '#f97316',
+            'font-family': 'monospace',
           }}>
             token.delegate(address(this));
           </code>

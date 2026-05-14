@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Timelock Execution Diagrams (GOV-04)
  *
@@ -5,7 +6,7 @@
  * - TimelockFlowDiagram: Full timelock execution flow (step-through, history array, 7 steps)
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DataBox } from '@primitives/DataBox';
 import { DiagramTooltip } from '@primitives/Tooltip';
@@ -106,8 +107,8 @@ const TIMELOCK_STEPS: TimelockStep[] = [
  * Time axis at bottom. Role labels on each step.
  */
 export function TimelockFlowDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const step = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const step = history()[history().length - 1];
   const current = TIMELOCK_STEPS[step];
 
   const handleNext = () => {
@@ -116,8 +117,8 @@ export function TimelockFlowDiagram() {
     }
   };
   const handleBack = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const handleReset = () => setHistory([0]);
@@ -125,17 +126,17 @@ export function TimelockFlowDiagram() {
   return (
     <DiagramContainer title="Полный цикл governance: от предложения до исполнения" color="blue">
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px', 'flex-wrap': 'wrap' }}>
         {TIMELOCK_STEPS.map((s, i) => (
-          <div key={i} style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 9,
-            fontFamily: 'monospace',
-            fontWeight: i === step ? 700 : 400,
-            background: i === step ? `${s.stateColor}20` : i <= step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
-            color: i === step ? s.stateColor : i <= step ? '#22c55e' : colors.textMuted,
-            border: `1px solid ${i === step ? `${s.stateColor}50` : 'rgba(255,255,255,0.08)'}`,
+          <div style={{
+            'padding': '4px 8px',
+            'border-radius': '4px',
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'font-weight': i === step ? 700 : 400,
+            'background': i === step ? `${s.stateColor}20` : i <= step ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.03)',
+            'color': i === step ? s.stateColor : i <= step ? '#22c55e' : colors.textMuted,
+            'border': `1px solid ${i === step ? `${s.stateColor}50` : 'rgba(255,255,255,0.08)'}`,
           }}>
             {s.title}
           </div>
@@ -145,9 +146,9 @@ export function TimelockFlowDiagram() {
       {/* Current step detail */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 12,
-        border: `1px solid ${current.stateColor}30`,
+        'padding': '16px',
+        'margin-bottom': '12px',
+        'border': `1px solid ${current.stateColor}30`,
       }}>
         {/* Header */}
         <DiagramTooltip content={
@@ -159,35 +160,35 @@ export function TimelockFlowDiagram() {
           : step === 5 ? 'TIMELOCK DELAY -- критический период безопасности. Сообщество видит, какое действие будет исполнено, и может принять меры: вывести средства из протокола, отменить proposal через guardian, или подготовиться к изменениям.'
           : 'EXECUTE -- финальное исполнение. Любой может вызвать execute() после истечения timelock delay. TimelockController выполняет запланированные on-chain действия (transfer, parameter change, upgrade). Необратимо.'
         }>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ 'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center', 'margin-bottom': '8px' }}>
             <div style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: current.stateColor,
-              fontFamily: 'monospace',
+              'font-size': '14px',
+              'font-weight': '700',
+              'color': current.stateColor,
+              'font-family': 'monospace',
             }}>
               {step + 1}. {current.title}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ 'display': 'flex', 'gap': '8px' }}>
               <span style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: `${current.stateColor}15`,
-                color: current.stateColor,
-                border: `1px solid ${current.stateColor}30`,
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'background': `${current.stateColor}15`,
+                'color': current.stateColor,
+                'border': `1px solid ${current.stateColor}30`,
               }}>
                 State: {current.state}
               </span>
               <span style={{
-                fontSize: 9,
-                fontFamily: 'monospace',
-                padding: '2px 8px',
-                borderRadius: 4,
-                background: 'rgba(255,255,255,0.05)',
-                color: colors.textMuted,
-                border: '1px solid rgba(255,255,255,0.1)',
+                'font-size': '9px',
+                'font-family': 'monospace',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'background': 'rgba(255,255,255,0.05)',
+                'color': colors.textMuted,
+                'border': '1px solid rgba(255,255,255,0.1)',
               }}>
                 {current.day}
               </span>
@@ -196,22 +197,22 @@ export function TimelockFlowDiagram() {
         </DiagramTooltip>
 
         {/* Description */}
-        <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 10 }}>
+        <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '10px' }}>
           {current.description}
         </div>
 
         {/* Role and code */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ 'display': 'grid', 'grid-template-columns': '1fr 1fr', 'gap': '10px' }}>
           <DiagramTooltip content="Роль определяет, кто выполняет действие на каждом шаге. В TimelockController есть три ключевые роли: Proposer (может ставить в очередь), Executor (может исполнять после задержки), Canceller (может отменять). Разделение ролей -- принцип defense in depth.">
             <div style={{
               ...glassStyle,
-              padding: 10,
-              border: '1px solid rgba(255,255,255,0.06)',
+              'padding': '10px',
+              'border': '1px solid rgba(255,255,255,0.06)',
             }}>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 Role:
               </div>
-              <div style={{ fontSize: 10, color: '#f97316', fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '10px', 'color': '#f97316', 'font-family': 'monospace' }}>
                 {current.role}
               </div>
             </div>
@@ -219,13 +220,13 @@ export function TimelockFlowDiagram() {
           <DiagramTooltip content={`Solidity-код текущего шага: ${current.action}. В тестах Foundry используется vm.warp() для симуляции прохождения времени. В production время проходит естественным образом между блоками.`}>
             <div style={{
               ...glassStyle,
-              padding: 10,
-              border: '1px solid rgba(255,255,255,0.06)',
+              'padding': '10px',
+              'border': '1px solid rgba(255,255,255,0.06)',
             }}>
-              <div style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 2 }}>
+              <div style={{ 'font-size': '9px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '2px' }}>
                 Code:
               </div>
-              <div style={{ fontSize: 10, color: '#22c55e', fontFamily: 'monospace' }}>
+              <div style={{ 'font-size': '10px', 'color': '#22c55e', 'font-family': 'monospace' }}>
                 {current.codeHint}
               </div>
             </div>
@@ -234,9 +235,9 @@ export function TimelockFlowDiagram() {
       </div>
 
       {/* Time axis */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <svg width={500} height={40} style={{ overflow: 'visible' }}>
+      <div style={{ 'margin-bottom': '16px' }}>
+        <div style={{ 'display': 'flex', 'justify-content': 'center' }}>
+          <svg width={500} height={40} style={{ 'overflow': 'visible' }}>
             {/* Axis line */}
             <line x1={20} y1={20} x2={480} y2={20} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
 
@@ -254,7 +255,7 @@ export function TimelockFlowDiagram() {
                 (i === 3 && step >= 5)
               );
               return (
-                <g key={i}>
+                <g>
                   <circle cx={marker.x} cy={20} r={4} fill={isActive ? '#60a5fa' : 'rgba(255,255,255,0.15)'} />
                   <text x={marker.x} y={35} fill={isActive ? colors.text : colors.textMuted} fontSize={9} textAnchor="middle" fontFamily="monospace">
                     {marker.label}
@@ -269,7 +270,7 @@ export function TimelockFlowDiagram() {
               { x1: 130, x2: 300, label: 'votingPeriod', color: '#3b82f6' },
               { x1: 300, x2: 460, label: 'timelockDelay', color: '#a855f7' },
             ].map((seg, i) => (
-              <g key={i}>
+              <g>
                 <line x1={seg.x1} y1={14} x2={seg.x2} y2={14} stroke={`${seg.color}40`} strokeWidth={4} />
                 <text x={(seg.x1 + seg.x2) / 2} y={8} fill={seg.color} fontSize={7} textAnchor="middle" fontFamily="monospace">
                   {seg.label}
@@ -281,40 +282,40 @@ export function TimelockFlowDiagram() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={handleBack} disabled={history.length <= 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: history.length > 1 ? colors.text : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: history.length > 1 ? 'pointer' : 'not-allowed',
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
+        <button onClick={handleBack} disabled={history().length <= 1} style={{
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': history().length > 1 ? colors.text : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': history().length > 1 ? 'pointer' : 'not-allowed',
         }}>
           Back
         </button>
         <button onClick={handleNext} disabled={step >= TIMELOCK_STEPS.length - 1} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(96,165,250,0.3)',
-          background: step < TIMELOCK_STEPS.length - 1 ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.05)',
-          color: step < TIMELOCK_STEPS.length - 1 ? '#60a5fa' : colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: step < TIMELOCK_STEPS.length - 1 ? 'pointer' : 'not-allowed',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(96,165,250,0.3)',
+          'background': step < TIMELOCK_STEPS.length - 1 ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.05)',
+          'color': step < TIMELOCK_STEPS.length - 1 ? '#60a5fa' : colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': step < TIMELOCK_STEPS.length - 1 ? 'pointer' : 'not-allowed',
         }}>
           Step
         </button>
         <button onClick={handleReset} style={{
-          padding: '6px 16px',
-          borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.05)',
-          color: colors.textMuted,
-          fontSize: 11,
-          fontFamily: 'monospace',
-          cursor: 'pointer',
+          'padding': '6px 16px',
+          'border-radius': '6px',
+          'border': '1px solid rgba(255,255,255,0.15)',
+          'background': 'rgba(255,255,255,0.05)',
+          'color': colors.textMuted,
+          'font-size': '11px',
+          'font-family': 'monospace',
+          'cursor': 'pointer',
         }}>
           Reset
         </button>

@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * SNARK Concept Diagrams (ZK-04)
  *
@@ -7,7 +8,7 @@
  * - ComputationToProofDiagram: Static pipeline from computation to proof
  */
 
-import { useState } from 'react';
+import { createSignal } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -42,9 +43,9 @@ const GATES: GateNode[] = [
  * Green checkmark when output = 35, red X otherwise.
  */
 export function ArithmeticCircuitDiagram() {
-  const [x, setX] = useState(3);
+  const [x, setX] = createSignal(3);
 
-  const values = GATES.map((g) => g.compute(x));
+  const values = GATES.map((g) => g.compute(x()));
   const output = values[values.length - 1];
   const isValid = output === 35;
 
@@ -54,17 +55,17 @@ export function ArithmeticCircuitDiagram() {
       <DiagramTooltip content="Входная переменная x — приватный вход (witness) арифметической схемы. Prover знает значение x, verifier видит только результат вычисления. Измените значение, чтобы увидеть, как меняется trace.">
         <div>
           <InteractiveValue
-            value={x}
+            value={x()}
             onChange={setX}
             min={1}
             max={10}
-            label={`x = ${x}`}
+            label={`x = ${x()}`}
           />
         </div>
       </DiagramTooltip>
 
       {/* Circuit DAG */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '16px 0' }}>
+      <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px', 'margin': '16px 0' }}>
         {GATES.map((gate, i) => {
           const val = values[i];
           const isOutput = i === GATES.length - 1;
@@ -73,37 +74,37 @@ export function ArithmeticCircuitDiagram() {
             : gate.color;
 
           return (
-            <div key={gate.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px' }}>
               {/* Arrow from previous */}
               {i > 0 && (
                 <div style={{
-                  width: 24,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: colors.textMuted,
-                  fontSize: 14,
-                  fontFamily: 'monospace',
+                  'width': '24px',
+                  'display': 'flex',
+                  'align-items': 'center',
+                  'justify-content': 'center',
+                  'color': colors.textMuted,
+                  'font-size': '14px',
+                  'font-family': 'monospace',
                 }}>
                   {'\u2193'}
                 </div>
               )}
-              {i === 0 && <div style={{ width: 24 }} />}
+              {i === 0 && <div style={{ 'width': '24px' }} />}
 
               {/* Gate box */}
               <div style={{
                 ...glassStyle,
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: `1px solid ${borderColor}40`,
-                background: `${borderColor}08`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'all 0.3s',
+                'flex': '1',
+                'padding': '10px 14px',
+                'border-radius': '8px',
+                'border': `1px solid ${borderColor}40`,
+                'background': `${borderColor}08`,
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'space-between',
+                'transition': 'all 0.3s',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '10px' }}>
                   {/* Op badge */}
                   <DiagramTooltip content={
                     gate.op === 'MUL'
@@ -113,25 +114,25 @@ export function ArithmeticCircuitDiagram() {
                         : 'Входной сигнал арифметической схемы. Значение x — приватный witness, который знает только prover.'
                   }>
                     <span style={{
-                      fontSize: 9,
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      color: gate.color,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      background: `${gate.color}15`,
-                      border: `1px solid ${gate.color}30`,
+                      'font-size': '9px',
+                      'font-family': 'monospace',
+                      'font-weight': '700',
+                      'color': gate.color,
+                      'padding': '2px 6px',
+                      'border-radius': '4px',
+                      'background': `${gate.color}15`,
+                      'border': `1px solid ${gate.color}30`,
                     }}>
                       {gate.op}
                     </span>
                   </DiagramTooltip>
                   {/* Gate label */}
                   <span style={{
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: colors.text,
+                    'font-size': '12px',
+                    'font-family': 'monospace',
+                    'color': colors.text,
                   }}>
-                    {i === 0 ? `x = ${x}` : gate.label.replace(/x/g, String(x))
+                    {i === 0 ? `x = ${x()}` : gate.label.replace(/x/g, String(x()))
                       .replace(/v1/g, String(values[1]))
                       .replace(/v2/g, String(values[2]))
                       .replace(/v3/g, String(values[3]))}
@@ -140,10 +141,10 @@ export function ArithmeticCircuitDiagram() {
 
                 {/* Computed value */}
                 <span style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  fontFamily: 'monospace',
-                  color: isOutput ? (isValid ? '#10b981' : '#ef4444') : colors.text,
+                  'font-size': '13px',
+                  'font-weight': '700',
+                  'font-family': 'monospace',
+                  'color': isOutput ? (isValid ? '#10b981' : '#ef4444') : colors.text,
                 }}>
                   = {val} {isOutput && (isValid ? '\u2705' : '\u274C')}
                 </span>
@@ -157,22 +158,22 @@ export function ArithmeticCircuitDiagram() {
       <DiagramTooltip content="Execution trace — последовательность всех промежуточных значений вычисления. Этот trace становится witness vector в R1CS: s = [1, x, v1, v2, out]. Prover должен знать весь trace, чтобы построить доказательство.">
         <div style={{
           ...glassStyle,
-          padding: 10,
-          borderRadius: 6,
-          marginBottom: 12,
-          border: `1px solid ${isValid ? '#10b98130' : '#ef444430'}`,
-          background: isValid ? '#10b98108' : '#ef444408',
+          'padding': '10px',
+          'border-radius': '6px',
+          'margin-bottom': '12px',
+          'border': `1px solid ${isValid ? '#10b98130' : '#ef444430'}`,
+          'background': isValid ? '#10b98108' : '#ef444408',
         }}>
           <div style={{
-            fontSize: 11,
-            fontFamily: 'monospace',
-            color: colors.text,
-            textAlign: 'center',
+            'font-size': '11px',
+            'font-family': 'monospace',
+            'color': colors.text,
+            'text-align': 'center',
           }}>
-            {x} {'\u2192'} {values[1]} {'\u2192'} {values[2]} {'\u2192'} {values[3]} {'\u2192'} {output}
+            {x()} {'\u2192'} {values[1]} {'\u2192'} {values[2]} {'\u2192'} {values[3]} {'\u2192'} {output}
             {isValid
-              ? <span style={{ color: '#10b981', fontWeight: 700 }}> = 35 (valid witness)</span>
-              : <span style={{ color: '#ef4444', fontWeight: 700 }}> {'\u2260'} 35 (invalid)</span>
+              ? <span style={{ 'color': '#10b981', 'font-weight': '700' }}> = 35 (valid witness)</span>
+              : <span style={{ 'color': '#ef4444', 'font-weight': '700' }}> {'\u2260'} 35 (invalid)</span>
             }
           </div>
         </div>
@@ -288,41 +289,41 @@ const R1CS_STEPS: R1CSStep[] = [
 
 const WITNESS_LABELS = ['1', 'x', 'v1', 'v2', 'out'];
 
-function MatrixDisplay({ name, data, color }: { name: string; data: number[][]; color: string }) {
+function MatrixDisplay(props: { name: string; data: number[][]; color: string }) {
   return (
-    <div style={{ display: 'inline-block', verticalAlign: 'top', marginRight: 12 }}>
+    <div style={{ 'display': 'inline-block', 'vertical-align': 'top', 'margin-right': '12px' }}>
       <div style={{
-        fontSize: 10,
-        fontWeight: 700,
-        color,
-        fontFamily: 'monospace',
-        marginBottom: 4,
-        textAlign: 'center',
+        'font-size': '10px',
+        'font-weight': '700',
+        'color': props.color,
+        'font-family': 'monospace',
+        'margin-bottom': '4px',
+        'text-align': 'center',
       }}>
-        {name}
+        {props.name}
       </div>
       <div style={{
         ...glassStyle,
-        padding: 6,
-        borderRadius: 6,
-        border: `1px solid ${color}30`,
-        background: `${color}06`,
+        'padding': '6px',
+        'border-radius': '6px',
+        'border': `1px solid ${props.color}30`,
+        'background': `${props.color}06`,
       }}>
-        {data.map((row, ri) => (
-          <div key={ri} style={{ display: 'flex', gap: 4, marginBottom: ri < data.length - 1 ? 2 : 0 }}>
+        {props.data.map((row, ri) => (
+          <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': ri < props.data.length - 1 ? 2 : 0 }}>
             {row.map((val, ci) => (
-              <span key={ci} style={{
-                width: 26,
-                height: 22,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 11,
-                fontFamily: 'monospace',
-                fontWeight: val !== 0 ? 700 : 400,
-                color: val !== 0 ? colors.text : 'rgba(255,255,255,0.2)',
-                borderRadius: 3,
-                background: val !== 0 ? `${color}12` : 'transparent',
+              <span style={{
+                'width': '26px',
+                'height': '22px',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'font-weight': val !== 0 ? 700 : 400,
+                'color': val !== 0 ? colors.text : 'rgba(255,255,255,0.2)',
+                'border-radius': '3px',
+                'background': val !== 0 ? `${props.color}12` : 'transparent',
               }}>
                 {val}
               </span>
@@ -341,8 +342,8 @@ function MatrixDisplay({ name, data, color }: { name: string; data: number[][]; 
  * 5 steps with history array, step/back/reset.
  */
 export function R1CSMatrixDiagram() {
-  const [history, setHistory] = useState<number[]>([0]);
-  const current = history[history.length - 1];
+  const [history, setHistory] = createSignal<number[]>([0]);
+  const current = history()[history().length - 1];
 
   const step = () => {
     if (current < R1CS_STEPS.length - 1) {
@@ -350,8 +351,8 @@ export function R1CSMatrixDiagram() {
     }
   };
   const back = () => {
-    if (history.length > 1) {
-      setHistory(history.slice(0, -1));
+    if (history().length > 1) {
+      setHistory(history().slice(0, -1));
     }
   };
   const reset = () => setHistory([0]);
@@ -361,16 +362,15 @@ export function R1CSMatrixDiagram() {
   return (
     <DiagramContainer title="R1CS: матрицы ограничений для x^3 + x + 5 = 35" color="blue">
       {/* Progress bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '4px', 'margin-bottom': '16px' }}>
         {R1CS_STEPS.map((st, i) => (
           <div
-            key={i}
             style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background: i <= current ? st.color : 'rgba(255,255,255,0.08)',
-              transition: 'background 0.3s',
+              'flex': '1',
+              'height': '4px',
+              'border-radius': '2px',
+              'background': i <= current ? st.color : 'rgba(255,255,255,0.08)',
+              'transition': 'background 0.3s',
             }}
           />
         ))}
@@ -379,31 +379,31 @@ export function R1CSMatrixDiagram() {
       {/* Step content */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        marginBottom: 12,
-        border: `1px solid ${s.color}30`,
-        background: `${s.color}08`,
-        borderRadius: 8,
+        'padding': '16px',
+        'margin-bottom': '12px',
+        'border': `1px solid ${s.color}30`,
+        'background': `${s.color}08`,
+        'border-radius': '8px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
           <span style={{
-            fontSize: 9,
-            fontFamily: 'monospace',
-            color: s.color,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: `${s.color}15`,
-            border: `1px solid ${s.color}30`,
+            'font-size': '9px',
+            'font-family': 'monospace',
+            'color': s.color,
+            'padding': '2px 8px',
+            'border-radius': '4px',
+            'background': `${s.color}15`,
+            'border': `1px solid ${s.color}30`,
           }}>
             {s.label}
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>
+          <span style={{ 'font-size': '13px', 'font-weight': '700', 'color': colors.text }}>
             {s.title}
           </span>
         </div>
 
         <DiagramTooltip content={s.description}>
-          <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.6, marginBottom: 12 }}>
+          <div style={{ 'font-size': '12px', 'color': colors.text, 'line-height': '1.6', 'margin-bottom': '12px' }}>
             {s.description}
           </div>
         </DiagramTooltip>
@@ -411,24 +411,24 @@ export function R1CSMatrixDiagram() {
         {/* Witness vector */}
         {s.witness && (
           <DiagramTooltip content="Witness vector s содержит все значения вычисления: константу 1, приватный вход x, промежуточные значения и выход. Prover должен знать весь witness, чтобы построить доказательство. Verifier видит только публичные входы/выходы.">
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, color: colors.textMuted, fontFamily: 'monospace', marginBottom: 4 }}>
+            <div style={{ 'margin-bottom': '12px' }}>
+              <div style={{ 'font-size': '10px', 'color': colors.textMuted, 'font-family': 'monospace', 'margin-bottom': '4px' }}>
                 s = [{WITNESS_LABELS.join(', ')}] = [{s.witness.join(', ')}]
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ 'display': 'flex', 'gap': '4px' }}>
                 {s.witness.map((val, i) => (
-                  <div key={i} style={{
+                  <div style={{
                     ...glassStyle,
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    textAlign: 'center',
-                    minWidth: 36,
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    'padding': '4px 8px',
+                    'border-radius': '4px',
+                    'text-align': 'center',
+                    'min-width': '36px',
+                    'border': '1px solid rgba(255,255,255,0.1)',
                   }}>
-                    <div style={{ fontSize: 8, color: colors.textMuted, fontFamily: 'monospace' }}>
+                    <div style={{ 'font-size': '8px', 'color': colors.textMuted, 'font-family': 'monospace' }}>
                       {WITNESS_LABELS[i]}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: s.color, fontFamily: 'monospace' }}>
+                    <div style={{ 'font-size': '12px', 'font-weight': '700', 'color': s.color, 'font-family': 'monospace' }}>
                       {val}
                     </div>
                   </div>
@@ -441,26 +441,26 @@ export function R1CSMatrixDiagram() {
         {/* Matrices */}
         {s.matrices && (
           <DiagramTooltip content="Матрицы A, B, C кодируют коэффициенты линейных комбинаций для каждого ограничения. Для каждой строки i: (Ai . s) * (Bi . s) = (Ci . s). Ненулевые элементы указывают, какие переменные участвуют в данном ограничении.">
-            <div style={{ overflowX: 'auto', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ 'overflow-x': 'auto', 'margin-bottom': '12px', 'display': 'flex', 'flex-wrap': 'wrap', 'gap': '8px' }}>
               <MatrixDisplay name="A" data={s.matrices.A} color="#8b5cf6" />
               <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: 16,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                padding: '0 2px',
+                'display': 'flex',
+                'align-items': 'center',
+                'font-size': '16px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'padding': '0 2px',
               }}>
                 {'\u00B7'}
               </span>
               <MatrixDisplay name="B" data={s.matrices.B} color="#3b82f6" />
               <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: 16,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
-                padding: '0 2px',
+                'display': 'flex',
+                'align-items': 'center',
+                'font-size': '16px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
+                'padding': '0 2px',
               }}>
                 =
               </span>
@@ -473,12 +473,12 @@ export function R1CSMatrixDiagram() {
         {s.check && (
           <div style={{
             ...glassStyle,
-            padding: 8,
-            borderRadius: 6,
-            border: '1px solid #10b98130',
-            background: '#10b98108',
+            'padding': '8px',
+            'border-radius': '6px',
+            'border': '1px solid #10b98130',
+            'background': '#10b98108',
           }}>
-            <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', lineHeight: 1.5 }}>
+            <div style={{ 'font-size': '10px', 'font-family': 'monospace', 'color': '#10b981', 'line-height': '1.5' }}>
               {'\u2705'} {s.check}
             </div>
           </div>
@@ -486,27 +486,27 @@ export function R1CSMatrixDiagram() {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px' }}>
         {[
-          { label: 'Back', action: back, disabled: history.length <= 1, tooltip: 'Вернуться к предыдущему шагу построения R1CS.' },
+          { label: 'Back', action: back, disabled: history().length <= 1, tooltip: 'Вернуться к предыдущему шагу построения R1CS.' },
           { label: `Step ${current + 1}/${R1CS_STEPS.length}`, action: step, disabled: current >= R1CS_STEPS.length - 1, tooltip: 'Перейти к следующему шагу. Каждый шаг добавляет новое ограничение в систему R1CS.' },
-          { label: 'Reset', action: reset, disabled: history.length <= 1, tooltip: 'Начать построение R1CS с первого шага.' },
+          { label: 'Reset', action: reset, disabled: history().length <= 1, tooltip: 'Начать построение R1CS с первого шага.' },
         ].map((btn) => (
-          <DiagramTooltip key={btn.label} content={btn.tooltip}>
+          <DiagramTooltip content={btn.tooltip}>
             <div>
               <button
                 onClick={btn.action}
                 disabled={btn.disabled}
                 style={{
                   ...glassStyle,
-                  padding: '6px 14px',
-                  cursor: btn.disabled ? 'default' : 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6,
-                  opacity: btn.disabled ? 0.5 : 1,
+                  'padding': '6px 14px',
+                  'cursor': btn.disabled ? 'default' : 'pointer',
+                  'font-size': '11px',
+                  'font-family': 'monospace',
+                  'color': btn.disabled ? 'rgba(255,255,255,0.2)' : colors.text,
+                  'border': '1px solid rgba(255,255,255,0.1)',
+                  'border-radius': '6px',
+                  'opacity': btn.disabled ? 0.5 : 1,
                 }}
               >
                 {btn.label}
@@ -603,53 +603,53 @@ export function ComputationToProofDiagram() {
     <DiagramContainer title="От вычисления к proof: полный pipeline" color="green">
       {/* Pipeline flow */}
       <div style={{
-        display: 'flex',
-        alignItems: 'stretch',
-        gap: 3,
-        marginBottom: 16,
-        overflowX: 'auto',
-        paddingBottom: 4,
+        'display': 'flex',
+        'align-items': 'stretch',
+        'gap': '3px',
+        'margin-bottom': '16px',
+        'overflow-x': 'auto',
+        'padding-bottom': '4px',
       }}>
         {PIPELINE_STAGES.map((stage, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '3px' }}>
             <DiagramTooltip content={PIPELINE_TOOLTIPS[i]}>
               <div
                 style={{
                   ...glassStyle,
-                  padding: '10px 10px',
-                  borderRadius: 8,
-                  border: `1px solid ${stage.color}25`,
-                  background: `${stage.color}06`,
-                  minWidth: 90,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  'padding': '10px 10px',
+                  'border-radius': '8px',
+                  'border': `1px solid ${stage.color}25`,
+                  'background': `${stage.color}06`,
+                  'min-width': '90px',
+                  'text-align': 'center',
+                  'cursor': 'pointer',
+                  'transition': 'all 0.2s',
                 }}
               >
                 {/* Icon */}
                 <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: stage.color,
-                  fontFamily: 'monospace',
-                  marginBottom: 4,
+                  'font-size': '11px',
+                  'font-weight': '700',
+                  'color': stage.color,
+                  'font-family': 'monospace',
+                  'margin-bottom': '4px',
                 }}>
                   {stage.icon}
                 </div>
                 {/* Name */}
                 <div style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: colors.text,
-                  marginBottom: 2,
+                  'font-size': '10px',
+                  'font-weight': '600',
+                  'color': colors.text,
+                  'margin-bottom': '2px',
                 }}>
                   {stage.nameRu}
                 </div>
                 {/* Size */}
                 <div style={{
-                  fontSize: 8,
-                  color: colors.textMuted,
-                  fontFamily: 'monospace',
+                  'font-size': '8px',
+                  'color': colors.textMuted,
+                  'font-family': 'monospace',
                 }}>
                   {stage.size}
                 </div>
@@ -658,9 +658,9 @@ export function ComputationToProofDiagram() {
             {/* Arrow */}
             {i < PIPELINE_STAGES.length - 1 && (
               <div style={{
-                fontSize: 14,
-                color: colors.textMuted,
-                fontFamily: 'monospace',
+                'font-size': '14px',
+                'color': colors.textMuted,
+                'font-family': 'monospace',
               }}>
                 {'\u2192'}
               </div>

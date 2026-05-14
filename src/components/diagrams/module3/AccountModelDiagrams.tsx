@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Account Model Diagrams (ETH-02)
  *
@@ -7,7 +8,7 @@
  * - AccountStateTransitionDiagram: Step-through account state changes (history array)
  */
 
-import { useState } from 'react';
+import { createSignal, type JSX } from 'solid-js';
 import { DiagramContainer } from '@primitives/DiagramContainer';
 import { DiagramTooltip } from '@primitives/Tooltip';
 import { DataBox } from '@primitives/DataBox';
@@ -42,7 +43,7 @@ function truncHex(s: string, len = 8): string {
   return s.length > len ? s.slice(0, len) + '...' : s;
 }
 
-function btnStyle(active: boolean, accentColor: string): React.CSSProperties {
+function btnStyle(active: boolean, accentColor: string): JSX.CSSProperties {
   return {
     ...glassStyle,
     padding: '8px 16px',
@@ -130,33 +131,33 @@ export function EOAvsContractDiagram() {
   return (
     <DiagramContainer title="EOA vs Contract Account" color="blue">
       {/* Account type headers */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'margin-bottom': '16px' }}>
         {[EOA_INFO, CONTRACT_INFO].map((info) => (
-          <DiagramTooltip key={info.label} content={
+          <DiagramTooltip content={
             info.label === EOA_INFO.label
               ? 'EOA (Externally Owned Account): контролируется приватным ключом. Может инициировать транзакции. Не имеет code -- только nonce, balance.'
               : 'Contract Account: контролируется кодом. Не может инициировать транзакции (только реагировать). Имеет code + storage помимо nonce и balance.'
           }>
             <div style={{
               ...glassStyle,
-              flex: 1,
-              padding: '12px 16px',
-              borderTop: `3px solid ${info.color}`,
+              'flex': '1',
+              'padding': '12px 16px',
+              'border-top': `3px solid ${info.color}`,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ 'display': 'flex', 'align-items': 'center', 'gap': '8px', 'margin-bottom': '8px' }}>
                 <div style={{
-                  width: 28, height: 28, borderRadius: '50%',
-                  background: info.color + '20', border: `2px solid ${info.color}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'monospace', fontSize: 14, fontWeight: 700, color: info.color,
+                  'width': '28px', 'height': '28px', 'border-radius': '50%',
+                  'background': info.color + '20', 'border': `2px solid ${info.color}`,
+                  'display': 'flex', 'align-items': 'center', 'justify-content': 'center',
+                  'font-family': 'monospace', 'font-size': '14px', 'font-weight': '700', 'color': info.color,
                 }}>
                   {info.icon}
                 </div>
-                <div style={{ fontWeight: 600, color: info.color, fontSize: 13, fontFamily: 'monospace' }}>
+                <div style={{ 'font-weight': '600', 'color': info.color, 'font-size': '13px', 'font-family': 'monospace' }}>
                   {info.label}
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: colors.textMuted, lineHeight: 1.5 }}>
+              <div style={{ 'font-size': '11px', 'color': colors.textMuted, 'line-height': '1.5' }}>
                 <div>{info.control}</div>
                 <div>{info.initiation}</div>
                 <div>{info.code}</div>
@@ -167,17 +168,17 @@ export function EOAvsContractDiagram() {
       </div>
 
       {/* Field comparison table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px', fontSize: 12 }}>
+      <div style={{ 'overflow-x': 'auto' }}>
+        <table style={{ 'width': '100%', 'border-collapse': 'separate', 'border-spacing': '0 4px', 'font-size': '12px' }}>
           <thead>
             <tr>
-              <th style={{ padding: '6px 10px', textAlign: 'left', fontFamily: 'monospace', borderBottom: `1px solid ${colors.border}`, width: '20%' }}>
+              <th style={{ 'padding': '6px 10px', 'text-align': 'left', 'font-family': 'monospace', 'border-bottom': `1px solid ${colors.border}`, 'width': '20%' }}>
                 Поле
               </th>
-              <th style={{ padding: '6px 10px', textAlign: 'left', fontFamily: 'monospace', borderBottom: `1px solid ${colors.border}`, color: colors.primary, width: '40%' }}>
+              <th style={{ 'padding': '6px 10px', 'text-align': 'left', 'font-family': 'monospace', 'border-bottom': `1px solid ${colors.border}`, 'color': colors.primary, 'width': '40%' }}>
                 EOA
               </th>
-              <th style={{ padding: '6px 10px', textAlign: 'left', fontFamily: 'monospace', borderBottom: `1px solid ${colors.border}`, color: '#a855f7', width: '40%' }}>
+              <th style={{ 'padding': '6px 10px', 'text-align': 'left', 'font-family': 'monospace', 'border-bottom': `1px solid ${colors.border}`, 'color': '#a855f7', 'width': '40%' }}>
                 Contract
               </th>
             </tr>
@@ -186,35 +187,35 @@ export function EOAvsContractDiagram() {
             {ACCOUNT_FIELDS_COMPARISON.map((row, i) => {
               const fieldColor = row.shared ? colors.success : '#f59e0b';
               return (
-                <tr key={i}>
+                <tr>
                   <td style={{
-                    padding: '8px 10px', fontFamily: 'monospace',
-                    fontWeight: 600, color: colors.text,
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 4,
+                    'padding': '8px 10px', 'font-family': 'monospace',
+                    'font-weight': '600', 'color': colors.text,
+                    'background': 'rgba(255,255,255,0.03)',
+                    'border-radius': '4px',
                   }}>
                     <DiagramTooltip content={row.tooltip}>
                       <span>
                         {row.field}
-                        <span style={{ fontSize: 9, marginLeft: 4, color: fieldColor }}>
+                        <span style={{ 'font-size': '9px', 'margin-left': '4px', 'color': fieldColor }}>
                           {row.shared ? '(=)' : '(!=)'}
                         </span>
                       </span>
                     </DiagramTooltip>
                   </td>
                   <td style={{
-                    padding: '8px 10px', fontFamily: 'monospace', fontSize: 11,
-                    color: colors.textMuted,
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 4,
+                    'padding': '8px 10px', 'font-family': 'monospace', 'font-size': '11px',
+                    'color': colors.textMuted,
+                    'background': 'rgba(255,255,255,0.03)',
+                    'border-radius': '4px',
                   }}>
                     {row.eoa}
                   </td>
                   <td style={{
-                    padding: '8px 10px', fontFamily: 'monospace', fontSize: 11,
-                    color: colors.text,
-                    background: 'rgba(255,255,255,0.03)',
-                    borderRadius: 4,
+                    'padding': '8px 10px', 'font-family': 'monospace', 'font-size': '11px',
+                    'color': colors.text,
+                    'background': 'rgba(255,255,255,0.03)',
+                    'border-radius': '4px',
                   }}>
                     {row.contract}
                   </td>
@@ -225,7 +226,7 @@ export function EOAvsContractDiagram() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ 'margin-top': '12px' }}>
         <DiagramTooltip content="EOA контролируется приватным ключом (ECDSA secp256k1). Contract контролируется кодом -- байткод определяет поведение и неизменяем после deploy.">
           <DataBox
             label="Ключевое отличие"
@@ -297,29 +298,29 @@ const FIELD_DETAILS: FieldDetail[] = [
 ];
 
 export function AccountFieldsDiagram() {
-  const [selectedField, setSelectedField] = useState<number | null>(null);
+  const [selectedField, setSelectedField] = createSignal<number | null>(null);
 
-  const selected = selectedField !== null ? FIELD_DETAILS[selectedField] : null;
+  const selected = selectedField() !== null ? FIELD_DETAILS[selectedField()] : null;
 
   return (
     <DiagramContainer title="Поля состояния аккаунта" color="green">
       {/* Account box */}
       <div style={{
         ...glassStyle,
-        padding: '16px',
-        border: `1px solid ${colors.border}`,
-        marginBottom: 12,
+        'padding': '16px',
+        'border': `1px solid ${colors.border}`,
+        'margin-bottom': '12px',
       }}>
         <div style={{
-          textAlign: 'center', fontFamily: 'monospace', fontSize: 11,
-          color: colors.textMuted, marginBottom: 12,
+          'text-align': 'center', 'font-family': 'monospace', 'font-size': '11px',
+          'color': colors.textMuted, 'margin-bottom': '12px',
         }}>
           Account State = rlp([nonce, balance, storageRoot, codeHash])
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ 'display': 'flex', 'gap': '8px', 'flex-wrap': 'wrap', 'justify-content': 'center' }}>
           {FIELD_DETAILS.map((field, i) => {
-            const isSelected = selectedField === i;
+            const isSelected = selectedField() === i;
             const fieldTooltips: Record<string, string> = {
               nonce: 'Nonce: счётчик транзакций (EOA) или созданных контрактов (contract). Предотвращает replay attacks. Увеличивается с каждой транзакцией.',
               balance: 'Balance: количество Wei (1 ETH = 10^18 Wei). Обновляется при transfers и gas payments. Хранится в state trie.',
@@ -327,32 +328,32 @@ export function AccountFieldsDiagram() {
               codeHash: 'Code Hash: keccak256 хеш EVM bytecode контракта. keccak256(\'\') для EOA. Immutable после deploy.',
             };
             return (
-              <DiagramTooltip key={field.name} content={fieldTooltips[field.name]}>
+              <DiagramTooltip content={fieldTooltips[field.name]}>
                 <div
                   onClick={() => setSelectedField(isSelected ? null : i)}
                   style={{
                     ...glassStyle,
-                    padding: '10px 16px',
-                    flex: '1 1 auto',
-                    minWidth: 120,
-                    maxWidth: 180,
-                    cursor: 'pointer',
-                    borderLeft: `3px solid ${field.color}`,
-                    background: isSelected ? field.color + '15' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${isSelected ? field.color : colors.border}`,
-                    borderLeftWidth: 3,
-                    borderLeftColor: field.color,
-                    transition: 'background 0.15s, border-color 0.15s',
+                    'padding': '10px 16px',
+                    'flex': '1 1 auto',
+                    'min-width': '120px',
+                    'max-width': '180px',
+                    'cursor': 'pointer',
+                    'border-left': `3px solid ${field.color}`,
+                    'background': isSelected ? field.color + '15' : 'rgba(255,255,255,0.05)',
+                    'border': `1px solid ${isSelected ? field.color : colors.border}`,
+                    'border-left-width': '3px',
+                    'border-left-color': field.color,
+                    'transition': 'background 0.15s, border-color 0.15s',
                   }}
                 >
                   <div style={{
-                    fontFamily: 'monospace', fontSize: 14, fontWeight: 600,
-                    color: isSelected ? field.color : colors.text,
+                    'font-family': 'monospace', 'font-size': '14px', 'font-weight': '600',
+                    'color': isSelected ? field.color : colors.text,
                   }}>
                     {field.name}
                   </div>
                   <div style={{
-                    fontFamily: 'monospace', fontSize: 10, color: colors.textMuted, marginTop: 4,
+                    'font-family': 'monospace', 'font-size': '10px', 'color': colors.textMuted, 'margin-top': '4px',
                   }}>
                     {field.type} ({field.size})
                   </div>
@@ -367,34 +368,34 @@ export function AccountFieldsDiagram() {
       {selected ? (
         <div style={{
           ...glassStyle,
-          padding: '14px',
-          borderLeft: `3px solid ${selected.color}`,
+          'padding': '14px',
+          'border-left': `3px solid ${selected.color}`,
         }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: selected.color, marginBottom: 8 }}>
+          <div style={{ 'font-family': 'monospace', 'font-size': '14px', 'font-weight': '600', 'color': selected.color, 'margin-bottom': '8px' }}>
             {selected.name}: {selected.type}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+          <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '6px', 'font-size': '12px' }}>
             <div>
-              <span style={{ color: colors.textMuted }}>Кодирование: </span>
-              <span style={{ color: colors.text, fontFamily: 'monospace' }}>{selected.encoding}</span>
+              <span style={{ 'color': colors.textMuted }}>Кодирование: </span>
+              <span style={{ 'color': colors.text, 'font-family': 'monospace' }}>{selected.encoding}</span>
             </div>
             <div>
-              <span style={{ color: colors.textMuted }}>Роль: </span>
-              <span style={{ color: colors.text }}>{selected.role}</span>
+              <span style={{ 'color': colors.textMuted }}>Роль: </span>
+              <span style={{ 'color': colors.text }}>{selected.role}</span>
             </div>
-            <div style={{ marginTop: 4 }}>
-              <div style={{ color: colors.primary, fontSize: 11, fontWeight: 600, marginBottom: 2 }}>EOA:</div>
-              <div style={{ color: colors.text, fontFamily: 'monospace', fontSize: 11 }}>{selected.eoaExample}</div>
+            <div style={{ 'margin-top': '4px' }}>
+              <div style={{ 'color': colors.primary, 'font-size': '11px', 'font-weight': '600', 'margin-bottom': '2px' }}>EOA:</div>
+              <div style={{ 'color': colors.text, 'font-family': 'monospace', 'font-size': '11px' }}>{selected.eoaExample}</div>
             </div>
             <div>
-              <div style={{ color: '#a855f7', fontSize: 11, fontWeight: 600, marginBottom: 2 }}>Contract:</div>
-              <div style={{ color: colors.text, fontFamily: 'monospace', fontSize: 11 }}>{selected.contractExample}</div>
+              <div style={{ 'color': '#a855f7', 'font-size': '11px', 'font-weight': '600', 'margin-bottom': '2px' }}>Contract:</div>
+              <div style={{ 'color': colors.text, 'font-family': 'monospace', 'font-size': '11px' }}>{selected.contractExample}</div>
             </div>
           </div>
         </div>
       ) : (
-        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center' }}>
+        <div style={{ 'font-size': '12px', 'color': colors.textMuted, 'text-align': 'center' }}>
           Нажмите на поле, чтобы увидеть подробности
         </div>
       )}
@@ -472,9 +473,9 @@ const TRANSITION_STEPS: TransitionStep[] = [
 ];
 
 export function AccountStateTransitionDiagram() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = createSignal(0);
 
-  const current = TRANSITION_STEPS[step];
+  const current = TRANSITION_STEPS[step()];
 
   return (
     <DiagramContainer title="Переходы состояния аккаунтов" color="purple">
@@ -482,66 +483,65 @@ export function AccountStateTransitionDiagram() {
       <DiagramTooltip content={current.description}>
         <div style={{
           ...glassStyle,
-          padding: '10px 14px',
-          marginBottom: 12,
-          borderLeft: `3px solid #a855f7`,
+          'padding': '10px 14px',
+          'margin-bottom': '12px',
+          'border-left': `3px solid #a855f7`,
         }}>
-          <div style={{ fontWeight: 600, color: colors.text, fontSize: 14, marginBottom: 4 }}>
+          <div style={{ 'font-weight': '600', 'color': colors.text, 'font-size': '14px', 'margin-bottom': '4px' }}>
             {current.title}
           </div>
-          <div style={{ color: colors.textMuted, fontSize: 12 }}>
+          <div style={{ 'color': colors.textMuted, 'font-size': '12px' }}>
             {current.description}
           </div>
         </div>
       </DiagramTooltip>
 
       {/* Accounts */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'flex-wrap': 'wrap', 'gap': '8px', 'margin-bottom': '12px' }}>
         {current.accounts.map((acc, i) => (
           <div
-            key={`${acc.address}-${i}`}
             style={{
               ...glassStyle,
-              padding: '10px 14px',
-              flex: '1 1 auto',
-              minWidth: 200,
-              borderTop: `3px solid ${acc.isContract ? '#a855f7' : colors.primary}`,
+              'padding': '10px 14px',
+              'flex': '1 1 auto',
+              'min-width': '200px',
+              'border-top': `3px solid ${acc.isContract ? '#a855f7' : colors.primary}`,
             }}
           >
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8,
+              'display': 'flex', 'align-items': 'center', 'gap': '6px', 'margin-bottom': '8px',
             }}>
               <div style={{
-                width: 22, height: 22, borderRadius: '50%',
-                background: acc.isContract ? '#a855f720' : colors.primary + '20',
-                border: `1.5px solid ${acc.isContract ? '#a855f7' : colors.primary}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'monospace', fontSize: 10, fontWeight: 700,
-                color: acc.isContract ? '#a855f7' : colors.primary,
+                'width': '22px', 'height': '22px', 'border-radius': '50%',
+                'background': acc.isContract ? '#a855f720' : colors.primary + '20',
+                'border': `1.5px solid ${acc.isContract ? '#a855f7' : colors.primary}`,
+                'display': 'flex', 'align-items': 'center', 'justify-content': 'center',
+                'font-family': 'monospace', 'font-size': '10px', 'font-weight': '700',
+                'color': acc.isContract ? '#a855f7' : colors.primary,
               }}>
                 {acc.isContract ? 'C' : 'E'}
               </div>
-              <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: colors.text }}>
+              <span style={{ 'font-family': 'monospace', 'font-size': '12px', 'font-weight': '600', 'color': colors.text }}>
                 {acc.label}
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontFamily: 'monospace', fontSize: 11 }}>
+            <div style={{ 'display': 'flex', 'flex-direction': 'column', 'gap': '3px', 'font-family': 'monospace', 'font-size': '11px' }}>
               <div>
-                <span style={{ color: colors.primary }}>nonce: </span>
-                <span style={{ color: colors.text }}>{acc.nonce}</span>
+                <span style={{ 'color': colors.primary }}>nonce: </span>
+                <span style={{ 'color': colors.text }}>{acc.nonce}</span>
               </div>
               <div>
-                <span style={{ color: colors.success }}>balance: </span>
-                <span style={{ color: colors.text }}>{acc.balance}</span>
+                <span style={{ 'color': colors.success }}>balance: </span>
+                <span style={{ 'color': colors.text }}>{acc.balance}</span>
               </div>
               <div>
-                <span style={{ color: '#f59e0b' }}>storageRoot: </span>
-                <span style={{ color: colors.textMuted }}>0x{truncHex(acc.storageRoot)}</span>
+                <span style={{ 'color': '#f59e0b' }}>storageRoot: </span>
+                <span style={{ 'color': colors.textMuted }}>0x{truncHex(acc.storageRoot)}</span>
               </div>
               <div>
-                <span style={{ color: '#a855f7' }}>codeHash: </span>
-                <span style={{ color: colors.textMuted }}>0x{truncHex(acc.codeHash)}</span>
+                <span style={{ 'color': '#a855f7' }}>codeHash: </span>
+                <span style={{ 'color': colors.textMuted }}>0x{truncHex(acc.codeHash)}</span>
               </div>
             </div>
           </div>
@@ -552,55 +552,54 @@ export function AccountStateTransitionDiagram() {
       <DiagramTooltip content="State Root: корень глобального state trie. Пересчитывается после каждой транзакции. Изменение любого аккаунта меняет весь state root -- это гарантирует целостность.">
         <div style={{
           ...glassStyle,
-          padding: '8px 14px',
-          textAlign: 'center',
-          fontFamily: 'monospace',
-          fontSize: 12,
+          'padding': '8px 14px',
+          'text-align': 'center',
+          'font-family': 'monospace',
+          'font-size': '12px',
         }}>
-          <span style={{ color: colors.textMuted }}>State Root: </span>
-          <span style={{ color: '#a855f7', fontWeight: 600 }}>0x{truncHex(current.stateRoot, 16)}</span>
+          <span style={{ 'color': colors.textMuted }}>State Root: </span>
+          <span style={{ 'color': '#a855f7', 'font-weight': '600' }}>0x{truncHex(current.stateRoot, 16)}</span>
         </div>
       </DiagramTooltip>
 
       {/* Highlight */}
       {current.highlight && (
-        <div style={{ marginTop: 8 }}>
+        <div style={{ 'margin-top': '8px' }}>
           <DataBox label="Изменения" value={current.highlight} variant="highlight" />
         </div>
       )}
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '8px', 'justify-content': 'center', 'margin-top': '12px' }}>
         <button onClick={() => setStep(0)} style={btnStyle(true, colors.text)}>
           Сброс
         </button>
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-          style={btnStyle(step > 0, colors.text)}
+          disabled={step() === 0}
+          style={btnStyle(step() > 0, colors.text)}
         >
           Назад
         </button>
         <button
           onClick={() => setStep((s) => Math.min(TRANSITION_STEPS.length - 1, s + 1))}
-          disabled={step >= TRANSITION_STEPS.length - 1}
-          style={btnStyle(step < TRANSITION_STEPS.length - 1, '#a855f7')}
+          disabled={step() >= TRANSITION_STEPS.length - 1}
+          style={btnStyle(step() < TRANSITION_STEPS.length - 1, '#a855f7')}
         >
           Далее
         </button>
       </div>
 
       {/* Step indicator */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+      <div style={{ 'display': 'flex', 'gap': '6px', 'justify-content': 'center', 'margin-top': '8px' }}>
         {TRANSITION_STEPS.map((_, i) => (
           <div
-            key={i}
             onClick={() => setStep(i)}
             style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: i === step ? '#a855f7' : 'rgba(255,255,255,0.15)',
-              border: `1px solid ${i === step ? '#a855f7' : colors.border}`,
-              cursor: 'pointer',
+              'width': '10px', 'height': '10px', 'border-radius': '50%',
+              'background': i === step() ? '#a855f7' : 'rgba(255,255,255,0.15)',
+              'border': `1px solid ${i === step() ? '#a855f7' : colors.border}`,
+              'cursor': 'pointer',
             }}
           />
         ))}

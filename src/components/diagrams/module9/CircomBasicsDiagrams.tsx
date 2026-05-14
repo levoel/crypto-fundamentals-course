@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 /**
  * Circom Basics Diagrams (ZK-07)
  *
@@ -76,61 +77,60 @@ export function CircomAnatomyDiagram() {
       {/* Code block */}
       <div style={{
         ...glassStyle,
-        padding: 16,
-        borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.08)',
-        marginBottom: 12,
-        fontFamily: 'monospace',
-        fontSize: 12,
-        lineHeight: 1.8,
+        'padding': '16px',
+        'border-radius': '8px',
+        'border': '1px solid rgba(255,255,255,0.08)',
+        'margin-bottom': '12px',
+        'font-family': 'monospace',
+        'font-size': '12px',
+        'line-height': '1.8',
       }}>
         {ANNOTATED_CODE.map((item, i) => (
           item.annotation ? (
-            <DiagramTooltip key={i} content={item.annotation}>
+            <DiagramTooltip content={item.annotation}>
               <div
                 style={{
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  borderLeft: `3px solid ${item.color}`,
-                  cursor: 'help',
+                  'padding': '2px 8px',
+                  'border-radius': '4px',
+                  'border-left': `3px solid ${item.color}`,
+                  'cursor': 'help',
                 }}
               >
-                <span style={{ color: item.color }}>{item.line}</span>
+                <span style={{ 'color': item.color }}>{item.line}</span>
               </div>
             </DiagramTooltip>
           ) : (
             <div
-              key={i}
               style={{
-                padding: '2px 8px',
-                borderRadius: 4,
-                borderLeft: '3px solid transparent',
+                'padding': '2px 8px',
+                'border-radius': '4px',
+                'border-left': '3px solid transparent',
               }}
             >
-              <span style={{ color: item.color }}>{item.line}</span>
+              <span style={{ 'color': item.color }}>{item.line}</span>
             </div>
           )
         ))}
       </div>
 
       {/* Signal types legend */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap', 'margin-bottom': '12px' }}>
         {[
           { label: 'signal input', color: '#10b981', desc: 'Приватный вход (prover)', tooltip: 'Input signals — приватные входные данные, которые знает только prover. Verifier не видит их значения, но может проверить корректность вычислений через proof.' },
           { label: 'signal output', color: '#f59e0b', desc: 'Публичный выход (verifier)', tooltip: 'Output signals — публичные значения, видимые verifier. Это результат вычисления, который можно проверить без знания приватных входов.' },
           { label: 'signal (intermediate)', color: '#6366f1', desc: 'Промежуточное значение', tooltip: 'Промежуточные сигналы хранят результаты частичных вычислений внутри circuit. Они нужны для flattening: разбиения сложных выражений на элементарные R1CS-ограничения.' },
         ].map((s) => (
-          <DiagramTooltip key={s.label} content={s.tooltip}>
+          <DiagramTooltip content={s.tooltip}>
             <div style={{
               ...glassStyle,
-              padding: '6px 10px',
-              borderRadius: 6,
-              border: `1px solid ${s.color}30`,
-              fontSize: 10,
-              fontFamily: 'monospace',
+              'padding': '6px 10px',
+              'border-radius': '6px',
+              'border': `1px solid ${s.color}30`,
+              'font-size': '10px',
+              'font-family': 'monospace',
             }}>
-              <span style={{ color: s.color, fontWeight: 600 }}>{s.label}</span>
-              <span style={{ color: colors.textMuted, marginLeft: 6 }}>{s.desc}</span>
+              <span style={{ 'color': s.color, 'font-weight': '600' }}>{s.label}</span>
+              <span style={{ 'color': colors.textMuted, 'margin-left': '6px' }}>{s.desc}</span>
             </div>
           </DiagramTooltip>
         ))}
@@ -201,22 +201,22 @@ export function ConstraintOperatorsDiagram() {
   return (
     <DiagramContainer title="Операторы Circom: <== (safe) vs <-- (dangerous)" color="red">
       {/* Operator table */}
-      <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+      <div style={{ 'overflow-x': 'auto', 'margin-bottom': '14px' }}>
         <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 12,
-          fontFamily: 'monospace',
+          'width': '100%',
+          'border-collapse': 'collapse',
+          'font-size': '12px',
+          'font-family': 'monospace',
         }}>
           <thead>
             <tr>
               {['Оператор', 'Действие', 'Безопасность', 'Пример'].map((h) => (
-                <th key={h} style={{
-                  padding: '8px 10px',
-                  textAlign: 'left',
-                  fontSize: 10,
-                  color: colors.textMuted,
-                  borderBottom: '1px solid rgba(255,255,255,0.1)',
+                <th style={{
+                  'padding': '8px 10px',
+                  'text-align': 'left',
+                  'font-size': '10px',
+                  'color': colors.textMuted,
+                  'border-bottom': '1px solid rgba(255,255,255,0.1)',
                 }}>
                   {h}
                 </th>
@@ -226,52 +226,51 @@ export function ConstraintOperatorsDiagram() {
           <tbody>
             {OPERATORS.map((op, i) => (
               <tr
-                key={i}
                 style={{
-                  cursor: 'help',
+                  'cursor': 'help',
                 }}
               >
                 <td style={{
-                  padding: '8px 10px',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  color: op.safetyColor,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  'padding': '8px 10px',
+                  'font-weight': '700',
+                  'font-size': '14px',
+                  'color': op.safetyColor,
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
                 }}>
                   <DiagramTooltip content={op.explanation}>
                     <span>{op.operator}</span>
                   </DiagramTooltip>
                 </td>
                 <td style={{
-                  padding: '8px 10px',
-                  color: colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  lineHeight: 1.4,
+                  'padding': '8px 10px',
+                  'color': colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
+                  'line-height': '1.4',
                 }}>
                   {op.does}
                 </td>
                 <td style={{
-                  padding: '8px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  'padding': '8px 10px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
                 }}>
                   <span style={{
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: op.safetyColor,
-                    background: `${op.safetyColor}15`,
-                    border: `1px solid ${op.safetyColor}30`,
+                    'padding': '2px 8px',
+                    'border-radius': '4px',
+                    'font-size': '10px',
+                    'font-weight': '700',
+                    'color': op.safetyColor,
+                    'background': `${op.safetyColor}15`,
+                    'border': `1px solid ${op.safetyColor}30`,
                   }}>
                     {op.safety}
                   </span>
                 </td>
                 <td style={{
-                  padding: '8px 10px',
-                  color: colors.text,
-                  fontSize: 11,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  'padding': '8px 10px',
+                  'color': colors.text,
+                  'font-size': '11px',
+                  'border-bottom': '1px solid rgba(255,255,255,0.05)',
                 }}>
                   {op.example}
                 </td>
@@ -285,74 +284,74 @@ export function ConstraintOperatorsDiagram() {
       <DiagramTooltip content="Under-constrained circuit — критическая уязвимость в ZK. Без constraint (===) prover может подставить произвольное значение, и verifier примет ложное доказательство. Это нарушает soundness — главное свойство proof system.">
         <div style={{
           ...glassStyle,
-          padding: 14,
-          borderRadius: 8,
-          border: '2px solid rgba(239, 68, 68, 0.5)',
-          background: 'rgba(239, 68, 68, 0.05)',
-          marginBottom: 12,
+          'padding': '14px',
+          'border-radius': '8px',
+          'border': '2px solid rgba(239, 68, 68, 0.5)',
+          'background': 'rgba(239, 68, 68, 0.05)',
+          'margin-bottom': '12px',
         }}>
           <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#ef4444',
-            marginBottom: 8,
-            fontFamily: 'monospace',
+            'font-size': '11px',
+            'font-weight': '700',
+            'color': '#ef4444',
+            'margin-bottom': '8px',
+            'font-family': 'monospace',
           }}>
             EXPLOIT: circuit без constraint принимает ложные proofs
           </div>
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ 'display': 'flex', 'gap': '12px', 'flex-wrap': 'wrap' }}>
             {/* Vulnerable */}
-            <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ 'flex': '1', 'min-width': '200px' }}>
               <div style={{
-                fontSize: 10,
-                color: '#ef4444',
-                fontWeight: 700,
-                marginBottom: 4,
-                fontFamily: 'monospace',
+                'font-size': '10px',
+                'color': '#ef4444',
+                'font-weight': '700',
+                'margin-bottom': '4px',
+                'font-family': 'monospace',
               }}>
                 VULNERABLE (no constraint):
               </div>
               <div style={{
                 ...glassStyle,
-                padding: 10,
-                borderRadius: 6,
-                fontSize: 11,
-                fontFamily: 'monospace',
-                lineHeight: 1.6,
-                border: '1px solid rgba(239,68,68,0.2)',
+                'padding': '10px',
+                'border-radius': '6px',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'line-height': '1.6',
+                'border': '1px solid rgba(239,68,68,0.2)',
               }}>
-                <div style={{ color: colors.textMuted }}>{'// BUG: no constraint!'}</div>
-                <div><span style={{ color: '#ef4444' }}>c {'<--'} a * b;</span></div>
-                <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999'}</div>
-                <div style={{ color: colors.textMuted }}>{'// Verifier ACCEPTS!'}</div>
+                <div style={{ 'color': colors.textMuted }}>{'// BUG: no constraint!'}</div>
+                <div><span style={{ 'color': '#ef4444' }}>c {'<--'} a * b;</span></div>
+                <div style={{ 'color': colors.textMuted }}>{'// Prover sets c = 999'}</div>
+                <div style={{ 'color': colors.textMuted }}>{'// Verifier ACCEPTS!'}</div>
               </div>
             </div>
 
             {/* Correct */}
-            <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ 'flex': '1', 'min-width': '200px' }}>
               <div style={{
-                fontSize: 10,
-                color: '#10b981',
-                fontWeight: 700,
-                marginBottom: 4,
-                fontFamily: 'monospace',
+                'font-size': '10px',
+                'color': '#10b981',
+                'font-weight': '700',
+                'margin-bottom': '4px',
+                'font-family': 'monospace',
               }}>
                 CORRECT (with constraint):
               </div>
               <div style={{
                 ...glassStyle,
-                padding: 10,
-                borderRadius: 6,
-                fontSize: 11,
-                fontFamily: 'monospace',
-                lineHeight: 1.6,
-                border: '1px solid rgba(16,185,129,0.2)',
+                'padding': '10px',
+                'border-radius': '6px',
+                'font-size': '11px',
+                'font-family': 'monospace',
+                'line-height': '1.6',
+                'border': '1px solid rgba(16,185,129,0.2)',
               }}>
-                <div style={{ color: colors.textMuted }}>{'// SAFE: assignment + constraint'}</div>
-                <div><span style={{ color: '#10b981' }}>c {'<=='} a * b;</span></div>
-                <div style={{ color: colors.textMuted }}>{'// Prover sets c = 999?'}</div>
-                <div style={{ color: colors.textMuted }}>{'// Verifier REJECTS!'}</div>
+                <div style={{ 'color': colors.textMuted }}>{'// SAFE: assignment + constraint'}</div>
+                <div><span style={{ 'color': '#10b981' }}>c {'<=='} a * b;</span></div>
+                <div style={{ 'color': colors.textMuted }}>{'// Prover sets c = 999?'}</div>
+                <div style={{ 'color': colors.textMuted }}>{'// Verifier REJECTS!'}</div>
               </div>
             </div>
           </div>
